@@ -6,10 +6,27 @@ import Icon from "../../components/Icon.astro";
 <DashboardLayout title="회원 일괄 등록">
     <div class="admin-container">
         <div class="header">
-            <h1><Icon name="users" size="32" /> 회원 일괄 등록 (Excel)</h1>
+            <h1><Icon name="users" size="32" /> 회원 등록 (Excel)</h1>
             <p class="subtitle">
-                엑셀 파일을 업로드하여 회원을 일괄 등록할 수 있습니다.
+                엑셀 파일을 업로드하여 회원을 등록할 수 있습니다.
             </p>
+        </div>
+
+        <!-- Society Selection -->
+        <div class="society-selector">
+            <label class="radio-label">
+                <input
+                    type="radio"
+                    name="society"
+                    value="nuclear_medicine"
+                    checked
+                />
+                <span>대한핵의학회</span>
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="society" value="technology" />
+                <span>대한핵의학기술학회</span>
+            </label>
         </div>
 
         <!-- Drop Zone -->
@@ -35,64 +52,195 @@ import Icon from "../../components/Icon.astro";
             <div class="table-wrapper">
                 <table id="previewTable">
                     <thead>
-                        <tr>
-                            <th>이름</th>
-                            <th>이메일</th>
-                            <th>소속</th>
-                            <th>비고</th>
-                        </tr>
+                        <th>이름</th>
+                        <th>근무기관명</th>
+                        <th>이메일</th>
+                        <th>소속학회</th>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
         </div>
+        <div style="margin-top:1rem; text-align:right;">
+            <button
+                id="resetBtn"
+                style="background:none; border:1px solid #ff4444; color:#ff4444; padding:0.5rem 1rem; border-radius:6px; cursor:pointer; font-size:0.9rem;"
+            >
+                ⚠️ 명단 전체 초기화
+            </button>
+        </div>
+        <!-- Current DB Members Section -->
+        <div
+            class="db-section"
+            style="margin-top: 3rem; border-top: 1px solid var(--border-color); padding-top: 2rem;"
+        >
+            <h2>현재 DB 등록된 회원 (<span id="dbCount">0</span>명)</h2>
+            <div
+                style="display:flex; justify-content:space-between; margin-bottom:1rem;"
+            >
+                <input
+                    type="text"
+                    id="dbSearch"
+                    placeholder="이름 또는 이메일 검색..."
+                    style="padding:0.5rem; border:1px solid var(--border-color); border-radius:6px; width:300px;"
+                />
+                <button id="refreshDbBtn" class="btn-secondary"
+                    >🔄 새로고침</button
+                >
+            </div>
+            <div class="table-wrapper">
+                <table id="dbTable">
+                    <thead>
+                        <th>이름</th>
+                        <th>근무기관명</th>
+                        <th>이메일</th>
+                        <th>소속학회</th>
+                    </thead>
+                    <tbody>
+                        <tr
+                            ><td colspan="4" style="text-align:center;"
+                                >데이터를 불러오는 중...</td
+                            ></tr
+                        >
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
+</DashboardLayout>
 
-    <!-- Admin Guard Script -->
-    <script>
-        import { userProfile } from "../../store/user";
-        import * as XLSX from "xlsx";
+<!-- Admin Guard Script -->
+<script>
+    import { userProfile } from "../../store/user";
+    import { supabase } from "../../lib/supabase";
+    import * as XLSX from "xlsx";
 
-        // 1. Admin Guard
-        const user = userProfile.get();
-        if (user.role !== "admin") {
-            alert("관리자 권한이 필요합니다.");
-            window.location.href = "/";
+    // ... (Existing Guard Logic) ...
+    // ... (Existing Excel Logic) ...
+
+    // --- NEW: DB Member List Logic ---
+    const dbTableBody = document.querySelector("#dbTable tbody");
+    const dbCountSpan = document.getElementById("dbCount");
+    const dbSearchInput = document.getElementById("dbSearch");
+    const refreshDbBtn = document.getElementById("refreshDbBtn");
+
+    let allMembers = [];
+
+    async function fetchMembers() {
+        refreshDbBtn.disabled = true;
+        refreshDbBtn.textContent = "로딩 중...";
+
+        const { data, error } = await supabase
+            .from("allowed_members")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error(error);
+            alert("DB 목록을 불러오지 못했습니다: " + error.message);
+            dbTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">로드 실패</td></tr>`;
+        } else {
+            allMembers = data || [];
+            renderDbTable(allMembers);
         }
 
-        // 2. Excel Logic
-        const dropZone = document.getElementById("dropZone");
-        const fileInput = document.getElementById("fileInput");
-        const previewSection = document.getElementById("previewSection");
-        const tableBody = document.querySelector("#previewTable tbody");
-        const rowCountSpan = document.getElementById("rowCount");
+        refreshDbBtn.disabled = false;
+        refreshDbBtn.textContent = "🔄 새로고침";
+    }
 
-        // Drag & Drop Handlers
-        dropZone.addEventListener("click", () => fileInput.click());
+    function renderDbTable(list) {
+        dbCountSpan.textContent = list.length;
+        dbTableBody.innerHTML = "";
 
-        dropZone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            dropZone.classList.add("drag-over");
+        if (list.length === 0) {
+            dbTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">등록된 회원이 없습니다.</td></tr>`;
+            return;
+        }
+
+        list.slice(0, 100).forEach((row) => {
+            // Limit display for performance
+            const tr = document.createElement("tr");
+            const societyName =
+                row.society === "nuclear_medicine"
+                    ? "대한핵의학회"
+                    : row.society === "technology"
+                      ? "대한핵의학기술학회"
+                      : row.society || "-";
+            tr.innerHTML = `
+                <td>${row.name || "-"}</td>
+                <td>${row.affiliation || "-"}</td>
+                <td>${row.email || "-"}</td>
+                <td>${societyName}</td>
+            `;
+            dbTableBody.appendChild(tr);
         });
 
-        dropZone.addEventListener("dragleave", () => {
-            dropZone.classList.remove("drag-over");
-        });
+        if (list.length > 100) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td colspan="4" style="text-align:center; color:#888;">...외 ${list.length - 100}명 (검색하여 확인하세요)</td>`;
+            dbTableBody.appendChild(tr);
+        }
+    }
 
-        dropZone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            dropZone.classList.remove("drag-over");
-            const files = e.dataTransfer.files;
-            if (files.length) handleFile(files[0]);
-        });
+    // Search Handler
+    dbSearchInput.addEventListener("input", (e) => {
+        const keyword = e.target.value.toLowerCase();
+        const filtered = allMembers.filter(
+            (m) =>
+                (m.name && m.name.toLowerCase().includes(keyword)) ||
+                (m.email && m.email.toLowerCase().includes(keyword)),
+        );
+        renderDbTable(filtered);
+    });
 
-        fileInput.addEventListener("change", (e) => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        });
+    refreshDbBtn.addEventListener("click", fetchMembers);
 
-        function handleFile(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
+    // Initial Load
+    fetchMembers();
+
+    // 2. Excel Logic (Keep existing logic below...)
+
+    // 1. Admin Guard
+    const user = userProfile.get();
+    if (user.role !== "admin") {
+        alert("관리자 권한이 필요합니다.");
+        window.location.href = "/";
+    }
+
+    // 2. Excel Logic
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const previewSection = document.getElementById("previewSection");
+    const tableBody = document.querySelector("#previewTable tbody");
+    const rowCountSpan = document.getElementById("rowCount");
+
+    // Drag & Drop Handlers
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("drag-over");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("drag-over");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("drag-over");
+        const files = e.dataTransfer.files;
+        if (files.length) handleFile(files[0]);
+    });
+
+    fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: "array" });
 
@@ -103,154 +251,365 @@ import Icon from "../../components/Icon.astro";
                 // Convert to JSON
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
                 renderTable(jsonData);
-            };
-            reader.readAsArrayBuffer(file);
+            } catch (err) {
+                console.error("Excel Read Error:", err);
+                alert("파일을 읽는 중 오류가 발생했습니다.\n" + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function findValue(row, possibleKeys) {
+        const rowKeys = Object.keys(row);
+        // 1. Exact match attempt
+        for (const key of possibleKeys) {
+            if (row[key] !== undefined) return row[key];
         }
 
-        function renderTable(data) {
-            tableBody.innerHTML = "";
+        // 2. Fuzzy match (ignore whitespace, case, special chars)
+        const normalizedKeys = rowKeys.reduce((acc, k) => {
+            const norm = k
+                .toString()
+                .toLowerCase()
+                .replace(/[\s\-_.]/g, "");
+            acc[norm] = k;
+            return acc;
+        }, {});
 
-            data.forEach((row) => {
-                const tr = document.createElement("tr");
-                // Auto-detect columns or assume standard keys
-                // For robustness, let's look for known keys or just dump values
-                const name = row["이름"] || row["Name"] || row["name"] || "-";
-                const email =
-                    row["이메일"] || row["Email"] || row["email"] || "-";
-                const aff =
-                    row["소속"] || row["Organization"] || row["org"] || "-";
-                const note = row["비고"] || row["Note"] || "";
+        for (const key of possibleKeys) {
+            const normSearch = key.toLowerCase().replace(/[\s\-_.]/g, "");
+            if (normalizedKeys[normSearch]) {
+                return row[normalizedKeys[normSearch]];
+            }
 
-                tr.innerHTML = `
-                    <td>${name}</td>
-                    <td>${email}</td>
-                    <td>${aff}</td>
-                    <td>${note}</td>
-                `;
-                tableBody.appendChild(tr);
-            });
-
-            rowCountSpan.textContent = data.length;
-            previewSection.style.display = "block";
-            dropZone.style.display = "none";
+            // 3. Partial inclusion check (e.g. 'User Email' matches 'email')
+            const partialMatch = Object.keys(normalizedKeys).find((nk) =>
+                nk.includes(normSearch),
+            );
+            if (partialMatch) return row[normalizedKeys[partialMatch]];
         }
+        return null;
+    }
 
-        // Cancel
-        document.getElementById("cancelBtn").addEventListener("click", () => {
-            previewSection.style.display = "none";
-            dropZone.style.display = "flex";
-            fileInput.value = "";
-            tableBody.innerHTML = "";
+    function renderTable(data) {
+        console.log("Raw Excel Data:", data); // Debug log
+
+        // Get default society selection
+        const selectedSociety = document.querySelector(
+            'input[name="society"]:checked',
+        ).value;
+
+        const processedData = data.map((row) => {
+            const name = (
+                findValue(row, [
+                    "이름",
+                    "name",
+                    "성명",
+                    "membername",
+                    "user",
+                ]) || "-"
+            )
+                .toString()
+                .trim();
+            const email = (
+                findValue(row, [
+                    "이메일",
+                    "email",
+                    "e-mail",
+                    "mail",
+                    "전자우편",
+                    "계정",
+                ]) || "-"
+            )
+                .toString()
+                .trim();
+            const affiliation = (
+                findValue(row, [
+                    "근무기관명",
+                    "근무기관",
+                    "소속",
+                    "affiliation",
+                    "organization",
+                    "org",
+                    "company",
+                    "institution",
+                    "hospital",
+                    "workplace",
+                ]) || "-"
+            )
+                .toString()
+                .trim();
+
+            // Society Parsing Logic
+            let societyRaw =
+                findValue(row, [
+                    "소속학회",
+                    "구분",
+                    "division",
+                    "society",
+                    "학회",
+                    "type",
+                ]) || "";
+            let society = selectedSociety; // Default to selection
+
+            if (societyRaw) {
+                const normalizedParams = societyRaw
+                    .toString()
+                    .trim()
+                    .replace(/[\s|_]/g, "");
+                if (
+                    [
+                        "대한핵의학회",
+                        "핵의학회",
+                        "nuclear_medicine",
+                        "의사",
+                        "prof",
+                    ].some((k) => normalizedParams.includes(k))
+                ) {
+                    society = "nuclear_medicine";
+                } else if (
+                    [
+                        "대한핵의학기술학회",
+                        "핵의학기술학회",
+                        "기술학회",
+                        "technology",
+                        "tech",
+                    ].some((k) => normalizedParams.includes(k))
+                ) {
+                    society = "technology";
+                }
+            }
+            // If raw exists but didn't match known keys, we keep default (or could fallback to raw if we trusted it, but safer to enforce schema)
+
+            const societyDisplay =
+                society === "nuclear_medicine"
+                    ? "대한핵의학회"
+                    : "대한핵의학기술학회";
+
+            return { name, email, affiliation, society, societyDisplay };
         });
 
-        // Upload (Mock)
-        document.getElementById("uploadBtn").addEventListener("click", () => {
-            // Here we would call Supabase
-            const count = rowCountSpan.textContent;
-            const confirmUpload = confirm(
-                `${count}명의 회원을 등록하시겠습니까?\n(현재는 DB가 없으므로 성공 메시지만 출력됩니다)`,
-            );
-            if (confirmUpload) {
-                alert("성공적으로 등록되었습니다! (Mock)");
-                location.reload();
+        // Store normalized data for consistent upload
+        window.parsedMemberData = processedData;
+
+        tableBody.innerHTML = "";
+
+        processedData.forEach((row) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                    <td>${row.name}</td>
+                    <td>${row.affiliation}</td>
+                    <td>${row.email}</td>
+                    <td>${row.societyDisplay}</td>
+                `;
+            tableBody.appendChild(tr);
+        });
+
+        rowCountSpan.textContent = data.length;
+        previewSection.style.display = "block";
+        dropZone.style.display = "none";
+        // Hide society selector during preview to avoid confusion? Or keep it?
+        // Let's keep it but maybe disable it implies it was only for initial defaults.
+        // For now, simple is best.
+    }
+
+    // Cancel
+    document.getElementById("cancelBtn").addEventListener("click", () => {
+        previewSection.style.display = "none";
+        dropZone.style.display = "flex";
+        fileInput.value = "";
+        tableBody.innerHTML = "";
+    });
+
+    // Reset DB
+    const resetBtn = document.getElementById("resetBtn");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", async () => {
+            if (
+                confirm(
+                    "정말로 모든 명단 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.",
+                )
+            ) {
+                const { error } = await supabase
+                    .from("allowed_members")
+                    .delete()
+                    .neq("id", 0);
+                if (error) {
+                    alert("삭제 실패: " + error.message);
+                } else {
+                    alert("모든 데이터가 초기화되었습니다.");
+                    window.location.reload();
+                }
             }
         });
-    </script>
+    }
 
-    <style>
-        .admin-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem 0;
-        }
-        .header {
-            margin-bottom: 2rem;
-        }
-        .subtitle {
-            color: var(--text-muted);
+    // Upload (Real)
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+        if (!window.parsedMemberData || window.parsedMemberData.length === 0) {
+            alert("등록할 데이터가 없습니다.");
+            return;
         }
 
-        .drop-zone {
-            border: 3px dashed var(--border-color);
-            border-radius: 12px;
-            padding: 4rem 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: var(--bg-card);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-        .drop-zone:hover,
-        .drop-zone.drag-over {
-            border-color: var(--accent);
-            background: rgba(37, 99, 235, 0.05); /* Slight accent tint */
-        }
-        .upload-icon {
-            color: var(--text-muted);
-        }
-        .drop-text {
-            color: var(--text-muted);
-            font-size: 1.1rem;
+        const dataToUpload = window.parsedMemberData
+            .map((row) => ({
+                name: row.name !== "-" ? row.name : null,
+                email: row.email !== "-" ? row.email : null,
+                affiliation: row.affiliation !== "-" ? row.affiliation : null,
+                society: row.society, // Send the determined society code
+                // Schema update required: Ensure 'society' column exists in allowed_members table
+            }))
+            .filter((r) => r.email && r.email.includes("@"));
+
+        if (dataToUpload.length === 0) {
+            alert("유효한 이메일이 포함된 데이터가 없습니다.");
+            return;
         }
 
-        .preview-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-        }
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .actions {
-            display: flex;
-            gap: 0.5rem;
-        }
+        // Deduplicate Logic: Keep the last occurrence for each email
+        const uniqueData = Array.from(
+            dataToUpload
+                .reduce((map, item) => map.set(item.email, item), new Map())
+                .values(),
+        );
 
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            font-weight: bold;
-        }
-        .btn-secondary {
-            background: transparent;
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-        }
+        const confirmUpload = confirm(
+            `${uniqueData.length}명의 회원을 DB에 등록하시겠습니까?\n(중복된 이메일은 업데이트됩니다)`,
+        );
 
-        .table-wrapper {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+        if (confirmUpload) {
+            const { data, error } = await supabase
+                .from("allowed_members")
+                .upsert(uniqueData, { onConflict: "email" });
+
+            if (error) {
+                console.error(error);
+                alert("업로드 실패:\n" + error.message);
+            } else {
+                alert("✅ 성공적으로 등록되었습니다!");
+                window.location.reload();
+            }
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95rem;
-        }
-        th,
-        td {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        th {
-            background: rgba(255, 255, 255, 0.05);
-            position: sticky;
-            top: 0;
-            color: var(--text-muted);
-        }
-    </style>
-</DashboardLayout>
+    });
+</script>
+
+<style>
+    .admin-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+    .header {
+        margin-bottom: 2rem;
+    }
+    .subtitle {
+        color: var(--text-muted);
+    }
+
+    .society-selector {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+        background: var(--bg-card);
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    .radio-label input[type="radio"] {
+        width: 1.2rem;
+        height: 1.2rem;
+        accent-color: var(--accent);
+    }
+
+    .drop-zone {
+        border: 3px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 4rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--bg-card);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+        border-color: var(--accent);
+        background: rgba(37, 99, 235, 0.05); /* Slight accent tint */
+    }
+    .upload-icon {
+        color: var(--text-muted);
+    }
+    .drop-text {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+    }
+
+    .preview-section {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: bold;
+    }
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+    }
+
+    .table-wrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+    th,
+    td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    th {
+        background: rgba(255, 255, 255, 0.05);
+        position: sticky;
+        top: 0;
+        color: var(--text-muted);
+    }
+</style>

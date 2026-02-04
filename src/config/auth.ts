@@ -6,6 +6,7 @@ const ENV_ADMINS = (import.meta.env.PUBLIC_ADMIN_EMAILS || "")
 
 export const ADMIN_EMAILS = [
     ...ENV_ADMINS,
+    "kimbi@kirams.re.kr", // Added for Admin Access
     "dev@example.com", // Fallback/Dev
     "admin@radsafety.com",
     "ben@example.com"
@@ -43,4 +44,9 @@ export function getCertification(email: string): 'ksnm' | 'ksnmt' | 'special' | 
     if (email.endsWith('@ksnmt.or.kr')) return CERTIFICATIONS.KSNMT;
 
     return CERTIFICATIONS.NONE;
+}
+
+export function isAdmin(email: string): boolean {
+    if (!email) return false;
+    return ADMIN_EMAILS.includes(email);
 }

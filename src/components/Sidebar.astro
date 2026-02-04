@@ -26,13 +26,22 @@ const isActive = (href) => {
         const apiLoginLink = document.getElementById("navLoginLink");
         const apiLogoutBtn = document.getElementById("navLogoutBtn");
 
+        const adminNavGroup = document.getElementById("adminNavGroup");
+
         function updateAuthUI(user) {
             if (user) {
                 if (apiLoginLink) apiLoginLink.style.display = "none";
                 if (apiLogoutBtn) apiLogoutBtn.style.display = "flex";
+
+                // Admin Menu Toggle
+                if (adminNavGroup) {
+                    adminNavGroup.style.display =
+                        user.role === "admin" ? "flex" : "none";
+                }
             } else {
                 if (apiLoginLink) apiLoginLink.style.display = "flex";
                 if (apiLogoutBtn) apiLogoutBtn.style.display = "none";
+                if (adminNavGroup) adminNavGroup.style.display = "none";
             }
         }
 
@@ -155,6 +164,33 @@ const isActive = (href) => {
             <span class="icon"><Icon name="lock-closed" size="18" /></span>
             <span class="link-text">로그아웃</span>
         </button>
+    </div>
+
+    <!-- Admin Group (Hidden by default, toggled by JS) -->
+    <div
+        id="adminNavGroup"
+        class="nav-group"
+        style="display:none; border-top:1px solid #333; padding-top:1rem; margin-top:1rem;"
+    >
+        <span class="group-title" style="color:#ef4444;">관리자</span>
+        <a
+            href="/admin/members"
+            class={pathname.startsWith("/admin/members") ? "active" : ""}
+            aria-label="Member Management"
+        >
+            <span class="icon"><Icon name="users" size="18" /></span>
+            <span class="link-text">회원 관리</span>
+        </a>
+        <a
+            href="/admin/verification-requests"
+            class={pathname.startsWith("/admin/verification-requests")
+                ? "active"
+                : ""}
+            aria-label="Verification Requests"
+        >
+            <span class="icon"><Icon name="check-circle" size="18" /></span>
+            <span class="link-text">인증 승인</span>
+        </a>
     </div>
 
     <style>

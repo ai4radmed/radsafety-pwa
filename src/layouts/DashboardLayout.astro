@@ -142,7 +142,7 @@ const { title, description, scale } = Astro.props;
                     <Icon name="bell" size="24" />
                     <span
                         class="global-noti-dot"
-                        style="position:absolute; top:0; right:0; width:8px; height:8px; background:#ef4444; border-radius:50%;"
+                        style="position:absolute; top:0; right:0; width:8px; height:8px; background:#ef4444; border-radius:50%; display:none;"
                     ></span>
                 </a>
             </div>
@@ -227,12 +227,30 @@ const { title, description, scale } = Astro.props;
         <script>
             import { supabase } from "../lib/supabase";
             import { setUser, clearUser } from "../store/user";
+            import { isAdmin } from "../config/auth";
 
             // Global Auth Listener
             supabase.auth.onAuthStateChange(async (event, session) => {
                 console.log("Auth State Change:", event, session?.user?.email);
+                updateUserStore(session);
+            });
+
+            // Initial Session Check (Fix for 'Login Required' flash on page load)
+            // onAuthStateChange sometimes fires too late or we miss the initial state
+            (async () => {
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
+                if (session) {
+                    console.log("Initial Session Found:", session.user.email);
+                    updateUserStore(session);
+                }
+            })();
+
+            async function updateUserStore(session) {
                 if (session?.user) {
-                    setUser({
+                    // 1. Basic Info from Session
+                    const baseUser = {
                         id: session.user.id,
                         email: session.user.email || "",
                         full_name:
@@ -243,11 +261,101 @@ const { title, description, scale } = Astro.props;
                             session.user.user_metadata?.avatar_url || "",
                         provider:
                             session.user.app_metadata?.provider || "email",
-                    });
-                } else if (event === "SIGNED_OUT") {
+                    };
+
+                    // Check if user is admin based on email
+                    const userIsAdmin = isAdmin(baseUser.email);
+
+                    // 2. Fetch Full Profile from DB (for Role, Affiliation, Society, etc.)
+                    const { data: profile, error } = await supabase
+                        .from("profiles")
+                        .select("*")
+                        .eq("id", session.user.id)
+                        .single();
+
+                    if (profile) {
+                        console.log("Fetch Profile Success:", profile);
+
+                        // If user is admin but DB doesn't reflect it, update DB
+                        if (userIsAdmin && !profile.is_admin) {
+                            console.log(
+                                "Updating is_admin=true in DB for:",
+                                baseUser.email,
+                            );
+                            await supabase
+                                .from("profiles")
+                                .update({ is_admin: true })
+                                .eq("id", session.user.id);
+                        }
+
+                        setUser({
+                            ...baseUser,
+                            full_name: profile.full_name || baseUser.full_name,
+                            role: profile.role || "user",
+                            affiliation: profile.affiliation || "",
+                            society: profile.society || "",
+                            is_verified: profile.is_verified || false,
+                            society_email: profile.society_email || "",
+                            is_admin: userIsAdmin, // Set based on ADMIN_EMAILS
+                            user_tier: profile.user_tier || "general",
+                            licenses: profile.licenses || [],
+                            is_safety_manager:
+                                profile.is_safety_manager || false,
+                            safety_manager_start_date:
+                                profile.safety_manager_start_date || "",
+                            safety_manager_end_date:
+                                profile.safety_manager_end_date || "",
+                            joined_at: profile.joined_at || "",
+                            society_role: profile.society_role || "",
+                            is_safety_practice_staff:
+                                profile.is_safety_practice_staff || false,
+                            society_name: profile.society_name || "",
+                            department: profile.department || "",
+                            is_safety_manager_deputy:
+                                profile.is_safety_manager_deputy || false,
+                            has_radiation_license:
+                                profile.has_radiation_license || false,
+                            radiation_license_type:
+                                profile.radiation_license_type || "none",
+                        });
+                        // Check Notifications
+                        checkNotifications(session.user.id);
+                    } else {
+                        console.warn(
+                            "Fetch Profile Failed (using basic session):",
+                            error,
+                        );
+                        setUser({
+                            ...baseUser,
+                            is_admin: userIsAdmin,
+                        });
+                        // Check Notifications
+                        checkNotifications(session.user.id);
+                    }
+                } else {
                     clearUser();
                 }
-            });
+            }
+
+            async function checkNotifications(userId) {
+                try {
+                    const { count, error } = await supabase
+                        .from("notifications")
+                        .select("*", { count: "exact", head: true })
+                        .eq("user_id", userId)
+                        .eq("is_read", false);
+
+                    if (!error) {
+                        const dots =
+                            document.querySelectorAll(".global-noti-dot");
+                        dots.forEach((dot) => {
+                            dot.style.display = count > 0 ? "block" : "none";
+                        });
+                    }
+                } catch (e) {
+                    console.error("Check Noti Error:", e);
+                }
+            }
         </script>
     </body>
 </html>

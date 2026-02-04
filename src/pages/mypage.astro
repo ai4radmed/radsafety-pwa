@@ -1,5 +1,6 @@
 ---
 import DashboardLayout from "../layouts/DashboardLayout.astro";
+import Icon from "../components/Icon.astro"; // Import Icon component
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 ---
 
@@ -14,162 +15,160 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             padding-bottom: 4rem;
         }
 
-        /* 1. Profile Section */
-        .profile-card {
+        /* Common Card Style */
+        .info-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 16px;
-            padding: 2rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Soft shadow */
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
         }
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #f3f4f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            border: 2px solid white;
-            box-shadow: 0 0 0 2px var(--border-color);
-        }
-        .profile-info {
-            flex: 1;
-        }
-        .profile-name {
-            font-size: 1.4rem;
-            font-weight: 800;
+
+        .section-title-text {
+            font-size: 1.05rem; /* Slightly smaller */
+            font-weight: 700;
             color: var(--text-main);
-            margin: 0 0 0.25rem 0;
+        }
+
+        /* 1. Identity Section specific */
+        .identity-header {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-        }
-        .profile-email {
-            color: var(--text-muted);
-            font-size: 0.95rem;
+            width: 100%;
+            justify-content: space-between; /* Space out Login Badge and Admin Badge */
         }
 
-        /* Badges */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
+        .login-badge {
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
             border-radius: 99px;
-            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
             font-weight: 600;
-            gap: 0.25rem;
         }
-        .badge-verified {
-            background: linear-gradient(
-                135deg,
-                #ffd700 0%,
-                #fdb931 100%
-            ); /* Gold Gradient */
-            color: #7b5800;
-            border: 1px solid #eebb11;
+        .kakao-badge {
+            background: #fee500;
+            color: #3c1e1e;
         }
-        .badge-unverified {
-            background: #f3f4f6;
-            color: #6b7280;
-            border: 1px solid #e5e7eb;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .badge-unverified:hover {
+        .email-badge {
             background: #e5e7eb;
             color: #374151;
         }
 
-        /* 2. Dashboard Section (Grid) */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-        }
-        .dash-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-            transition: transform 0.2s;
-        }
-        .dash-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--accent);
-        }
-        .dash-title {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .dash-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-        .progress-bar {
-            height: 6px;
-            background: #f3f4f6;
-            border-radius: 99px;
-            margin-top: 1rem;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: var(--accent);
-            width: 0%;
-            transition: width 1s ease-out;
-        }
-
-        /* 3. Section Headers */
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin: 1.5rem 0 0.75rem 0;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* 4. Menu List */
-        .menu-list {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .menu-item {
+        .info-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: background 0.2s;
-            text-decoration: none;
-            color: var(--text-main);
+            padding: 0.4rem 0; /* Reduced padding */
+            border-bottom: 1px solid #f3f4f6;
         }
-        .menu-item:last-child {
+        .info-row:last-child {
             border-bottom: none;
         }
-        .menu-item:hover {
-            background: var(--bg-body);
+
+        .info-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
         }
-        .menu-icon {
-            margin-right: 0.75rem;
+        .info-value {
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* 3. Safety Info specific */
+        .safety-item {
+            background: transparent;
+            padding: 0.6rem;
+            border-radius: 8px; /* Match radio radius */
+            border: 1px solid #e5e7eb;
+            margin-bottom: 0.4rem;
+            transition: all 0.2s;
+        }
+        .safety-item:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+        .safety-item:has(input:checked) {
+            border: 2px solid var(--accent);
+            padding: calc(0.75rem - 1px);
+        }
+        .safety-item:has(input:checked) .safety-title {
+            color: var(--accent);
+        }
+        .safety-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .safety-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+        }
+        .safety-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0.15rem 0 0 0;
+        }
+        .app-toggle {
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.6rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .radio-option:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+        .radio-option:has(input:checked) {
+            border: 2px solid var(--accent);
+            padding: calc(
+                0.6rem - 1px
+            ); /* Adjustment for border width difference */
+            background: transparent;
+        }
+        .radio-option:has(input:checked) .radio-title {
+            color: var(--accent);
+        }
+        .radio-label {
+            display: flex;
+            flex-direction: column;
+        }
+        .radio-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+        .radio-desc {
+            font-size: 0.8rem;
             color: var(--text-muted);
         }
 
-        /* Modal for Verification */
+        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -188,230 +187,1211 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         .modal-card {
             background: white;
             width: 90%;
-            max-width: 400px;
+            max-width: 500px;
             padding: 2rem;
             border-radius: 16px;
-            text-align: center;
         }
-
-        @media (max-width: 600px) {
-            .profile-card {
-                flex-direction: column;
-                text-align: center;
-            }
-            .profile-name {
-                justify-content: center;
-            }
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+        .tab-btn.active {
+            border-bottom-color: var(--accent) !important;
+            color: var(--accent) !important;
+            font-weight: bold;
         }
     </style>
 
     <div class="mypage-container">
         <!-- 1. Identity Section -->
-        <div class="profile-card">
-            <div class="profile-avatar" id="userAvatar">🧑‍⚕️</div>
-            <div class="profile-info">
-                <h2 class="profile-name">
-                    <span id="userName">김핵의</span>
-                    <!-- Verified Badge (Hidden by default) -->
-                    <span
-                        id="badgeVerified"
-                        class="badge badge-verified"
-                        style="display:none;"
+        <div class="info-card">
+            <div class="section-header">
+                <div class="identity-header">
+                    <!-- Login Status Badge -->
+                    <div id="loginBadge" class="login-badge email-badge">
+                        <Icon name="user" size="14" />
+                        <span>로그인 중</span>
+                    </div>
+                    <!-- Admin Badge (moved here) -->
+                    <div
+                        id="adminBadge"
+                        style="display:none; font-size:0.75rem; background:#ef4444; color:white; padding:0.15rem 0.5rem; border-radius:12px; font-weight:bold; letter-spacing:0.5px;"
                     >
-                        👑 대한핵의학회 정회원
-                    </span>
-                    <!-- Unverified Action (Visible by default) -->
-                    <button id="btnVerifyParams" class="badge badge-unverified">
-                        ⚡ 학회원 인증하기
+                        ADMIN
+                    </div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top:0.5rem; font-size:0.9rem; color:var(--text-main);"
+            >
+                <span
+                    id="userIdentityName"
+                    style="font-weight:700; margin-right:0.5rem;">...</span
+                >
+                <span
+                    id="userIdentityEmail"
+                    style="color:var(--text-muted); margin-right:0.5rem;"
+                    >...</span
+                >
+                <span style="color:#d1d5db; font-size:0.85rem;"
+                    >since <span id="userJoinedAt">...</span></span
+                >
+            </div>
+        </div>
+
+        <!-- 2. Verification Settings Card (Radio Buttons) -->
+        <div class="info-card">
+            <div
+                class="section-header"
+                style="justify-content: flex-start; gap: 0.5rem; align-items: baseline;"
+            >
+                <span class="section-title-text">인증 요청</span>
+                <span
+                    style="font-size: 0.85rem; color: var(--accent); font-weight: normal;"
+                    >(학회 등록된 이메일로 회원여부 인증)</span
+                >
+            </div>
+
+            <div
+                style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;"
+            >
+                <label class="radio-option">
+                    <input
+                        type="radio"
+                        name="authType"
+                        value="nuclear_medicine"
+                        style="accent-color:var(--accent);"
+                    />
+                    <div class="radio-label">
+                        <span class="radio-title">대한핵의학회</span>
+                    </div>
+                </label>
+                <label class="radio-option">
+                    <input
+                        type="radio"
+                        name="authType"
+                        value="technology"
+                        style="accent-color:var(--accent);"
+                    />
+                    <div class="radio-label">
+                        <span class="radio-title">대한핵의학기술학회</span>
+                    </div>
+                </label>
+                <label class="radio-option">
+                    <input
+                        type="radio"
+                        name="authType"
+                        value="special"
+                        style="accent-color:var(--accent);"
+                    />
+                    <div class="radio-label">
+                        <span class="radio-title"
+                            >특별사용자 <span
+                                style="color:var(--accent); font-weight:normal; font-size:1.3rem; vertical-align:sub; line-height:0;"
+                                >*</span
+                            ></span
+                        >
+                    </div>
+                </label>
+                <label class="radio-option">
+                    <input
+                        type="radio"
+                        name="authType"
+                        value="none"
+                        style="accent-color:var(--text-muted);"
+                    />
+                    <div class="radio-label">
+                        <span class="radio-title">인증 요청 안함</span>
+                    </div>
+                </label>
+            </div>
+            <p
+                style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0; display: flex; align-items: center; gap: 4px;"
+            >
+                <span
+                    style="color:var(--accent); font-size: 1.3rem; line-height: 0; vertical-align: sub;"
+                    >*</span
+                > 학회 비소속 방사선안전관리자 등이 앱관리자에게 하는 요청
+            </p>
+
+            <!-- Verified Info Display Area (Appears inside this card) -->
+            <div
+                id="societyInfoContent"
+                style="display:none; margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed #e5e7eb;"
+            >
+                <div
+                    style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1rem;"
+                >
+                    <h5
+                        style="margin:0; font-size:0.95rem; color:var(--accent);"
+                    >
+                        인증된 정보
+                    </h5>
+                    <button
+                        id="reverifyBtn"
+                        style="
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 0.3rem;
+                            padding: 0.35rem 0.75rem;
+                            background: var(--accent);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            font-size: 0.8rem;
+                            font-weight: 500;
+                            cursor: pointer;
+                            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                            transition: all 0.2s;
+                        "
+                        onmouseover="this.style.opacity='0.9'"
+                        onmouseout="this.style.opacity='1'"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path d="M23 4v6h-6"></path><path
+                                d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"
+                            ></path></svg
+                        >
+                        정보 갱신
                     </button>
-                </h2>
-                <div class="profile-email" id="userEmail">
-                    doctor@hospital.or.kr
                 </div>
-                <div
-                    style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;"
-                >
-                    카카오 로그인 중
-                </div>
-            </div>
-        </div>
 
-        <!-- 2. Dashboard Section -->
-        <div class="dashboard-grid">
-            <div class="dash-card">
-                <div class="dash-title">수검 체크리스트 진행률 📝</div>
-                <div class="dash-value">45%</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 45%;"></div>
-                </div>
                 <div
-                    style="font-size:0.8rem; margin-top:0.5rem; color:var(--text-muted);"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem;"
                 >
-                    총 98개 항목 중 44개 완료
-                </div>
-            </div>
-            <div class="dash-card">
-                <div class="dash-title">나의 등록 자료 📂</div>
-                <div class="dash-value">3건</div>
-                <div
-                    style="font-size:0.8rem; margin-top:0.5rem; color:var(--text-muted);"
-                >
-                    최근 등록: 안전관리규정 (2025.10.12)
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. My Activity -->
-        <div>
-            <div class="section-title">나의 활동</div>
-            <div class="menu-list">
-                <a href="/resources?filter=my" class="menu-item">
-                    <span>📂 내가 올린 자료 관리</span>
-                    <span>›</span>
-                </a>
-                <a href="#" class="menu-item">
-                    <span>💬 내가 보낸 의견/문의</span>
-                    <span>›</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- 4. Settings -->
-        <div>
-            <div class="section-title">설정</div>
-            <div class="menu-list">
-                <div class="menu-item">
-                    <span>🔔 카카오 알림톡 수신</span>
-                    <label
-                        style="position:relative; display:inline-block; width:40px; height:24px;"
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0.2rem 0;"
                     >
+                        <span class="info-label" style="min-width: 40px;"
+                            >학회</span
+                        >
+                        <span id="userSocietyName" class="info-value">...</span>
+                    </div>
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0.2rem 0;"
+                    >
+                        <span class="info-label" style="min-width: 40px;"
+                            >구분</span
+                        >
+                        <span id="userSocietyRole" class="info-value">...</span>
+                    </div>
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0.2rem 0;"
+                    >
+                        <span class="info-label" style="min-width: 40px;"
+                            >이름</span
+                        >
+                        <span id="userRealName" class="info-value">...</span>
+                    </div>
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0.2rem 0;"
+                    >
+                        <span class="info-label" style="min-width: 40px;"
+                            >이메일</span
+                        >
+                        <span
+                            id="userSocietyEmail"
+                            class="info-value"
+                            style="font-size:0.85rem;">...</span
+                        >
+                    </div>
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0.2rem 0; min-width: 0;"
+                    >
+                        <span class="info-label" style="min-width: 40px;"
+                            >기관</span
+                        >
+                        <span
+                            id="userAffiliation"
+                            class="info-value"
+                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; text-align: right;"
+                            >...</span
+                        >
+                    </div>
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0.2rem 0;"
+                    >
+                        <span class="info-label" style="min-width: 40px;"
+                            >부서</span
+                        >
+                        <span id="userDepartment" class="info-value">...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Radiation Safety Info Section -->
+        <div class="info-card">
+            <div class="section-header">
+                <span class="section-title-text">방사선안전관리 정보</span>
+            </div>
+
+            <!-- Safety Cards Grid -->
+            <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;"
+            >
+                <!-- A. License Holder -->
+                <div class="safety-item">
+                    <h5 class="safety-title" style="margin-bottom: 0.5rem;">
+                        방사선안전관리면허
+                    </h5>
+                    <select
+                        id="radLicenseSelect"
+                        class="app-select"
+                        style="width: 100%; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.9rem;"
+                    >
+                        <option value="none">관련면허없음</option>
+                        <option value="supervisor">RI취급자감독자면허</option>
+                        <option value="special">RI취급자특수면허</option>
+                        <option value="general">RI취급자일반면허</option>
+                    </select>
+                </div>
+
+                <!-- B. Safety Manager (Official) -->
+                <div class="safety-item">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center;"
+                    >
+                        <h5 class="safety-title" style="margin: 0;">
+                            방사선안전관리자
+                        </h5>
                         <input
                             type="checkbox"
-                            checked
-                            style="opacity:0; width:0; height:0;"
+                            id="managerToggle"
+                            class="app-toggle"
                         />
-                        <span
-                            style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"
-                        ></span>
-                        <span
-                            style="position:absolute; content:''; height:16px; width:16px; left:4px; bottom:4px; background-color:white; transition:.4s; border-radius:50%; transform: translateX(16px); background-color: white;"
-                        ></span>
-                        <!-- Mock Toggle ON style via JS needed actually, simplified here -->
-                        <span
-                            style="font-size:0.8rem; color:#2563eb; font-weight:bold; margin-left:10px;"
-                            >ON</span
+                    </div>
+                    <!-- Year Range Display (shows after save) -->
+                    <div
+                        id="managerYearDisplay"
+                        style="display:none; margin-top:0.5rem; font-size:0.9rem; color:var(--text-muted);"
+                    >
+                    </div>
+                    <!-- Date Inputs -->
+                    <div
+                        id="managerDates"
+                        style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px dashed #d1d5db;"
+                    >
+                        <div
+                            style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;"
                         >
-                    </label>
+                            <div>
+                                <label
+                                    style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem;"
+                                    >시작년도</label
+                                >
+                                <input
+                                    type="number"
+                                    id="managerStartDate"
+                                    placeholder="예: 2020"
+                                    min="1900"
+                                    max="2100"
+                                    style="width:100%; padding:0.5rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.9rem;"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem;"
+                                    >종료년도</label
+                                >
+                                <input
+                                    type="number"
+                                    id="managerEndDate"
+                                    placeholder="예: 2025"
+                                    min="1900"
+                                    max="2100"
+                                    style="width:100%; padding:0.5rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.9rem;"
+                                />
+                            </div>
+                        </div>
+                        <label
+                            style="display: inline-flex; align-items: center; margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; white-space: nowrap;"
+                        >
+                            <input
+                                type="checkbox"
+                                id="startDateUnknown"
+                                style="margin-right: 0.3rem; flex-shrink: 0;"
+                            />
+                            시작년도 기억나지 않음
+                        </label>
+                        <button
+                            id="saveManagerBtn"
+                            style="margin-top:1rem; width:100%; padding:0.6rem; background:var(--accent); color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;"
+                            >저장하기</button
+                        >
+                    </div>
                 </div>
-                <button
-                    id="logoutBtnBody"
-                    class="menu-item"
-                    style="width:100%; background:white; border:none; text-align:left;"
-                >
-                    <span style="color:#ef4444;">로그아웃</span>
-                </button>
+
+                <!-- C. Deputy Safety Manager -->
+                <div class="safety-item">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center;"
+                    >
+                        <h5 class="safety-title" style="margin: 0;">
+                            방안관리자 대리자
+                        </h5>
+                        <input
+                            type="checkbox"
+                            id="deputyToggle"
+                            class="app-toggle"
+                        />
+                    </div>
+                </div>
+
+                <!-- D. Practical Staff -->
+                <div class="safety-item">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center;"
+                    >
+                        <h5 class="safety-title" style="margin: 0;">
+                            방안관리 실무담당
+                        </h5>
+                        <input
+                            type="checkbox"
+                            id="practiceToggle"
+                            class="app-toggle"
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</DashboardLayout>
 
-    <!-- Verification Modal -->
-    <div id="verifyModal" class="modal-overlay">
-        <div class="modal-card">
-            <h3 style="font-size:1.2rem; margin-bottom:1rem;">학회원 인증</h3>
-            <p style="color:#6b7280; margin-bottom:1.5rem; font-size:0.9rem;">
-                대한핵의학회/기술학회에 등록된<br />이메일 주소를 입력해 주세요.
+<!-- Verification Modal (Reused) -->
+<div id="verifyModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 style="font-size:1.3rem; margin-bottom:1.5rem;">회원 인증</h3>
+
+        <div
+            class="tab-nav"
+            style="display:flex; border-bottom:2px solid #e5e7eb; margin-bottom:1.5rem;"
+        >
+            <button
+                class="tab-btn active"
+                data-tab="auto"
+                style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; border-bottom:2px solid var(--accent); font-weight:bold; color:var(--accent);"
+                >자동 인증</button
+            >
+            <button
+                class="tab-btn"
+                data-tab="society"
+                style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
+                >수동 신청 (학회원)</button
+            >
+            <button
+                class="tab-btn"
+                data-tab="special"
+                style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
+                >특별사용자</button
+            >
+        </div>
+
+        <!-- Tab 1: Auto -->
+        <div class="tab-content" data-tab="auto">
+            <p style="color:#6b7280; margin-bottom:1rem;">
+                학회 명단에 등록된 이메일을 입력하세요.
             </p>
             <input
+                id="verificationEmail"
                 type="email"
                 placeholder="example@hospital.or.kr"
                 style="width:100%; padding:0.75rem; border:1px solid #d1d5db; border-radius:8px; margin-bottom:1rem;"
             />
             <div style="display:flex; gap:0.5rem;">
                 <button
-                    id="closeVerifyBtn"
-                    style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px;"
+                    class="close-modal-btn"
+                    style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
                     >닫기</button
                 >
                 <button
-                    style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px;"
+                    id="confirmVerifyBtn"
+                    style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
                     >인증 요청</button
                 >
             </div>
         </div>
+
+        <!-- Tab 2: Manual Society -->
+        <div class="tab-content" data-tab="society" style="display:none;">
+            <p style="color:#6b7280; margin-bottom:1rem; font-size:0.9rem;">
+                명단에 없는 경우 관리자 승인을 통해 인증받을 수 있습니다.
+            </p>
+            <form
+                id="societyRequestForm"
+                style="display:flex; flex-direction:column; gap:1rem;"
+            >
+                <input
+                    name="full_name"
+                    type="text"
+                    placeholder="이름 (실명)"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <select
+                    name="society"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                >
+                    <option value="">학회 선택</option>
+                    <option value="nuclear_medicine">대한핵의학회</option>
+                    <option value="technology">대한핵의학기술학회</option>
+                </select>
+                <input
+                    name="affiliation"
+                    type="text"
+                    placeholder="소속 기관"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <input
+                    name="department"
+                    type="text"
+                    placeholder="부서"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <input
+                    name="role"
+                    type="text"
+                    placeholder="직책 (구분)"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <input
+                    name="contact_email"
+                    type="email"
+                    placeholder="연락처 이메일"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <textarea
+                    name="reason"
+                    rows="2"
+                    placeholder="신청 사유 (예: 명단 누락)"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                ></textarea>
+                <div style="display:flex; gap:0.5rem;">
+                    <button
+                        type="button"
+                        class="close-modal-btn"
+                        style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
+                        >닫기</button
+                    >
+                    <button
+                        type="submit"
+                        style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
+                        >신청하기</button
+                    >
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab 3: Special -->
+        <div class="tab-content" data-tab="special" style="display:none;">
+            <p style="color:#6b7280; margin-bottom:1rem; font-size:0.9rem;">
+                규제기관 등 특별 권한이 필요한 경우 신청하세요.
+            </p>
+            <form
+                id="specialRequestForm"
+                style="display:flex; flex-direction:column; gap:1rem;"
+            >
+                <input
+                    name="full_name"
+                    type="text"
+                    placeholder="이름"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <input
+                    name="affiliation"
+                    type="text"
+                    placeholder="소속 기관"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <input
+                    name="department"
+                    type="text"
+                    placeholder="부서"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <input
+                    name="role"
+                    type="text"
+                    placeholder="직책 (구분)"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <input
+                    name="contact_email"
+                    type="email"
+                    placeholder="연락처 이메일"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                />
+                <textarea
+                    name="reason"
+                    rows="2"
+                    placeholder="신청 사유"
+                    required
+                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                ></textarea>
+                <div style="display:flex; gap:0.5rem;">
+                    <button
+                        type="button"
+                        class="close-modal-btn"
+                        style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
+                        >닫기</button
+                    >
+                    <button
+                        type="submit"
+                        style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
+                        >신청하기</button
+                    >
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <script>
-        import { userProfile } from "../store/user";
-        import { supabase } from "../lib/supabase";
+<script>
+    import { userProfile } from "../store/user";
+    import { supabase } from "../lib/supabase";
 
-        // *** DEVELOPMENT MOCK DATA REMOVED ***
-        // Real user data from store will be used
-        // *****************************
+    document.addEventListener("astro:page-load", async () => {
+        let currentUser = userProfile.get();
+        if (!currentUser.id) return; // Guard
 
-        document.addEventListener("astro:page-load", () => {
-            // Subscription
-            userProfile.subscribe((user) => {
-                // Use real user data, if null then UI shows empty/login state
-                const displayUser = user;
+        // Fetch latest user data from DB to ensure fresh state
+        try {
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", currentUser.id)
+                .single();
 
-                updateMyPageUI(displayUser);
+            if (!error && data) {
+                console.log("DB user data:", data);
+                console.log("user_tier from DB:", data.user_tier);
+                // Update store with latest data
+                Object.keys(data).forEach((key) => {
+                    userProfile.setKey(key, data[key]?.toString() || "");
+                });
+                currentUser = userProfile.get();
+                console.log("Updated currentUser:", currentUser);
+                console.log("currentUser.user_tier:", currentUser.user_tier);
+            } else {
+                console.error("Error fetching user data:", error);
+            }
+        } catch (err) {
+            console.error("Failed to fetch user data:", err);
+        }
+
+        // --- 1. Identity Render ---
+        const loginBadge = document.getElementById("loginBadge");
+        if (currentUser.provider === "kakao") {
+            loginBadge.className = "login-badge kakao-badge";
+            loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.48 2 10.76c0 2.76 1.87 5.2 4.76 6.55-.21.78-.77 2.82-.88 3.23-.14.53.19.52.4.34.17-.14 2.65-1.8 3.71-2.53.64.09 1.31.14 2.01.14 5.52 0 10-3.48 10-7.76S17.52 3 12 3z"/></svg> <span>카카오 로그인 중</span>`;
+        } else {
+            loginBadge.className = "login-badge email-badge";
+            loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> <span>이메일 로그인 중</span>`;
+        }
+
+        document.getElementById("userIdentityName").textContent =
+            currentUser.full_name || "이름 없음";
+        document.getElementById("userIdentityEmail").textContent =
+            currentUser.email || "-";
+
+        // Joined At Format
+        if (currentUser.joined_at) {
+            const joinedDate = new Date(currentUser.joined_at);
+            document.getElementById("userJoinedAt").textContent =
+                joinedDate.toLocaleDateString("ko-KR");
+        } else {
+            document.getElementById("userJoinedAt").textContent = "-";
+        }
+
+        console.log("Checking admin badge - is_admin:", currentUser.is_admin);
+        if (currentUser.is_admin === "true" || currentUser.is_admin === true) {
+            console.log("Showing admin badge");
+            document.getElementById("adminBadge").style.display = "block";
+        } else {
+            console.log(
+                "NOT showing admin badge - is_admin is:",
+                currentUser.is_admin,
+            );
+        }
+
+        // --- 2. Verification (Radio) Logic ---
+        const isVerified =
+            currentUser.is_verified === true ||
+            currentUser.is_verified === "true";
+        const radios = document.getElementsByName("authType");
+
+        // 1. Set Initial State
+        let currentType = "none";
+        if (isVerified) {
+            if (currentUser.user_tier === "special") currentType = "special";
+            else if (currentUser.society === "nuclear_medicine")
+                currentType = "nuclear_medicine";
+            else if (currentUser.society === "technology")
+                currentType = "technology";
+
+            document.getElementById("societyInfoContent").style.display =
+                "block";
+            // Fields
+            const societyMap = {
+                nuclear_medicine: "대한핵의학회",
+                technology: "대한핵의학기술학회",
+            };
+            document.getElementById("userSocietyName").textContent =
+                societyMap[currentUser.society] || currentUser.society || "-";
+            document.getElementById("userSocietyRole").textContent =
+                currentUser.society_role || "-";
+            document.getElementById("userRealName").textContent =
+                currentUser.society_name || currentUser.full_name || "-";
+            document.getElementById("userSocietyEmail").textContent =
+                currentUser.society_email || currentUser.email || "-";
+            document.getElementById("userAffiliation").textContent =
+                currentUser.affiliation || "-";
+            document.getElementById("userDepartment").textContent =
+                currentUser.department || "-";
+        } else {
+            document.getElementById("societyInfoContent").style.display =
+                "none";
+        }
+
+        // Update Radio UI
+        radios.forEach((r) => {
+            if (r.value === currentType) r.checked = true;
+        });
+
+        // 2. Handle Change
+        radios.forEach((r) => {
+            r.addEventListener("change", async (e) => {
+                const selected = e.target.value;
+                if (selected === currentType) return; // No change
+
+                if (selected === "none") {
+                    if (confirm("인증 정보를 해제하시겠습니까?")) {
+                        // Logic to clear verification (Optional: call DB)
+                        // For now, just reload to revert or handle simple UI hide if we strictly assume db update
+                        alert("인증 정보가 초기화됩니다. (실제 DB 반영 필요)");
+                        // To implement real disconnect: Update profile set is_verified=false, etc.
+                    } else {
+                        // Revert radio
+                        radios.forEach((rad) => {
+                            if (rad.value === currentType) rad.checked = true;
+                        });
+                    }
+                    return;
+                }
+
+                // If moving to a verification type
+                const modal = document.getElementById("verifyModal");
+                const tabBtns = document.querySelectorAll(".tab-btn");
+                const tabContents = document.querySelectorAll(".tab-content");
+
+                modal.classList.add("active");
+
+                // Mapping to Tab
+                let targetTab = "auto"; // nuclear/tech use auto
+                if (selected === "special") targetTab = "special";
+
+                // Pre-select tab
+                tabBtns.forEach((b) => {
+                    if (b.dataset.tab === targetTab) b.classList.add("active");
+                    else b.classList.remove("active");
+                });
+                tabContents.forEach((c) => {
+                    if (c.dataset.tab === targetTab) c.style.display = "block";
+                    else c.style.display = "none";
+                });
+
+                // Optional: If user closes modal without verifying, revert radio?
+                // Logic for that would require modal close listener.
+                // For simplicity now, we leave it checked visually to show "intent" or just let it stay.
+            });
+        });
+
+        // --- 3. Verification Action Buttons Handlers ---
+        document.querySelectorAll(".verify-action-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const type = btn.dataset.type;
+                const modal = document.getElementById("verifyModal");
+                const tabBtns = document.querySelectorAll(".tab-btn");
+                const tabContents = document.querySelectorAll(".tab-content");
+
+                modal.classList.add("active");
+
+                // Activate specific tab
+                let targetTab = "auto";
+                if (type === "special") targetTab = "special";
+                // Note: For nuclear/tech, we default to 'auto' but could pre-fill info if needed.
+                // Currently 'auto' handles both via email.
+
+                tabBtns.forEach((b) => {
+                    if (b.dataset.tab === targetTab) b.classList.add("active");
+                    else b.classList.remove("active");
+                });
+                tabContents.forEach((c) => {
+                    if (c.dataset.tab === targetTab) c.style.display = "block";
+                    else c.style.display = "none";
+                });
+            });
+        });
+
+        // --- 4. Safety Info Logic (Toggles) ---
+
+        // Helper to bind toggle to DB field
+        const bindToggle = (elementId, userKey, dbColumn) => {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            const initialVal =
+                currentUser[userKey] === true ||
+                currentUser[userKey] === "true";
+            el.checked = initialVal;
+
+            el.addEventListener("change", async (e) => {
+                const isChecked = e.target.checked;
+                userProfile.setKey(userKey, String(isChecked));
+                try {
+                    const { error } = await supabase
+                        .from("profiles")
+                        .update({ [dbColumn]: isChecked })
+                        .eq("id", currentUser.id);
+                    if (error) throw error;
+                } catch (err) {
+                    alert("업데이트 실패: " + err.message);
+                    el.checked = !isChecked; // revert
+                    userProfile.setKey(userKey, String(!isChecked));
+                }
+            });
+            return el;
+        };
+
+        bindToggle(
+            "deputyToggle",
+            "is_safety_manager_deputy",
+            "is_safety_manager_deputy",
+        );
+        bindToggle(
+            "practiceToggle",
+            "is_safety_practice_staff",
+            "is_safety_practice_staff",
+        );
+
+        // License Select Logic
+        const licenseSelect = document.getElementById("radLicenseSelect");
+        if (licenseSelect) {
+            // Init from store/DB
+            licenseSelect.value = currentUser.radiation_license_type || "none";
+
+            // Handle Change
+            licenseSelect.addEventListener("change", async (e) => {
+                const newVal = e.target.value;
+
+                // Optimistic UI Update in Store
+                const updatedUser = {
+                    ...userProfile.get(),
+                    radiation_license_type: newVal,
+                };
+                userProfile.set(updatedUser);
+
+                // DB Update
+                const { error } = await supabase
+                    .from("profiles")
+                    .update({ radiation_license_type: newVal })
+                    .eq("id", currentUser.id);
+
+                if (error) {
+                    console.error("Error updating license type:", error);
+                    alert("저장에 실패했습니다.");
+                    // Revert UI
+                    licenseSelect.value =
+                        currentUser.radiation_license_type || "none";
+                    userProfile.set({
+                        ...updatedUser,
+                        radiation_license_type:
+                            currentUser.radiation_license_type,
+                    });
+                }
+            });
+        }
+
+        // Manager Special Logic (Dates)
+        const managerToggle = document.getElementById("managerToggle");
+        const managerDates = document.getElementById("managerDates");
+        const managerYearDisplay =
+            document.getElementById("managerYearDisplay");
+        const managerStartDate = document.getElementById("managerStartDate");
+        const managerEndDate = document.getElementById("managerEndDate");
+        const saveManagerBtn = document.getElementById("saveManagerBtn");
+
+        // Helper function to update year display
+        const updateYearDisplay = (startYear, endYear) => {
+            if (startYear) {
+                managerYearDisplay.textContent = `${startYear} - ${endYear || ""}`;
+                managerYearDisplay.style.display = "block";
+            } else {
+                managerYearDisplay.textContent = "기억나지 않음 - ";
+                managerYearDisplay.style.display = "block";
+            }
+        };
+
+        if (managerToggle) {
+            const isManager =
+                currentUser.is_safety_manager === true ||
+                currentUser.is_safety_manager === "true";
+            managerToggle.checked = isManager;
+            if (isManager) {
+                // Extract year from date format (YYYY-MM-DD)
+                let startYear = null;
+                let endYear = null;
+                if (currentUser.safety_manager_start_date) {
+                    startYear =
+                        currentUser.safety_manager_start_date.split("-")[0];
+                    managerStartDate.value = startYear;
+                }
+                if (currentUser.safety_manager_end_date) {
+                    endYear = currentUser.safety_manager_end_date.split("-")[0];
+                    managerEndDate.value = endYear;
+                }
+                // Show year display, not the input form
+                updateYearDisplay(startYear, endYear);
+                managerDates.style.display = "none";
+            }
+
+            managerToggle.addEventListener("change", async (e) => {
+                const isChecked = e.target.checked;
+                if (isChecked) {
+                    managerDates.style.display = "block";
+                    managerYearDisplay.style.display = "none";
+                } else {
+                    if (
+                        confirm(
+                            "방사선안전관리자 선임을 해제하시겠습니까? (저장된 날짜 정보도 초기화됩니다)",
+                        )
+                    ) {
+                        managerDates.style.display = "none";
+                        managerYearDisplay.style.display = "none";
+                        try {
+                            const { error } = await supabase
+                                .from("profiles")
+                                .update({
+                                    is_safety_manager: false,
+                                    safety_manager_start_date: null,
+                                    safety_manager_end_date: null,
+                                })
+                                .eq("id", currentUser.id);
+                            if (error) throw error;
+
+                            userProfile.setKey("is_safety_manager", "false");
+                            userProfile.setKey("safety_manager_start_date", "");
+                            userProfile.setKey("safety_manager_end_date", "");
+                            managerStartDate.value = "";
+                            managerEndDate.value = "";
+                        } catch (err) {
+                            alert("업데이트 실패: " + err.message);
+                            managerToggle.checked = true;
+                        }
+                    } else {
+                        managerToggle.checked = true; // cancel uncheck
+                    }
+                }
             });
 
-            // Modal Logic
-            const modal = document.getElementById("verifyModal");
-            const btnOpen = document.getElementById("btnVerifyParams");
-            const btnClose = document.getElementById("closeVerifyBtn");
+            // Handle "기억나지 않음" checkbox for start date
+            const startDateUnknown =
+                document.getElementById("startDateUnknown");
+            if (startDateUnknown && managerStartDate) {
+                // Restore state from user profile (if stored)
+                // For now, we'll check if start_date is empty but manager is true
 
-            btnOpen?.addEventListener("click", () =>
-                modal?.classList.add("active"),
-            );
-            btnClose?.addEventListener("click", () =>
-                modal?.classList.remove("active"),
-            );
+                startDateUnknown.addEventListener("change", (e) => {
+                    if (e.target.checked) {
+                        managerStartDate.value = "";
+                        managerStartDate.disabled = true;
+                        managerStartDate.style.opacity = "0.5";
+                    } else {
+                        managerStartDate.disabled = false;
+                        managerStartDate.style.opacity = "1";
+                    }
+                });
 
-            // Logout
+                // Initialize state if start date is empty
+                if (isManager && !currentUser.safety_manager_start_date) {
+                    startDateUnknown.checked = true;
+                    managerStartDate.disabled = true;
+                    managerStartDate.style.opacity = "0.5";
+                }
+            }
+
+            saveManagerBtn?.addEventListener("click", async () => {
+                const startYear = managerStartDate.value;
+                const endYear = managerEndDate.value;
+                const isStartUnknown = startDateUnknown?.checked || false;
+
+                if (!startYear && !isStartUnknown) {
+                    alert(
+                        "시작년도를 입력하거나 '기억나지 않음'을 선택해주세요.",
+                    );
+                    return;
+                }
+
+                // Convert year to date format for DB storage
+                const startDate = startYear ? `${startYear}-01-01` : null;
+                const endDate = endYear ? `${endYear}-01-01` : null;
+
+                saveManagerBtn.textContent = "저장 중...";
+                saveManagerBtn.disabled = true;
+                try {
+                    const { error } = await supabase
+                        .from("profiles")
+                        .update({
+                            is_safety_manager: true,
+                            safety_manager_start_date: startDate,
+                            safety_manager_end_date: endDate,
+                        })
+                        .eq("id", currentUser.id);
+                    if (error) throw error;
+
+                    userProfile.setKey("is_safety_manager", "true");
+                    userProfile.setKey(
+                        "safety_manager_start_date",
+                        startDate || "",
+                    );
+                    userProfile.setKey(
+                        "safety_manager_end_date",
+                        endDate || "",
+                    );
+
+                    // Hide input form and show year display
+                    managerDates.style.display = "none";
+                    updateYearDisplay(startYear, endYear);
+
+                    alert("✅ 저장되었습니다.");
+                } catch (err) {
+                    console.error(err);
+                    alert("저장 실패: " + err.message);
+                } finally {
+                    saveManagerBtn.textContent = "저장하기";
+                    saveManagerBtn.disabled = false;
+                }
+            });
+        }
+
+        // --- 4. Modals & Verification ---
+        const modal = document.getElementById("verifyModal");
+        const openBtns = [
+            document.getElementById("verifyBtn"),
+            document.getElementById("reverifyBtn"),
+        ];
+        const closeBtns = document.querySelectorAll(".close-modal-btn");
+
+        openBtns.forEach((btn) =>
+            btn?.addEventListener("click", () => modal.classList.add("active")),
+        );
+        closeBtns.forEach((btn) =>
+            btn?.addEventListener("click", () =>
+                modal.classList.remove("active"),
+            ),
+        );
+
+        // Tabs
+        const tabBtns = document.querySelectorAll(".tab-btn");
+        const tabContents = document.querySelectorAll(".tab-content");
+        tabBtns.forEach((btn) =>
+            btn.addEventListener("click", () => {
+                tabBtns.forEach((b) => b.classList.remove("active"));
+                btn.classList.add("active");
+                tabContents.forEach(
+                    (c) =>
+                        (c.style.display =
+                            c.dataset.tab === btn.dataset.tab
+                                ? "block"
+                                : "none"),
+                );
+            }),
+        );
+
+        // Auto Verification Submit
+        document
+            .getElementById("confirmVerifyBtn")
+            ?.addEventListener("click", async (e) => {
+                const emailInput = document.getElementById("verificationEmail");
+                const email = emailInput.value.trim();
+                if (!email) return alert("이메일을 입력해주세요.");
+
+                const btn = e.target;
+                btn.textContent = "확인 중...";
+                btn.disabled = true;
+
+                try {
+                    // 1. Check allowed_members including new department field
+                    const { data: allowedData, error } = await supabase
+                        .from("allowed_members")
+                        .select("*")
+                        .eq("email", email)
+                        .single();
+
+                    if (error || !allowedData)
+                        throw new Error("명단에서 찾을 수 없습니다.");
+
+                    // 2. Update Profile with Extended Info
+                    const { error: updateError } = await supabase
+                        .from("profiles")
+                        .update({
+                            is_verified: true,
+                            verified_at: new Date().toISOString(),
+                            user_tier: "society",
+                            society: allowedData.society,
+                            society_email: email,
+                            society_name: allowedData.name, // Save Real Name
+                            department: allowedData.department, // Save Department
+                            affiliation: allowedData.affiliation, // Save Affiliation
+                            society_role: allowedData.role, // Save Role
+                        })
+                        .eq("id", currentUser.id);
+
+                    if (updateError) throw updateError;
+
+                    // 3. Update Store
+                    userProfile.set({
+                        ...userProfile.get(),
+                        is_verified: "true",
+                        user_tier: "society",
+                        society: allowedData.society,
+                        society_email: email,
+                        society_name: allowedData.name,
+                        department: allowedData.department,
+                        affiliation: allowedData.affiliation,
+                        society_role: allowedData.role,
+                    });
+
+                    alert("✅ 인증되었습니다!");
+                    modal.classList.remove("active");
+                    window.location.reload(); // Refresh to show data
+                } catch (err) {
+                    if (err.message.includes("명단에서 찾을 수 없습니다")) {
+                        if (
+                            confirm(
+                                "학회 명단에 없거나 정보가 일치하지 않습니다.\n[수동 신청] 탭으로 이동하시겠습니까?",
+                            )
+                        ) {
+                            document
+                                .querySelector('.tab-btn[data-tab="society"]')
+                                ?.click();
+                        }
+                    } else {
+                        alert("인증 실패: " + err.message);
+                    }
+                } finally {
+                    btn.textContent = "인증 요청";
+                    btn.disabled = false;
+                }
+            });
+
+        // Manual Forms (Society/Special)
+        [
+            { id: "societyRequestForm", type: "society" },
+            { id: "specialRequestForm", type: "special" },
+        ].forEach(({ id, type }) => {
             document
-                .getElementById("logoutBtnBody")
-                ?.addEventListener("click", async () => {
-                    if (confirm("로그아웃 하시겠습니까?")) {
-                        await supabase.auth.signOut();
-                        userProfile.set(null);
-                        window.location.href = "/";
+                .getElementById(id)
+                ?.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    const form = e.target;
+                    const formData = new FormData(form);
+                    const btn = form.querySelector('button[type="submit"]');
+
+                    btn.textContent = "신청 중...";
+                    btn.disabled = true;
+
+                    try {
+                        const reqData = {
+                            user_id: currentUser.id,
+                            type: type,
+                            full_name: formData.get("full_name"),
+                            affiliation: formData.get("affiliation"),
+                            department: formData.get("department"), // New
+                            role: formData.get("role"), // New
+                            email: formData.get("contact_email"), // Contact email
+                            reason: formData.get("reason"),
+                            status: "auto-approved", // Changed to auto-approved
+                        };
+
+                        if (type === "society") {
+                            reqData.society = formData.get("society");
+                        }
+
+                        // 1. Insert Request Record
+                        const { error } = await supabase
+                            .from("auth_requests")
+                            .insert(reqData);
+
+                        if (error) throw error;
+
+                        // 2. Immediate Profile Update (Auto Approval)
+                        const updateData = {
+                            is_verified: true,
+                            verified_at: new Date().toISOString(),
+                            user_tier:
+                                type === "special" ? "special" : "society",
+                            society: reqData.society || null,
+                            society_email: reqData.email,
+                            society_name: reqData.full_name,
+                            department: reqData.department,
+                            society_role: reqData.role,
+                            affiliation: reqData.affiliation,
+                        };
+
+                        const { error: profileError } = await supabase
+                            .from("profiles")
+                            .update(updateData)
+                            .eq("id", currentUser.id);
+
+                        if (profileError) throw profileError;
+
+                        alert(
+                            "✅ 임시 인증되었습니다.\n바로 서비스를 이용하실 수 있으며, 추후 정보가 불일치할 경우 인증이 취소될 수 있습니다.",
+                        );
+                        form.reset();
+                        modal.classList.remove("active");
+                        window.location.reload(); // Refresh to reflect changes
+                    } catch (err) {
+                        console.error(err);
+                        alert("신청 실패: " + err.message);
+                    } finally {
+                        btn.textContent = "신청하기";
+                        btn.disabled = false;
                     }
                 });
         });
+    });
 
-        function updateMyPageUI(user) {
-            if (!user || !user.email) {
-                // Not logged in -> Redirect to login or show empty state
-                // For MyPage, usually we redirect to login if no session
-                console.log("No user session found in MyPage");
-                // window.location.href = "/login"; // Optional: Force login
-                document.getElementById("userName").textContent =
-                    "로그인이 필요합니다";
-                document.getElementById("userEmail").textContent = "-";
-                return;
-            }
-
-            document.getElementById("userName").textContent =
-                user.full_name || "사용자";
-            document.getElementById("userEmail").textContent =
-                user.email || "-";
-
-            const badgeVerified = document.getElementById("badgeVerified");
-            const btnVerify = document.getElementById("btnVerifyParams");
-
-            if (user.is_approved === "true" || user.is_verified) {
-                // Handle string/bool
-                badgeVerified.style.display = "inline-flex";
-                if (btnVerify) btnVerify.style.display = "none";
-            } else {
-                badgeVerified.style.display = "none";
-                if (btnVerify) btnVerify.style.display = "inline-flex";
-            }
-        }
-    </script>
-</DashboardLayout>
+    // Logout
+    document
+        .getElementById("logoutBtn")
+        ?.addEventListener("click", async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) alert(error.message);
+            else window.location.href = "/login";
+        });
+</script>

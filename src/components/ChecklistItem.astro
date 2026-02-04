@@ -6,7 +6,7 @@ if (typeof item.render === "function") {
     Content = rendered.Content;
 }
 import Icon from "./Icon.astro";
-import { resources } from "../data/resources";
+// import { resources } from "../data/resources"; // Removed static import
 ---
 
 <div class={`checklist-item ${open ? "open" : ""}`} data-id={item.id}>
@@ -29,15 +29,9 @@ import { resources } from "../data/resources";
                     >(0/0)</span
                 ></span
             >
-            {
-                ((item.body && item.body.trim().length > 0) ||
-                    item.data.example ||
-                    item.data.exampleImage) && (
-                    <span class="icon">
-                        <Icon name="chevron-down" size="16" />
-                    </span>
-                )
-            }
+            <span class="icon">
+                <Icon name="chevron-down" size="16" />
+            </span>
         </button>
     </div>
     <div class="panel">
@@ -79,37 +73,24 @@ import { resources } from "../data/resources";
                 )
             }
             {
-                (() => {
-                    const resourceId = item.data.resourceId;
-                    const resource = resourceId
-                        ? resources.find((r) => r.id === resourceId)
-                        : null;
-
-                    if (
-                        resource &&
-                        resource.previewUrl &&
-                        resource.previewUrl !== "#"
-                    ) {
-                        return (
-                            <div
-                                class="resource-link-wrapper"
-                                style="margin-top: 1rem;"
-                            >
-                                <button
-                                    onclick={`window.open('${resource.previewUrl}', '_blank'); event.stopPropagation();`}
-                                    type="button"
-                                    style="background: none; border: none; color: #059669; text-decoration: underline; cursor: pointer; padding: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 4px;"
-                                >
-                                    <span class="icon">
-                                        <Icon name="document-text" size="16" />
-                                    </span>
-                                    관련 자료 보기: {resource.title}
-                                </button>
-                            </div>
-                        );
-                    }
-                    return null;
-                })()
+                item.data.resourceId && (
+                    <div
+                        class="resource-link-wrapper"
+                        style="margin-top: 1rem;"
+                    >
+                        <button
+                            class="view-resource-btn"
+                            data-resource-id={item.data.resourceId}
+                            type="button"
+                            style="background: none; border: none; color: #059669; text-decoration: underline; cursor: pointer; padding: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 4px;"
+                        >
+                            <span class="icon">
+                                <Icon name="document-text" size="16" />
+                            </span>
+                            관련 자료/작성예시 보기 (스마트 뷰어)
+                        </button>
+                    </div>
+                )
             }
         </div>
     </div>
@@ -375,6 +356,66 @@ import { resources } from "../data/resources";
         font-weight: 600;
         color: var(--text-main);
     }
+
+    /* Smart Viewer Modal Styles */
+    :global(#smart-viewer-modal) {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+    }
+    :global(#smart-viewer-modal.active) {
+        display: flex;
+        animation: fadeIn 0.2s;
+    }
+    :global(.smart-viewer-content) {
+        background: var(--bg-card);
+        width: 90%;
+        max-width: 800px;
+        max-height: 85vh;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+    :global(.smart-viewer-header) {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-body);
+    }
+    :global(.smart-viewer-body) {
+        padding: 1.5rem;
+        overflow-y: auto;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    :global(.smart-viewer-body img) {
+        max-width: 100%;
+    }
+    :global(.smart-viewer-body h1, .smart-viewer-body h2) {
+        margin-top: 0;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
 </style>
 
 <script>
@@ -456,8 +497,6 @@ import { resources } from "../data/resources";
                 }
 
                 // Add listener for sub-checkboxes
-                // Note: 'change' event might not bubble from within some markdown renderers,
-                // but usually fine. If click, use click.
                 cb.addEventListener("change", (e) => {
                     if (e.target.checked) {
                         localStorage.setItem(subKey, "checked");
@@ -477,11 +516,7 @@ import { resources } from "../data/resources";
                 if (isChecked) {
                     item.classList.add("checked");
                     localStorage.setItem(`inspection-${id}`, "checked");
-                    // Optional: Check all sub-items?
-                    // Let's decide: If main is checked, check all subs?
-                    // Or just treat main as independent?
-                    // User request implies Level 2 is the detail.
-                    // Let's make main checkbox auto-check all subs for convenience.
+                    // Check all subs
                     subCheckboxes.forEach((cb, index) => {
                         cb.checked = true;
                         localStorage.setItem(
@@ -534,6 +569,116 @@ import { resources } from "../data/resources";
                         : `<span class="icon">${iconSvg}</span> 예시서류 접기`;
                 });
             }
+
+            // 5. Smart Resource Viewer (Hybrid Link)
+            const resourceBtns = item.querySelectorAll(".view-resource-btn");
+            resourceBtns.forEach((btn) => {
+                btn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    const resourceId = btn.dataset.resourceId;
+                    if (!resourceId) return;
+
+                    const originalContent = btn.innerHTML;
+                    btn.innerHTML = `<span style="font-size:0.9em">⏳ 로딩 중...</span>`;
+                    btn.disabled = true;
+
+                    try {
+                        const response = await fetch(
+                            `/api/archives/${resourceId}`,
+                        );
+                        if (!response.ok) throw new Error("API Error");
+                        const data = await response.json();
+
+                        // Call global viewer function (defined below)
+                        window.openSmartViewer(data);
+                    } catch (err) {
+                        console.error(err);
+                        alert(
+                            "자료를 불러올 수 없습니다. (삭제되었거나 오류 발생)",
+                        );
+                    } finally {
+                        btn.innerHTML = originalContent;
+                        btn.disabled = false;
+                    }
+                });
+            });
         });
     }
+
+    // Global Viewer Logic (Dynamic Modal)
+    (window as any).openSmartViewer = function (data) {
+        let modal = document.getElementById("smart-viewer-modal");
+        if (!modal) {
+            modal = document.createElement("div");
+            modal.id = "smart-viewer-modal";
+            modal.innerHTML = `
+                <div class="smart-viewer-content">
+                    <div class="smart-viewer-header">
+                        <div style="display:flex; flex-direction:column;">
+                             <span style="font-size:0.8rem; color:var(--text-muted);">${data.category || "자료"}</span>
+                             <h3 id="sv-title" style="margin:0; font-size:1.1rem; font-weight:700; color:var(--text-main);"></h3>
+                        </div>
+                        <button id="sv-close" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+                    </div>
+                    <div class="smart-viewer-body" id="sv-body" style="color:var(--text-main);"></div>
+                    <div style="padding:1rem; border-top:1px solid var(--border-color); text-align:right; background:var(--bg-body);">
+                         <a id="sv-download" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:var(--accent); font-weight:600; font-size:0.9rem; padding:0.5rem 1rem; border:1px solid var(--accent); border-radius:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            PDF 원본 다운로드
+                         </a>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            modal.querySelector("#sv-close").addEventListener("click", () => {
+                modal.classList.remove("active");
+            });
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) modal.classList.remove("active");
+            });
+        }
+
+        // Populate Data
+        modal.querySelector("#sv-title").textContent = data.title;
+
+        const bodyEl = modal.querySelector("#sv-body");
+        const dlLink = document.getElementById("sv-download");
+
+        const fileUrl = data.public_file_url || data.file_url || "";
+        const isPdf = fileUrl.toLowerCase().endsWith(".pdf");
+        const fileExt = fileUrl
+            ? fileUrl.split(".").pop().toUpperCase()
+            : "FILE";
+
+        // Priority: HTML Content > Fallback Message
+        if (data.content_html) {
+            bodyEl.innerHTML = data.content_html;
+        } else if (fileUrl) {
+            // Fallback for File only
+            bodyEl.innerHTML = `<div style="text-align:center; padding:3rem; color:gray;">
+                <p style="margin-bottom:1rem; font-size:1.1rem;">이 자료는 상세 텍스트 내용이 없습니다.</p>
+                <div style="font-size:3rem; margin-bottom:1rem; opacity:0.5;">${isPdf ? "📄" : "📁"}</div>
+                <p><strong>${fileExt}</strong> 형식의 파일은 미리보기를 지원하지 않습니다.</p>
+                <p>아래 버튼을 눌러 파일을 다운로드하여 확인하세요.</p>
+            </div>`;
+        } else {
+            bodyEl.innerHTML = `<p style="text-align:center; padding:2rem;">표시할 내용이 없습니다.</p>`;
+        }
+
+        if (fileUrl) {
+            dlLink.style.display = "inline-flex";
+            (dlLink as HTMLAnchorElement).href = fileUrl;
+            (dlLink as HTMLAnchorElement).innerHTML = isPdf
+                ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> PDF 원본 보기/다운로드`
+                : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${fileExt} 파일 다운로드`;
+        } else {
+            dlLink.style.display = "none";
+            (dlLink as HTMLAnchorElement).href = "#";
+        }
+
+        modal.classList.add("active");
+    };
 </script>

@@ -1,12 +1,578 @@
 ---
 import DashboardLayout from "../layouts/DashboardLayout.astro";
 import Icon from "../components/Icon.astro";
+import { supabase } from "../lib/supabase";
 
-// Mock Data for Resources
-import { resources } from "../data/resources";
+const categories = [
+    "작성지침",
+    "작성예시",
+    "서식",
+    "교육자료",
+    "법령정보",
+    "안내문",
+    "아카이브",
+    "기타",
+];
 
-const categories = ["작성지침", "작성예시", "서식", "교육자료", "법령정보", "안내문", "아카이브", "기타"];
+const { data: dbData } = await supabase
+    .from('archives')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+const resources = (dbData || []).map(item => ({
+    ...item,
+    date: item.created_at // Map created_at to date for sorting compatibility
+}));
 ---
+
+<DashboardLayout title="자료실">
+    <!-- Toast UI Editor CDN -->
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor-viewer.min.css" />
+
+    <style is:global>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Search Bar */
+        .search-container {
+            margin-bottom: 2rem;
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            gap: 0.5rem;
+        }
+        #resourceSearch {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            border-radius: 99px;
+            box-shadow: 0 1px 2px var(--shadow-color);
+            color: var(--text-main);
+            transition: border-color 0.2s;
+        }
+        #resourceSearch:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            display: flex;
+        }
+
+        /* Sort & Filter Header */
+        .controls-header {
+            display: grid;
+            grid-template-columns: calc(120px + 1rem) 1fr 120px 120px 30px;
+            gap: 1rem;
+            padding: 0.5rem 1rem 0.5rem 0;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1rem;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .cat-filter-dropdown {
+            position: relative;
+            overflow: visible;
+            z-index: 101;
+        }
+        .cat-filter-btn {
+            list-style: none;
+            width: 100%;
+            padding: 0.4rem 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .cat-filter-btn::-webkit-details-marker { display: none; }
+        .cat-filter-content {
+            position: absolute;
+            top: 100%; left: 0; width: 200px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            padding: 0.5rem;
+            margin-top: 5px;
+            z-index: 200;
+        }
+        .cat-filter-item {
+            display: block; width: 100%;
+            text-align: left; padding: 0.5rem;
+            cursor: pointer; background: none; border: none;
+            color: var(--text-main);
+        }
+        .cat-filter-item:hover { background: var(--bg-hover); }
+
+        .sort-btn {
+            background: none; border: none;
+            font-size: 0.9rem; color: var(--text-muted);
+            cursor: pointer; display: flex; align-items: center; gap: 0.25rem;
+            padding: 0; font-weight: 600;
+        }
+        .sort-btn.active { color: var(--accent); }
+        .sort-icon { display: inline-block; opacity: 0; transition: transform 0.2s; }
+        .sort-btn.active .sort-icon { opacity: 1; }
+        .sort-btn.asc .sort-icon { transform: rotate(180deg); }
+
+        /* Resource List */
+        .resource-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .resource-card {
+            display: grid;
+            grid-template-columns: 120px 1fr 120px 120px 30px;
+            gap: 1rem; align-items: center;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none; color: inherit;
+        }
+        .resource-card:hover { border-color: var(--accent); background: var(--bg-hover); }
+
+        .cat-badge {
+            font-size: 0.75rem; background: var(--bg-body);
+            padding: 0.2rem 0.6rem; border-radius: 4px;
+            color: var(--text-muted); border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        .col-title { font-weight: 500; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .col-date, .col-author { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: var(--bg-card); padding: 2rem;
+            border-radius: 12px; width: 90%; max-width: 800px;
+            max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-input { width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-body); color: var(--text-main); }
+        .form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 2rem; }
+        .btn { padding: 0.6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+        .btn-submit { background: var(--accent); color: white; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
+
+        /* Viewer Styles */
+        .viewer-content-area {
+            min-height: 300px;
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto; /* Scrollable content */
+            max-height: 60vh;
+        }
+        .pdf-download-bar {
+            background: var(--bg-hover);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .controls-header { display: none; }
+            .resource-card {
+                display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;
+            }
+            .resource-card > div { width: 100%; }
+            .col-date, .col-author { text-align: left; }
+        }
+    </style>
+
+    <div class="page-header">
+        <div class="page-title">
+            <Icon name="folder" size="28" /> 자료실
+        </div>
+        <div>
+            <button id="openModalBtn" class="download-btn" style="gap: 0.5rem; padding: 0.5rem 1rem; display:none;">
+                <Icon name="pencil" size="16" /> 자료 등록
+            </button>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <input type="text" id="resourceSearch" placeholder="자료 검색 (제목, 작성자)" />
+        <span class="search-icon"><Icon name="search" size="18" /></span>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-header">
+        <div class="header-item">
+            <details class="cat-filter-dropdown" id="catFilterDropdown">
+                <summary class="cat-filter-btn" id="catFilterBtn">
+                    <span>전체</span> <Icon name="chevron-down" size="14" />
+                </summary>
+                <div class="cat-filter-content">
+                    <button class="cat-filter-item" data-value="">전체</button>
+                    {categories.map(cat => <button class="cat-filter-item" data-value={cat}>{cat}</button>)}
+                </div>
+            </details>
+        </div>
+        <div class="header-item"><button class="sort-btn active" data-sort="title">제목</button></div>
+        <div class="header-item"><button class="sort-btn" data-sort="date">날짜</button></div>
+        <div class="header-item"><button class="sort-btn" data-sort="author">작성자</button></div>
+    </div>
+
+    <!-- List -->
+    <div class="resource-list" id="resourceList">
+        <p style="text-align:center; padding:2rem;">로딩 중...</p>
+    </div>
+
+    <!-- Write/Edit Modal -->
+    <div id="writeModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header" style="font-size:1.2rem; font-weight:bold; margin-bottom:1rem;">자료 등록</div>
+            <form id="writeForm">
+                <input type="hidden" id="editId" />
+                <div class="form-group">
+                    <label class="form-label">제목</label>
+                    <input type="text" id="writeTitle" class="form-input" required placeholder="제목을 입력하세요" />
+                </div>
+                <div class="form-group" style="display:flex; gap:1rem;">
+                    <div style="flex:1;">
+                        <label class="form-label">카테고리</label>
+                        <select id="writeCategory" class="form-input">
+                            {categories.map(c => <option value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label class="form-label">작성자</label>
+                        <input type="text" id="writeAuthor" class="form-input" value="관리자" />
+                    </div>
+                </div>
+                
+                <div class="form-group" style="background:var(--bg-body); padding:1rem; border-radius:8px;">
+                     <label class="form-label">첨부 파일 (모든 형식 가능)</label>
+                     <input type="file" id="writeFile" />
+                     <div id="currentFileDisplay" style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">내용 (마크다운 옵션)</label>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                        내용을 입력하면 자료 열람 시 <strong>즉시 로딩되는 텍스트 뷰어</strong>가 우선 표시됩니다. (입력하지 않으면 PDF 파일이 바로 열립니다)
+                    </p>
+                    <div id="editor"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="closeWriteModal" class="btn btn-cancel">취소</button>
+                    <button type="submit" class="btn btn-submit">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Viewer Modal -->
+    <div id="viewerModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;">
+                <div>
+                     <div class="cat-badge" id="viewCategory" style="display:inline-block; margin-bottom:0.5rem;"></div>
+                     <h2 id="viewTitle" style="font-size:1.3rem; margin:0;"></h2>
+                     <div style="font-size:0.9rem; color:var(--text-muted); margin-top:0.2rem;">
+                        <span id="viewAuthor"></span> · <span id="viewDate"></span>
+                     </div>
+                </div>
+                <button id="closeViewerBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <div id="pdfDownloadBar" class="pdf-download-bar" style="display:none;">
+                <div>
+                    <strong>PDF 파일이 첨부되어 있습니다.</strong>
+                    <div style="font-size:0.85rem; opacity:0.8;">원본 양식이나 공식 문서는 PDF를 확인하세요.</div>
+                </div>
+                <a id="downloadLink" href="#" target="_blank" class="download-btn" style="text-decoration:none; padding:0.5rem 1rem;">
+                    <Icon name="download" size="16" /> 다운로드 / 보기
+                </a>
+            </div>
+
+            <div id="viewer" class="viewer-content-area"></div>
+        </div>
+    </div>
+</DashboardLayout>
+
+<!-- Load Toast UI Editor JS properly -->
+<script is:inline src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+<script>
+    import { supabase } from "../lib/supabase";
+    import { userProfile } from "../store/user";
+
+    // Re-declare Editor here to satisfy TS check for window object
+    const Editor = window.toastui.Editor;
+
+    let editorInstance = null;
+    let archivesData = [];
+
+    document.addEventListener("astro:page-load", async () => {
+        const currentUser = userProfile.get();
+
+        // Check Permissions: Admin OR Verified Member OR Special User
+        const canUpload = 
+            currentUser && (
+                currentUser.role === 'admin' || 
+                currentUser.is_admin === true || 
+                currentUser.is_admin === "true" ||
+                currentUser.is_verified === true ||
+                currentUser.user_tier === 'special'
+            );
+
+        if(canUpload) {
+            const btn = document.getElementById('openModalBtn');
+            if(btn) btn.style.display = 'flex';
+        }
+
+        // Initialize Editor
+        editorInstance = new Editor({
+            el: document.querySelector('#editor'),
+            height: '300px',
+            initialEditType: 'markdown',
+            previewStyle: 'vertical',
+            initialValue: ''
+        });
+
+        // Load Data
+        await loadArchives();
+
+        // Event Listeners
+        setupEventListeners();
+    });
+
+    async function loadArchives() {
+        const listEl = document.getElementById('resourceList');
+        listEl.innerHTML = '<p style="text-align:center; padding:2rem;">로딩 중...</p>';
+
+        const { data, error } = await supabase
+            .from('archives')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if(error) {
+            console.error(error);
+            listEl.innerHTML = '<p style="text-align:center; color:red;">불러오기 실패</p>';
+            return;
+        }
+
+        archivesData = data;
+        renderList(data);
+    }
+
+    function renderList(list) {
+        const listEl = document.getElementById('resourceList');
+        if(list.length === 0) {
+            listEl.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--text-muted);">등록된 자료가 없습니다.</p>';
+            return;
+        }
+
+        listEl.innerHTML = list.map(item => `
+            <div class="resource-card" data-id="${item.id}">
+                <div class="col-cat"><span class="cat-badge">${item.category}</span></div>
+                <div class="col-title">${item.title}</div>
+                <div class="col-date">${new Date(item.created_at).toLocaleDateString()}</div>
+                <div class="col-author">${item.author}</div>
+                <div style="text-align:right;">
+                    ${item.file_url ? '📎' : ''} ${item.content_html ? '📝' : ''}
+                </div>
+            </div>
+        `).join('');
+
+        // Attach Click
+        document.querySelectorAll('.resource-card').forEach(card => {
+            card.addEventListener('click', () => openViewer(card.dataset.id));
+        });
+    }
+
+    function openViewer(id) {
+        // Find item (handle string/number difference)
+        const item = archivesData.find(d => String(d.id) === String(id));
+        if(!item) return;
+
+        // Populate Viewer Modal
+        document.getElementById('viewCategory').textContent = item.category;
+        document.getElementById('viewTitle').textContent = item.title;
+        document.getElementById('viewAuthor').textContent = item.author;
+        document.getElementById('viewDate').textContent = new Date(item.created_at).toLocaleDateString();
+
+        const downloadBar = document.getElementById('pdfDownloadBar');
+        const downloadLink = document.getElementById('downloadLink');
+        
+        const fileUrl = item.file_url || "";
+        const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
+        const fileExt = fileUrl ? fileUrl.split('.').pop().toUpperCase() : 'FILE';
+
+        // Download Link Logic
+        if (fileUrl) {
+            downloadBar.style.display = 'flex';
+            // Construct Public URL
+            const { data } = supabase.storage.from('resources').getPublicUrl(fileUrl);
+            downloadLink.href = data.publicUrl;
+            downloadLink.innerHTML = isPdf 
+                ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> PDF 원본 보기/다운로드`
+                : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${fileExt} 파일 다운로드`;
+            
+            // Update Text
+            downloadBar.querySelector('strong').textContent = isPdf ? 'PDF 파일이 첨부되어 있습니다.' : `${fileExt} 파일이 첨부되어 있습니다.`;
+            downloadBar.querySelector('div').textContent = isPdf ? '원본 양식이나 공식 문서는 PDF를 확인하세요.' : '이 형식의 파일은 뷰어에서 직접 열 수 없습니다.';
+        } else {
+            downloadBar.style.display = 'none';
+        }
+
+        const viewerEl = document.getElementById('viewer');
+        
+        // Viewer Content Logic
+        if(item.content_html) {
+             viewerEl.innerHTML = item.content_html;
+        } else if(fileUrl) {
+             viewerEl.innerHTML = `<div style="text-align:center; padding:3rem; color:gray;">
+                <p style="margin-bottom:1rem; font-size:1.1rem;">이 자료는 상세 텍스트 내용이 없습니다.</p>
+                <div style="font-size:3rem; margin-bottom:1rem; opacity:0.5;">${isPdf ? '📄' : '📁'}</div>
+                <p><strong>${fileExt}</strong> 형식의 파일은 미리보기를 지원하지 않습니다.</p>
+                <p>아래 버튼을 눌러 파일을 다운로드하여 확인하세요.</p>
+            </div>`;
+        } else {
+             viewerEl.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--text-muted);">표시할 내용이 없습니다.</p>';
+        }
+
+        document.getElementById('viewerModal').classList.add('active');
+    }
+
+    function setupEventListeners() {
+        // Modal Toggles
+        document.getElementById('openModalBtn').addEventListener('click', () => {
+            document.getElementById('writeForm').reset();
+            editorInstance.setMarkdown(''); 
+            document.getElementById('writeModal').classList.add('active');
+        });
+
+        document.getElementById('closeWriteModal').addEventListener('click', () => {
+            document.getElementById('writeModal').classList.remove('active');
+        });
+
+        document.getElementById('closeViewerBtn').addEventListener('click', () => {
+            document.getElementById('viewerModal').classList.remove('active');
+        });
+
+        // Write Form Submit
+        document.getElementById('writeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = '저장 중...';
+
+            try {
+                const title = document.getElementById('writeTitle').value;
+                const category = document.getElementById('writeCategory').value;
+                const author = document.getElementById('writeAuthor').value;
+                const fileInput = document.getElementById('writeFile');
+                const contentHtml = editorInstance.getHTML(); // Get Rendered HTML
+                // Note: getHTML() wraps in <p> etc.
+                // We should also store markdown if we want to edit later, but for now HTML is fine for view.
+
+                let fileUrl = null;
+                let fileName = null;
+
+                if(fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const fileExt = file.name.split('.').pop();
+                    const filePath = `archives/${Date.now()}_${Math.random().toString(36).substr(2,9)}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabase.storage
+                        .from('resources')
+                        .upload(filePath, file);
+
+                    if(uploadError) throw uploadError;
+                    
+                    fileUrl = filePath;
+                    fileName = file.name;
+                }
+
+                // Insert into DB
+                const { error: dbError } = await supabase.from('archives').insert({
+                    title, category, author,
+                    content_html: contentHtml,
+                    file_url: fileUrl,
+                    file_name: fileName,
+                    created_by: userProfile.get().id
+                });
+
+                if(dbError) throw dbError;
+
+                alert('저장되었습니다.');
+                document.getElementById('writeModal').classList.remove('active');
+                loadArchives(); // Reload list
+            } catch(err) {
+                console.error(err);
+                alert('저장 실패: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '저장';
+            }
+        });
+        
+        // Filter Logic
+        document.querySelector('.cat-filter-content').addEventListener('click', (e) => {
+             if(e.target.tagName === 'BUTTON') {
+                 const val = e.target.dataset.value;
+                 document.getElementById('catFilterBtn').querySelector('span').textContent = val || '전체';
+                 // Filter List
+                 const filtered = val ? archivesData.filter(i => i.category === val) : archivesData;
+                 renderList(filtered);
+                 // Close dropdown details
+                 document.getElementById('catFilterDropdown').removeAttribute('open');
+             }
+        });
+
+        document.getElementById('resourceSearch').addEventListener('input', (e) => {
+             const keyword = e.target.value.toLowerCase();
+             const filtered = archivesData.filter(i => i.title.toLowerCase().includes(keyword) || i.author.includes(keyword));
+             renderList(filtered);
+        });
+    }
+</script>
 
 <DashboardLayout title="자료실">
     <style is:global>

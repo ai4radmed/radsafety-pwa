@@ -1,0 +1,420 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+---
+
+<DashboardLayout title="회원 인증 관리">
+    <style>
+        .requests-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Tabs */
+        .status-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .status-tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .status-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        .status-tab:hover {
+            background: var(--bg-body);
+        }
+
+        /* Request Cards */
+        .requests-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .request-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s;
+        }
+        .request-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        .request-type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-society {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-special {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .request-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .info-item {
+            font-size: 0.9rem;
+        }
+        .info-label {
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .info-value {
+            color: var(--text-main);
+        }
+        .request-reason {
+            background: var(--bg-body);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .request-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+        .btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+        .btn-approve:hover {
+            background: #059669;
+        }
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-reject:hover {
+            background: #dc2626;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+    </style>
+
+    <div class="requests-container">
+        <div class="page-header">
+            <h1 class="page-title">회원 인증 관리</h1>
+            <p class="page-subtitle">
+                학회원 및 특별회원 신청을 검토하고 승인/거부할 수 있습니다.
+            </p>
+        </div>
+
+        <!-- Status Tabs -->
+        <div class="status-tabs">
+            <button class="status-tab active" data-status="auto-approved">
+                검토 필요 (<span id="auto-approvedCount">0</span>)
+            </button>
+            <button class="status-tab" data-status="approved">
+                정상 승인 (<span id="approvedCount">0</span>)
+            </button>
+            <button class="status-tab" data-status="rejected">
+                취소됨 (<span id="rejectedCount">0</span>)
+            </button>
+        </div>
+
+        <!-- Requests List -->
+        <div id="requestsList" class="requests-list">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+</DashboardLayout>
+
+<script>
+    import { supabase } from "../../lib/supabase";
+    import { userProfile } from "../../store/user";
+
+    document.addEventListener("astro:page-load", async () => {
+        const currentUser = userProfile.get();
+
+        // Check if admin (using is_admin from store which we added)
+        if (currentUser.is_admin !== "true" && currentUser.is_admin !== true) {
+            alert("관리자 권한이 필요합니다.");
+            window.location.href = "/mypage";
+            return;
+        }
+
+        let currentStatus = "auto-approved";
+
+        // Tab switching
+        const statusTabs = document.querySelectorAll(".status-tab");
+        statusTabs.forEach((tab) => {
+            tab.addEventListener("click", () => {
+                currentStatus = tab.dataset.status;
+                statusTabs.forEach((t) => t.classList.remove("active"));
+                tab.classList.add("active");
+                loadRequests(currentStatus);
+            });
+        });
+
+        // Load requests
+        async function loadRequests(status) {
+            const requestsList = document.getElementById("requestsList");
+            requestsList.innerHTML = '<p class="empty-state">로딩 중...</p>';
+
+            try {
+                const { data, error } = await supabase
+                    .from("auth_requests") // Changed table name
+                    .select("*")
+                    .eq("status", status)
+                    .order("created_at", { ascending: false });
+
+                if (error) throw error;
+
+                // Update counts
+                updateCounts();
+
+                if (!data || data.length === 0) {
+                    requestsList.innerHTML =
+                        '<p class="empty-state">신청 내역이 없습니다.</p>';
+                    return;
+                }
+
+                // Store data for access in handlers
+                window.currentRequests = data;
+
+                requestsList.innerHTML = data
+                    .map((req) => renderRequestCard(req))
+                    .join("");
+
+                // Attach event listeners
+                attachActionListeners();
+            } catch (err) {
+                console.error("Load Requests Error:", err);
+                requestsList.innerHTML =
+                    '<p class="empty-state">오류가 발생했습니다.</p>';
+            }
+        }
+
+        function renderRequestCard(req) {
+            const typeBadge =
+                req.type === "society"
+                    ? '<span class="request-type-badge badge-society">학회원</span>'
+                    : '<span class="request-type-badge badge-special">특별사용자</span>';
+
+            const societyInfo =
+                req.type === "society"
+                    ? `<div class="info-item">
+                        <div class="info-label">학회</div>
+                        <div class="info-value">${req.society === "nuclear_medicine" ? "대한핵의학회" : "대한핵의학기술학회"}</div>
+                    </div>`
+                    : "";
+
+            const actions =
+                req.status === "auto-approved"
+                    ? `<div class="request-actions">
+                        <button class="btn btn-reject" data-action="reject" data-id="${req.id}" style="background-color:#ef4444;">승인 취소</button>
+                        <button class="btn btn-approve" data-action="approve" data-id="${req.id}" style="background-color:#3b82f6;">검토 완료</button>
+                    </div>`
+                    : req.status === "approved"
+                      ? `<div class="info-item">
+                        <div class="info-label" style="color:#10b981;">검토 완료됨</div>
+                        <div class="info-value">${new Date(req.updated_at).toLocaleString("ko-KR")}</div>
+                    </div>`
+                      : `<div class="info-item">
+                        <div class="info-label" style="color:#ef4444;">취소됨</div>
+                        <div class="info-value">${new Date(req.updated_at).toLocaleString("ko-KR")}</div>
+                    </div>`;
+
+            return `
+                <div class="request-card">
+                    <div class="request-header">
+                        <div>
+                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem;">${req.full_name}</h3>
+                            ${typeBadge}
+                        </div>
+                        <span style="color:var(--text-muted); font-size:0.85rem;">${new Date(req.created_at).toLocaleString("ko-KR")}</span>
+                    </div>
+                    <div class="request-info">
+                        ${societyInfo}
+                        <div class="info-item">
+                            <div class="info-label">소속</div>
+                            <div class="info-value">${req.affiliation}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">부서</div>
+                            <div class="info-value">${req.department || "-"}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">직책(구분)</div>
+                            <div class="info-value">${req.role || "-"}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">연락처</div>
+                            <div class="info-value">${req.email}</div>
+                        </div>
+                    </div>
+                    <div class="request-reason">
+                        <div class="info-label">신청 사유</div>
+                        <p style="margin:0.5rem 0 0 0; white-space:pre-wrap;">${req.reason}</p>
+                    </div>
+                    ${actions}
+                </div>
+            `;
+        }
+
+        function attachActionListeners() {
+            document.querySelectorAll("[data-action]").forEach((btn) => {
+                btn.addEventListener("click", async (e) => {
+                    const action = e.target.dataset.action;
+                    const requestId = e.target.dataset.id;
+
+                    if (action === "approve") {
+                        await approveRequest(requestId);
+                    } else if (action === "reject") {
+                        await rejectRequest(requestId);
+                    }
+                });
+            });
+        }
+
+        async function approveRequest(requestId) {
+            if (!confirm("이 요청을 최종 승인(검토 완료) 처리하시겠습니까?"))
+                return;
+
+            try {
+                // 1. Update Request Status (Profile already updated on request)
+                const { error: reqError } = await supabase
+                    .from("auth_requests")
+                    .update({
+                        status: "approved",
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", requestId);
+
+                if (reqError) throw reqError;
+
+                alert("✅ 검토 완료 처리되었습니다.");
+                loadRequests(currentStatus);
+            } catch (err) {
+                console.error("Approve Error:", err);
+                alert("❌ 오류가 발생했습니다: " + err.message);
+            }
+        }
+
+        async function rejectRequest(requestId) {
+            const note = prompt(
+                "승인 취소 사유를 입력하세요 (사용자에게 알림으로 전송됩니다):",
+            );
+            if (!note) {
+                alert("사유를 입력해야 합니다.");
+                return;
+            }
+
+            try {
+                const req = window.currentRequests.find(
+                    (r) => r.id === requestId,
+                );
+                if (!req) throw new Error("Request data not found");
+
+                // 1. Rollback Profile (Remove Permissions)
+                const { error: profileError } = await supabase
+                    .from("profiles")
+                    .update({
+                        is_verified: false,
+                        user_tier: "general",
+                        society: null,
+                        society_email: null,
+                        society_name: null,
+                        department: null,
+                        society_role: null,
+                    })
+                    .eq("id", req.user_id);
+
+                if (profileError) throw profileError;
+
+                // 2. Update Request Status
+                const { error: reqError } = await supabase
+                    .from("auth_requests")
+                    .update({
+                        status: "rejected",
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", requestId);
+
+                if (reqError) throw reqError;
+
+                // 3. Send Notification
+                const { error: notiError } = await supabase
+                    .from("notifications")
+                    .insert({
+                        user_id: req.user_id,
+                        title: "학회원 인증이 취소되었습니다",
+                        message: `관리자 검토 결과 인증이 취소되었습니다.\n사유: ${note}\n정보를 수정하여 다시 신청해주시기 바랍니다.`,
+                    });
+
+                alert("✅ 승인이 취소되고 사용자에게 알림을 보냈습니다.");
+                loadRequests(currentStatus);
+            } catch (err) {
+                console.error("Reject Error:", err);
+                alert("❌ 오류가 발생했습니다: " + err.message);
+            }
+        }
+
+        async function updateCounts() {
+            const statuses = ["auto-approved", "approved", "rejected"];
+            for (const status of statuses) {
+                const { count } = await supabase
+                    .from("auth_requests")
+                    .select("*", { count: "exact", head: true })
+                    .eq("status", status);
+
+                document.getElementById(`${status}Count`).textContent =
+                    count || 0;
+            }
+        }
+
+        // Initial load
+        loadRequests("auto-approved");
+    });
+</script>

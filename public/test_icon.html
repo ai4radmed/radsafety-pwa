@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이콘 투명도 확인</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            padding: 50px;
+        }
+        .checkerboard {
+            display: inline-block;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            /* Checkerboard pattern CSS */
+            background-image: linear-gradient(45deg, #808080 25%, transparent 25%), 
+                              linear-gradient(-45deg, #808080 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #808080 75%), 
+                              linear-gradient(-45deg, transparent 75%, #808080 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: white; /* Base color */
+            border-radius: 20px;
+        }
+        .dark-bg {
+            background: #333;
+            color: white;
+        }
+        img {
+            width: 150px;
+            height: 150px;
+            display: block;
+        }
+        h2 { margin-bottom: 10px; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+    <h1>아이콘 투명도 테스트</h1>
+    <p>아래 체크무늬(회색/흰색)가 아이콘의 둥근 모서리 바깥쪽으로 보여야 투명한 것입니다.</p>
+
+    <div class="checkerboard">
+        <h2>512px 아이콘</h2>
+        <img src="/icon-512.png" alt="512px Icon">
+    </div>
+
+    <div class="checkerboard">
+        <h2>192px 아이콘</h2>
+        <img src="/icon-192.png" alt="192px Icon">
+    </div>
+    
+    <div class="checkerboard dark-bg">
+        <h2>검은 배경 테스트</h2>
+        <img src="/icon-512.png" alt="Black BG Test">
+    </div>
+
+    <div class="checkerboard" style="background: pink;">
+        <h2>분홍 배경 테스트</h2>
+        <img src="/icon-512.png" alt="Pink BG Test">
+    </div>
+</body>
+</html>

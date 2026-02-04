@@ -258,7 +258,12 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: provider,
                     options: {
-                        redirectTo: `${window.location.origin}/mypage`,
+                        redirectTo: `${window.location.origin}/auth/callback`,
+                        // Force override scope using queryParams (Supabase sometimes ignores 'scopes' prop)
+                        queryParams: {
+                            scope: "account_email,profile_nickname", // Request Email explicitly!
+                            prompt: "login", // Force login screen to clear any stuck sessions
+                        },
                     },
                 });
                 if (error) alert("로그인 오류: " + error.message);
