@@ -104,48 +104,49 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 			color: #9ca3af;
 			pointer-events: none;
 		}
+
+		/* New Layout Styles */
+		.section-container {
+			margin-bottom: 2.5rem;
 		}
-        
-        /* New Layout Styles */
-        .section-container {
-            margin-bottom: 2.5rem;
-        }
-        .section-title {
-            font-size: 1.25rem;
-            color: var(--text-main);
-            margin-bottom: 1rem;
-            border-left: 4px solid var(--accent);
-            padding-left: 0.75rem;
-            font-weight: 700;
-        }
-        .info-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.25rem;
-            box-shadow: 0 1px 2px var(--shadow-color);
-        }
-        .info-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .info-desc {
-            font-size: 0.95rem;
-            line-height: 1.5;
-            color: var(--text-main);
-            margin: 0;
-        }
-        .accent-text {
-            color: #ef4444; /* Red accent for warnings/notes */
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .mb-4 { margin-bottom: 1rem; }
+		.section-title {
+			font-size: 1.25rem;
+			color: var(--text-main);
+			margin-bottom: 1rem;
+			border-left: 4px solid var(--accent);
+			padding-left: 0.75rem;
+			font-weight: 700;
+		}
+		.info-card {
+			background-color: var(--bg-card);
+			border: 1px solid var(--border-color);
+			border-radius: 8px;
+			padding: 1.25rem;
+			box-shadow: 0 1px 2px var(--shadow-color);
+		}
+		.info-title {
+			font-size: 1rem;
+			font-weight: 700;
+			color: var(--accent);
+			margin-bottom: 0.5rem;
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+		.info-desc {
+			font-size: 0.95rem;
+			line-height: 1.5;
+			color: var(--text-main);
+			margin: 0;
+		}
+		.accent-text {
+			color: #ef4444; /* Red accent for warnings/notes */
+			font-size: 0.9rem;
+			font-weight: 500;
+		}
+		.mb-4 {
+			margin-bottom: 1rem;
+		}
 	</style>
 
 	<div
@@ -154,18 +155,20 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 		<h1
 			style="font-size: 1.1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;"
 		>
-			<Icon name="check-square" size="20" class="inline-icon" /> RI등 허가사용자 정기검사 수검준비 체크리스트
+			<Icon name="check-square" size="20" class="inline-icon" /> RI등 허가사용자
+			정기검사 수검준비 체크리스트
 		</h1>
 		<button id="resetBtn" class="reset-btn">초기화 (선택해제)</button>
 	</div>
 
-	<p style="font-size: 0.9rem; color: #6b7280; margin-top: -0.5rem; margin-bottom: 1.5rem; line-height: 1.5;">
-		💡 체크박스의 상태는 자동저장이 되며, 항목을 클릭하시면 하위항목이 보입니다.<br />
+	<p
+		style="font-size: 0.9rem; color: #6b7280; margin-top: -0.5rem; margin-bottom: 1.5rem; line-height: 1.5;"
+	>
+		💡 체크박스의 상태는 자동저장이 되며, 항목을 클릭하시면 하위항목이
+		보입니다.<br />
 		작성지침과 작성예시를 클릭하면 PDF 파일이 열립니다.<br />
 		법령·규칙·고시는 국가법령정보센터를 직접 링크하였습니다.
 	</p>
-
-
 
 	<div class="search-container">
 		<input
@@ -179,7 +182,7 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 
 	<!-- Section 1: Cooperation Request -->
 	<div class="section-container">
-        <!-- Title removed from here as it becomes the accordion title? No, User said "1. 수검협조사항" is the item title? 
+		<!-- Title removed from here as it becomes the accordion title? No, User said "1. 수검협조사항" is the item title? 
              User said: "수검협조사항(cooperation)에서 번호가 아니라 체크박스가 필요하다" 
              This usually means the Header itself has the checkbox (which ChecklistItem has).
              "1단계는 필쳐저 보이도록 한다" -> Default Open.
@@ -205,7 +208,7 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 						slug: "coop-merged",
 						data: {
 							order: 1,
-							title: "수검 장소와 자료 준비", 
+							title: "수검 장소와 자료 준비",
 							category: "",
 							content: `
                                 <ul style="padding-left: 0.5rem; margin: 0;">
@@ -236,14 +239,14 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
                                 </ul>
                             `,
 							check: [
-                                "회의테이블 공간",
-                                "노트북 전원",
-                                "서류 비치",
-                                "확인용 PC"
-                            ],
+								"회의테이블 공간",
+								"노트북 전원",
+								"서류 비치",
+								"확인용 PC",
+							],
 						},
-					}
-				].map((item) => <ChecklistItem item={item} open={true} />)
+					},
+				].map((item) => <ChecklistItem item={item} open={false} />)
 			}
 		</div>
 	</div>
@@ -255,7 +258,12 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 		<div class="checklist-container" id="checklistContainer">
 			{
 				sortedItems
-					.filter((item) => item.data.category !== "의료분야" && item.data.category !== "판매분야" && item.data.category !== "생산분야")
+					.filter(
+						(item) =>
+							item.data.category !== "의료분야" &&
+							item.data.category !== "판매분야" &&
+							item.data.category !== "생산분야",
+					)
 					.map((item) => <ChecklistItem item={item} />)
 			}
 		</div>
@@ -295,7 +303,6 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 					.map((item) => <ChecklistItem item={item} />)
 			}
 		</div>
-		
 	</div>
 
 	<div
@@ -331,7 +338,7 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 	<Lightbox />
 
 	<script>
-			// GLOBAL DELEGATION REMOVED TO PREVENT CONFLICT
-            // Original logic restored in ChecklistItem.astro
+		// GLOBAL DELEGATION REMOVED TO PREVENT CONFLICT
+		// Original logic restored in ChecklistItem.astro
 	</script>
 </DashboardLayout>

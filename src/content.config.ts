@@ -3,7 +3,7 @@ import { glob } from 'astro/loaders';
 
 // Blog collection removed
 const inspection_prep = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/inspection_prep" }),
+	type: 'content',
 	schema: z.object({
 		title: z.string(),
 		category: z.string().optional(),

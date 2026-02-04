@@ -34,7 +34,7 @@ import Icon from "./Icon.astro";
             </span>
         </button>
     </div>
-    <div class="panel">
+    <div class={`panel ${open ? "open" : ""}`}>
         <div class="content">
             {Content ? <Content /> : <div set:html={item.data.content} />}
             {
@@ -426,7 +426,9 @@ import Icon from "./Icon.astro";
 
     // Fallback for non-ViewTransitions pages
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initChecklist);
+        document.addEventListener("DOMContentLoaded", () => {
+            initChecklist();
+        });
     } else {
         initChecklist();
     }
@@ -434,20 +436,23 @@ import Icon from "./Icon.astro";
     function initChecklist() {
         const items = document.querySelectorAll(".checklist-item");
 
-        // Fix: Enable markdown checkboxes
-        document
-            .querySelectorAll('.panel input[type="checkbox"]')
-            .forEach((cb) => {
-                cb.removeAttribute("disabled");
-                cb.style.cursor = "pointer";
-            });
-
         items.forEach((item) => {
             const id = item.dataset.id;
+            // Prevent duplicate initialization
+            if (item.getAttribute("data-initialized") === "true") return;
+            item.setAttribute("data-initialized", "true");
+
             const mainCheckbox = item.querySelector(".status-checkbox");
             const btn = item.querySelector(".accordion-btn");
             const panel = item.querySelector(".panel");
             const progressText = item.querySelector(".progress-text");
+
+            // Fix: Enable markdown checkboxes
+            const subCbs = panel.querySelectorAll('input[type="checkbox"]');
+            subCbs.forEach((cb) => {
+                cb.removeAttribute("disabled");
+                cb.style.cursor = "pointer";
+            });
 
             // Helper: Update main checkbox based on sub-checkboxes
             const updateMainCheckbox = () => {
@@ -541,13 +546,12 @@ import Icon from "./Icon.astro";
             // 3. Toggle Accordion
             btn.addEventListener("click", () => {
                 const isOpen = panel.classList.contains("open");
+
                 if (!isOpen) {
                     panel.classList.add("open");
-                    panel.style.display = "block"; // Force show
                     item.classList.add("open");
                 } else {
                     panel.classList.remove("open");
-                    panel.style.display = "none"; // Force hide
                     item.classList.remove("open");
                 }
             });
