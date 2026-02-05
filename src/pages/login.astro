@@ -262,7 +262,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         // Force override scope using queryParams (Supabase sometimes ignores 'scopes' prop)
                         queryParams: {
                             scope: "account_email,profile_nickname", // Request Email explicitly!
-                            prompt: "login", // Force login screen to clear any stuck sessions
                         },
                     },
                 });
