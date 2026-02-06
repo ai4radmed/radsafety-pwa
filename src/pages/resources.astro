@@ -7,16 +7,6 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
 ---
 
 <DashboardLayout title="자료실">
-    <!-- Toast UI Editor CDN -->
-    <link
-        rel="stylesheet"
-        href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"
-    />
-    <link
-        rel="stylesheet"
-        href="https://uicdn.toast.com/editor/latest/toastui-editor-viewer.min.css"
-    />
-
     <style is:global>
         .page-header {
             display: flex;
@@ -464,16 +454,6 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">부가 설명 (필요 시)</label>
-                    <p
-                        style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;"
-                    >
-                        첨부 파일 외에 추가적인 설명이 필요한 경우 입력하세요.
-                    </p>
-                    <div id="editor"></div>
-                </div>
-
                 <div class="form-actions">
                     <button
                         type="button"
@@ -545,17 +525,10 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
     </div>
 </DashboardLayout>
 
-<!-- Load Toast UI Editor JS properly -->
-<script
-    is:inline
-    src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"
-></script>
-
 <script>
     import { supabase } from "../lib/supabase";
     import { userProfile } from "../store/user";
 
-    let editorInstance = null;
     let archivesData = [];
     let currentSort = { field: "date", order: "desc" };
 
@@ -572,17 +545,6 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         if (canUpload) {
             const btn = document.getElementById("openModalBtn");
             if (btn) btn.style.display = "flex";
-        }
-
-        // Initialize Editor
-        const Editor = window.toastui.Editor;
-        if (Editor) {
-            editorInstance = new Editor({
-                el: document.querySelector("#editor"),
-                height: "300px",
-                initialEditType: "markdown",
-                previewStyle: "vertical",
-            });
         }
 
         // Load Data
@@ -705,7 +667,6 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             .getElementById("openModalBtn")
             ?.addEventListener("click", () => {
                 document.getElementById("writeForm").reset();
-                editorInstance.setMarkdown("");
                 document.getElementById("writeModal").classList.add("active");
             });
 
@@ -801,7 +762,6 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                     const author = document.getElementById("writeAuthor").value;
                     const fileInput = document.getElementById("writeFile");
                     const file = fileInput.files[0];
-                    const contentHtml = editorInstance.getHTML();
 
                     let fileUrl = null;
                     let fileName = null;
@@ -828,7 +788,6 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                             author,
                             file_url: fileUrl,
                             file_name: fileName,
-                            content_html: contentHtml,
                             registrant_email: userProfile.get()?.email,
                         });
 
