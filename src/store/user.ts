@@ -103,6 +103,13 @@ export function clearUser() {
         is_safety_manager: 'false',
         safety_manager_start_date: '',
         safety_manager_end_date: '',
-        joined_at: ''
+        joined_at: '',
+        society_role: '',
+        is_safety_practice_staff: 'false',
+        society_name: '',
+        department: '',
+        is_safety_manager_deputy: 'false',
+        has_radiation_license: 'false',
+        radiation_license_type: 'none'
     });
 }

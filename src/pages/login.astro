@@ -167,7 +167,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
     </div>
 
     <script>
-        import { userProfile, setUser } from "../store/user";
+        import { userProfile, setUser, clearUser } from "../store/user";
         import { supabase } from "../lib/supabase";
 
         // Mock Login Logic
@@ -208,14 +208,17 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     )
                 ) {
                     try {
-                        // 1. Supabase Logout
+                        // 1. Clear Nano Stores (User Profile)
+                        clearUser();
+
+                        // 2. Supabase Logout
                         await supabase.auth.signOut();
 
-                        // 2. Clear All Storage
+                        // 3. Clear All Storage
                         localStorage.clear();
                         sessionStorage.clear();
 
-                        // 3. Clear Cookie (Optional but safe)
+                        // 4. Clear Cookie (Optional but safe)
                         document.cookie.split(";").forEach((c) => {
                             document.cookie = c
                                 .replace(/^ +/, "")
