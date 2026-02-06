@@ -110,30 +110,17 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
     <div class="login-wrapper">
         <div class="login-container">
-            <h1>간편인증으로 시작하기</h1>
-            <p class="subtitle">
-                RadSafety 앱 서비스 이용을 위해 로그인해 주세요.
-            </p>
-
-            <!-- Guidance Text Above Button -->
-            <p
-                style="font-size: 0.85rem; color: #4b5563; margin-bottom: 1rem; line-height: 1.5; word-break: keep-all;"
-            >
-                카카오로 시작하시면 <strong>별도의 가입 없이</strong> 빠르고 간편하며,
-                <strong>자동 로그인</strong>으로 재접속도 편리합니다.
-            </p>
-
             <!-- SNS Buttons Wrapper -->
             <div class="sns-buttons">
                 <LoginButton
                     provider="kakao"
-                    label="카카오로 시작하기"
+                    label="카카오 인증으로 RadSafety 앱 시작하기"
                     color="#FEE500"
                     textColor="#000000"
                 />
             </div>
 
-            <div class="divider">또는 이메일로 이용하기</div>
+            <div class="divider">또는 이메일로 인증하여 시작하기</div>
 
             <div class="email-login-section">
                 <form id="emailLoginForm" class="email-form">
@@ -144,14 +131,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         required
                     />
                     <button type="submit" class="email-btn"
-                        >이메일로 시작하기 (매직링크)</button
+                        >이메일로 인증하여 RadSafety 앱 시작하기</button
                     >
                 </form>
-                <div class="helper-text">
-                    <p style="font-size: 0.8rem;">
-                        입력한 이메일로 로그인 링크가 전송됩니다.
-                    </p>
-                </div>
             </div>
 
             <div class="divider">개발용 기능</div>
@@ -249,7 +231,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             });
         });
 
-        // Mock Logic (Optional: Keep for admin testing if needed, or hide)
-        document.querySelector(".test-login").style.display = "none";
+        // Mock Logic (Visible for smartphone testing if needed)
+        // document.querySelector(".test-login").style.display = "none";
     </script>
 </DashboardLayout>
