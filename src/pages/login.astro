@@ -147,12 +147,21 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
             <div class="test-login">
                 <div style="margin-bottom:0.5rem;">[개발자 모드]</div>
-                <button id="mockLoginBtn">승인 대기 계정 테스트</button>
-                <button
-                    id="mockLoginApprovedBtn"
-                    style="background:#059669; color:white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; margin-left:5px;"
-                    >승인 완료 계정 테스트</button
+                <div
+                    style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;"
                 >
+                    <button id="mockLoginBtn">대기 계정</button>
+                    <button
+                        id="mockLoginApprovedBtn"
+                        style="background:#059669; color:white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;"
+                        >완료 계정</button
+                    >
+                    <button
+                        id="resetSessionBtn"
+                        style="background:#dc2626; color:white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;"
+                        >세션 초기화(로그아웃)</button
+                    >
+                </div>
             </div>
         </div>
     </div>
@@ -188,6 +197,43 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         document
             .getElementById("mockLoginApprovedBtn")
             ?.addEventListener("click", () => mockLogin(true));
+
+        // Session Reset Logic
+        document
+            .getElementById("resetSessionBtn")
+            ?.addEventListener("click", async () => {
+                if (
+                    confirm(
+                        "모든 로그인 정보와 캐시를 초기화하고 로그아웃 하시겠습니까?",
+                    )
+                ) {
+                    try {
+                        // 1. Supabase Logout
+                        await supabase.auth.signOut();
+
+                        // 2. Clear All Storage
+                        localStorage.clear();
+                        sessionStorage.clear();
+
+                        // 3. Clear Cookie (Optional but safe)
+                        document.cookie.split(";").forEach((c) => {
+                            document.cookie = c
+                                .replace(/^ +/, "")
+                                .replace(
+                                    /=.*/,
+                                    "=;expires=" +
+                                        new Date().toUTCString() +
+                                        ";path=/",
+                                );
+                        });
+
+                        alert("세션이 성공적으로 초기화되었습니다.");
+                        window.location.reload();
+                    } catch (err) {
+                        alert("초기화 중 오류 발생: " + err.message);
+                    }
+                }
+            });
 
         // Email Login Logic (Magic Link)
         const emailForm = document.getElementById("emailLoginForm");
