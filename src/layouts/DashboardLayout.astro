@@ -320,6 +320,11 @@ const { title, description, scale } = Astro.props;
                         });
                         // Check Notifications
                         checkNotifications(session.user.id);
+
+                        // If already logged in and on the login page, redirect to mypage
+                        if (window.location.pathname === "/login") {
+                            window.location.href = "/mypage";
+                        }
                     } else {
                         console.warn(
                             "Fetch Profile Failed (using basic session):",
@@ -334,6 +339,24 @@ const { title, description, scale } = Astro.props;
                     }
                 } else {
                     clearUser();
+
+                    // Auth Guard: Redirect to login if on a protected page
+                    const publicPaths = ["/", "/login"];
+                    const currentPath = window.location.pathname;
+
+                    // Check if current path (or its prefix) is public
+                    const isPublic = publicPaths.some(
+                        (path) =>
+                            currentPath === path ||
+                            (path !== "/" && currentPath.startsWith(path)),
+                    );
+
+                    if (!isPublic) {
+                        console.log(
+                            "Unauthorized access to protected page. Redirecting to /login...",
+                        );
+                        window.location.href = "/login";
+                    }
                 }
             }
 
