@@ -158,10 +158,9 @@ const AVAILABLE_TAGS = [
         /* Filter Dropdown Styles */
         .controls-header {
             display: grid;
-            /* mathematical alignment: Header Col 1 = Card Col 1 (1fr) + 1rem (padding-left offset) */
-            grid-template-columns: calc(1fr + 1rem) 1fr 1fr 50px; 
+            grid-template-columns: 1fr 1fr 1fr 50px; 
             gap: 1rem;
-            padding: 0.5rem 1rem 0.5rem 0; /* Left padding 0 to align box edge with card border */
+            padding: 0.5rem 1rem; 
             border-bottom: 2px solid var(--border-color);
             margin-bottom: 1rem;
             align-items: center;
@@ -186,9 +185,9 @@ const AVAILABLE_TAGS = [
         .dropdown-btn {
             list-style: none; /* Remove default marker */
             width: 100%;
-            padding: 0.4rem 1rem; /* Enough internal padding to look professional */
-            background: var(--bg-card); 
-            border: 1px solid var(--border-color); 
+            padding: 0.4rem 0; /* Align text exactly with card content */
+            background: none; /* Subtle header style */
+            border: none; 
             border-radius: 6px;
             text-align: left;
             cursor: pointer;
@@ -295,7 +294,7 @@ const AVAILABLE_TAGS = [
             /* Perfectly even distribution: 1fr 1fr 1fr */
             grid-template-columns: 1fr 1fr 1fr 50px; 
             gap: 1rem;
-            padding: 0.5rem 1rem; /* Standard 0.5rem padding like Resources */
+            padding: 0.3rem 1rem; /* Compact layout */
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
