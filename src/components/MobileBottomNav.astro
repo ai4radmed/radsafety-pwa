@@ -23,19 +23,49 @@ const isActive = (path) => {
 
 <nav class="mobile-bottom-nav">
     {
-        navItems.map((item) => (
-            <a
-                href={item.path}
-                class={`nav-item ${isActive(item.path) ? "active" : ""}`}
-            >
-                <div class="icon-container">
-                    <Icon name={item.icon} size="24" />
+        navItems.map((item) =>
+            item.path === "#" ? (
+                <div
+                    class="nav-item feedback-trigger"
+                    role="button"
+                    style="cursor: pointer;"
+                >
+                    <div class="icon-container">
+                        <Icon name={item.icon} size="24" />
+                    </div>
+                    <span class="label">{item.name}</span>
                 </div>
-                <span class="label">{item.name}</span>
-            </a>
-        ))
+            ) : (
+                <a
+                    href={item.path}
+                    class={`nav-item ${isActive(item.path) ? "active" : ""}`}
+                >
+                    <div class="icon-container">
+                        <Icon name={item.icon} size="24" />
+                    </div>
+                    <span class="label">{item.name}</span>
+                </a>
+            ),
+        )
     }
 </nav>
+
+<script is:inline>
+    function initFeedbackAlert() {
+        const triggers = document.querySelectorAll(".feedback-trigger");
+        triggers.forEach((trigger) => {
+            // Remove existing listener to avoid duplicates
+            trigger.onclick = () => {
+                alert(
+                    "의견보내기는 현재 개발 중입니다.\nkimbi.kirams@gmail.com으로 연락 부탁드립니다.",
+                );
+            };
+        });
+    }
+
+    initFeedbackAlert();
+    document.addEventListener("astro:after-swap", initFeedbackAlert);
+</script>
 
 <style>
     .mobile-bottom-nav {
