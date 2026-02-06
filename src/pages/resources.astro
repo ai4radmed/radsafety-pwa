@@ -789,6 +789,73 @@ const categories = [
                 applySort();
             });
         });
+
+        // Form Submit
+        document
+            .getElementById("writeForm")
+            ?.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const submitBtn = e.target.querySelector(
+                    'button[type="submit"]',
+                );
+                const originalText = submitBtn.textContent;
+
+                try {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "저장 중...";
+
+                    const title = document.getElementById("writeTitle").value;
+                    const category =
+                        document.getElementById("writeCategory").value;
+                    const author = document.getElementById("writeAuthor").value;
+                    const fileInput = document.getElementById("writeFile");
+                    const file = fileInput.files[0];
+                    const contentHtml = editorInstance.getHTML();
+
+                    let fileUrl = null;
+                    let fileName = null;
+
+                    if (file) {
+                        const fileExt = file.name.split(".").pop();
+                        const filePath = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+
+                        const { error: uploadError } = await supabase.storage
+                            .from("resources")
+                            .upload(filePath, file);
+
+                        if (uploadError) throw uploadError;
+
+                        fileUrl = filePath;
+                        fileName = file.name;
+                    }
+
+                    const { error: dbError } = await supabase
+                        .from("archives")
+                        .insert({
+                            title,
+                            category,
+                            author,
+                            file_url: fileUrl,
+                            file_name: fileName,
+                            content_html: contentHtml,
+                            registrant_email: userProfile.get()?.email,
+                        });
+
+                    if (dbError) throw dbError;
+
+                    alert("자료가 등록되었습니다.");
+                    document
+                        .getElementById("writeModal")
+                        .classList.remove("active");
+                    await loadArchives();
+                } catch (err) {
+                    console.error(err);
+                    alert("등록 중 오류가 발생했습니다: " + err.message);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            });
     }
 
     function applySort() {
