@@ -7,36 +7,35 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 <DashboardLayout title="간편인증으로 시작하기">
     <style>
         .login-wrapper {
-            max-width: 480px;
-            margin: 4rem auto;
+            max-width: 440px;
+            margin: 1rem auto; /* 바짝 붙임 */
             text-align: center;
         }
         .login-container {
             background: white;
-            padding: 2.5rem;
+            padding: 1.25rem; /* Reduced padding */
             border-radius: 12px;
-            box-shadow:
-                0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             border: 1px solid #e5e7eb;
         }
         h1 {
-            margin-bottom: 0.5rem;
-            font-size: 1.8rem;
-            color: var(--accent); /* Blue for visibility */
+            margin-bottom: 0.25rem;
+            font-size: 1.5rem; /* Smaller */
+            color: var(--accent);
             font-weight: 800;
         }
         p.subtitle {
             color: #6b7280;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem; /* Reduced */
+            font-size: 0.85rem;
         }
         .divider {
             display: flex;
             align-items: center;
             text-align: center;
-            margin: 1.5rem 0;
+            margin: 0.75rem 0; /* Tightened */
             color: #9ca3af;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         .divider::before,
         .divider::after {
@@ -71,7 +70,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
         /* Email Login Styles */
         .email-login-section {
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
         .email-form {
             display: flex;
@@ -118,12 +117,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
             <!-- Guidance Text Above Button -->
             <p
-                style="font-size: 0.9rem; color: #4b5563; margin-bottom: 1.5rem; line-height: 1.6; word-break: keep-all;"
+                style="font-size: 0.85rem; color: #4b5563; margin-bottom: 1rem; line-height: 1.5; word-break: keep-all;"
             >
-                카카오로 시작하시면 <strong>별도의 가입 절차 없이</strong> 빠르고
-                간편하게 이용할 수 있으며, 자동 로그인으로 <strong
-                    >재접속도 편리</strong
-                >합니다.
+                카카오로 시작하시면 <strong>별도의 가입 없이</strong> 빠르고 간편하며,
+                <strong>자동 로그인</strong>으로 재접속도 편리합니다.
             </p>
 
             <!-- SNS Buttons Wrapper -->
@@ -138,18 +135,17 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
             <!-- Post-Login Verification Notice -->
             <div
-                style="margin-top: 1.5rem; text-align: center; background: #f3f4f6; padding: 1rem; border-radius: 8px;"
+                style="margin-top: 1rem; text-align: center; background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;"
             >
                 <p
-                    style="font-size: 0.85rem; color: #6b7280; margin: 0; line-height: 1.5; word-break: keep-all;"
+                    style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.4; word-break: keep-all;"
                 >
-                    💡 <strong>학회원 인증</strong>은 로그인 후,
-                    [마이페이지]에서<br />
-                    별도의 이메일로 편리하게 진행하실 수 있습니다.
+                    💡학회원 인증은 로그인 후 [마이페이지]에서<br />
+                    별도로 신청하실 수 있습니다.
                 </p>
             </div>
 
-            <div class="divider">또는 이메일로 시작하기</div>
+            <div class="divider">또는 이메일로 이용하기</div>
 
             <div class="email-login-section">
                 <form id="emailLoginForm" class="email-form">
@@ -164,12 +160,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     >
                 </form>
                 <div class="helper-text">
-                    <p>입력한 이메일로 로그인 링크가 전송됩니다.</p>
-                    <p style="margin-top:0.5rem; color:#4b5563;">
-                        💡 <strong>로그인 안내:</strong> 최초 1회만 로그인하시면,
-                        이후에는 별도 절차 없이 <strong
-                            >자동으로 로그인 상태가 유지</strong
-                        >됩니다.
+                    <p style="font-size: 0.8rem;">
+                        입력한 이메일로 로그인 링크가 전송됩니다.
                     </p>
                 </div>
             </div>
