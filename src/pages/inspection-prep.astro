@@ -75,17 +75,20 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 		}
 		.accent-text {
 			color: #ef4444; /* Red accent for warnings/notes */
+			font-size: 0.9rem;
+			font-weight: 500;
+		}
 		.section-container {
-			margin-bottom: 2.5rem;
+			margin-bottom: 2rem;
 		}
 		.section-title {
 			font-size: 1rem;
 			color: var(--text-main);
-			margin-top: 1.25rem;
+			margin-top: 1rem;
 			margin-bottom: 0.5rem;
 			border-left: 3px solid var(--accent);
 			padding-left: 0.6rem;
-			font-weight: 700;
+			font-weight: 600;
 		}
 		.info-card {
 			background-color: var(--bg-card);
@@ -109,11 +112,6 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 			color: var(--text-main);
 			margin: 0;
 		}
-		.accent-text {
-			color: #ef4444; /* Red accent for warnings/notes */
-			font-size: 0.9rem;
-			font-weight: 500;
-		}
 		.mb-4 {
 			margin-bottom: 1rem;
 		}
@@ -125,7 +123,8 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 		<h1
 			style="font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.4rem; line-height: 1.3;"
 		>
-			<Icon name="check-square" size="18" class="inline-icon" /> 정기검사 수검준비 체크리스트
+			<Icon name="check-square" size="18" class="inline-icon" /> 정기검사 수검준비
+			체크리스트
 		</h1>
 		<button id="resetBtn" class="reset-btn">선택해제</button>
 	</div>
@@ -138,7 +137,6 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 		작성지침과 작성예시를 클릭하면 PDF 파일이 열립니다.<br />
 		법령·규칙·고시는 국가법령정보센터를 직접 링크하였습니다.
 	</p>
-
 
 	<!-- Section 1: Cooperation Request -->
 	<div class="section-container">
@@ -264,7 +262,6 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 			}
 		</div>
 	</div>
-
 
 	<div class="download-section">
 		<p>전체 내용을 원본으로 확인하시려면 PDF를 다운로드하세요.</p>
