@@ -13,22 +13,18 @@ const categories = [
     "아카이브",
     "기타",
 ];
-
-const { data: dbData } = await supabase
-    .from('archives')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-const resources = (dbData || []).map(item => ({
-    ...item,
-    date: item.created_at // Map created_at to date for sorting compatibility
-}));
 ---
 
 <DashboardLayout title="자료실">
     <!-- Toast UI Editor CDN -->
-    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
-    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor-viewer.min.css" />
+    <link
+        rel="stylesheet"
+        href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"
+    />
+    <link
+        rel="stylesheet"
+        href="https://uicdn.toast.com/editor/latest/toastui-editor-viewer.min.css"
+    />
 
     <style is:global>
         .page-header {
@@ -84,7 +80,7 @@ const resources = (dbData || []).map(item => ({
         /* Sort & Filter Header */
         .controls-header {
             display: grid;
-            grid-template-columns: calc(120px + 1rem) 1fr 120px 120px 30px;
+            grid-template-columns: 120px 1fr 120px 120px 30px;
             gap: 1rem;
             padding: 0.5rem 1rem 0.5rem 0;
             border-bottom: 2px solid var(--border-color);
@@ -116,605 +112,36 @@ const resources = (dbData || []).map(item => ({
             font-weight: 600;
             color: var(--text-muted);
         }
-        .cat-filter-btn::-webkit-details-marker { display: none; }
-        .cat-filter-content {
-            position: absolute;
-            top: 100%; left: 0; width: 200px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-            padding: 0.5rem;
-            margin-top: 5px;
-            z-index: 200;
-        }
-        .cat-filter-item {
-            display: block; width: 100%;
-            text-align: left; padding: 0.5rem;
-            cursor: pointer; background: none; border: none;
-            color: var(--text-main);
-        }
-        .cat-filter-item:hover { background: var(--bg-hover); }
-
-        .sort-btn {
-            background: none; border: none;
-            font-size: 0.9rem; color: var(--text-muted);
-            cursor: pointer; display: flex; align-items: center; gap: 0.25rem;
-            padding: 0; font-weight: 600;
-        }
-        .sort-btn.active { color: var(--accent); }
-        .sort-icon { display: inline-block; opacity: 0; transition: transform 0.2s; }
-        .sort-btn.active .sort-icon { opacity: 1; }
-        .sort-btn.asc .sort-icon { transform: rotate(180deg); }
-
-        /* Resource List */
-        .resource-list { display: flex; flex-direction: column; gap: 0.5rem; }
-        .resource-card {
-            display: grid;
-            grid-template-columns: 120px 1fr 120px 120px 30px;
-            gap: 1rem; align-items: center;
-            padding: 0.5rem 1rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none; color: inherit;
-        }
-        .resource-card:hover { border-color: var(--accent); background: var(--bg-hover); }
-
-        .cat-badge {
-            font-size: 0.75rem; background: var(--bg-body);
-            padding: 0.2rem 0.6rem; border-radius: 4px;
-            color: var(--text-muted); border: 1px solid var(--border-color);
-            white-space: nowrap;
-        }
-        .col-title { font-weight: 500; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .col-date, .col-author { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        /* Modal Styles */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.5);
-            z-index: 1000; justify-content: center; align-items: center;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: var(--bg-card); padding: 2rem;
-            border-radius: 12px; width: 90%; max-width: 800px;
-            max-height: 90vh; overflow-y: auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .form-group { margin-bottom: 1rem; }
-        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        .form-input { width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-body); color: var(--text-main); }
-        .form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 2rem; }
-        .btn { padding: 0.6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
-        .btn-submit { background: var(--accent); color: white; }
-        .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
-
-        /* Viewer Styles */
-        .viewer-content-area {
-            min-height: 300px;
-            margin-top: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem;
-            overflow-y: auto; /* Scrollable content */
-            max-height: 60vh;
-        }
-        .pdf-download-bar {
-            background: var(--bg-hover);
-            padding: 1rem;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .controls-header { display: none; }
-            .resource-card {
-                display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;
-            }
-            .resource-card > div { width: 100%; }
-            .col-date, .col-author { text-align: left; }
-        }
-    </style>
-
-    <div class="page-header">
-        <div class="page-title">
-            <Icon name="folder" size="28" /> 자료실
-        </div>
-        <div>
-            <button id="openModalBtn" class="download-btn" style="gap: 0.5rem; padding: 0.5rem 1rem; display:none;">
-                <Icon name="pencil" size="16" /> 자료 등록
-            </button>
-        </div>
-    </div>
-
-    <!-- Search Bar -->
-    <div class="search-container">
-        <input type="text" id="resourceSearch" placeholder="자료 검색 (제목, 작성자)" />
-        <span class="search-icon"><Icon name="search" size="18" /></span>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls-header">
-        <div class="header-item">
-            <details class="cat-filter-dropdown" id="catFilterDropdown">
-                <summary class="cat-filter-btn" id="catFilterBtn">
-                    <span>전체</span> <Icon name="chevron-down" size="14" />
-                </summary>
-                <div class="cat-filter-content">
-                    <button class="cat-filter-item" data-value="">전체</button>
-                    {categories.map(cat => <button class="cat-filter-item" data-value={cat}>{cat}</button>)}
-                </div>
-            </details>
-        </div>
-        <div class="header-item"><button class="sort-btn active" data-sort="title">제목</button></div>
-        <div class="header-item"><button class="sort-btn" data-sort="date">날짜</button></div>
-        <div class="header-item"><button class="sort-btn" data-sort="author">작성자</button></div>
-    </div>
-
-    <!-- List -->
-    <div class="resource-list" id="resourceList">
-        <p style="text-align:center; padding:2rem;">로딩 중...</p>
-    </div>
-
-    <!-- Write/Edit Modal -->
-    <div id="writeModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header" style="font-size:1.2rem; font-weight:bold; margin-bottom:1rem;">자료 등록</div>
-            <form id="writeForm">
-                <input type="hidden" id="editId" />
-                <div class="form-group">
-                    <label class="form-label">제목</label>
-                    <input type="text" id="writeTitle" class="form-input" required placeholder="제목을 입력하세요" />
-                </div>
-                <div class="form-group" style="display:flex; gap:1rem;">
-                    <div style="flex:1;">
-                        <label class="form-label">카테고리</label>
-                        <select id="writeCategory" class="form-input">
-                            {categories.map(c => <option value={c}>{c}</option>)}
-                        </select>
-                    </div>
-                    <div style="flex:1;">
-                        <label class="form-label">작성자</label>
-                        <input type="text" id="writeAuthor" class="form-input" value="관리자" />
-                    </div>
-                </div>
-                
-                <div class="form-group" style="background:var(--bg-body); padding:1rem; border-radius:8px;">
-                     <label class="form-label">첨부 파일 (모든 형식 가능)</label>
-                     <input type="file" id="writeFile" />
-                     <div id="currentFileDisplay" style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);"></div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">내용 (마크다운 옵션)</label>
-                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">
-                        내용을 입력하면 자료 열람 시 <strong>즉시 로딩되는 텍스트 뷰어</strong>가 우선 표시됩니다. (입력하지 않으면 PDF 파일이 바로 열립니다)
-                    </p>
-                    <div id="editor"></div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" id="closeWriteModal" class="btn btn-cancel">취소</button>
-                    <button type="submit" class="btn btn-submit">저장</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Viewer Modal -->
-    <div id="viewerModal" class="modal-overlay">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;">
-                <div>
-                     <div class="cat-badge" id="viewCategory" style="display:inline-block; margin-bottom:0.5rem;"></div>
-                     <h2 id="viewTitle" style="font-size:1.3rem; margin:0;"></h2>
-                     <div style="font-size:0.9rem; color:var(--text-muted); margin-top:0.2rem;">
-                        <span id="viewAuthor"></span> · <span id="viewDate"></span>
-                     </div>
-                </div>
-                <button id="closeViewerBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
-            </div>
-
-            <div id="pdfDownloadBar" class="pdf-download-bar" style="display:none;">
-                <div>
-                    <strong>PDF 파일이 첨부되어 있습니다.</strong>
-                    <div style="font-size:0.85rem; opacity:0.8;">원본 양식이나 공식 문서는 PDF를 확인하세요.</div>
-                </div>
-                <a id="downloadLink" href="#" target="_blank" class="download-btn" style="text-decoration:none; padding:0.5rem 1rem;">
-                    <Icon name="download" size="16" /> 다운로드 / 보기
-                </a>
-            </div>
-
-            <div id="viewer" class="viewer-content-area"></div>
-        </div>
-    </div>
-</DashboardLayout>
-
-<!-- Load Toast UI Editor JS properly -->
-<script is:inline src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
-
-<script>
-    import { supabase } from "../lib/supabase";
-    import { userProfile } from "../store/user";
-
-    // Re-declare Editor here to satisfy TS check for window object
-    const Editor = window.toastui.Editor;
-
-    let editorInstance = null;
-    let archivesData = [];
-
-    document.addEventListener("astro:page-load", async () => {
-        const currentUser = userProfile.get();
-
-        // Check Permissions: Admin OR Verified Member OR Special User
-        const canUpload = 
-            currentUser && (
-                currentUser.role === 'admin' || 
-                currentUser.is_admin === true || 
-                currentUser.is_admin === "true" ||
-                currentUser.is_verified === true ||
-                currentUser.user_tier === 'special'
-            );
-
-        if(canUpload) {
-            const btn = document.getElementById('openModalBtn');
-            if(btn) btn.style.display = 'flex';
-        }
-
-        // Initialize Editor
-        editorInstance = new Editor({
-            el: document.querySelector('#editor'),
-            height: '300px',
-            initialEditType: 'markdown',
-            previewStyle: 'vertical',
-            initialValue: ''
-        });
-
-        // Load Data
-        await loadArchives();
-
-        // Event Listeners
-        setupEventListeners();
-    });
-
-    async function loadArchives() {
-        const listEl = document.getElementById('resourceList');
-        listEl.innerHTML = '<p style="text-align:center; padding:2rem;">로딩 중...</p>';
-
-        const { data, error } = await supabase
-            .from('archives')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if(error) {
-            console.error(error);
-            listEl.innerHTML = '<p style="text-align:center; color:red;">불러오기 실패</p>';
-            return;
-        }
-
-        archivesData = data;
-        renderList(data);
-    }
-
-    function renderList(list) {
-        const listEl = document.getElementById('resourceList');
-        if(list.length === 0) {
-            listEl.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--text-muted);">등록된 자료가 없습니다.</p>';
-            return;
-        }
-
-        listEl.innerHTML = list.map(item => `
-            <div class="resource-card" data-id="${item.id}">
-                <div class="col-cat"><span class="cat-badge">${item.category}</span></div>
-                <div class="col-title">${item.title}</div>
-                <div class="col-date">${new Date(item.created_at).toLocaleDateString()}</div>
-                <div class="col-author">${item.author}</div>
-                <div style="text-align:right;">
-                    ${item.file_url ? '📎' : ''} ${item.content_html ? '📝' : ''}
-                </div>
-            </div>
-        `).join('');
-
-        // Attach Click
-        document.querySelectorAll('.resource-card').forEach(card => {
-            card.addEventListener('click', () => openViewer(card.dataset.id));
-        });
-    }
-
-    function openViewer(id) {
-        // Find item (handle string/number difference)
-        const item = archivesData.find(d => String(d.id) === String(id));
-        if(!item) return;
-
-        // Populate Viewer Modal
-        document.getElementById('viewCategory').textContent = item.category;
-        document.getElementById('viewTitle').textContent = item.title;
-        document.getElementById('viewAuthor').textContent = item.author;
-        document.getElementById('viewDate').textContent = new Date(item.created_at).toLocaleDateString();
-
-        const downloadBar = document.getElementById('pdfDownloadBar');
-        const downloadLink = document.getElementById('downloadLink');
-        
-        const fileUrl = item.file_url || "";
-        const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
-        const fileExt = fileUrl ? fileUrl.split('.').pop().toUpperCase() : 'FILE';
-
-        // Download Link Logic
-        if (fileUrl) {
-            downloadBar.style.display = 'flex';
-            // Construct Public URL
-            const { data } = supabase.storage.from('resources').getPublicUrl(fileUrl);
-            downloadLink.href = data.publicUrl;
-            downloadLink.innerHTML = isPdf 
-                ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> PDF 원본 보기/다운로드`
-                : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${fileExt} 파일 다운로드`;
-            
-            // Update Text
-            downloadBar.querySelector('strong').textContent = isPdf ? 'PDF 파일이 첨부되어 있습니다.' : `${fileExt} 파일이 첨부되어 있습니다.`;
-            downloadBar.querySelector('div').textContent = isPdf ? '원본 양식이나 공식 문서는 PDF를 확인하세요.' : '이 형식의 파일은 뷰어에서 직접 열 수 없습니다.';
-        } else {
-            downloadBar.style.display = 'none';
-        }
-
-        const viewerEl = document.getElementById('viewer');
-        
-        // Viewer Content Logic
-        if(item.content_html) {
-             viewerEl.innerHTML = item.content_html;
-        } else if(fileUrl) {
-             viewerEl.innerHTML = `<div style="text-align:center; padding:3rem; color:gray;">
-                <p style="margin-bottom:1rem; font-size:1.1rem;">이 자료는 상세 텍스트 내용이 없습니다.</p>
-                <div style="font-size:3rem; margin-bottom:1rem; opacity:0.5;">${isPdf ? '📄' : '📁'}</div>
-                <p><strong>${fileExt}</strong> 형식의 파일은 미리보기를 지원하지 않습니다.</p>
-                <p>아래 버튼을 눌러 파일을 다운로드하여 확인하세요.</p>
-            </div>`;
-        } else {
-             viewerEl.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--text-muted);">표시할 내용이 없습니다.</p>';
-        }
-
-        document.getElementById('viewerModal').classList.add('active');
-    }
-
-    function setupEventListeners() {
-        // Modal Toggles
-        document.getElementById('openModalBtn').addEventListener('click', () => {
-            document.getElementById('writeForm').reset();
-            editorInstance.setMarkdown(''); 
-            document.getElementById('writeModal').classList.add('active');
-        });
-
-        document.getElementById('closeWriteModal').addEventListener('click', () => {
-            document.getElementById('writeModal').classList.remove('active');
-        });
-
-        document.getElementById('closeViewerBtn').addEventListener('click', () => {
-            document.getElementById('viewerModal').classList.remove('active');
-        });
-
-        // Write Form Submit
-        document.getElementById('writeForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.textContent = '저장 중...';
-
-            try {
-                const title = document.getElementById('writeTitle').value;
-                const category = document.getElementById('writeCategory').value;
-                const author = document.getElementById('writeAuthor').value;
-                const fileInput = document.getElementById('writeFile');
-                const contentHtml = editorInstance.getHTML(); // Get Rendered HTML
-                // Note: getHTML() wraps in <p> etc.
-                // We should also store markdown if we want to edit later, but for now HTML is fine for view.
-
-                let fileUrl = null;
-                let fileName = null;
-
-                if(fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const fileExt = file.name.split('.').pop();
-                    const filePath = `archives/${Date.now()}_${Math.random().toString(36).substr(2,9)}.${fileExt}`;
-                    
-                    const { error: uploadError } = await supabase.storage
-                        .from('resources')
-                        .upload(filePath, file);
-
-                    if(uploadError) throw uploadError;
-                    
-                    fileUrl = filePath;
-                    fileName = file.name;
-                }
-
-                // Insert into DB
-                const { error: dbError } = await supabase.from('archives').insert({
-                    title, category, author,
-                    content_html: contentHtml,
-                    file_url: fileUrl,
-                    file_name: fileName,
-                    created_by: userProfile.get().id
-                });
-
-                if(dbError) throw dbError;
-
-                alert('저장되었습니다.');
-                document.getElementById('writeModal').classList.remove('active');
-                loadArchives(); // Reload list
-            } catch(err) {
-                console.error(err);
-                alert('저장 실패: ' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '저장';
-            }
-        });
-        
-        // Filter Logic
-        document.querySelector('.cat-filter-content').addEventListener('click', (e) => {
-             if(e.target.tagName === 'BUTTON') {
-                 const val = e.target.dataset.value;
-                 document.getElementById('catFilterBtn').querySelector('span').textContent = val || '전체';
-                 // Filter List
-                 const filtered = val ? archivesData.filter(i => i.category === val) : archivesData;
-                 renderList(filtered);
-                 // Close dropdown details
-                 document.getElementById('catFilterDropdown').removeAttribute('open');
-             }
-        });
-
-        document.getElementById('resourceSearch').addEventListener('input', (e) => {
-             const keyword = e.target.value.toLowerCase();
-             const filtered = archivesData.filter(i => i.title.toLowerCase().includes(keyword) || i.author.includes(keyword));
-             renderList(filtered);
-        });
-    }
-</script>
-
-<DashboardLayout title="자료실">
-    <style is:global>
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        /* Search Bar */
-        .search-container {
-            margin-bottom: 2rem;
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            gap: 0.5rem;
-        }
-        #resourceSearch {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 0.75rem 1rem 0.75rem 2.5rem;
-            font-size: 0.95rem;
-            border: 1px solid var(--border-color);
-            background: var(--bg-card);
-            border-radius: 99px;
-            box-shadow: 0 1px 2px var(--shadow-color);
-            color: var(--text-main);
-            transition: border-color 0.2s;
-        }
-        #resourceSearch:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            pointer-events: none;
-            display: flex;
-        }
-
-        /* Sort & Filter Header */
-        .controls-header {
-            display: grid;
-            grid-template-columns: calc(120px + 1rem) 1fr 120px 120px 30px; 
-            gap: 1rem;
-            padding: 0.5rem 1rem 0.5rem 0; /* Left padding 0 to align with card border */
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 1rem;
-            align-items: center;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        /* Category Filter Dropdown */
-        .cat-filter-dropdown {
-            position: relative;
-            overflow: visible;
-            z-index: 101;
-        }
-
-        .cat-filter-btn {
-            list-style: none;
-            width: 100%;
-            padding: 0.4rem 0.5rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
         .cat-filter-btn::-webkit-details-marker {
             display: none;
         }
-
-        .cat-filter-btn:hover {
-            border-color: var(--accent);
-            color: var(--text-main);
-        }
-
         .cat-filter-content {
             position: absolute;
             top: 100%;
             left: 0;
             width: 200px;
-            max-height: 300px;
-            overflow-y: auto;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
             padding: 0.5rem;
             margin-top: 5px;
             z-index: 200;
         }
-
         .cat-filter-item {
             display: block;
             width: 100%;
             text-align: left;
             padding: 0.5rem;
             cursor: pointer;
-            font-size: 0.9rem;
-            border-radius: 4px;
-            color: var(--text-main);
             background: none;
             border: none;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            border-radius: 4px;
         }
-
         .cat-filter-item:hover {
             background: var(--bg-hover);
-        }
-
-        .filter-select {
-            padding: 0.4rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: var(--bg-card);
-            color: var(--text-main);
-            font-size: 0.85rem;
-            cursor: pointer;
-            width: auto; /* Fit content text, but inside fixed column */
         }
 
         .sort-btn {
@@ -728,23 +155,19 @@ const resources = (dbData || []).map(item => ({
             gap: 0.25rem;
             padding: 0;
             font-weight: 600;
-            justify-content: flex-start;
-        }
-        .sort-btn:hover {
-            color: var(--text-main);
         }
         .sort-btn.active {
             color: var(--accent);
         }
         .sort-icon {
-            transition: transform 0.2s ease-in-out;
-            opacity: 0;
             display: inline-block;
+            opacity: 0;
+            transition: transform 0.2s;
         }
         .sort-btn.active .sort-icon {
             opacity: 1;
         }
-        .sort-btn.asc .sort-icon {
+        .sort-btn.active.asc .sort-icon {
             transform: rotate(180deg);
         }
 
@@ -754,59 +177,40 @@ const resources = (dbData || []).map(item => ({
             flex-direction: column;
             gap: 0.5rem;
         }
-        
-        /* PC: Static Grid */
         .resource-card {
             display: grid;
-            grid-template-columns: 120px 1fr 120px 120px 30px;  
+            grid-template-columns: 120px 1fr 120px 120px 30px;
             gap: 1rem;
             align-items: center;
             padding: 0.5rem 1rem;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            transition: all 0.2s ease;
+            cursor: pointer;
             text-decoration: none;
             color: inherit;
-            position: relative;
-            /* Removed overflow: hidden to allow dropdowns */
         }
         .resource-card:hover {
-            background: var(--bg-hover);
             border-color: var(--accent);
-        }
-        .resource-card.menu-active {
-            z-index: 100; /* Bring to front */
-            border: 2px solid var(--color-medical-green) !important;
+            background: var(--bg-hover);
         }
 
-        .col-cat {
-            display: flex;
-            align-items: center;
-        }
         .cat-badge {
             font-size: 0.75rem;
             background: var(--bg-body);
             padding: 0.2rem 0.6rem;
             border-radius: 4px;
             color: var(--text-muted);
-            white-space: nowrap;
-            font-weight: 500;
             border: 1px solid var(--border-color);
+            white-space: nowrap;
         }
-
         .col-title {
             font-weight: 500;
             color: var(--text-main);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            cursor: pointer;
         }
-        .col-title:hover {
-            color: var(--accent);
-        }
-
         .col-date,
         .col-author {
             font-size: 0.85rem;
@@ -814,146 +218,7 @@ const resources = (dbData || []).map(item => ({
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            display: flex;
-            align-items: center;
         }
-        
-        .col-menu {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative; 
-        }
-        .menu-btn {
-            background: none;
-            border: none;
-            color: var(--text-main);
-            cursor: pointer;
-            padding: 0.2rem;
-            border-radius: 50%;
-        }
-        .menu-btn:hover {
-            color: var(--text-main);
-            background: var(--bg-body);
-        }
-        
-        /* Dropdown Menu (Universal) */
-        .dropdown-menu {
-            position: absolute;
-            right: 0.5rem;
-            top: 30px; /* Fixed offset instead of % to rely on button */
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* More shadow for visibility */
-            z-index: 1000; /* High Z */
-            display: none;
-            flex-direction: column;
-            min-width: 130px;
-        }
-        .dropdown-menu.active {
-            display: flex !important;
-            z-index: 9999;
-            background-color: var(--bg-card); 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
-            border: 2px solid blue !important; /* DEBUG: Confirm menu visibility */
-        }
-        .dropdown-item {
-            padding: 0.6rem 1rem;
-            font-size: 0.9rem;
-            color: var(--text-main);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            border: none;
-            background: none;
-            text-align: left;
-            width: 100%;
-        }
-        .dropdown-item:hover {
-            background: var(--bg-hover);
-        }
-        .dropdown-item.delete {
-            color: #ef4444;
-        }
-
-        /* Mobile Layout */
-        @media (max-width: 768px) {
-            .controls-header {
-                display: flex; /* Show on mobile */
-                flex-wrap: wrap;
-                justify-content: space-between; /* Evenly distribute items */
-                gap: 0; /* Let space-between handle gaps */
-                grid-template-columns: none;
-                margin-bottom: 1rem;
-                padding: 0.5rem 0; /* Align perfectly with card edge */
-                border-bottom: 1px solid var(--border-color);
-            }
-            /* Remove manual positioning */
-            .controls-header .header-item:nth-child(1),
-            .controls-header .header-item:nth-child(3),
-            .controls-header .header-item:nth-child(4) {
-                margin: 0;
-            }
-            .controls-header .header-item:last-child {
-                display: none; /* Hide empty PC spacer */
-            }
-            .header-item {
-                flex: 0 0 auto; /* Don't stretch */
-            }
-            .filter-select {
-                width: auto; /* Auto width on mobile */
-                min-width: auto; /* Allow shrinking to content size */
-            }
-            
-            .resource-card {
-                /* Horizontal Flex Layout */
-                display: flex;
-                flex-direction: row;
-                flex-wrap: nowrap;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 0.5rem 0.5rem;
-            }
-            
-            .col-cat {
-                flex-shrink: 0; 
-            }
-            .cat-badge {
-                padding: 0.15rem 0.4rem;
-                font-size: 0.7rem;
-            }
-
-            .col-title {
-                flex: 1; /* Take space */
-                min-width: 0; 
-                font-size: 0.9rem; 
-                white-space: nowrap; 
-                overflow: hidden; 
-                text-overflow: ellipsis; 
-            }
-
-            .col-date, .col-author {
-                flex-shrink: 0; 
-                font-size: 0.75rem; 
-                color: var(--text-muted); 
-                white-space: nowrap; 
-            }
-            
-            /* Show Menu on Mobile */
-            .col-menu {
-                flex-shrink: 0;
-                margin-left: auto;
-                display: flex !important; /* Force Show */
-            }
-            
-            .dropdown-menu {
-                right: 0.5rem;
-            }
-        }
-        
 
         /* Modal Styles */
         .modal-overlay {
@@ -976,14 +241,10 @@ const resources = (dbData || []).map(item => ({
             padding: 2rem;
             border-radius: 12px;
             width: 90%;
-            max-width: 500px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .modal-header {
-            margin-bottom: 1.5rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--text-main);
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .form-group {
             margin-bottom: 1rem;
@@ -991,8 +252,6 @@ const resources = (dbData || []).map(item => ({
         .form-label {
             display: block;
             margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            color: var(--text-main);
             font-weight: 500;
         }
         .form-input {
@@ -1002,7 +261,6 @@ const resources = (dbData || []).map(item => ({
             border-radius: 6px;
             background: var(--bg-body);
             color: var(--text-main);
-            box-sizing: border-box;
         }
         .form-actions {
             display: flex;
@@ -1016,16 +274,66 @@ const resources = (dbData || []).map(item => ({
             border: none;
             cursor: pointer;
             font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .btn-cancel {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
         }
         .btn-submit {
             background: var(--accent);
             color: white;
+        }
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        /* Viewer Styles */
+        .viewer-content-area {
+            min-height: 300px;
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        .pdf-download-bar {
+            background: var(--bg-hover);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .controls-header {
+                grid-template-columns: 80px 1fr 70px 30px;
+                gap: 0.5rem;
+            }
+            .controls-header .header-item:nth-child(4) {
+                display: none;
+            } /* Hide author on mobile header */
+
+            .resource-card {
+                grid-template-columns: 80px 1fr 70px 30px;
+                gap: 0.5rem;
+                padding: 0.75rem 0.5rem;
+            }
+            .col-author {
+                display: none;
+            }
+            .col-date {
+                text-align: right;
+                font-size: 0.75rem;
+            }
+            .cat-badge {
+                font-size: 0.7rem;
+                padding: 0.1rem 0.3rem;
+            }
+            .col-title {
+                font-size: 0.9rem;
+            }
         }
     </style>
 
@@ -1037,7 +345,7 @@ const resources = (dbData || []).map(item => ({
             <button
                 id="openModalBtn"
                 class="download-btn"
-                style="gap: 0.5rem; padding: 0.5rem 1rem;"
+                style="gap: 0.5rem; padding: 0.5rem 1rem; display:none;"
             >
                 <Icon name="pencil" size="16" /> 자료 등록
             </button>
@@ -1050,24 +358,16 @@ const resources = (dbData || []).map(item => ({
             type="text"
             id="resourceSearch"
             placeholder="자료 검색 (제목, 작성자)"
-            aria-label="자료 검색"
         />
         <span class="search-icon"><Icon name="search" size="18" /></span>
     </div>
 
-    <div
-        id="noResults"
-        style="display: none; text-align: center; padding: 2rem; color: var(--text-muted);"
-    >
-        검색 결과가 없습니다.
-    </div>
-
-    <!-- Header / Controls -->
+    <!-- Controls -->
     <div class="controls-header">
         <div class="header-item">
             <details class="cat-filter-dropdown" id="catFilterDropdown">
                 <summary class="cat-filter-btn" id="catFilterBtn">
-                    <span>자료유형</span>
+                    <span>전체</span>
                     <Icon name="chevron-down" size="14" />
                 </summary>
                 <div class="cat-filter-content">
@@ -1083,157 +383,110 @@ const resources = (dbData || []).map(item => ({
             </details>
         </div>
         <div class="header-item">
-            <button class="sort-btn" data-sort="title" data-order="none">
-                제목 <Icon name="chevron-down" size="14" class="sort-icon" />
-            </button>
+            <button class="sort-btn" data-sort="title" data-order="none"
+                >제목 <Icon
+                    name="chevron-down"
+                    size="14"
+                    class="sort-icon"
+                /></button>
         </div>
         <div class="header-item">
-            <button class="sort-btn active" data-sort="date" data-order="desc">
-                날짜 <Icon name="chevron-down" size="14" class="sort-icon" />
-            </button>
+            <button class="sort-btn active" data-sort="date" data-order="desc"
+                >날짜 <Icon
+                    name="chevron-down"
+                    size="14"
+                    class="sort-icon"
+                /></button>
         </div>
         <div class="header-item">
-            <button class="sort-btn" data-sort="author" data-order="none">
-                작성자 <Icon name="chevron-down" size="14" class="sort-icon" />
-            </button>
+            <button class="sort-btn" data-sort="author" data-order="none"
+                >작성자 <Icon
+                    name="chevron-down"
+                    size="14"
+                    class="sort-icon"
+                /></button>
         </div>
         <div class="header-item"></div>
     </div>
 
+    <!-- List -->
     <div class="resource-list" id="resourceList">
-        {
-            resources
-                .sort(
-                    (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime(),
-                )
-                .map((item) => (
-                    <div
-                        class="resource-card static-item"
-                        data-id={item.id}
-                        data-title={item.title}
-                        data-date={item.date}
-                        data-author={item.author}
-                        data-category={item.category}
-                        data-society-email={item.societyEmail ?? item.registrant}
-                        data-registrant={item.registrant}
-                        onclick={`
-                            if ('${item.previewUrl}' !== '#') {
-                                window.open('${item.previewUrl}', '_blank');
-                            } else {
-                                alert('미리보기: 연결된 파일이 없습니다.');
-                            }
-                        `}
-                    >
-                         <a href={item.previewUrl} target="_blank" class="resource-link-wrapper" style="display:contents; color:inherit; text-decoration:none;">
-                            <div class="col-cat">
-                                <span class="cat-badge">{item.category}</span>
-                            </div>
-                            <div class="col-title" title={item.title}>
-                                {item.title}
-                            </div>
-                            <div class="col-date">{item.date}</div>
-                            <div class="col-author" title={item.author}>
-                                {item.author}
-                            </div>
-                        </a>
-                        
-                        <!-- Menu (Universal) -->
-                        <div class="col-menu">
-                            <button class="menu-btn" aria-label="메뉴 열기">
-                                <Icon name="dots" size="20" />
-                            </button>
-                            <div class="dropdown-menu">
-                                <a 
-                                    href="#" 
-                                    class="dropdown-item" 
-                                    onclick={`alert('다운로드: ${item.fileName || "가상 파일"} (가상 다운로드)'); return false;`}
-                                >
-                                    <Icon name="download" size="14" /> 다운로드
-                                </a>
-                                <button class="dropdown-item edit-btn">
-                                    <Icon name="pencil" size="14" /> 수정
-                                </button>
-                                <button class="dropdown-item delete-btn delete">
-                                    <Icon name="trash" size="14" /> 삭제
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ))
-        }
+        <p style="text-align:center; padding:2rem;">로딩 중...</p>
     </div>
 
-    <!-- Add/Edit Resource Modal -->
-    <div id="addResourceModal" class="modal-overlay">
+    <!-- Write/Edit Modal -->
+    <div id="writeModal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header" id="modalTitle">자료 등록</div>
-            <form id="addResourceForm">
-                <input type="hidden" id="resId" />
+            <div
+                class="modal-header"
+                style="font-size:1.2rem; font-weight:bold; margin-bottom:1rem;"
+            >
+                자료 등록
+            </div>
+            <form id="writeForm">
+                <input type="hidden" id="editId" />
                 <div class="form-group">
-                    <label class="form-label" for="resTitle">제목</label>
+                    <label class="form-label">제목</label>
                     <input
                         type="text"
-                        id="resTitle"
+                        id="writeTitle"
                         class="form-input"
                         required
-                        placeholder="10자 이내 입력"
+                        placeholder="제목을 입력하세요"
                     />
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="resDate">날짜</label>
-                    <input
-                        type="date"
-                        id="resDate"
-                        class="form-input"
-                        required
-                    />
+                <div class="form-group" style="display:flex; gap:1rem;">
+                    <div style="flex:1;">
+                        <label class="form-label">카테고리</label>
+                        <select id="writeCategory" class="form-input">
+                            {
+                                categories.map((c) => (
+                                    <option value={c}>{c}</option>
+                                ))
+                            }
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label class="form-label">작성자</label>
+                        <input
+                            type="text"
+                            id="writeAuthor"
+                            class="form-input"
+                            value="관리자"
+                        />
+                    </div>
                 </div>
+
+                <div
+                    class="form-group"
+                    style="background:var(--bg-body); padding:1rem; border-radius:8px;"
+                >
+                    <label class="form-label">첨부 파일 (모든 형식 가능)</label>
+                    <input type="file" id="writeFile" />
+                    <div
+                        id="currentFileDisplay"
+                        style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);"
+                    >
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label class="form-label" for="resAuthor">작성자</label>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; line-height: 1.4;">
-                        자료를 올리는 사람이 아니라 <strong>실제 자료를 만든 저자</strong>를 의미합니다.
+                    <label class="form-label">내용 (마크다운 옵션)</label>
+                    <p
+                        style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;"
+                    >
+                        내용을 입력하면 자료 열람 시 <strong
+                            >즉시 로딩되는 텍스트 뷰어</strong
+                        >가 우선 표시됩니다. (입력하지 않으면 PDF 파일이 바로
+                        열립니다)
                     </p>
-                    <input
-                        type="text"
-                        id="resAuthor"
-                        class="form-input"
-                        value="관리자"
-                        required
-                    />
+                    <div id="editor"></div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="resEmail">학회 등록 이메일</label>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; line-height: 1.4;">
-                        마이페이지에 등록된 이메일 정보가 자동으로 입력됩니다.
-                    </p>
-                    <input
-                        type="email"
-                        id="resEmail"
-                        class="form-input"
-                        placeholder="로그인 후 이용해주세요."
-                        readonly
-                        style="background-color: var(--bg-hover); color: var(--text-muted); cursor: not-allowed;"
-                    />
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="resCategory">카테고리</label>
-                    <select id="resCategory" class="form-input">
-                        {
-                            categories
-                                .filter((c) => c !== "전체 선택")
-                                .map((c) => <option value={c}>{c}</option>)
-                        }
-                    </select>
-                </div>
-                <div class="form-group">
-                     <label class="form-label" for="resFile">첨부 파일 (PDF)</label>
-                     <input type="file" id="resFile" class="form-input" accept=".pdf" />
-                </div>
+
                 <div class="form-actions">
                     <button
                         type="button"
-                        id="closeModalBtn"
+                        id="closeWriteModal"
                         class="btn btn-cancel">취소</button
                     >
                     <button type="submit" class="btn btn-submit">저장</button>
@@ -1242,490 +495,312 @@ const resources = (dbData || []).map(item => ({
         </div>
     </div>
 
-    <script>
-        import { userProfile } from "../store/user";
+    <!-- Viewer Modal -->
+    <div id="viewerModal" class="modal-overlay">
+        <div class="modal-content">
+            <div
+                style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;"
+            >
+                <div>
+                    <div
+                        class="cat-badge"
+                        id="viewCategory"
+                        style="display:inline-block; margin-bottom:0.5rem;"
+                    >
+                    </div>
+                    <h2
+                        id="viewTitle"
+                        style="font-size:1.3rem; margin:0; color: white;"
+                    >
+                    </h2>
+                    <div
+                        style="font-size:0.9rem; color:var(--text-muted); margin-top:0.2rem;"
+                    >
+                        <span id="viewAuthor"></span> · <span id="viewDate"
+                        ></span>
+                    </div>
+                </div>
+                <button
+                    id="closeViewerBtn"
+                    style="background:none; border:none; color: white; font-size:1.5rem; cursor:pointer;"
+                    >&times;</button
+                >
+            </div>
 
-        // Local mock for dev if store is empty (optional, but store is source of truth)
-        let currentUserEmail = "";
+            <div
+                id="pdfDownloadBar"
+                class="pdf-download-bar"
+                style="display:none;"
+            >
+                <div>
+                    <strong>파일이 첨부되어 있습니다.</strong>
+                    <div style="font-size:0.85rem; opacity:0.8;">
+                        원본을 확인하시려면 다운로드 버튼을 누르세요.
+                    </div>
+                </div>
+                <a
+                    id="downloadLink"
+                    href="#"
+                    target="_blank"
+                    class="download-btn"
+                    style="text-decoration:none; padding:0.5rem 1rem; background: var(--accent); color: white; border-radius: 6px; font-weight: 600;"
+                >
+                    <Icon name="download" size="16" /> 다운로드 / 보기
+                </a>
+            </div>
 
-        userProfile.subscribe(user => {
-            if(user) {
-                currentUserEmail = user.email;
-            } else {
-                currentUserEmail = "";
-            }
-            // Update input if modal is open or exists
-            const emailInput = document.getElementById("resEmail");
-            if(emailInput) emailInput.value = currentUserEmail;
-        });
+            <div id="viewer" class="viewer-content-area"></div>
+        </div>
+    </div>
+</DashboardLayout>
 
-        // Local mock removed. Use store.
+<!-- Load Toast UI Editor JS properly -->
+<script
+    is:inline
+    src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"
+></script>
+
+<script>
+    import { supabase } from "../lib/supabase";
+    import { userProfile } from "../store/user";
+
+    let editorInstance = null;
+    let archivesData = [];
+    let currentSort = { field: "date", order: "desc" };
+
+    document.addEventListener("astro:page-load", async () => {
         const currentUser = userProfile.get();
 
-        document.addEventListener("astro:page-load", () => {
-            initResources();
+        // Check Permissions
+        const canUpload =
+            currentUser &&
+            (currentUser.role === "admin" ||
+                currentUser.is_admin === true ||
+                currentUser.is_verified === true);
+
+        if (canUpload) {
+            const btn = document.getElementById("openModalBtn");
+            if (btn) btn.style.display = "flex";
+        }
+
+        // Initialize Editor
+        const Editor = window.toastui.Editor;
+        if (Editor) {
+            editorInstance = new Editor({
+                el: document.querySelector("#editor"),
+                height: "300px",
+                initialEditType: "markdown",
+                previewStyle: "vertical",
+            });
+        }
+
+        // Load Data
+        await loadArchives();
+
+        // Event Listeners
+        setupEventListeners();
+    });
+
+    async function loadArchives() {
+        const listEl = document.getElementById("resourceList");
+        if (!listEl) return;
+
+        listEl.innerHTML =
+            '<p style="text-align:center; padding:2rem;">로딩 중...</p>';
+
+        const { data, error } = await supabase
+            .from("archives")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error(error);
+            listEl.innerHTML =
+                '<p style="text-align:center; color:red; padding: 2rem;">데이터를 불러오는 중 오류가 발생했습니다.</p>';
+            return;
+        }
+
+        archivesData = data || [];
+        renderList(archivesData);
+    }
+
+    function renderList(list) {
+        const listEl = document.getElementById("resourceList");
+        if (!listEl) return;
+
+        if (list.length === 0) {
+            listEl.innerHTML =
+                '<p style="text-align:center; padding:2rem; color:var(--text-muted);">등록된 자료가 없습니다.</p>';
+            return;
+        }
+
+        listEl.innerHTML = list
+            .map(
+                (item) => `
+            <div class="resource-card" data-id="${item.id}">
+                <div class="col-cat"><span class="cat-badge">${item.category}</span></div>
+                <div class="col-title">${item.title}</div>
+                <div class="col-date">${new Date(item.created_at).toLocaleDateString()}</div>
+                <div class="col-author">${item.author}</div>
+                <div style="text-align:right;">
+                    ${item.file_url ? "📎" : ""} ${item.content_html ? "📝" : ""}
+                </div>
+            </div>
+        `,
+            )
+            .join("");
+
+        // Attach Click
+        document.querySelectorAll(".resource-card").forEach((card) => {
+            card.addEventListener("click", () => openViewer(card.dataset.id));
+        });
+    }
+
+    function openViewer(id) {
+        const item = archivesData.find((d) => String(d.id) === String(id));
+        if (!item) return;
+
+        document.getElementById("viewCategory").textContent = item.category;
+        document.getElementById("viewTitle").textContent = item.title;
+        document.getElementById("viewAuthor").textContent = item.author;
+        document.getElementById("viewDate").textContent = new Date(
+            item.created_at,
+        ).toLocaleDateString();
+
+        const downloadBar = document.getElementById("pdfDownloadBar");
+        const downloadLink = document.getElementById("downloadLink");
+        const fileUrl = item.file_url;
+
+        if (fileUrl) {
+            downloadBar.style.display = "flex";
+            const { data } = supabase.storage
+                .from("resources")
+                .getPublicUrl(fileUrl);
+            downloadLink.href = data.publicUrl;
+        } else {
+            downloadBar.style.display = "none";
+        }
+
+        const viewerEl = document.getElementById("viewer");
+        if (item.content_html) {
+            viewerEl.innerHTML = item.content_html;
+        } else if (fileUrl) {
+            viewerEl.innerHTML = `<div style="text-align:center; padding:3rem; color:var(--text-muted);">
+                <p>본문의 텍스트 내용이 없습니다. 파일을 다운로드하여 확인하세요.</p>
+            </div>`;
+        } else {
+            viewerEl.innerHTML =
+                '<p style="text-align:center; padding:2rem; color:var(--text-muted);">표시할 내용이 없습니다.</p>';
+        }
+
+        document.getElementById("viewerModal").classList.add("active");
+    }
+
+    function setupEventListeners() {
+        // Modal Toggles
+        document
+            .getElementById("openModalBtn")
+            ?.addEventListener("click", () => {
+                document.getElementById("writeForm").reset();
+                editorInstance.setMarkdown("");
+                document.getElementById("writeModal").classList.add("active");
+            });
+
+        document
+            .getElementById("closeWriteModal")
+            ?.addEventListener("click", () => {
+                document
+                    .getElementById("writeModal")
+                    .classList.remove("active");
+            });
+
+        document
+            .getElementById("closeViewerBtn")
+            ?.addEventListener("click", () => {
+                document
+                    .getElementById("viewerModal")
+                    .classList.remove("active");
+            });
+
+        // Search
+        document
+            .getElementById("resourceSearch")
+            ?.addEventListener("input", (e) => {
+                const keyword = e.target.value.toLowerCase();
+                const filtered = archivesData.filter(
+                    (i) =>
+                        i.title.toLowerCase().includes(keyword) ||
+                        i.author.toLowerCase().includes(keyword),
+                );
+                renderList(filtered);
+            });
+
+        // Category Filter
+        document.querySelectorAll(".cat-filter-item").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const val = btn.dataset.value;
+                document
+                    .getElementById("catFilterBtn")
+                    .querySelector("span").textContent = val || "전체";
+                const filtered = val
+                    ? archivesData.filter((i) => i.category === val)
+                    : archivesData;
+                renderList(filtered);
+                document
+                    .getElementById("catFilterDropdown")
+                    .removeAttribute("open");
+            });
         });
 
-        if (document.readyState !== "loading") {
-            initResources();
+        // Sort
+        document.querySelectorAll(".sort-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const field = btn.dataset.sort;
+                let order = btn.dataset.order;
+
+                if (order === "desc") order = "asc";
+                else if (order === "asc") order = "none";
+                else order = "desc";
+
+                document.querySelectorAll(".sort-btn").forEach((b) => {
+                    b.dataset.order = "none";
+                    b.classList.remove("active", "asc");
+                });
+
+                if (order !== "none") {
+                    btn.dataset.order = order;
+                    btn.classList.add("active");
+                    if (order === "asc") btn.classList.add("asc");
+                }
+
+                currentSort = { field, order };
+                applySort();
+            });
+        });
+    }
+
+    function applySort() {
+        if (currentSort.order === "none") {
+            renderList(archivesData);
+            return;
         }
 
-        function initResources() {
-            const searchInput = document.getElementById("resourceSearch");
-            const catFilterDropdown = document.getElementById("catFilterDropdown");
-            const catFilterBtn = document.getElementById("catFilterBtn");
-            const catFilterItems = document.querySelectorAll(".cat-filter-item");
-            const sortBtns = document.querySelectorAll(".sort-btn");
-            const resourceList = document.getElementById("resourceList");
-            const noResults = document.getElementById("noResults");
-            
-            // Modal Elements
-            const openModalBtn = document.getElementById("openModalBtn");
-            const closeModalBtn = document.getElementById("closeModalBtn");
-            const modal = document.getElementById("addResourceModal");
-            const modalTitle = document.getElementById("modalTitle");
-            const form = document.getElementById("addResourceForm");
+        const sorted = [...archivesData].sort((a, b) => {
+            let valA = a[currentSort.field];
+            let valB = b[currentSort.field];
 
-            function setupMenu(card) {
-                if(card.dataset.menuInitialized === "true") return;
-                card.dataset.menuInitialized = "true";
-
-                // Menu Logic
-                const menuBtn = card.querySelector('.menu-btn');
-                const dropdown = card.querySelector('.dropdown-menu');
-                const deleteBtn = card.querySelector('.delete-btn');
-                const editBtn = card.querySelector('.edit-btn');
-                
-                const registrant = card.getAttribute('data-registrant');
-                const societyEmail = card.getAttribute('data-society-email') || registrant;
-                
-                // Permission Check
-                // Use currentUserEmail (from store definition above) for dynamic comparison
-                const isOwner = (currentUserEmail && societyEmail && currentUserEmail === societyEmail);
-                const isAdmin = (currentUser.role === 'admin');
-                
-                if (!isOwner && !isAdmin) {
-                    if(deleteBtn) deleteBtn.style.display = 'none';
-                    if(editBtn) editBtn.style.display = 'none';
-                } else {
-                    // Ensure they are visible if conditions met (in case recycled or re-rendered)
-                    if(deleteBtn) deleteBtn.style.display = 'block';
-                    if(editBtn) editBtn.style.display = 'block';
-                }
-
-                if (menuBtn && dropdown) {
-                    // Explicitly stop propagation on the container too
-                    const colMenu = card.querySelector('.col-menu');
-                    if(colMenu) {
-                        colMenu.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        });
-                    }
-
-                    menuBtn.addEventListener('click', (e) => {
-                        e.preventDefault(); 
-                        e.stopPropagation(); 
-                        
-                        // Close Others
-                        document.querySelectorAll('.dropdown-menu.active').forEach(m => {
-                           if(m !== dropdown) {
-                               m.classList.remove('active');
-                               // Remove z-index from other cards
-                               const parentCard = m.closest('.resource-card');
-                               if(parentCard) parentCard.classList.remove('menu-active');
-                           }
-                        });
-                        
-                        // Toggle Current
-                        const isActive = dropdown.classList.toggle('active');
-                        if (isActive) {
-                            card.classList.add('menu-active');
-                        } else {
-                            card.classList.remove('menu-active');
-                        }
-                    });
-                }
-                
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', (e) => {
-                         e.stopPropagation();
-                         if(confirm('정말 삭제하시겠습니까?')) {
-                             const id = card.getAttribute('data-id');
-                             deleteResource(id, card);
-                         }
-                         dropdown.classList.remove('active');
-                    });
-                }
-
-                if (editBtn) {
-                     editBtn.addEventListener('click', (e) => {
-                         e.stopPropagation();
-                         const id = card.getAttribute('data-id');
-                         openEditModalFromCard(card);
-                         dropdown.classList.remove('active');
-                     });
-                }
+            if (currentSort.field === "date") {
+                valA = new Date(a.created_at).getTime();
+                valB = new Date(b.created_at).getTime();
             }
 
-            // Global Click to close menus
-            document.addEventListener('click', () => {
-                 document.querySelectorAll('.dropdown-menu.active').forEach(m => {
-                     m.classList.remove('active');
-                     const parentCard = m.closest('.resource-card');
-                     if(parentCard) parentCard.classList.remove('menu-active');
-                 });
-            });
-                
-
-
-            function openEditModalFromCard(card) {
-                const id = card.getAttribute('data-id');
-                const title = card.getAttribute('data-title');
-                const date = card.getAttribute('data-date');
-                const author = card.getAttribute('data-author');
-                const category = card.getAttribute('data-category');
-                const societyEmail = card.getAttribute('data-society-email') || "";
-
-                openEditModal(id, title, date, author, category, societyEmail);
+            if (currentSort.order === "asc") {
+                return valA > valB ? 1 : -1;
+            } else {
+                return valA < valB ? 1 : -1;
             }
-            
-            function deleteResource(id, cardElement) {
-                cardElement.remove();
-                let stored = JSON.parse(localStorage.getItem("addedResources") || "[]");
-                stored = stored.filter(item => String(item.id) !== String(id));
-                localStorage.setItem("addedResources", JSON.stringify(stored));
-                filterItems();
-            }
+        });
 
-            function openEditModal(id, title, date, author, category, societyEmail) {
-                 if(!modal) return;
-                 modal.classList.add("active");
-                 modalTitle.textContent = "자료 수정";
-                 document.getElementById("resId").value = id;
-                 document.getElementById("resTitle").value = title;
-                 document.getElementById("resDate").value = date;
-                 document.getElementById("resAuthor").value = author;
-                 document.getElementById("resCategory").value = category;
-                 document.getElementById("resEmail").value = societyEmail;
-            }
-
-            // ... (modal logic same) ...
-            if (openModalBtn && modal) {
-                openModalBtn.addEventListener("click", () => {
-                    modal.classList.add("active");
-                    modalTitle.textContent = "자료 등록";
-                    form.reset();
-                    document.getElementById("resId").value = "";
-                    const today = new Date().toISOString().split("T")[0];
-                    document.getElementById("resDate").value = today;
-                    
-                    // Auto-fill email from store
-                    if(document.getElementById("resEmail")) {
-                        document.getElementById("resEmail").value = currentUserEmail;
-                    }
-                });
-            }
-            if (closeModalBtn && modal) {
-                closeModalBtn.addEventListener("click", () => {
-                    modal.classList.remove("active");
-                });
-            }
-
-            if (form && !form.dataset.attached) {
-                form.addEventListener("submit", (e) => {
-                    e.preventDefault();
-                    const id = document.getElementById("resId").value;
-                    const title = document.getElementById("resTitle").value;
-                    const date = document.getElementById("resDate").value;
-                    const author = document.getElementById("resAuthor").value;
-                    const category = document.getElementById("resCategory").value;
-                    const societyEmail = document.getElementById("resEmail").value;
-                    const fileInput = document.getElementById("resFile");
-                    const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : "";
-                    
-                    if (id) {
-                        updateResource(id, title, date, author, category, fileName, societyEmail);
-                    } else {
-                        createResource(title, date, author, category, fileName, societyEmail);
-                    }
-                    modal.classList.remove("active");
-                    form.reset();
-                });
-                form.dataset.attached = "true";
-            }
-
-            function createResource(title, date, author, category, fileName, societyEmail) {
-                 const newResource = {
-                    id: Date.now(),
-                    title,
-                    date,
-                    author,
-                    category,
-                    fileName,
-                    societyEmail,
-                    registrant: currentUser.email,
-                    previewUrl: "#",
-                    downloadUrl: "#",
-                };
-                const stored = JSON.parse(localStorage.getItem("addedResources") || "[]");
-                stored.push(newResource);
-                localStorage.setItem("addedResources", JSON.stringify(stored));
-
-                const card = createResourceCard(newResource);
-                resourceList.insertBefore(card, resourceList.firstChild);
-                setupMenu(card);
-                filterItems();
-                sortItems('date', 'desc');
-            }
-
-            function updateResource(id, title, date, author, category, fileName, societyEmail) {
-                 const card = document.querySelector(`.resource-card[data-id="${id}"]`);
-                 if(card) {
-                     card.setAttribute('data-title', title);
-                     card.setAttribute('data-date', date);
-                     card.setAttribute('data-author', author);
-                     card.setAttribute('data-category', category);
-                     card.setAttribute('data-society-email', societyEmail);
-                     if(fileName) card.setAttribute('data-filename', fileName);
-                     
-                     card.querySelector('.col-title').innerText = title; 
-                     card.querySelector('.col-date').innerText = date;
-                     card.querySelector('.col-author').innerText = author;
-                     card.querySelector('.cat-badge').innerText = category;
-                 }
-                 let stored = JSON.parse(localStorage.getItem("addedResources") || "[]");
-                 const index = stored.findIndex(item => String(item.id) === String(id));
-                 if(index !== -1) {
-                     stored[index].title = title;
-                     stored[index].date = date;
-                     stored[index].author = author;
-                     stored[index].category = category;
-                     stored[index].societyEmail = societyEmail;
-                     if(fileName) stored[index].fileName = fileName;
-                     localStorage.setItem("addedResources", JSON.stringify(stored));
-                 }
-            }
-
-             // Load Stored
-            const storedResources = JSON.parse(
-                localStorage.getItem("addedResources") || "[]",
-            );
-            if (!resourceList.hasAttribute("data-local-loaded")) {
-                storedResources.forEach((item) => {
-                    const card = createResourceCard(item);
-                    resourceList.appendChild(card);
-                    setupMenu(card);
-                });
-                resourceList.setAttribute("data-local-loaded", "true");
-                sortItems("date", "desc");
-            }
-            
-            // Close menu listener
-            document.addEventListener('click', (e) => {
-                 if (!e.target.closest('.col-menu')) {
-                      document.querySelectorAll('.dropdown-menu.active').forEach(m => m.classList.remove('active'));
-                 }
-            });
-
-            document.querySelectorAll('.resource-card').forEach(card => {
-                 setupMenu(card);
-            });
-
-            // Local Helper
-            let currentSearch = "";
-            let currentCat = "";
-
-            function getIconSvg(name, size = "24", className = "") {
-                const paths = {
-                    dots: "M12 12h.01 M12 19h.01 M12 5h.01",
-                    download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
-                    pencil: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",
-                    trash: "M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                };
-                return `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${className}">
-                    <path d="${paths[name] || ''}"></path>
-                </svg>
-                `;
-            }
-
-            function createResourceCard(item) {
-                const div = document.createElement("div");
-                div.className = "resource-card local-item";
-                div.setAttribute("data-id", item.id);
-                div.setAttribute("data-title", item.title);
-                div.setAttribute("data-date", item.date);
-                div.setAttribute("data-author", item.author);
-                div.setAttribute("data-category", item.category);
-                div.setAttribute("data-society-email", item.societyEmail || "");
-                div.setAttribute("data-filename", item.fileName || "");
-
-                // Update Click Handler: Use Real URL if available
-                div.onclick = (e) => {
-                    // If clicking menu, don't trigger
-                    if (e.target.closest('.col-menu') || e.target.closest('a')) return;
-                    
-                    if (item.previewUrl && item.previewUrl !== "#") {
-                        window.open(item.previewUrl, '_blank');
-                    } else {
-                        const msg = item.fileName ? `미리보기: ${item.fileName} (가상 뷰어)` : '미리보기: 연결된 파일이 없습니다.';
-                        alert(msg);
-                    }
-                };
-                
-                const downloadAction = item.fileName 
-                    ? `alert('다운로드: ${item.fileName} (가상 다운로드)');` 
-                    : `alert('첨부파일이 없습니다.'); return false;`;
-
-                div.innerHTML = `
-                         <a href="${item.previewUrl}" target="_blank" class="resource-link-wrapper" style="display:contents; color:inherit; text-decoration:none;">
-                            <div class="col-cat">
-                                <span class="cat-badge">${item.category}</span>
-                            </div>
-                            <div class="col-title" title="${item.title}">
-                                ${item.title}
-                            </div>
-                            <div class="col-date">${item.date}</div>
-                            <div class="col-author" title="${item.author}">
-                                ${item.author}
-                            </div>
-                            </div>
-                        </a>
-                        <div class="col-menu">
-                            <button class="menu-btn" aria-label="메뉴 열기">
-                                ${getIconSvg('dots', '20')}
-                            </button>
-                            <div class="dropdown-menu">
-                                <a href="#" class="dropdown-item" onclick="alert('다운로드: ${item.fileName || '가상 파일'} (가상 다운로드)'); return false;">
-                                    ${getIconSvg('download', '14')} 다운로드
-                                </a>
-                                <button class="dropdown-item edit-btn">
-                                    ${getIconSvg('pencil', '14')} 수정
-                                </button>
-                                <button class="dropdown-item delete-btn delete">
-                                    ${getIconSvg('trash', '14')} 삭제
-                                </button>
-                            </div>
-                        </div>
-                `;
-                return div;
-            }
-            
-            function filterItems() {
-                // ... same ...
-                const cards = Array.from(resourceList.children);
-                let hasVisible = false;
-                cards.forEach((card) => {
-                    const title = card.getAttribute("data-title")?.toLowerCase() || "";
-                    const author = card.getAttribute("data-author")?.toLowerCase() || "";
-                    const category = card.getAttribute("data-category") || "";
-                    const matchSearch = title.includes(currentSearch) || author.includes(currentSearch);
-                    const matchCat = currentCat === "" || category === currentCat;
-
-                    if (matchSearch && matchCat) {
-                        card.style.display = "grid"; 
-                        if (window.innerWidth <= 768) {
-                            card.style.display = "flex"; 
-                        }
-                        hasVisible = true;
-                    } else {
-                        card.style.display = "none";
-                    }
-                });
-                if (noResults) {
-                    noResults.style.display = hasVisible ? "none" : "block";
-                }
-            }
-            
-            // ... (keep search/sort listeners) ...
-             if (searchInput) {
-                searchInput.addEventListener("input", (e) => {
-                    currentSearch = e.target.value.toLowerCase().trim();
-                    filterItems();
-                });
-            }
-            // Category Filter Logic
-            if (catFilterItems.length > 0) {
-                catFilterItems.forEach(item => {
-                    item.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        const selectedCat = item.dataset.value;
-                        currentCat = selectedCat;
-                        
-                        // Update button text
-                        const btnSpan = catFilterBtn.querySelector("span");
-                        if (selectedCat === "") {
-                            btnSpan.textContent = "자료유형";
-                        } else {
-                            btnSpan.textContent = `자료유형 (${selectedCat})`;
-                        }
-                        
-                        // Close dropdown
-                        catFilterDropdown.removeAttribute("open");
-                        
-                        // Apply filter
-                        filterItems();
-                    });
-                });
-                
-                // Close dropdown on outside click
-                document.addEventListener("click", (e) => {
-                    if (!catFilterDropdown.contains(e.target)) {
-                        catFilterDropdown.removeAttribute("open");
-                    }
-                });
-            }
-            
-             // Sort Button Listeners
-            sortBtns.forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    const key = btn.getAttribute("data-sort");
-                    const currentOrder = btn.getAttribute("data-order"); 
-                    let newOrder = "desc";
-                    if (currentOrder === "desc") newOrder = "asc";
-                    else if (currentOrder === "asc") newOrder = "none";
-
-                    sortBtns.forEach((b) => {
-                        b.classList.remove("active", "asc", "desc");
-                        b.setAttribute("data-order", "none");
-                    });
-
-                    if (newOrder !== "none") {
-                        btn.classList.add("active", newOrder);
-                        btn.setAttribute("data-order", newOrder);
-                    }
-                    sortItems(key, newOrder);
-                });
-            });
-            
-            function sortItems(key, order) {
-                 const visibleCards = Array.from(resourceList.children);
-                 // ... sort logic ...
-                 if (!order || order === "none") {
-                    visibleCards.sort((a, b) => {
-                        const dateA = a.getAttribute("data-date") || "";
-                        const dateB = b.getAttribute("data-date") || "";
-                        return new Date(dateB).getTime() - new Date(dateA).getTime();
-                    });
-                } else {
-                    visibleCards.sort((a, b) => {
-                        let valA = a.getAttribute(`data-${key}`) || "";
-                        let valB = b.getAttribute(`data-${key}`) || "";
-                        if (key === "date") {
-                            return order === "asc"
-                                ? new Date(valA).getTime() - new Date(valB).getTime()
-                                : new Date(valB).getTime() - new Date(valA).getTime();
-                        }
-                        return order === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                    });
-                }
-                visibleCards.forEach((card) => resourceList.appendChild(card));
-            }
-
-            window.addEventListener("resize", () => {
-                filterItems();
-            });
-        }
-    </script>
-</DashboardLayout>
+        renderList(sorted);
+    }
+</script>
