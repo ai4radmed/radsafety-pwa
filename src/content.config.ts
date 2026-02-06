@@ -30,4 +30,13 @@ const findings_recommendations = defineCollection({
 	}),
 });
 
-export const collections = { inspection_prep, findings_recommendations };
+const smart_resources = defineCollection({
+	type: 'content',
+	schema: z.object({
+		title: z.string(),
+		category: z.string().optional(),
+		order: z.number().optional(),
+	}),
+});
+
+export const collections = { inspection_prep, findings_recommendations, smart_resources };

@@ -24,3 +24,15 @@ pnpm-debug.log*
 .idea/
 .Rproj.user
 .vercel
+
+# Manuscripts & R
+manuscripts/**/renv/library/
+manuscripts/**/renv/staging/
+manuscripts/**/renv/python/
+manuscripts/**/_freeze/
+manuscripts/**/.quarto/
+manuscripts/**/*.pdf
+manuscripts/**/*.html
+manuscripts/**/*.docx
+manuscripts/**/*.tex
+manuscripts/**/index_files/

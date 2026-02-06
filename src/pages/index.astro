@@ -11,45 +11,14 @@ import Icon from "../components/Icon.astro";
 			>가 회원들과 유용한 정보를 공유하기 위해 개발 중인 앱입니다.
 		</p>
 
-		<div style="margin-bottom: 2rem;">
-			<div
-				style="margin-bottom: 1.5rem; text-align: center; color: #6b7280; font-size: 0.9em; line-height: 1.5;"
-			>
-				<span class="desktop-only">
-					<strong>[PC 이용 안내]</strong><br />
-					PC 환경에서는 좌측 사이드바 메뉴를 통해 모든 기능을 넓은 화면에서
-					편리하게 이용하실 수 있습니다.<br />
-					(Chrome 브라우저에 최적화되어 있습니다.)<br />
-				</span>
-			</div>
-			<a
-				href="/login"
-				style="
-				display: inline-block;
-				background-color: var(--accent);
-				color: white;
-				padding: 0.75rem 1.5rem;
-				border-radius: 99px;
-				font-weight: bold;
-				text-decoration: none;
-				font-size: 0.95rem;
-				box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-			"
-			>
-				로그인하여 시작하기
-			</a>
-		</div>
-
 		<div class="card-grid">
 			<a href="/inspection-prep" class="card primary">
 				<div class="card-header">
 					<Icon name="check-square" size="20" class="card-icon" />
 					<h3>정기검사 수검준비</h3>
 				</div>
-				<p>
-					한국원자력안전기술원 [RI등 허가사용자 정기검사 수검가이드]와
-					실무적으로 제안된 준비사항을 체크리스트화한 것입니다. (KINS
-					감수 예정)
+				<p class="card-desc">
+					KINS 정기검사 수검가이드 및 실무 체크리스트
 				</p>
 			</a>
 
@@ -58,10 +27,7 @@ import Icon from "../components/Icon.astro";
 					<Icon name="alert-circle" size="20" class="card-icon" />
 					<h3>지적권고사례</h3>
 				</div>
-				<p>
-					정기검사에 따른 지적 권고 사례 모음입니다. 공개된 자료 및 각
-					병원의 기증으로 만들어졌습니다.
-				</p>
+				<p class="card-desc">정기검사 지적 및 권고 사례 모음</p>
 			</a>
 
 			<a href="/resources" class="card secondary">
@@ -69,10 +35,7 @@ import Icon from "../components/Icon.astro";
 					<Icon name="folder" size="20" class="card-icon" />
 					<h3>자료실</h3>
 				</div>
-				<p>
-					정기검사 수검준비에 필요한 서류들의 작성지침, 작성예시와
-					각종 발표자료 모음입니다.
-				</p>
+				<p class="card-desc">작성지침, 예시 및 각종 발표자료</p>
 			</a>
 
 			<a href="mailto:dev@radsafety.com" class="card secondary">
@@ -80,10 +43,31 @@ import Icon from "../components/Icon.astro";
 					<Icon name="mail" size="20" class="card-icon" />
 					<h3>의견보내기</h3>
 				</div>
-				<p>
-					개발자(관리자)에게 작동오류 및 개선요청이 있으면 의견을
-					보내실 수 있습니다.
-				</p>
+				<p class="card-desc">작동오류 및 개선요청 보내기</p>
+			</a>
+		</div>
+
+		<!-- Action Area -->
+		<div
+			style="text-align: center; margin-top: 1.5rem; margin-bottom: 1rem;"
+		>
+			<a
+				href="/login"
+				style="
+				display: inline-block;
+				background-color: var(--accent);
+				color: white;
+				padding: 0.85rem 2rem;
+				border-radius: 99px;
+				font-weight: bold;
+				text-decoration: none;
+				font-size: 1rem;
+				box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+				transition: transform 0.2s, box-shadow 0.2s;
+			"
+				class="primary-cta-btn"
+			>
+				카카오톡/이메일로 간편하게 시작하기
 			</a>
 		</div>
 	</div>
@@ -101,21 +85,20 @@ import Icon from "../components/Icon.astro";
 			color: #111827;
 		}
 		.intro {
-			font-size: 0.9rem;
+			font-size: 0.85rem;
 			color: #6b7280;
-			margin: 0 0 1.5rem 0; /* Removed top margin */
+			margin: 0 0 1rem 0; /* Minimized */
 			line-height: 1.4;
 		}
 		.card-grid {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-			gap: 1rem;
+			gap: 0.4rem; /* Ultra Tight Gap */
 			text-align: left;
 		}
 		.card {
-			/* Background handled by global .card */
-			padding: 1rem; /* Reduced padding */
-			border-radius: 12px;
+			padding: 0.5rem 0.75rem; /* Smoothed Padding */
+			border-radius: 8px;
 			box-shadow: 0 4px 6px -1px var(--shadow-color);
 			text-decoration: none;
 			color: inherit;
@@ -133,11 +116,16 @@ import Icon from "../components/Icon.astro";
 			border-left: 5px solid var(--accent);
 		}
 
+		.primary-cta-btn:hover {
+			transform: scale(1.05);
+			box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+		}
+
 		.card-header {
 			display: flex;
 			align-items: center;
-			gap: 0.5rem;
-			margin-bottom: 0.5rem;
+			gap: 0.4rem;
+			margin-bottom: 0.2rem; /* Tight header margin */
 		}
 
 		/* Pass class via global styles or explicit prop if component supports it. 
@@ -153,13 +141,20 @@ import Icon from "../components/Icon.astro";
 			font-size: 1rem;
 			font-weight: 600;
 		}
-		.card p {
+		.card p.card-desc {
 			margin: 0;
-			font-size: 0.85rem;
+			font-size: 0.8rem;
 			color: var(--text-muted);
-			line-height: 1.4;
-			/* Or maybe padding-left to align with text? 
-			   User wants to save space. Full width text below header is best. */
+			line-height: 1.3;
+		}
+
+		@media (max-width: 480px) {
+			.card p.card-desc {
+				font-size: 0.75rem; /* Slightly smaller on small screens */
+			}
+			.card-header h3 {
+				font-size: 0.95rem;
+			}
 		}
 
 		@media (max-width: 768px) {

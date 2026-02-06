@@ -184,6 +184,6 @@ button {
 
 @media (max-width: 720px) {
 	main {
-		padding: 1rem;
+		padding: 0.5rem 0.75rem;
 	}
 }
