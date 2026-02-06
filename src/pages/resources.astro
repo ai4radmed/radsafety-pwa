@@ -474,14 +474,11 @@ const categories = [
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">내용 (마크다운 옵션)</label>
+                    <label class="form-label">부가 설명 (필요 시)</label>
                     <p
                         style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;"
                     >
-                        내용을 입력하면 자료 열람 시 <strong
-                            >즉시 로딩되는 텍스트 뷰어</strong
-                        >가 우선 표시됩니다. (입력하지 않으면 PDF 파일이 바로
-                        열립니다)
+                        첨부 파일 외에 추가적인 설명이 필요한 경우 입력하세요.
                     </p>
                     <div id="editor"></div>
                 </div>
@@ -651,7 +648,7 @@ const categories = [
                 <div class="col-date">${new Date(item.created_at).toLocaleDateString()}</div>
                 <div class="col-author">${item.author}</div>
                 <div style="text-align:right;">
-                    ${item.file_url ? "📎" : ""} ${item.content_html ? "📝" : ""}
+                    ${item.file_url ? "📎" : ""}
                 </div>
             </div>
         `,
@@ -678,27 +675,34 @@ const categories = [
         const downloadBar = document.getElementById("pdfDownloadBar");
         const downloadLink = document.getElementById("downloadLink");
         const fileUrl = item.file_url;
+        const viewerEl = document.getElementById("viewer");
 
         if (fileUrl) {
             downloadBar.style.display = "flex";
             const { data } = supabase.storage
                 .from("resources")
                 .getPublicUrl(fileUrl);
-            downloadLink.href = data.publicUrl;
+            const publicUrl = data.publicUrl;
+            downloadLink.href = publicUrl;
+
+            // Use iframe for PDF preview if it's a PDF
+            if (fileUrl.toLowerCase().endsWith(".pdf")) {
+                viewerEl.innerHTML = `
+                    <iframe src="${publicUrl}" width="100%" height="500px" style="border:none; border-radius:8px;"></iframe>
+                `;
+            } else {
+                viewerEl.innerHTML = `<div style="text-align:center; padding:3rem; color:var(--text-muted);">
+                    <p>미리보기를 지원하지 않는 파일 형식입니다. 다운로드하여 확인하세요.</p>
+                </div>`;
+            }
         } else {
             downloadBar.style.display = "none";
-        }
-
-        const viewerEl = document.getElementById("viewer");
-        if (item.content_html) {
-            viewerEl.innerHTML = item.content_html;
-        } else if (fileUrl) {
-            viewerEl.innerHTML = `<div style="text-align:center; padding:3rem; color:var(--text-muted);">
-                <p>본문의 텍스트 내용이 없습니다. 파일을 다운로드하여 확인하세요.</p>
-            </div>`;
-        } else {
-            viewerEl.innerHTML =
-                '<p style="text-align:center; padding:2rem; color:var(--text-muted);">표시할 내용이 없습니다.</p>';
+            if (item.content_html) {
+                viewerEl.innerHTML = item.content_html;
+            } else {
+                viewerEl.innerHTML =
+                    '<p style="text-align:center; padding:2rem; color:var(--text-muted);">표시할 내용이 없습니다.</p>';
+            }
         }
 
         document.getElementById("viewerModal").classList.add("active");
