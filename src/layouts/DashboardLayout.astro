@@ -229,25 +229,30 @@ const { title, description, scale } = Astro.props;
             import { setUser, clearUser } from "../store/user";
             import { isAdmin } from "../config/auth";
 
-            // Global Auth Listener
+            // Global Auth Listener (Needs to be set once)
             supabase.auth.onAuthStateChange(async (event, session) => {
                 console.log("Auth State Change:", event, session?.user?.email);
                 updateUserStore(session);
             });
 
-            // Initial Session Check (Fix for 'Login Required' flash on page load)
-            // onAuthStateChange sometimes fires too late or we miss the initial state
-            (async () => {
+            // Auth Check & Store Sync on every page load (supports View Transitions)
+            document.addEventListener("astro:page-load", async () => {
+                console.log("Page Load: Checking Auth...");
                 const {
                     data: { session },
                 } = await supabase.auth.getSession();
-                if (session) {
-                    console.log("Initial Session Found:", session.user.email);
-                    updateUserStore(session);
-                }
-            })();
+                await updateUserStore(session);
+            });
 
             async function updateUserStore(session) {
+                const currentPath = window.location.pathname;
+                const publicPaths = ["/", "/login"];
+                const isPublic = publicPaths.some(
+                    (path) =>
+                        currentPath === path ||
+                        (path !== "/" && currentPath.startsWith(path)),
+                );
+
                 if (session?.user) {
                     // 1. Basic Info from Session
                     const baseUser = {
@@ -266,16 +271,14 @@ const { title, description, scale } = Astro.props;
                     // Check if user is admin based on email
                     const userIsAdmin = isAdmin(baseUser.email);
 
-                    // 2. Fetch Full Profile from DB (for Role, Affiliation, Society, etc.)
-                    const { data: profile, error } = await supabase
+                    // 2. Fetch Full Profile from DB
+                    const { data: profile } = await supabase
                         .from("profiles")
                         .select("*")
                         .eq("id", session.user.id)
                         .single();
 
                     if (profile) {
-                        console.log("Fetch Profile Success:", profile);
-
                         // If user is admin but DB doesn't reflect it, update DB
                         if (userIsAdmin && !profile.is_admin) {
                             console.log(
@@ -290,70 +293,31 @@ const { title, description, scale } = Astro.props;
 
                         setUser({
                             ...baseUser,
+                            ...profile,
                             full_name: profile.full_name || baseUser.full_name,
-                            role: profile.role || "user",
-                            affiliation: profile.affiliation || "",
-                            society: profile.society || "",
-                            is_verified: profile.is_verified || false,
-                            society_email: profile.society_email || "",
-                            is_admin: userIsAdmin, // Set based on ADMIN_EMAILS
-                            user_tier: profile.user_tier || "general",
+                            is_admin: userIsAdmin,
                             licenses: profile.licenses || [],
-                            is_safety_manager:
-                                profile.is_safety_manager || false,
-                            safety_manager_start_date:
-                                profile.safety_manager_start_date || "",
-                            safety_manager_end_date:
-                                profile.safety_manager_end_date || "",
-                            joined_at: profile.joined_at || "",
-                            society_role: profile.society_role || "",
-                            is_safety_practice_staff:
-                                profile.is_safety_practice_staff || false,
-                            society_name: profile.society_name || "",
-                            department: profile.department || "",
-                            is_safety_manager_deputy:
-                                profile.is_safety_manager_deputy || false,
-                            has_radiation_license:
-                                profile.has_radiation_license || false,
-                            radiation_license_type:
-                                profile.radiation_license_type || "none",
                         });
-                        // Check Notifications
                         checkNotifications(session.user.id);
-
-                        // If already logged in and on the login page, redirect to mypage
-                        if (window.location.pathname === "/login") {
-                            window.location.href = "/mypage";
-                        }
                     } else {
                         console.warn(
                             "Fetch Profile Failed (using basic session):",
-                            error,
+                            "No profile found for user " + session.user.id,
                         );
-                        setUser({
-                            ...baseUser,
-                            is_admin: userIsAdmin,
-                        });
-                        // Check Notifications
+                        setUser({ ...baseUser, is_admin: userIsAdmin });
                         checkNotifications(session.user.id);
+                    }
+
+                    // Logged in user on /login -> redirect to /mypage
+                    if (currentPath === "/login") {
+                        window.location.href = "/mypage";
                     }
                 } else {
                     clearUser();
-
                     // Auth Guard: Redirect to login if on a protected page
-                    const publicPaths = ["/", "/login"];
-                    const currentPath = window.location.pathname;
-
-                    // Check if current path (or its prefix) is public
-                    const isPublic = publicPaths.some(
-                        (path) =>
-                            currentPath === path ||
-                            (path !== "/" && currentPath.startsWith(path)),
-                    );
-
                     if (!isPublic) {
                         console.log(
-                            "Unauthorized access to protected page. Redirecting to /login...",
+                            "Unauthorized access. Redirecting to /login...",
                         );
                         window.location.href = "/login";
                     }
