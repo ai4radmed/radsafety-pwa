@@ -184,10 +184,12 @@ const AVAILABLE_TAGS = [
         
         .dropdown-btn {
             list-style: none; /* Remove default marker */
-            width: 100%;
-            padding: 0.4rem 0; /* Align text exactly with card content */
-            background: none; /* Subtle header style */
-            border: none; 
+            width: fit-content; 
+            min-width: 125px;
+            padding: 0.4rem 0.6rem; 
+            margin-left: -0.6rem; /* Pull back to align text with card content */
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color); 
             border-radius: 6px;
             text-align: left;
             cursor: pointer;
@@ -198,6 +200,7 @@ const AVAILABLE_TAGS = [
             font-weight: 600;
             color: var(--text-muted);
             box-sizing: border-box;
+            transition: all 0.2s;
         }
         .dropdown-btn::-webkit-details-marker {
             display: none; /* Remove marker in WebKit */
