@@ -960,7 +960,7 @@ const AVAILABLE_TAGS = [
                         <label class="form-label">관련 법령 (선택)</label>
                         <input
                             type="text"
-                            name="clause"
+                            name="violationClause"
                             class="form-input"
                             placeholder="예: 원자력안전법 제00조"
                         />
@@ -1025,6 +1025,8 @@ const AVAILABLE_TAGS = [
     </div>
 
     <script>
+        import { supabase } from "../lib/supabase";
+
         document.addEventListener("astro:page-load", () => {
             initApp();
         });
@@ -1253,58 +1255,105 @@ const AVAILABLE_TAGS = [
                     return;
                 }
 
-                submitReg.disabled = true;
-                submitReg.textContent = "저장 중...";
+                try {
+                    submitReg.disabled = true;
+                    submitReg.textContent = "저장 중...";
 
-                const formData = new FormData(regForm);
-                const { data: result, error } = await actions.saveFinding(formData);
+                    const formData = new FormData(regForm);
+                    const title = formData.get('title') as string;
+                    const findingType = formData.get('findingType') as string;
+                    const yearInput = formData.get('year') as string;
+                    const description = formData.get('description') as string;
+                    const violationClause = formData.get('violationClause') as string;
+                    const solution = formData.get('solution') as string;
+                    const tags = Array.from(formData.getAll('tags')) as string[];
 
-                if (error) {
-                    alert("저장 중 오류가 발생했습니다: " + error.message);
+                    const updateIdInput = document.getElementById('regItemId') as HTMLInputElement;
+                    const updateId = updateIdInput ? updateIdInput.value : "";
+
+                    const payload: any = {
+                        title,
+                        finding_type: findingType,
+                        tags,
+                        year: yearInput,
+                        description,
+                        violation_clause: violationClause,
+                        solution
+                    };
+
+                    let result = null;
+                    if (updateId && !updateId.startsWith('local-')) {
+                        const { data, error } = await supabase
+                            .from('findings')
+                            .update(payload)
+                            .eq('id', updateId)
+                            .select()
+                            .single();
+                        if (error) throw error;
+                        result = data;
+                        alert("사례가 수정되었습니다.");
+                    } else {
+                        // Get current user for owner assignment
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                            payload.user_id = user.id;
+                        }
+                        
+                        const { data, error } = await supabase
+                            .from('findings')
+                            .insert(payload)
+                            .select()
+                            .single();
+                        if (error) throw error;
+                        result = data;
+                        alert("사례가 등록되었습니다.");
+                    }
+
+                    if (!result) throw new Error("결과 데이터가 없습니다.");
+
+                    // Normalize result for UI
+                    const newItem = {
+                        ...result,
+                        findingType: result.finding_type,
+                        violationClause: result.violation_clause,
+                        solution: result.solution,
+                        year: result.year,
+                        tags: result.tags || []
+                    };
+                    
+                    if (updateId) {
+                        // Update DOM Card
+                        const card = grid.querySelector(`.finding-item[data-id="${updateId}"]`) as HTMLElement;
+                        if (card) {
+                            card.dataset.tags = JSON.stringify(newItem.tags);
+                            card.dataset.title = newItem.title;
+                            card.dataset.year = newItem.year;
+                            card.dataset.search = `${newItem.title} ${newItem.description} ${newItem.violationClause||""} ${newItem.solution||""}`.toLowerCase();
+                            card.dataset.content = JSON.stringify(newItem);
+                            
+                            const findingTypeBadge = newItem.findingType ? `<span class="finding-type-badge ${newItem.findingType === '지적' ? 'type-finding' : 'type-recommendation'}">${newItem.findingType}</span>` : '';
+                            const tagsHtml = newItem.tags.map(t => `<span class="tag-badge">${t}</span>`).join("");
+                            card.querySelector('.col-tags').innerHTML = findingTypeBadge + tagsHtml;
+                            card.querySelector('.col-title').textContent = newItem.title;
+                            card.querySelector('.col-title').title = newItem.description;
+                            card.querySelector('.col-year').textContent = newItem.year;
+                        }
+                    } else {
+                        const card = createCardElement(newItem);
+                        grid.appendChild(card);
+                        setupMenu(card);
+                        cards.push(card);
+                    }
+
+                    regModal.classList.remove("open");
+                    regForm.reset();
+                } catch (err) {
+                    console.error("Submission Crash:", err);
+                    alert("시스템 오류가 발생했습니다: " + err.message);
+                } finally {
                     submitReg.disabled = false;
                     submitReg.textContent = "등록하기";
-                    return;
                 }
-
-                // Normalize result
-                const newItem = {
-                    ...result,
-                    findingType: result.finding_type,
-                    violationClause: result.violation_clause,
-                    solution: result.solution
-                };
-
-                const updateId = document.getElementById('regItemId').value;
-                if (updateId) {
-                    // Update DOM Card
-                    const card = grid.querySelector(`.finding-item[data-id="${updateId}"]`);
-                    if (card) {
-                        card.dataset.tags = JSON.stringify(newItem.tags);
-                        card.dataset.title = newItem.title;
-                        card.dataset.year = newItem.year;
-                        card.dataset.search = `${newItem.title} ${newItem.description} ${newItem.violationClause||""} ${newItem.solution||""}`.toLowerCase();
-                        card.dataset.content = JSON.stringify(newItem);
-                        
-                        const findingTypeBadge = newItem.findingType ? `<span class="finding-type-badge ${newItem.findingType === '지적' ? 'type-finding' : 'type-recommendation'}">${newItem.findingType}</span>` : '';
-                        const tagsHtml = newItem.tags.map(t => `<span class="tag-badge">${t}</span>`).join("");
-                        card.querySelector('.col-tags').innerHTML = findingTypeBadge + tagsHtml;
-                        card.querySelector('.col-title').textContent = newItem.title;
-                        card.querySelector('.col-title').title = newItem.description;
-                        card.querySelector('.col-year').textContent = newItem.year;
-                    }
-                    alert("사례가 수정되었습니다.");
-                } else {
-                    const card = createCardElement(newItem);
-                    grid.appendChild(card);
-                    setupMenu(card);
-                    cards.push(card);
-                    alert("사례가 등록되었습니다.");
-                }
-
-                regModal.classList.remove("open");
-                regForm.reset();
-                submitReg.disabled = false;
-                submitReg.textContent = "등록하기";
             });
             
             // --- Action Menu Logic ---
@@ -1378,7 +1427,11 @@ const AVAILABLE_TAGS = [
                         if(confirm('정말 삭제하시겠습니까?')) {
                              const id = card.dataset.id;
                              
-                             const { error } = await actions.deleteFinding({ id });
+                             const { error } = await supabase
+                                .from('findings')
+                                .delete()
+                                .eq('id', id);
+                             
                              if (error) {
                                   alert("삭제 중 오류가 발생했습니다: " + error.message);
                                   return;

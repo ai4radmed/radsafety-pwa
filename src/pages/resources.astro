@@ -12,7 +12,9 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
         .page-title {
             font-size: 1.5rem;
@@ -24,7 +26,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
 
         /* Search Bar */
         .search-container {
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             position: relative;
             width: 100%;
             max-width: 500px;
@@ -34,7 +36,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         #resourceSearch {
             width: 100%;
             box-sizing: border-box;
-            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
             font-size: 0.95rem;
             border: 1px solid var(--border-color);
             background: var(--bg-card);
@@ -61,26 +63,33 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         /* Sort & Filter Header */
         .controls-header {
             display: grid;
-            grid-template-columns: 120px 1fr 120px 120px 30px;
+            grid-template-columns: 110px 1fr 120px 50px;
             gap: 1rem;
-            padding: 0.5rem 1rem;
+            padding: 0.2rem 1rem;
             border-bottom: 2px solid var(--border-color);
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             align-items: center;
+            position: relative;
+            z-index: 100;
             font-size: 0.9rem;
-            color: var(--text-muted);
             font-weight: 600;
+            color: var(--text-muted);
         }
 
         .cat-filter-dropdown {
             position: relative;
             overflow: visible;
             z-index: 101;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
         .cat-filter-btn {
             list-style: none;
-            width: 100%;
-            padding: 0.4rem 0.5rem;
+            width: fit-content;
+            min-width: 100px;
+            padding: 0.4rem 0.6rem;
+            margin-left: -0.6rem;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -92,6 +101,12 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-muted);
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .cat-filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-main);
         }
         .cat-filter-btn::-webkit-details-marker {
             display: none;
@@ -101,6 +116,8 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             top: 100%;
             left: 0;
             width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -129,47 +146,54 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             background: none;
             border: none;
             font-size: 0.9rem;
+            font-weight: 600;
             color: var(--text-muted);
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 0.25rem;
+            justify-content: flex-start;
+            gap: 0.3rem;
             padding: 0;
-            font-weight: 600;
+        }
+        .sort-btn:hover {
+            color: var(--text-main);
         }
         .sort-btn.active {
             color: var(--accent);
         }
         .sort-icon {
-            display: inline-block;
-            opacity: 0;
             transition: transform 0.2s;
+            opacity: 0;
+            display: inline-block;
         }
         .sort-btn.active .sort-icon {
             opacity: 1;
+            transform: rotate(180deg);
         }
         .sort-btn.active.asc .sort-icon {
-            transform: rotate(180deg);
+            transform: rotate(0deg);
         }
 
         /* Resource List */
         .resource-list {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.25rem;
         }
         .resource-card {
             display: grid;
-            grid-template-columns: 120px 1fr 120px 120px 30px;
+            grid-template-columns: 110px 1fr 120px 50px;
             gap: 1rem;
             align-items: center;
-            padding: 0.5rem 1rem;
+            padding: 0.25rem 1rem;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
         }
         .resource-card:hover {
             border-color: var(--accent);
@@ -177,12 +201,15 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         }
 
         .cat-badge {
+            display: inline-block;
             font-size: 0.75rem;
-            background: var(--bg-body);
             padding: 0.2rem 0.6rem;
             border-radius: 4px;
+            background: var(--bg-body);
             color: var(--text-muted);
             border: 1px solid var(--border-color);
+            vertical-align: middle;
+            font-weight: 500;
             white-space: nowrap;
         }
         .col-title {
@@ -192,13 +219,81 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .col-date,
-        .col-author {
+        .resource-card:hover .col-title {
+            color: var(--accent);
+        }
+        .col-date {
             font-size: 0.85rem;
             color: var(--text-muted);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            text-align: left;
+        }
+
+        /* Menu Styles */
+        .col-menu {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition:
+                background-color 0.2s,
+                color 0.2s;
+        }
+        .menu-btn:hover {
+            color: var(--text-main);
+            background-color: var(--bg-body);
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 140px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 50;
+            padding: 0.5rem;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .dropdown-menu.active {
+            display: flex;
+        }
+        .dropdown-item {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dropdown-item:hover {
+            background-color: var(--bg-hover);
+            color: var(--accent);
+        }
+        .dropdown-item.delete {
+            color: #ef4444;
+        }
+        .dropdown-item.delete:hover {
+            background-color: #fef2f2;
         }
 
         /* Modal Styles */
@@ -219,13 +314,39 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         }
         .modal-content {
             background: var(--bg-card);
-            padding: 2rem;
             border-radius: 12px;
             width: 90%;
-            max-width: 800px;
+            max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .close-modal {
+            position: absolute;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+        }
+        .modal-body {
+            padding: 1.5rem;
         }
         .form-group {
             margin-bottom: 1rem;
@@ -242,28 +363,29 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             border-radius: 6px;
             background: var(--bg-body);
             color: var(--text-main);
+            font-size: 0.95rem;
         }
         .form-actions {
             display: flex;
-            justify-content: flex-end;
-            gap: 0.5rem;
+            justify-content: center;
+            gap: 0.75rem;
             margin-top: 2rem;
         }
         .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 6px;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 0.95rem;
         }
         .btn-submit {
             background: var(--accent);
             color: white;
         }
         .btn-cancel {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
+            background: var(--bg-hover);
+            color: var(--text-main);
         }
 
         /* Viewer Styles */
@@ -289,28 +411,24 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         /* Mobile */
         @media (max-width: 768px) {
             .controls-header {
-                grid-template-columns: 80px 1fr 70px 30px;
+                grid-template-columns: 80px 1fr 50px;
                 gap: 0.5rem;
             }
-            .controls-header .header-item:nth-child(4) {
+            .controls-header .header-item:nth-child(3) {
                 display: none;
-            } /* Hide author on mobile header */
+            }
 
             .resource-card {
-                grid-template-columns: 80px 1fr 70px 30px;
+                grid-template-columns: 80px 1fr 50px;
                 gap: 0.5rem;
-                padding: 0.75rem 0.5rem;
-            }
-            .col-author {
-                display: none;
+                padding: 0.5rem;
             }
             .col-date {
-                text-align: right;
-                font-size: 0.75rem;
+                display: none;
             }
             .cat-badge {
                 font-size: 0.7rem;
-                padding: 0.1rem 0.3rem;
+                padding: 0.1rem 0.4rem;
             }
             .col-title {
                 font-size: 0.9rem;
@@ -325,7 +443,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         <div>
             <button
                 id="openModalBtn"
-                class="download-btn"
+                class="btn btn-submit"
                 style="gap: 0.5rem; padding: 0.5rem 1rem; display:none;"
             >
                 <Icon name="pencil" size="16" /> 자료 등록
@@ -381,15 +499,6 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                 /></button
             >
         </div>
-        <div class="header-item">
-            <button class="sort-btn" data-sort="author" data-order="none"
-                >작성자 <Icon
-                    name="chevron-down"
-                    size="14"
-                    class="sort-icon"
-                /></button
-            >
-        </div>
         <div class="header-item"></div>
     </div>
 
@@ -401,126 +510,135 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
     <!-- Write/Edit Modal -->
     <div id="writeModal" class="modal-overlay">
         <div class="modal-content">
-            <div
-                class="modal-header"
-                style="font-size:1.2rem; font-weight:bold; margin-bottom:1rem;"
-            >
-                자료 등록
+            <div class="modal-header">
+                <h2 id="modalTitle">자료 등록</h2>
+                <button id="closeWriteModal" class="close-modal" title="닫기">
+                    <Icon name="x" size="24" />
+                </button>
             </div>
-            <form id="writeForm">
-                <input type="hidden" id="editId" />
-                <div class="form-group">
-                    <label class="form-label">제목</label>
-                    <input
-                        type="text"
-                        id="writeTitle"
-                        class="form-input"
-                        required
-                        placeholder="제목을 입력하세요"
-                    />
-                </div>
-                <div class="form-group" style="display:flex; gap:1rem;">
-                    <div style="flex:1;">
-                        <label class="form-label">카테고리</label>
-                        <select id="writeCategory" class="form-input">
-                            {
-                                categories.map((c) => (
-                                    <option value={c}>{c}</option>
-                                ))
-                            }
-                        </select>
-                    </div>
-                    <div style="flex:1;">
-                        <label class="form-label">작성자</label>
+            <div class="modal-body">
+                <form id="writeForm">
+                    <input type="hidden" id="editId" />
+                    <div class="form-group">
+                        <label class="form-label">제목</label>
                         <input
                             type="text"
-                            id="writeAuthor"
+                            id="writeTitle"
                             class="form-input"
-                            value="관리자"
+                            required
+                            placeholder="제목을 입력하세요"
                         />
                     </div>
-                </div>
-
-                <div
-                    class="form-group"
-                    style="background:var(--bg-body); padding:1rem; border-radius:8px;"
-                >
-                    <label class="form-label">첨부 파일 (모든 형식 가능)</label>
-                    <input type="file" id="writeFile" />
-                    <div
-                        id="currentFileDisplay"
-                        style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);"
-                    >
+                    <div class="form-group" style="display:flex; gap:1rem;">
+                        <div style="flex:1;">
+                            <label class="form-label">카테고리</label>
+                            <select id="writeCategory" class="form-input">
+                                {
+                                    categories.map((c) => (
+                                        <option value={c}>{c}</option>
+                                    ))
+                                }
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label class="form-label">작성자</label>
+                            <input
+                                type="text"
+                                id="writeAuthor"
+                                class="form-input"
+                                value="관리자"
+                            />
+                        </div>
                     </div>
-                </div>
 
-                <div class="form-actions">
-                    <button
-                        type="button"
-                        id="closeWriteModal"
-                        class="btn btn-cancel">취소</button
+                    <div
+                        class="form-group"
+                        style="background:var(--bg-body); padding:1rem; border-radius:8px;"
                     >
-                    <button type="submit" class="btn btn-submit">저장</button>
-                </div>
-            </form>
+                        <label class="form-label"
+                            >첨부 파일 (모든 형식 가능)</label
+                        >
+                        <input type="file" id="writeFile" />
+                        <div
+                            id="currentFileDisplay"
+                            style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);"
+                        >
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-submit"
+                            >저장하기</button
+                        >
+                        <button
+                            type="button"
+                            id="cancelWriteModal"
+                            class="btn btn-cancel">취소</button
+                        >
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Viewer Modal -->
     <div id="viewerModal" class="modal-overlay">
         <div class="modal-content">
-            <div
-                style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;"
-            >
-                <div>
-                    <div
-                        class="cat-badge"
-                        id="viewCategory"
-                        style="display:inline-block; margin-bottom:0.5rem;"
-                    >
-                    </div>
-                    <h2
-                        id="viewTitle"
-                        style="font-size:1.3rem; margin:0; color: white;"
-                    >
-                    </h2>
-                    <div
-                        style="font-size:0.9rem; color:var(--text-muted); margin-top:0.2rem;"
-                    >
-                        <span id="viewAuthor"></span> · <span id="viewDate"
-                        ></span>
+            <div class="modal-header">
+                <h2 id="viewTitle_header">자료 상세보기</h2>
+                <button id="closeViewerBtn" class="close-modal" title="닫기">
+                    <Icon name="x" size="24" />
+                </button>
+            </div>
+            <div class="modal-body">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;"
+                >
+                    <div>
+                        <div
+                            class="cat-badge"
+                            id="viewCategory"
+                            style="display:inline-block; margin-bottom:0.5rem;"
+                        >
+                        </div>
+                        <h2
+                            id="viewTitle"
+                            style="font-size:1.3rem; margin:0; color: white;"
+                        >
+                        </h2>
+                        <div
+                            style="font-size:0.9rem; color:var(--text-muted); margin-top:0.2rem;"
+                        >
+                            <span id="viewAuthor"></span> · <span id="viewDate"
+                            ></span>
+                        </div>
                     </div>
                 </div>
-                <button
-                    id="closeViewerBtn"
-                    style="background:none; border:none; color: white; font-size:1.5rem; cursor:pointer;"
-                    >&times;</button
-                >
-            </div>
 
-            <div
-                id="pdfDownloadBar"
-                class="pdf-download-bar"
-                style="display:none;"
-            >
-                <div>
-                    <strong>파일이 첨부되어 있습니다.</strong>
-                    <div style="font-size:0.85rem; opacity:0.8;">
-                        원본을 확인하시려면 다운로드 버튼을 누르세요.
+                <div
+                    id="pdfDownloadBar"
+                    class="pdf-download-bar"
+                    style="display:none;"
+                >
+                    <div>
+                        <strong>파일이 첨부되어 있습니다.</strong>
+                        <div style="font-size:0.85rem; opacity:0.8;">
+                            원본을 확인하시려면 다운로드 버튼을 누르세요.
+                        </div>
                     </div>
+                    <a
+                        id="downloadLink"
+                        href="#"
+                        target="_blank"
+                        class="download-btn"
+                        style="text-decoration:none; padding:0.5rem 1rem; background: var(--accent); color: white; border-radius: 6px; font-weight: 600;"
+                    >
+                        <Icon name="download" size="16" /> 다운로드 / 보기
+                    </a>
                 </div>
-                <a
-                    id="downloadLink"
-                    href="#"
-                    target="_blank"
-                    class="download-btn"
-                    style="text-decoration:none; padding:0.5rem 1rem; background: var(--accent); color: white; border-radius: 6px; font-weight: 600;"
-                >
-                    <Icon name="download" size="16" /> 다운로드 / 보기
-                </a>
-            </div>
 
-            <div id="viewer" class="viewer-content-area"></div>
+                <div id="viewer" class="viewer-content-area"></div>
+            </div>
         </div>
     </div>
 </DashboardLayout>
@@ -592,6 +710,11 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             return;
         }
 
+        const currentUser = userProfile.get();
+        const isAdmin =
+            currentUser &&
+            (currentUser.role === "admin" || currentUser.is_admin === true);
+
         listEl.innerHTML = list
             .map(
                 (item) => `
@@ -599,19 +722,129 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                 <div class="col-cat"><span class="cat-badge">${item.category}</span></div>
                 <div class="col-title">${item.title}</div>
                 <div class="col-date">${new Date(item.created_at).toLocaleDateString()}</div>
-                <div class="col-author">${item.author}</div>
-                <div style="text-align:right;">
-                    ${item.file_url ? "📎" : ""}
+                <div class="col-menu">
+                    <button class="menu-btn" data-id="${item.id}" onclick="event.stopPropagation();">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    </button>
+                    <div class="dropdown-menu" id="menu-${item.id}">
+                        <button class="dropdown-item edit-btn" data-id="${item.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            수정
+                        </button>
+                        ${
+                            isAdmin
+                                ? `
+                        <button class="dropdown-item delete delete-btn" data-id="${item.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            삭제
+                        </button>
+                        `
+                                : ""
+                        }
+                    </div>
                 </div>
             </div>
         `,
             )
             .join("");
 
-        // Attach Click
+        // Attach Click - Card
         document.querySelectorAll(".resource-card").forEach((card) => {
             card.addEventListener("click", () => openViewer(card.dataset.id));
         });
+
+        // Attach Click - Menu Button
+        document.querySelectorAll(".menu-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const menuId = `menu-${btn.dataset.id}`;
+                const menu = document.getElementById(menuId);
+
+                // Close other menus
+                document.querySelectorAll(".dropdown-menu").forEach((m) => {
+                    if (m.id !== menuId) m.classList.remove("active");
+                });
+
+                menu.classList.toggle("active");
+            });
+        });
+
+        // Attach Click - Edit Button
+        document.querySelectorAll(".edit-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                openEditor(btn.dataset.id);
+                document
+                    .querySelectorAll(".dropdown-menu")
+                    .forEach((m) => m.classList.remove("active"));
+            });
+        });
+
+        // Attach Click - Delete Button
+        document.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (confirm("정말로 이 자료를 삭제하시겠습니까?")) {
+                    deleteArchive(btn.dataset.id);
+                }
+                document
+                    .querySelectorAll(".dropdown-menu")
+                    .forEach((m) => m.classList.remove("active"));
+            });
+        });
+
+        // Close menus on outside click
+        document.addEventListener(
+            "click",
+            () => {
+                document
+                    .querySelectorAll(".dropdown-menu")
+                    .forEach((m) => m.classList.remove("active"));
+            },
+            { once: false },
+        );
+    }
+
+    function openEditor(id) {
+        const item = archivesData.find((d) => String(d.id) === String(id));
+        if (!item) return;
+
+        document.getElementById("modalTitle").textContent = "자료 수정";
+        document.getElementById("editId").value = item.id;
+        document.getElementById("writeTitle").value = item.title;
+        document.getElementById("writeCategory").value = item.category;
+        document.getElementById("writeAuthor").value = item.author;
+        document.getElementById("currentFileDisplay").textContent =
+            item.file_name ? `현재 파일: ${item.file_name}` : "첨부 파일 없음";
+
+        document.getElementById("writeModal").classList.add("active");
+    }
+
+    async function deleteArchive(id) {
+        try {
+            const item = archivesData.find((d) => String(d.id) === String(id));
+            if (!item) return;
+
+            // Delete storage file if exists
+            if (item.file_url) {
+                await supabase.storage
+                    .from("resources")
+                    .remove([item.file_url]);
+            }
+
+            // Delete database record
+            const { error } = await supabase
+                .from("archives")
+                .delete()
+                .eq("id", id);
+            if (error) throw error;
+
+            alert("삭제되었습니다.");
+            await loadArchives();
+        } catch (err) {
+            console.error(err);
+            alert("삭제 중 오류가 발생했습니다: " + err.message);
+        }
     }
 
     function openViewer(id) {
@@ -666,12 +899,36 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         document
             .getElementById("openModalBtn")
             ?.addEventListener("click", () => {
-                document.getElementById("writeForm").reset();
+                const form = document.getElementById(
+                    "writeForm",
+                ) as HTMLFormElement;
+                if (form) form.reset();
+
+                const editIdInput = document.getElementById(
+                    "editId",
+                ) as HTMLInputElement;
+                if (editIdInput) editIdInput.value = "";
+
+                const modalTitle = document.getElementById("modalTitle");
+                if (modalTitle) modalTitle.textContent = "자료 등록";
+
+                const fileDisplay =
+                    document.getElementById("currentFileDisplay");
+                if (fileDisplay) fileDisplay.textContent = "";
+
                 document.getElementById("writeModal").classList.add("active");
             });
 
         document
             .getElementById("closeWriteModal")
+            ?.addEventListener("click", () => {
+                document
+                    .getElementById("writeModal")
+                    .classList.remove("active");
+            });
+
+        document
+            .getElementById("cancelWriteModal")
             ?.addEventListener("click", () => {
                 document
                     .getElementById("writeModal")
@@ -762,9 +1019,21 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                     const author = document.getElementById("writeAuthor").value;
                     const fileInput = document.getElementById("writeFile");
                     const file = fileInput.files[0];
+                    const editId = document.getElementById("editId").value;
 
                     let fileUrl = null;
                     let fileName = null;
+
+                    // If editing, preserve current file info unless new one provided
+                    if (editId) {
+                        const existing = archivesData.find(
+                            (d) => String(d.id) === String(editId),
+                        );
+                        if (existing) {
+                            fileUrl = existing.file_url;
+                            fileName = existing.file_name;
+                        }
+                    }
 
                     if (file) {
                         const fileExt = file.name.split(".").pop();
@@ -776,31 +1045,48 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
 
                         if (uploadError) throw uploadError;
 
+                        // Delete old file if updating
+                        if (editId && fileUrl) {
+                            await supabase.storage
+                                .from("resources")
+                                .remove([fileUrl]);
+                        }
+
                         fileUrl = filePath;
                         fileName = file.name;
                     }
 
-                    const { error: dbError } = await supabase
-                        .from("archives")
-                        .insert({
-                            title,
-                            category,
-                            author,
-                            file_url: fileUrl,
-                            file_name: fileName,
-                            registrant_email: userProfile.get()?.email,
-                        });
+                    const payload = {
+                        title,
+                        category,
+                        author,
+                        file_url: fileUrl,
+                        file_name: fileName,
+                    };
 
-                    if (dbError) throw dbError;
+                    if (editId) {
+                        const { error: dbError } = await supabase
+                            .from("archives")
+                            .update(payload)
+                            .eq("id", editId);
+                        if (dbError) throw dbError;
+                        alert("수정되었습니다.");
+                    } else {
+                        payload.registrant_email = userProfile.get()?.email;
+                        const { error: dbError } = await supabase
+                            .from("archives")
+                            .insert(payload);
+                        if (dbError) throw dbError;
+                        alert("등록되었습니다.");
+                    }
 
-                    alert("자료가 등록되었습니다.");
                     document
                         .getElementById("writeModal")
                         .classList.remove("active");
                     await loadArchives();
                 } catch (err) {
                     console.error(err);
-                    alert("등록 중 오류가 발생했습니다: " + err.message);
+                    alert("저장 중 오류가 발생했습니다: " + err.message);
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
