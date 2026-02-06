@@ -1,79 +1,129 @@
 <div id="pwa-install-prompt" class="pwa-prompt" style="display: none;">
     <div class="pwa-content">
-        <span class="pwa-icon">📱</span>
+        <div class="pwa-icon-wrapper">
+            <span class="pwa-icon">📱</span>
+        </div>
         <div class="pwa-text">
-            <strong>스마트폰 바탕화면 아이콘 만들기</strong>
-            <span
-                >버튼을 누르면 스마트폰 홈 화면에 바로가기 아이콘이 생성됩니다.</span
+            <strong id="pwa-title">앱으로 설치하기</strong>
+            <span id="pwa-desc"
+                >바탕화면에 아이콘을 추가하여 앱처럼 편리하게 이용하세요.</span
             >
         </div>
-        <button id="pwa-install-btn" class="pwa-btn">만들기</button>
-        <button id="pwa-close-btn" class="pwa-close">×</button>
+        <div class="pwa-actions">
+            <button id="pwa-install-btn" class="pwa-btn">설치하기</button>
+            <button id="pwa-close-btn" class="pwa-close">나중에</button>
+        </div>
+    </div>
+
+    <!-- iOS Specific Instruction (Initially Hidden) -->
+    <div id="ios-instruction" class="ios-guide" style="display: none;">
+        <p>1. 하단 바의 <strong>공유 버튼 [↑]</strong>을 누르세요.</p>
+        <p>2. 스크롤을 내려 <strong>'홈 화면에 추가'</strong>를 누르세요.</p>
     </div>
 </div>
 
 <style>
     .pwa-prompt {
         position: fixed;
-        bottom: 20px;
+        bottom: 90px; /* Above bottom nav */
         left: 50%;
         transform: translateX(-50%);
-        width: 90%;
-        max-width: 400px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        z-index: 9999;
-        animation: slideUp 0.3s ease-out;
-        border: 1px solid #f3f4f6;
+        width: calc(100% - 2rem);
+        max-width: 440px;
+        background: #1f1f1f;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid #333;
+        padding: 0.75rem;
+        color: white;
     }
     .pwa-content {
         display: flex;
         align-items: center;
-        padding: 1rem;
+        gap: 0.75rem;
+    }
+    .pwa-icon-wrapper {
+        background: #2d2d2d;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
     .pwa-icon {
-        font-size: 2rem;
-        margin-right: 1rem;
+        font-size: 1.5rem;
     }
     .pwa-text {
         flex: 1;
         display: flex;
         flex-direction: column;
-        margin-right: 0.5rem;
+        min-width: 0;
     }
     .pwa-text strong {
         font-size: 0.95rem;
-        color: #111827;
+        color: #fff;
+        margin-bottom: 2px;
     }
     .pwa-text span {
         font-size: 0.8rem;
-        color: #6b7280;
+        color: #a1a1aa;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pwa-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
     }
 
     .pwa-btn {
-        background: #2563eb;
+        background: #3b82f6;
         color: white;
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
         font-weight: 600;
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        transition: background 0.2s;
+    }
+    .pwa-btn:hover {
+        background: #2563eb;
     }
     .pwa-close {
-        background: none;
+        background: transparent;
         border: none;
-        font-size: 1.5rem;
-        color: #9ca3af;
+        font-size: 0.75rem;
+        color: #71717a;
         cursor: pointer;
-        padding: 0 0 0 0.5rem;
-        line-height: 1;
+        padding: 2px;
+        text-decoration: underline;
+    }
+
+    .ios-guide {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #333;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: #d1d5db;
+    }
+    .ios-guide p {
+        margin: 0;
+    }
+    .ios-guide strong {
+        color: #3b82f6;
     }
 
     @keyframes slideUp {
         from {
-            transform: translate(-50%, 100%);
+            transform: translate(-50%, 120%);
             opacity: 0;
         }
         to {
@@ -84,48 +134,86 @@
 </style>
 
 <script>
-    let deferredPrompt;
-    const pwaPrompt = document.getElementById("pwa-install-prompt");
-    const installBtn = document.getElementById("pwa-install-btn");
-    const closeBtn = document.getElementById("pwa-close-btn");
+    document.addEventListener("DOMContentLoaded", () => {
+        const pwaPrompt = document.getElementById("pwa-install-prompt");
+        const installBtn = document.getElementById(
+            "pwa-install-btn",
+        ) as HTMLButtonElement;
+        const closeBtn = document.getElementById("pwa-close-btn");
+        const iosGuide = document.getElementById("ios-instruction");
+        const pwaTitle = document.getElementById("pwa-title");
+        const pwaDesc = document.getElementById("pwa-desc");
 
-    window.addEventListener("beforeinstallprompt", (e) => {
-        // Prevent Chrome 67 and earlier from automatically showing the prompt
-        e.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
-        // Update UI to notify the user they can add to home screen
-        if (pwaPrompt) pwaPrompt.style.display = "block";
-    });
+        let deferredPrompt: any;
 
-    installBtn?.addEventListener("click", async () => {
-        if (pwaPrompt) pwaPrompt.style.display = "none";
-        // Show the install prompt
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to the install prompt: ${outcome}`);
-            deferredPrompt = null;
+        // 1. Check if already installed (standalone mode)
+        const isStandalone =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as any).standalone === true;
+        if (isStandalone) return;
+
+        // 2. Check if user recently dismissed
+        const lastDismissed = localStorage.getItem("pwa_dismissed");
+        if (
+            lastDismissed &&
+            Date.now() - parseInt(lastDismissed) < 1000 * 60 * 60 * 24 * 7
+        ) {
+            // Dismissed within last 7 days
+            return;
         }
-    });
 
-    // Debug for development
-    if (import.meta.env.DEV) {
-        console.log("PWA Install Component Loaded (Dev Mode)");
-        // Create a debug trigger
-        const debugBtn = document.createElement("button");
-        debugBtn.textContent = "🔧 스마트폰 바탕화면 아이콘 만들기 테스트";
-        debugBtn.style.cssText =
-            "position:fixed; bottom:20px; right:20px; z-index:99999; font-size:14px; padding:10px; background:red; color:white; border-radius:5px;";
-        document.body.appendChild(debugBtn);
+        // 3. Detect Device
+        const isIOS =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+            !(window as any).MSStream;
+        const isAndroid = /Android/.test(navigator.userAgent);
 
-        debugBtn.addEventListener("click", () => {
-            if (pwaPrompt) pwaPrompt.style.display = "block";
+        // Show prompt for mobile only
+        if (isIOS || isAndroid) {
+            // Handle Android/Chrome default prompt
+            window.addEventListener("beforeinstallprompt", (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (pwaPrompt) pwaPrompt.style.display = "block";
+            });
+
+            // Handle iOS (Since beforeinstallprompt doesn't fire)
+            if (isIOS && pwaPrompt) {
+                pwaPrompt.style.display = "block";
+                if (pwaTitle) pwaTitle.textContent = "홈 화면에 추가하기";
+                if (pwaDesc)
+                    pwaDesc.textContent =
+                        "앱처럼 편리하게 이용하실 수 있습니다.";
+                if (installBtn) installBtn.textContent = "방법 확인";
+            }
+        }
+
+        installBtn?.addEventListener("click", async () => {
+            if (isIOS) {
+                // Toggle iOS instructions
+                if (iosGuide)
+                    iosGuide.style.display =
+                        iosGuide.style.display === "none" ? "block" : "none";
+                if (installBtn)
+                    installBtn.textContent =
+                        iosGuide?.style.display === "block"
+                            ? "숨기기"
+                            : "방법 확인";
+            } else if (deferredPrompt) {
+                // Trigger Android Install
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response: ${outcome}`);
+                if (outcome === "accepted") {
+                    if (pwaPrompt) pwaPrompt.style.display = "none";
+                }
+                deferredPrompt = null;
+            }
         });
-    }
 
-    closeBtn?.addEventListener("click", () => {
-        if (pwaPrompt) pwaPrompt.style.display = "none";
+        closeBtn?.addEventListener("click", () => {
+            if (pwaPrompt) pwaPrompt.style.display = "none";
+            localStorage.setItem("pwa_dismissed", Date.now().toString());
+        });
     });
 </script>
