@@ -73,39 +73,8 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 			border-style: dashed;
 			color: var(--text-muted);
 		}
-		.search-container {
-			position: relative;
-			margin-bottom: 1.5rem;
-		}
-		#searchInput {
-			width: 100%;
-			box-sizing: border-box; /* Fix overflow issues */
-			padding: 0.75rem 1rem 0.75rem 2.5rem; /* Compact padding */
-			font-size: 0.9rem; /* Compact font */
-			border: 1px solid var(--border-color);
-			border-radius: 99px;
-			box-shadow: 0 1px 2px var(--shadow-color);
-			transition:
-				border-color 0.2s,
-				box-shadow 0.2s;
-			background-color: var(--bg-card);
-			color: var(--text-main);
-		}
-		#searchInput:focus {
-			outline: none;
-			border-color: var(--accent);
-			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-		}
-		.search-icon {
-			position: absolute;
-			left: 1.25rem;
-			top: 50%;
-			transform: translateY(-50%);
-			color: #9ca3af;
-			pointer-events: none;
-		}
-
-		/* New Layout Styles */
+		.accent-text {
+			color: #ef4444; /* Red accent for warnings/notes */
 		.section-container {
 			margin-bottom: 2.5rem;
 		}
@@ -170,15 +139,6 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 		법령·규칙·고시는 국가법령정보센터를 직접 링크하였습니다.
 	</p>
 
-	<div class="search-container">
-		<input
-			type="text"
-			id="searchInput"
-			placeholder="검색어를 입력하세요 (예: 종사자, 기록)"
-			aria-label="체크리스트 검색"
-		/>
-		<span class="search-icon"><Icon name="search" size="20" /></span>
-	</div>
 
 	<!-- Section 1: Cooperation Request -->
 	<div class="section-container">
@@ -305,12 +265,6 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 		</div>
 	</div>
 
-	<div
-		id="noResults"
-		style="display: none; text-align: center; padding: 2rem; color: #6b7280;"
-	>
-		검색 결과가 없습니다.
-	</div>
 
 	<div class="download-section">
 		<p>전체 내용을 원본으로 확인하시려면 PDF를 다운로드하세요.</p>
