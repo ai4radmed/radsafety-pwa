@@ -52,10 +52,12 @@ import Icon from "../../components/Icon.astro";
             <div class="table-wrapper">
                 <table id="previewTable">
                     <thead>
+                        <th>학회</th>
+                        <th>구분</th>
                         <th>이름</th>
-                        <th>근무기관명</th>
                         <th>이메일</th>
-                        <th>소속학회</th>
+                        <th>기관</th>
+                        <th>부서</th>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -91,14 +93,16 @@ import Icon from "../../components/Icon.astro";
             <div class="table-wrapper">
                 <table id="dbTable">
                     <thead>
+                        <th>학회</th>
+                        <th>구분</th>
                         <th>이름</th>
-                        <th>근무기관명</th>
                         <th>이메일</th>
-                        <th>소속학회</th>
+                        <th>기관</th>
+                        <th>부서</th>
                     </thead>
                     <tbody>
                         <tr
-                            ><td colspan="4" style="text-align:center;"
+                            ><td colspan="6" style="text-align:center;"
                                 >데이터를 불러오는 중...</td
                             ></tr
                         >
@@ -138,7 +142,7 @@ import Icon from "../../components/Icon.astro";
         if (error) {
             console.error(error);
             alert("DB 목록을 불러오지 못했습니다: " + error.message);
-            dbTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">로드 실패</td></tr>`;
+            dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패</td></tr>`;
         } else {
             allMembers = data || [];
             renderDbTable(allMembers);
@@ -153,7 +157,7 @@ import Icon from "../../components/Icon.astro";
         dbTableBody.innerHTML = "";
 
         if (list.length === 0) {
-            dbTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">등록된 회원이 없습니다.</td></tr>`;
+            dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">등록된 회원이 없습니다.</td></tr>`;
             return;
         }
 
@@ -167,17 +171,19 @@ import Icon from "../../components/Icon.astro";
                       ? "대한핵의학기술학회"
                       : row.society || "-";
             tr.innerHTML = `
-                <td>${row.name || "-"}</td>
-                <td>${row.affiliation || "-"}</td>
-                <td>${row.email || "-"}</td>
                 <td>${societyName}</td>
+                <td>${row.classification || "-"}</td>
+                <td>${row.name || "-"}</td>
+                <td>${row.email || "-"}</td>
+                <td>${row.affiliation || "-"}</td>
+                <td>${row.department || "-"}</td>
             `;
             dbTableBody.appendChild(tr);
         });
 
         if (list.length > 100) {
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td colspan="4" style="text-align:center; color:#888;">...외 ${list.length - 100}명 (검색하여 확인하세요)</td>`;
+            tr.innerHTML = `<td colspan="6" style="text-align:center; color:#888;">...외 ${list.length - 100}명 (검색하여 확인하세요)</td>`;
             dbTableBody.appendChild(tr);
         }
     }
@@ -327,6 +333,7 @@ import Icon from "../../components/Icon.astro";
                 findValue(row, [
                     "근무기관명",
                     "근무기관",
+                    "기관",
                     "소속",
                     "affiliation",
                     "organization",
@@ -340,11 +347,38 @@ import Icon from "../../components/Icon.astro";
                 .toString()
                 .trim();
 
+            const department = (
+                findValue(row, [
+                    "소속 부서",
+                    "부서",
+                    "과",
+                    "department",
+                    "dept",
+                    "part",
+                ]) || "-"
+            )
+                .toString()
+                .trim();
+
+            const classification = (
+                findValue(row, [
+                    "직종",
+                    "구분",
+                    "classification",
+                    "role",
+                    "job",
+                    "position",
+                    "grade",
+                ]) || "-"
+            )
+                .toString()
+                .trim();
+
             // Society Parsing Logic
             let societyRaw =
                 findValue(row, [
                     "소속학회",
-                    "구분",
+                    // "구분", -> Removed to avoid conflict with classification
                     "division",
                     "society",
                     "학회",
@@ -386,7 +420,15 @@ import Icon from "../../components/Icon.astro";
                     ? "대한핵의학회"
                     : "대한핵의학기술학회";
 
-            return { name, email, affiliation, society, societyDisplay };
+            return {
+                name,
+                email,
+                affiliation,
+                department,
+                classification,
+                society,
+                societyDisplay,
+            };
         });
 
         // Store normalized data for consistent upload
@@ -397,10 +439,12 @@ import Icon from "../../components/Icon.astro";
         processedData.forEach((row) => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                    <td>${row.name}</td>
-                    <td>${row.affiliation}</td>
-                    <td>${row.email}</td>
                     <td>${row.societyDisplay}</td>
+                    <td>${row.classification}</td>
+                    <td>${row.name}</td>
+                    <td>${row.email}</td>
+                    <td>${row.affiliation}</td>
+                    <td>${row.department}</td>
                 `;
             tableBody.appendChild(tr);
         });
@@ -456,6 +500,9 @@ import Icon from "../../components/Icon.astro";
                 name: row.name !== "-" ? row.name : null,
                 email: row.email !== "-" ? row.email : null,
                 affiliation: row.affiliation !== "-" ? row.affiliation : null,
+                department: row.department !== "-" ? row.department : null,
+                classification:
+                    row.classification !== "-" ? row.classification : null,
                 society: row.society, // Send the determined society code
                 // Schema update required: Ensure 'society' column exists in allowed_members table
             }))

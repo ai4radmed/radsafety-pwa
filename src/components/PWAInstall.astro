@@ -149,8 +149,14 @@
         // 1. Check if already installed (standalone mode)
         const isStandalone =
             window.matchMedia("(display-mode: standalone)").matches ||
-            (window.navigator as any).standalone === true;
-        if (isStandalone) return;
+            (window.navigator as any).standalone === true ||
+            document.referrer.includes("android-app://");
+
+        if (isStandalone) {
+            // If standalone, ensure we never show it and clear any dismissed state if needed (optional)
+            // But mainly just return to exit.
+            return;
+        }
 
         // 2. Check if user recently dismissed
         const lastDismissed = localStorage.getItem("pwa_dismissed");
