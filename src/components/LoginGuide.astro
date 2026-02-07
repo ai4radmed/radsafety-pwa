@@ -1,65 +1,41 @@
 <div id="login-guide-banner" class="login-guide" style="display: none;">
+    <div class="guide-header">
+        <button id="guide-close-btn" class="guide-btn">다시 보지 않기 ✕</button>
+    </div>
     <div class="guide-content">
         <div class="guide-text">
-            <strong>카카오/이메일 인증 필독사항</strong>
             <p>
-                1. 카카오인증으로 시작하면 카카오톡과 계정정보로 로그인 중
-                선택을 해야 합니다.<br />
-                2. 다음단계로 카카오계정이 열리게되면 해당계정이 앱에 로그인되었다는
-                안내가 나오면 "확인"을 누르시면 됩니다.<br />
-                3. 이후 홈화면의 아이콘을 이용해서 사용자 스스로 앱으로 복귀해야 합니다.<br
-                />
-                4. 사이드메뉴의 마이페이지로 이동해서 카카오로 로그인이 보이면 잘
-                된 것입니다.
+                1. 카카오로 시작하면 톡과 계정정보 중 선택필요<br />
+                2. 계정이 열리면 앱이 로그인되었다면 확인클릭<br />
+                3. 앱으로 복귀는 홈화면 앱아이콘 이용<br />
+                4. 마이페이지에서 카카오 로그인 확인
             </p>
         </div>
     </div>
-    <button id="guide-close-btn" class="guide-btn">다시 보지 않기</button>
 </div>
 
 <style>
     .login-guide {
         position: fixed;
-        /* Moved down to 65% to sit below the Email Login button area */
-        top: 65%;
+        /* Moved up to 60% to be slightly higher than 65% and avoid button hiding */
+        top: 60%;
         left: 50%;
         transform: translateX(-50%);
         width: 90%;
         max-width: 400px;
         background: #fff;
-        border: 2px solid #fee500; /* Kakao Border */
-        border-radius: 16px;
+        border: 2px solid #fee500;
+        border-radius: 12px;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        z-index: 2000; /* Very high priority */
-        padding: 1.25rem;
+        z-index: 2000;
+        padding: 1rem;
         font-family:
             -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         text-align: left;
     }
 
-    .guide-content {
-        margin-bottom: 1rem;
-    }
-
-    .guide-icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-        text-align: center;
-    }
-
-    .guide-text strong {
-        display: block;
-        font-size: 1.1rem;
-        margin-bottom: 0.5rem;
-        color: #191919;
-    }
-
-    .guide-text p {
-        font-size: 0.95rem;
-        color: #333;
-        line-height: 1.6;
-        margin: 0;
-        word-break: keep-all; /* Korean optimized */
+    .guide-header {
+        margin-bottom: 0.75rem;
     }
 
     .guide-btn {
@@ -67,14 +43,26 @@
         background: #fee500;
         color: #191919;
         border: none;
-        padding: 0.8rem;
-        border-radius: 8px;
-        font-size: 1rem;
+        padding: 0.6rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
         font-weight: 700;
         cursor: pointer;
     }
     .guide-btn:active {
         background: #e6cf00;
+    }
+
+    .guide-content {
+        margin-bottom: 0;
+    }
+
+    .guide-text p {
+        font-size: 0.9rem;
+        color: #333;
+        line-height: 1.5;
+        margin: 0;
+        word-break: keep-all;
     }
 </style>
 
@@ -83,10 +71,9 @@
         const guideBanner = document.getElementById("login-guide-banner");
         const closeBtn = document.getElementById("guide-close-btn");
 
-        // Check if dismissed (Version 2)
-        const isDismissed = localStorage.getItem("login_guide_dismissed_v2");
+        // Check if dismissed (Version 3 to force show)
+        const isDismissed = localStorage.getItem("login_guide_dismissed_v3");
 
-        // Logic: Show if NOT dismissed AND (on Login Page OR My Page)
         const path = window.location.pathname;
         const shoudShow =
             !isDismissed &&
@@ -97,13 +84,12 @@
         if (shoudShow && guideBanner) {
             guideBanner.style.display = "block";
         } else if (guideBanner) {
-            // Reset display if navigating away or dismissed
             guideBanner.style.display = "none";
         }
 
         closeBtn?.addEventListener("click", () => {
             if (guideBanner) guideBanner.style.display = "none";
-            localStorage.setItem("login_guide_dismissed_v2", "true");
+            localStorage.setItem("login_guide_dismissed_v3", "true");
         });
     });
 </script>
