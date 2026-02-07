@@ -231,7 +231,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     >...</span
                 >
                 <span style="color:#d1d5db; font-size:0.85rem;"
-                    >since <span id="userJoinedAt">...</span></span
+                    >앱가입일 <span id="userJoinedAt">...</span></span
                 >
             </div>
         </div>
@@ -792,6 +792,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 Object.keys(data).forEach((key) => {
                     userProfile.setKey(key, data[key]?.toString() || "");
                 });
+
+                // Explicitly map created_at (DB) to joined_at (Store)
+                if (data.created_at) {
+                    userProfile.setKey("joined_at", data.created_at);
+                }
                 currentUser = userProfile.get();
                 console.log("Updated currentUser:", currentUser);
                 console.log("currentUser.user_tier:", currentUser.user_tier);
