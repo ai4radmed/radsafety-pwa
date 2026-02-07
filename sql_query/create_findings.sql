@@ -11,7 +11,7 @@ DROP TABLE IF EXISTS public.findings CASCADE;
 CREATE TABLE public.findings (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE, -- Author
+    user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL, -- Author (Preserved on delete)
     
     title text NOT NULL,
     finding_type text NOT NULL, -- '지적', '권고'

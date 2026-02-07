@@ -49,6 +49,7 @@ CREATE TABLE public.profiles (
     is_safety_manager_practical boolean DEFAULT false,
     
     -- Timestamps
+    joined_at timestamp with time zone, -- Copied from auth.users.created_at (Explicit App Registration Date)
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
@@ -77,12 +78,13 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
+  INSERT INTO public.profiles (id, email, full_name, role, joined_at)
   VALUES (
     new.id, 
     new.email, 
     new.raw_user_meta_data->>'full_name',
-    'user'
+    'user',
+    new.created_at -- Copy auth.users.created_at to joined_at
   );
   RETURN new;
 END;
@@ -92,7 +94,17 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- 6. Comments
+-- 6. RPC: Delete Own Account
+CREATE OR REPLACE FUNCTION delete_own_account()
+RETURNS void AS $$
+BEGIN
+  -- Validate: Ensure the user is deleting themselves (Implicit in auth.uid())
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. Comments
 COMMENT ON TABLE public.profiles IS '사용자 프로필 통합 테이블';
 COMMENT ON COLUMN public.profiles.member_type IS '회원 구분 (general:일반, society:학회원, special:특별회원)';
 COMMENT ON COLUMN public.profiles.verification_status IS '인증 상태 (none, pending, verified, rejected)';
+COMMENT ON COLUMN public.profiles.joined_at IS '앱 가입일 (auth.users.created_at 복사본)';
