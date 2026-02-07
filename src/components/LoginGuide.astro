@@ -94,9 +94,13 @@
         const isDismissed = localStorage.getItem("login_guide_dismissed_v2");
 
         // Logic: Show if NOT dismissed AND (on Login Page OR My Page)
+        // Logic: Show if NOT dismissed AND (on Login Page OR My Page)
         const path = window.location.pathname;
         const shoudShow =
-            !isDismissed && (path === "/login" || path === "/mypage");
+            !isDismissed &&
+            (path.includes("/login") || path.includes("/mypage"));
+
+        console.log("LoginGuide Debug:", { path, isDismissed, shoudShow });
 
         if (shoudShow && guideBanner) {
             guideBanner.style.display = "block";
