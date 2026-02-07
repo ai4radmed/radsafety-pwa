@@ -842,13 +842,30 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             currentUser.email || "-";
 
         // Joined At Format
+        console.log("=== JOINED_AT DEBUG ===");
+        console.log("currentUser:", currentUser);
+        console.log("currentUser.joined_at:", currentUser.joined_at);
+        console.log(
+            "typeof currentUser.joined_at:",
+            typeof currentUser.joined_at,
+        );
+
         if (currentUser.joined_at) {
+            console.log("joined_at exists, trying to parse...");
             const joinedDate = new Date(currentUser.joined_at);
+            console.log("joinedDate:", joinedDate);
+            console.log("joinedDate.toString():", joinedDate.toString());
+            console.log(
+                "joinedDate.toLocaleDateString('ko-KR'):",
+                joinedDate.toLocaleDateString("ko-KR"),
+            );
             document.getElementById("userJoinedAt").textContent =
                 joinedDate.toLocaleDateString("ko-KR");
         } else {
+            console.log("joined_at is falsy, value:", currentUser.joined_at);
             document.getElementById("userJoinedAt").textContent = "-";
         }
+        console.log("=== END JOINED_AT DEBUG ===");
 
         console.log("Checking admin badge - is_admin:", currentUser.is_admin);
         if (currentUser.is_admin === "true" || currentUser.is_admin === true) {
