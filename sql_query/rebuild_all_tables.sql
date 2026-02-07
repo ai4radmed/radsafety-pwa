@@ -83,7 +83,7 @@ CREATE POLICY "Users can read own profile" ON public.profiles
 
 CREATE POLICY "Admins can read all profiles" ON public.profiles
     FOR SELECT USING (
-        exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' )
+        (auth.jwt()->>'role')::text = 'admin'
     );
 
 CREATE POLICY "Users can update own profile" ON public.profiles
