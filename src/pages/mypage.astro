@@ -845,7 +845,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 console.log("Updated currentUser:", currentUser);
                 console.log("currentUser.user_tier:", currentUser.user_tier);
             } else {
-                console.error("Error fetching user data:", error);
+                // 🔍 SHOW ERROR IN DEBUG PANEL
+                const debugPanel = document.getElementById("debugJoinedAt");
+                if (debugPanel) {
+                    debugPanel.innerHTML = `
+                        <strong style="color:#ffff00;">⚠️ DATABASE QUERY ERROR:</strong><br>
+                        - Error: ${JSON.stringify(error)}<br>
+                        - Message: ${error?.message || "Unknown error"}<br>
+                        - Code: ${error?.code || "N/A"}<br>
+                        - User ID: ${currentUser.id}
+                    `;
+                }
+                console.error("Failed to fetch profile:", error);
             }
         } catch (err) {
             console.error("Failed to fetch user data:", err);
