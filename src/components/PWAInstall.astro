@@ -6,12 +6,12 @@
         <div class="pwa-text">
             <strong id="pwa-title">앱으로 설치하기</strong>
             <span id="pwa-desc"
-                >바탕화면에 아이콘을 추가하여 앱처럼 편리하게 이용하세요.</span
+                >홈 화면에 추가 후, [다시 보지 않기]를 눌러주세요.</span
             >
         </div>
         <div class="pwa-actions">
             <button id="pwa-install-btn" class="pwa-btn">설치하기</button>
-            <button id="pwa-close-btn" class="pwa-close">나중에</button>
+            <button id="pwa-close-btn" class="pwa-close">다시 보지 않기</button>
         </div>
     </div>
 
@@ -98,12 +98,15 @@
     }
     .pwa-close {
         background: transparent;
+        color: #a1a1aa;
         border: none;
+        padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
-        color: #71717a;
         cursor: pointer;
-        padding: 2px;
         text-decoration: underline;
+    }
+    .pwa-close:hover {
+        color: white;
     }
 
     .ios-guide {
@@ -111,11 +114,11 @@
         padding-top: 0.75rem;
         border-top: 1px solid #333;
         font-size: 0.85rem;
-        line-height: 1.6;
         color: #d1d5db;
+        line-height: 1.5;
     }
     .ios-guide p {
-        margin: 0;
+        margin: 0.25rem 0;
     }
     .ios-guide strong {
         color: #3b82f6;
@@ -171,13 +174,9 @@
             }
         }, 1000);
 
-        // 2. Check if user recently dismissed
-        const lastDismissed = localStorage.getItem("pwa_dismissed");
-        if (
-            lastDismissed &&
-            Date.now() - parseInt(lastDismissed) < 1000 * 60 * 60 * 24 * 7
-        ) {
-            // Dismissed within last 7 days
+        // 2. Check if user recently dismissed (Target: Permanent Dismissal)
+        const isDismissed = localStorage.getItem("pwa_permanent_dismiss");
+        if (isDismissed === "true") {
             return;
         }
 
@@ -202,7 +201,7 @@
                 if (pwaTitle) pwaTitle.textContent = "홈 화면에 추가하기";
                 if (pwaDesc)
                     pwaDesc.textContent =
-                        "앱처럼 편리하게 이용하실 수 있습니다.";
+                        "추가 완료 후 [다시 보지 않기]를 눌러주세요.";
                 if (installBtn) installBtn.textContent = "방법 확인";
             }
         }
@@ -225,6 +224,7 @@
                 console.log(`User response: ${outcome}`);
                 if (outcome === "accepted") {
                     if (pwaPrompt) pwaPrompt.style.display = "none";
+                    localStorage.setItem("pwa_permanent_dismiss", "true");
                 }
                 deferredPrompt = null;
             }
@@ -232,7 +232,8 @@
 
         closeBtn?.addEventListener("click", () => {
             if (pwaPrompt) pwaPrompt.style.display = "none";
-            localStorage.setItem("pwa_dismissed", Date.now().toString());
+            // Permanent Dismissal Logic
+            localStorage.setItem("pwa_permanent_dismiss", "true");
         });
     });
 </script>
