@@ -23,7 +23,13 @@
 
 ### 2단계: 🏗️ 테이블 재생성 (Rebuild Schema)
 
-이제 깨끗해진 DB에 필요한 테이블을 순서대로 생성합니다.
+이제 깨끗해진 DB에 필요한 테이블을 생성합니다.
+
+**방법 1: 한 번에 모두 재생성 (권장)** ⚡
+- `sql_query/rebuild_all_tables.sql` 실행
+- 모든 테이블이 올바른 순서로 자동 생성됩니다
+
+**방법 2: 개별 파일 순차 실행**
 
 1. **프로필 테이블 (`profiles`)**:
    - `sql_query/create_profiles.sql` 실행.
