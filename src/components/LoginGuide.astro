@@ -1,7 +1,5 @@
 <div id="login-guide-banner" class="login-guide" style="display: none;">
     <div class="guide-content">
-        <div class="guide-icon">⚠️</div>
-        <!-- Changed icon to alert/info -->
         <div class="guide-text">
             <strong>카카오/이메일 인증 필독사항</strong>
             <p>
@@ -12,8 +10,7 @@
                 3. 이후 홈화면의 아이콘을 이용해서 사용자 스스로 앱으로 복귀해야 합니다.<br
                 />
                 4. 사이드메뉴의 마이페이지로 이동해서 카카오로 로그인이 보이면 잘
-                된 것입니다.<br />
-                5. 모두 확인 후 다시보지 않기를 누르세요.
+                된 것입니다.
             </p>
         </div>
     </div>
@@ -22,13 +19,9 @@
 
 <style>
     .login-guide {
-        /* Position: Relative to content or fixed near top? */
-        /* User said "Development features start location", which is usually below the main buttons */
-        /* Let's make it static/relative within the flow if possible, OR fixed but centered higher */
-        /* DashboardLayout renders it at body bottom. Fixed positioning is safest to overlay. */
-
         position: fixed;
-        top: 20%; /* Higher up */
+        /* Moved down from 20% to 30% (approx 3 lines height) */
+        top: 30%;
         left: 50%;
         transform: translateX(-50%);
         width: 90%;
