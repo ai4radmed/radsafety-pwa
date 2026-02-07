@@ -802,15 +802,20 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 console.log("user_tier from DB:", data.user_tier);
                 // Update store with latest data
                 Object.keys(data).forEach((key) => {
-                    userProfile.setKey(key, data[key]?.toString() || "");
+                    // Preserve timestamp fields as-is, convert others to string
+                    const timestampFields = [
+                        "joined_at",
+                        "created_at",
+                        "updated_at",
+                        "verification_request_date",
+                    ];
+                    if (timestampFields.includes(key)) {
+                        userProfile.setKey(key, data[key] || "");
+                    } else {
+                        userProfile.setKey(key, data[key]?.toString() || "");
+                    }
                 });
 
-                // Explicitly map joined_at (DB) or created_at (DB) to joined_at (Store)
-                if (data.joined_at) {
-                    userProfile.setKey("joined_at", data.joined_at);
-                } else if (data.created_at) {
-                    userProfile.setKey("joined_at", data.created_at);
-                }
                 currentUser = userProfile.get();
                 console.log("Updated currentUser:", currentUser);
                 console.log("currentUser.user_tier:", currentUser.user_tier);
