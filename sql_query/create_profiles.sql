@@ -78,11 +78,11 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role, joined_at)
+  INSERT INTO public.profiles (id, email, nickname, role, joined_at)
   VALUES (
     new.id, 
     new.email, 
-    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'full_name', -- Kakao sends nickname in 'full_name' field
     'user',
     new.created_at -- Copy auth.users.created_at to joined_at
   );

@@ -832,7 +832,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         }
 
         document.getElementById("userIdentityName").textContent =
-            currentUser.full_name || "이름 없음";
+            currentUser.full_name || currentUser.nickname || "이름 없음";
         document.getElementById("userIdentityEmail").textContent =
             currentUser.email || "-";
 
