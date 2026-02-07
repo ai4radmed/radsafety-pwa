@@ -147,14 +147,16 @@
         let deferredPrompt: any;
 
         // 1. Check if already installed (standalone mode)
-        const isStandalone =
-            window.matchMedia("(display-mode: standalone)").matches ||
-            (window.navigator as any).standalone === true ||
-            document.referrer.includes("android-app://");
+        function isRunningStandalone() {
+            return (
+                window.matchMedia("(display-mode: standalone)").matches ||
+                (window.navigator as any).standalone === true ||
+                document.referrer.includes("android-app://")
+            );
+        }
 
-        if (isStandalone) {
-            // If standalone, ensure we never show it and clear any dismissed state if needed (optional)
-            // But mainly just return to exit.
+        if (isRunningStandalone()) {
+            if (pwaPrompt) pwaPrompt.style.display = "none";
             return;
         }
 
