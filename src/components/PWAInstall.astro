@@ -156,9 +156,20 @@
         }
 
         if (isRunningStandalone()) {
+            console.log("PWA: Standalone mode detected. Hiding prompt.");
             if (pwaPrompt) pwaPrompt.style.display = "none";
             return;
         }
+
+        // Retry check after 1 second (for iOS strict timing)
+        setTimeout(() => {
+            if (isRunningStandalone()) {
+                console.log(
+                    "PWA: Standalone mode detected (delayed). Hiding prompt.",
+                );
+                if (pwaPrompt) pwaPrompt.style.display = "none";
+            }
+        }, 1000);
 
         // 2. Check if user recently dismissed
         const lastDismissed = localStorage.getItem("pwa_dismissed");
