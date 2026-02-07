@@ -15,7 +15,7 @@ CREATE TABLE public.profiles (
     
     -- Basic Account Info
     email text, -- Copied from auth.users (ReadOnly)
-    kakao_email text, -- Calculated or separately stored
+    society_email text, -- Email used for society/special user verification
     full_name text, -- Real Name (Verified)
     nickname text, -- Display Nickname (from Kakao)
     avatar_url text,
