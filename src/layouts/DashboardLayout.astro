@@ -5,6 +5,7 @@ import MobileBottomNav from "../components/MobileBottomNav.astro";
 import Icon from "../components/Icon.astro";
 import Footer from "../components/Footer.astro"; // Optional: We might simplify footer in dashboard
 import PWAInstall from "../components/PWAInstall.astro";
+import LoginGuide from "../components/LoginGuide.astro";
 import { ViewTransitions } from "astro:transitions";
 import GlossaryModal from "../components/GlossaryModal.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
@@ -168,6 +169,7 @@ const { title, description, scale } = Astro.props;
         <GlossaryModal />
         <MobileBottomNav />
         <PWAInstall />
+        <LoginGuide />
 
         <script is:inline>
             // Mobile Menu Toggle

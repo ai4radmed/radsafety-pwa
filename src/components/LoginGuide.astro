@@ -1,0 +1,100 @@
+<div id="login-guide-banner" class="login-guide" style="display: none;">
+    <div class="guide-content">
+        <div class="guide-icon">💬</div>
+        <div class="guide-text">
+            <strong>카카오 인증 후 앱으로 복귀하세요</strong>
+            <span>로그인 완료 후 [다시 보지 않기] 클릭</span>
+        </div>
+        <button id="guide-close-btn" class="guide-btn">다시 보지 않기</button>
+    </div>
+</div>
+
+<style>
+    .login-guide {
+        position: fixed;
+        bottom: 20px; /* PWA Prompt is bottom: 90px, so this sits below or stacks */
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 2rem);
+        max-width: 440px;
+        background: #fee500; /* Kakao Yellow */
+        color: #191919;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 990; /* Below PWA prompt (1000) */
+        padding: 0.75rem 1rem;
+        font-family:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .guide-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .guide-icon {
+        font-size: 1.2rem;
+    }
+
+    .guide-text {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        line-height: 1.3;
+    }
+
+    .guide-text strong {
+        font-size: 0.9rem;
+        margin-bottom: 2px;
+    }
+
+    .guide-text span {
+        font-size: 0.8rem;
+        color: #3c1e1e;
+    }
+
+    .guide-btn {
+        background: #191919;
+        color: #fee500;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const guideBanner = document.getElementById("login-guide-banner");
+        const closeBtn = document.getElementById("guide-close-btn");
+
+        // Check if dismissed
+        const isDismissed = localStorage.getItem("login_guide_dismissed");
+
+        // Logic: Show if NOT dismissed AND (on Login Page OR My Page)
+        // Actually, user wants it "visible on window with Kakao Start... and visible after returning".
+        // So checking path is good.
+        const path = window.location.pathname;
+        const shoudShow =
+            !isDismissed &&
+            (path === "/login" || path === "/mypage" || path === "/");
+
+        if (shoudShow && guideBanner) {
+            guideBanner.style.display = "block";
+
+            // If PWA prompt is also visible (bottom: 90px), this sits at bottom: 20px.
+            // They typically won't overlap too badly, but PWA prompt is bigger.
+            // Let's adjust z-index or position if needed dynamically?
+            // For now, simple stacking.
+        }
+
+        closeBtn?.addEventListener("click", () => {
+            if (guideBanner) guideBanner.style.display = "none";
+            localStorage.setItem("login_guide_dismissed", "true");
+        });
+    });
+</script>
