@@ -79,14 +79,13 @@
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("astro:page-load", () => {
         const guideBanner = document.getElementById("login-guide-banner");
         const closeBtn = document.getElementById("guide-close-btn");
 
         // Check if dismissed (Version 2)
         const isDismissed = localStorage.getItem("login_guide_dismissed_v2");
 
-        // Logic: Show if NOT dismissed AND (on Login Page OR My Page)
         // Logic: Show if NOT dismissed AND (on Login Page OR My Page)
         const path = window.location.pathname;
         const shoudShow =
@@ -97,6 +96,9 @@
 
         if (shoudShow && guideBanner) {
             guideBanner.style.display = "block";
+        } else if (guideBanner) {
+            // Reset display if navigating away or dismissed
+            guideBanner.style.display = "none";
         }
 
         closeBtn?.addEventListener("click", () => {
