@@ -236,7 +236,16 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             </div>
         </div>
 
-        <!-- 2. Verification Settings Card (Radio Buttons) -->
+        <!-- 🔍 TEMPORARY DEBUG PANEL (REMOVE AFTER FIXING) -->
+        <div
+            id="debugPanel"
+            style="background:#ff0000; color:white; padding:1rem; margin:1rem 0; border-radius:8px; font-family:monospace; font-size:0.9rem;"
+        >
+            <strong>🔍 DEBUG INFO:</strong><br />
+            <div id="debugJoinedAt">Loading...</div>
+        </div>
+
+        <!-- 1. Identity & Login Method Card -->(Radio Buttons) -->
         <div class="info-card">
             <div
                 class="section-header"
@@ -798,8 +807,24 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 .single();
 
             if (!error && data) {
+                // 🔍 UPDATE DEBUG PANEL IMMEDIATELY
+                const debugPanel = document.getElementById("debugJoinedAt");
+                if (debugPanel) {
+                    debugPanel.innerHTML = `
+                        <strong>FROM DATABASE:</strong><br>
+                        - data.joined_at = ${JSON.stringify(data.joined_at)}<br>
+                        - data.created_at = ${JSON.stringify(data.created_at)}<br>
+                        - typeof joined_at = ${typeof data.joined_at}<br>
+                        - joined_at is null? ${data.joined_at === null}<br>
+                        - joined_at is undefined? ${data.joined_at === undefined}
+                    `;
+                }
+
                 console.log("DB user data:", data);
                 console.log("user_tier from DB:", data.user_tier);
+                console.log(">>> RAW joined_at from DB:", data.joined_at);
+                console.log(">>> RAW created_at from DB:", data.created_at);
+
                 // Update store with latest data
                 Object.keys(data).forEach((key) => {
                     // Preserve timestamp fields as-is, convert others to string
