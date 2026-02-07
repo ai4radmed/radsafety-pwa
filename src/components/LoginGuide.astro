@@ -90,12 +90,13 @@
         const guideBanner = document.getElementById("login-guide-banner");
         const closeBtn = document.getElementById("guide-close-btn");
 
-        // Check if dismissed
-        const isDismissed = localStorage.getItem("login_guide_dismissed");
+        // Check if dismissed (Version 2)
+        const isDismissed = localStorage.getItem("login_guide_dismissed_v2");
 
-        // Logic: Show ONLY on /login page
+        // Logic: Show if NOT dismissed AND (on Login Page OR My Page)
         const path = window.location.pathname;
-        const shoudShow = !isDismissed && path === "/login";
+        const shoudShow =
+            !isDismissed && (path === "/login" || path === "/mypage");
 
         if (shoudShow && guideBanner) {
             guideBanner.style.display = "block";
@@ -103,7 +104,7 @@
 
         closeBtn?.addEventListener("click", () => {
             if (guideBanner) guideBanner.style.display = "none";
-            localStorage.setItem("login_guide_dismissed", "true");
+            localStorage.setItem("login_guide_dismissed_v2", "true");
         });
     });
 </script>
