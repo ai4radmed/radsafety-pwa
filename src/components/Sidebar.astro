@@ -36,7 +36,9 @@ const isActive = (href) => {
                 // Admin Menu Toggle
                 if (adminNavGroup) {
                     adminNavGroup.style.display =
-                        user.role === "admin" ? "flex" : "none";
+                        user.is_admin === "true" || user.is_admin === true
+                            ? "flex"
+                            : "none";
                 }
             } else {
                 if (apiLoginLink) apiLoginLink.style.display = "flex";

@@ -35,7 +35,7 @@ CREATE POLICY "Admins can manage all notifications" ON public.notifications
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.is_admin = true
         )
     );
 

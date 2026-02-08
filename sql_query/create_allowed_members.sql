@@ -32,7 +32,7 @@ CREATE POLICY "Enable all access for admins" on public.allowed_members
     EXISTS (
       SELECT 1 FROM public.profiles
       WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin' -- [FIXED] user_tier -> role
+      AND profiles.is_admin = true
     )
   );
 

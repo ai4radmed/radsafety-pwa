@@ -40,7 +40,7 @@ CREATE POLICY "Admins have full control" ON public.verification_requests
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.is_admin = true
         )
     );
 

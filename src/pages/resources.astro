@@ -656,9 +656,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         // Check Permissions
         const canUpload =
             currentUser &&
-            (currentUser.role === "admin" ||
-                currentUser.is_admin === true ||
-                currentUser.is_verified === true);
+            (currentUser.is_admin === true || currentUser.is_verified === true);
 
         if (canUpload) {
             const btn = document.getElementById("openModalBtn");
@@ -711,9 +709,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         }
 
         const currentUser = userProfile.get();
-        const isAdmin =
-            currentUser &&
-            (currentUser.role === "admin" || currentUser.is_admin === true);
+        const isAdmin = currentUser && currentUser.is_admin === true;
 
         listEl.innerHTML = list
             .map(

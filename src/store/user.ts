@@ -9,7 +9,6 @@ export const userProfile = persistentMap('userProfile', {
     avatar_url: '',
     provider: '',
     is_approved: 'false', // 'true' | 'false' | 'pending'
-    role: 'user', // 'admin' | 'user' (legacy, use user_tier instead)
     certification: 'none', // 'ksnm' | 'ksnmt' | 'special' | 'none' (legacy)
     affiliation: '',
     society: '', // 'nuclear_medicine' | 'technology'
@@ -40,7 +39,6 @@ export function setUser(user: {
     provider: string,
     affiliation?: string,
     society?: string,
-    role?: string,
     is_verified?: boolean | string,
     society_email?: string,
     is_admin?: boolean | string,
@@ -61,7 +59,6 @@ export function setUser(user: {
     userProfile.set({
         ...user,
         is_approved: 'true',
-        role: user.role || getRole(user.email),
         certification: getCertification(user.email),
         affiliation: user.affiliation || '',
         society: user.society || '',
@@ -92,7 +89,6 @@ export function clearUser() {
         avatar_url: '',
         provider: '',
         is_approved: 'false',
-        role: 'user',
         certification: 'none',
         affiliation: '',
         society: '',

@@ -43,7 +43,7 @@ CREATE POLICY "Admins can insert/update/delete" ON public.archives
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.is_admin = true
         )
     );
 

@@ -208,7 +208,7 @@ import Icon from "../../components/Icon.astro";
 
     // 1. Admin Guard
     const user = userProfile.get();
-    if (user.role !== "admin") {
+    if (user.is_admin !== "true" && user.is_admin !== true) {
         alert("관리자 권한이 필요합니다.");
         window.location.href = "/";
     }

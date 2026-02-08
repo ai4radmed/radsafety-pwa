@@ -43,7 +43,7 @@ CREATE TABLE public.profiles (
     avatar_url text,
     
     -- System Roles (Authorization)
-    role text DEFAULT 'user'::text, -- 'admin', 'user'
+    is_admin boolean DEFAULT false, -- Admin status
     
     -- Membership Status (Business Logic)
     member_type text DEFAULT 'general'::text, -- 'general'(일반), 'society'(학회원), 'special'(특별회원)
@@ -83,7 +83,7 @@ CREATE POLICY "Users can read own profile" ON public.profiles
 
 CREATE POLICY "Admins can read all profiles" ON public.profiles
     FOR SELECT USING (
-        (auth.jwt()->>'role')::text = 'admin'
+        (auth.jwt()->>'is_admin')::boolean = true
     );
 
 CREATE POLICY "Users can update own profile" ON public.profiles
@@ -95,12 +95,12 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, nickname, role, joined_at)
+  INSERT INTO public.profiles (id, email, nickname, is_admin, joined_at)
   VALUES (
     new.id, 
     new.email, 
     new.raw_user_meta_data->>'full_name', -- Kakao sends nickname in 'full_name' field
-    'user',
+    false,
     new.created_at -- Copy auth.users.created_at to joined_at
   );
   RETURN new;
@@ -162,7 +162,7 @@ CREATE POLICY "Admins have full control" ON public.findings
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.is_admin = true
         )
     );
 
@@ -205,7 +205,7 @@ CREATE POLICY "Admins can insert/update/delete" ON public.archives
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.is_admin = true
         )
     );
 
@@ -244,7 +244,7 @@ CREATE POLICY "Admins can manage all requests" ON public.verification_requests
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.is_admin = true
         )
     );
 
@@ -297,7 +297,7 @@ CREATE POLICY "Admins can manage allowed members" ON public.allowed_members
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.is_admin = true
         )
     );
 
