@@ -4,9 +4,7 @@ import { getRole, getCertification } from '../config/auth';
 
 export const userProfile = persistentMap('userProfile', {
     id: '',
-    email: '',
-    full_name: '',
-    avatar_url: '',
+    login_email: '',
     provider: '',
     is_approved: 'false', // 'true' | 'false' | 'pending'
     certification: 'none', // 'ksnm' | 'ksnmt' | 'special' | 'none' (legacy)
@@ -34,8 +32,7 @@ export const userProfile = persistentMap('userProfile', {
 export function setUser(user: {
     id: string,
     email: string,
-    full_name: string,
-    avatar_url: string,
+    login_email?: string, // For compatibility/migration
     provider: string,
     affiliation?: string,
     society?: string,
@@ -58,6 +55,7 @@ export function setUser(user: {
 }) {
     userProfile.set({
         ...user,
+        login_email: user.login_email || user.email,
         is_approved: 'true',
         certification: getCertification(user.email),
         affiliation: user.affiliation || '',
@@ -84,9 +82,7 @@ export function setUser(user: {
 export function clearUser() {
     userProfile.set({
         id: '',
-        email: '',
-        full_name: '',
-        avatar_url: '',
+        login_email: '',
         provider: '',
         is_approved: 'false',
         certification: 'none',

@@ -674,8 +674,19 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         const listEl = document.getElementById("resourceList");
         if (!listEl) return;
 
+        // AUTH CHECK: Ensure session is valid before request to avoid RLS 401/Empty
+        const {
+            data: { session },
+            error: sessionError,
+        } = await supabase.auth.getSession();
+        if (sessionError || !session) {
+            console.warn("No active session for archives load", sessionError);
+            // If not logged in, RLS will return empty array (or error if configured).
+            // DashboardLayout should handle redirect, but we show empty state here to be safe.
+        }
+
         listEl.innerHTML =
-            '<p style="text-align:center; padding:2rem;">로딩 중...</p>';
+            '<p style="text-align:center; padding:2rem;">자료를 불러오는 중입니다...</p>';
 
         const { data, error } = await supabase
             .from("archives")
@@ -683,12 +694,12 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             .order("created_at", { ascending: false });
 
         if (error) {
-            console.error(error);
+            console.error("Archives Load Error:", error);
             listEl.innerHTML = `
                 <div style="text-align:center; color:#ef4444; padding: 2rem;">
-                    <p style="font-weight:bold; margin-bottom:0.5rem;">데이터를 불러오는 중 오류가 발생했습니다.</p>
-                    <p style="font-size:0.85rem; opacity:0.8;">상세 오류: ${error.message || "알 수 없는 오류"}</p>
-                    <p style="font-size:0.8rem; margin-top:1rem; color:var(--text-muted);">테이블: archives / 컬럼: *</p>
+                    <p style="font-weight:bold; margin-bottom:0.5rem;">자료 목록을 불러오지 못했습니다.</p>
+                    <p style="font-size:0.85rem; opacity:0.8;">오류 내용: ${error.message || "알 수 없는 오류"}</p>
+                    <p style="font-size:0.8rem; margin-top:1rem; color:var(--text-muted);">(테이블: archives)</p>
                 </div>
             `;
             return;

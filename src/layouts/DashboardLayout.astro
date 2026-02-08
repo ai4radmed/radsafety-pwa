@@ -259,19 +259,13 @@ const { title, description, scale } = Astro.props;
                     // 1. Basic Info from Session
                     const baseUser = {
                         id: session.user.id,
-                        email: session.user.email || "",
-                        full_name:
-                            session.user.user_metadata?.full_name ||
-                            session.user.user_metadata?.name ||
-                            "사용자",
-                        avatar_url:
-                            session.user.user_metadata?.avatar_url || "",
+                        login_email: session.user.email || "",
                         provider:
                             session.user.app_metadata?.provider || "email",
                     };
 
                     // Check if user is admin based on email
-                    const userIsAdmin = isAdmin(baseUser.email);
+                    const userIsAdmin = isAdmin(baseUser.login_email);
 
                     // 2. Fetch Full Profile from DB
                     const { data: profile } = await supabase
@@ -285,7 +279,7 @@ const { title, description, scale } = Astro.props;
                         if (userIsAdmin && !profile.is_admin) {
                             console.log(
                                 "Updating is_admin=true in DB for:",
-                                baseUser.email,
+                                baseUser.login_email,
                             );
                             await supabase
                                 .from("profiles")
@@ -296,7 +290,6 @@ const { title, description, scale } = Astro.props;
                         setUser({
                             ...baseUser,
                             ...profile,
-                            full_name: profile.full_name || baseUser.full_name,
                             is_admin: userIsAdmin,
                             licenses: profile.licenses || [],
                         });

@@ -578,18 +578,19 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         <div
             class="tab-nav"
             style="display:flex; border-bottom:2px solid #e5e7eb; margin-bottom:1.5rem;"
+            data-cache-bust="2026-02-08-v2"
         >
             <button
                 class="tab-btn active"
                 data-tab="auto"
                 style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; border-bottom:2px solid var(--accent); font-weight:bold; color:var(--accent);"
-                >자동 인증</button
+                >학회원 명부로 인증진행</button
             >
             <button
                 class="tab-btn"
                 data-tab="society"
                 style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
-                >수동 신청 (학회원)</button
+                >앱관리자에게 인증신청</button
             >
             <button
                 class="tab-btn"
@@ -602,7 +603,12 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         <!-- Tab 1: Auto -->
         <div class="tab-content" data-tab="auto">
             <p style="color:#6b7280; margin-bottom:1rem;">
-                학회 명단에 등록된 이메일을 입력하세요.
+                학회 명단에 등록된 이메일을 입력하세요.<br />
+                <span style="font-size: 0.9em; color: #ef4444;"
+                    >* 학회로부터 제공받은 명부에 누락되어 인증이 되지 않으면,
+                    상단의 [앱관리자에게 인증신청] 탭을 이용하여 인증을
+                    요청하세요.</span
+                >
             </p>
             <input
                 id="verificationEmail"
@@ -837,35 +843,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         }
 
         document.getElementById("userIdentityName").textContent =
-            currentUser.full_name || currentUser.nickname || "이름 없음";
+            currentUser.society_name || currentUser.nickname || "이름 없음";
         document.getElementById("userIdentityEmail").textContent =
-            currentUser.email || "-";
+            currentUser.login_email || currentUser.email || "-";
 
         // Joined At Format
-        console.log("=== JOINED_AT DEBUG ===");
-        console.log("currentUser:", currentUser);
-        console.log("currentUser.joined_at:", currentUser.joined_at);
-        console.log(
-            "typeof currentUser.joined_at:",
-            typeof currentUser.joined_at,
-        );
-
         if (currentUser.joined_at) {
-            console.log("joined_at exists, trying to parse...");
             const joinedDate = new Date(currentUser.joined_at);
-            console.log("joinedDate:", joinedDate);
-            console.log("joinedDate.toString():", joinedDate.toString());
-            console.log(
-                "joinedDate.toLocaleDateString('ko-KR'):",
-                joinedDate.toLocaleDateString("ko-KR"),
-            );
             document.getElementById("userJoinedAt").textContent =
                 joinedDate.toLocaleDateString("ko-KR");
         } else {
-            console.log("joined_at is falsy, value:", currentUser.joined_at);
             document.getElementById("userJoinedAt").textContent = "-";
         }
-        console.log("=== END JOINED_AT DEBUG ===");
 
         console.log("Checking admin badge - is_admin:", currentUser.is_admin);
         if (currentUser.is_admin === "true" || currentUser.is_admin === true) {

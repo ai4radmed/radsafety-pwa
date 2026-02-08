@@ -174,11 +174,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         const mockLogin = (isApproved) => {
             const user = {
                 id: "mock-user-123",
-                email: isApproved
+                login_email: isApproved
                     ? "admin@radsafety.com"
                     : "newuser@example.com",
-                full_name: isApproved ? "김관리" : "홍길동",
-                avatar_url: "",
                 provider: "google",
             };
             setUser(user);

@@ -35,43 +35,37 @@ DROP TABLE IF EXISTS public.profiles CASCADE;
 CREATE TABLE public.profiles (
     id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     
-    -- Basic Account Info
-    email text, -- Copied from auth.users (ReadOnly)
-    society_email text, -- Email used for society/special user verification
-    full_name text, -- Real Name (Verified)
+    -- 1. Identity (Mypage Order)
+    login_email text, -- Renamed from email
     nickname text, -- Display Nickname (from Kakao)
-    avatar_url text,
-    
-    -- System Roles (Authorization)
+    joined_at timestamp with time zone, -- Copied from auth.users.created_at
+
+    -- Data Management Rules
     is_admin boolean DEFAULT false, -- Admin status
     
-    -- Membership Status (Business Logic)
-    member_type text DEFAULT 'general'::text, -- 'general'(일반), 'society'(학회원), 'special'(특별회원)
-    is_approved boolean DEFAULT false, -- For general access approval
+    -- 2. Verification Info
+    society_name text, -- Real Name (Verified by Society)
+    society_email text, -- Email used for society/special user verification
+    society text, -- 'nuclear_medicine', 'technology', etc.
     
-    -- Verification Status
+    member_type text DEFAULT 'general'::text, -- 'general', 'society', 'special'
+    classification text, -- '의사', '방사선사' 등 (Job Type)
+    affiliation text, -- Institution
+    department text, -- Department
     verification_status text DEFAULT 'none'::text, -- 'none', 'pending', 'verified', 'rejected'
     verification_request_date timestamp with time zone,
     
-    -- Detailed Info (Input by User / Verified)
-    society_name text, -- 'nuclear_medicine', 'technology', etc.
-    classification text, -- '의사', '방사선사' 등 (Job Type)
-    affiliation text, -- Institution
-    department text,
-    
-    -- License Info
-    license_type text, -- Single license type (e.g., 'RI', 'SRI', etc.)
-    
-    -- Safety Manager Info
+    -- 3. Safety Management Info
+    license_type text, -- Single selection
     is_safety_manager boolean DEFAULT false,
     safety_manager_start_year text,
     safety_manager_end_year text,
     safety_manager_start_unknown boolean DEFAULT false,
     is_safety_manager_deputy boolean DEFAULT false,
     is_safety_manager_practical boolean DEFAULT false,
-    
-    -- Timestamps
-    joined_at timestamp with time zone, -- Copied from auth.users.created_at (Explicit App Registration Date)
+
+    -- System Limits / Metadata
+    is_approved boolean DEFAULT false, -- For general access approval
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
@@ -95,7 +89,7 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, nickname, is_admin, joined_at)
+  INSERT INTO public.profiles (id, login_email, nickname, is_admin, joined_at)
   VALUES (
     new.id, 
     new.email, 
@@ -202,11 +196,7 @@ CREATE POLICY "Enable read for authenticated users" ON public.archives
 
 CREATE POLICY "Admins can insert/update/delete" ON public.archives
     FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.is_admin = true
-        )
+        (auth.jwt()->>'is_admin')::boolean = true
     );
 
 COMMENT ON TABLE public.archives IS '자료실 (Resources)';
