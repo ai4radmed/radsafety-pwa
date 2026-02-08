@@ -96,8 +96,15 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `id` | `uuid` (PK) | 고유 식별자 |
 | `user_id` | `uuid` | 신청자 ID |
 | `status` | `text` | 상태 (`pending`, `approved`, `rejected`) |
-| `request_type` | `text` | 요청 유형 (`society`, `special`) |
+| `type` | `text` | 요청 유형 (`society`, `special`) |
 | `full_name` | `text` | 신청자 실명 |
+| `society` | `text` | 학회 코드 (`nuclear_medicine`, `technology`) |
+| `society_name` | `text` | 학회/실명 (인증 후 저장용) |
+| `role` | `text` | 구분 (전공의, 방사선사 등) |
+| `affiliation` | `text` | 근무 기관 |
+| `department` | `text` | 소속 부서 |
+| `email` | `text` | 연락처 이메일 |
+| `reason` | `text` | 신청 사유 |
 | `created_at` | `timestamp` | 신청 일시 |
 
 ## RPC 함수 (Stored Procedures)
