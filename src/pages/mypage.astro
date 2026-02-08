@@ -1373,7 +1373,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
                         // 1. Insert Request Record
                         const { error } = await supabase
-                            .from("auth_requests")
+                            .from("verification_requests")
                             .insert(reqData);
 
                         if (error) throw error;

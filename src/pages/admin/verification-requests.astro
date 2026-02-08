@@ -204,7 +204,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
 
             try {
                 const { data, error } = await supabase
-                    .from("auth_requests") // Changed table name
+                    .from("verification_requests") // Changed table name
                     .select("*")
                     .eq("status", status)
                     .order("created_at", { ascending: false });
@@ -325,7 +325,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
             try {
                 // 1. Update Request Status (Profile already updated on request)
                 const { error: reqError } = await supabase
-                    .from("auth_requests")
+                    .from("verification_requests")
                     .update({
                         status: "approved",
                         updated_at: new Date().toISOString(),
@@ -375,7 +375,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
 
                 // 2. Update Request Status
                 const { error: reqError } = await supabase
-                    .from("auth_requests")
+                    .from("verification_requests")
                     .update({
                         status: "rejected",
                         updated_at: new Date().toISOString(),
@@ -405,7 +405,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
             const statuses = ["auto-approved", "approved", "rejected"];
             for (const status of statuses) {
                 const { count } = await supabase
-                    .from("auth_requests")
+                    .from("verification_requests")
                     .select("*", { count: "exact", head: true })
                     .eq("status", status);
 

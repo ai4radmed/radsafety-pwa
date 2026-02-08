@@ -213,12 +213,15 @@ CREATE TABLE public.verification_requests (
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
     
     status text DEFAULT 'pending'::text,
-    request_type text,
+    type text, -- 'society', 'special'
     full_name text,
-    society_name text,
-    classification text,
+    society text, -- 'nuclear_medicine', 'technology' key
+    society_name text, -- Real Name (if verified)
+    role text, -- '전공의', '방사선사' etc.
     affiliation text,
-    department text
+    department text,
+    email text,
+    reason text
 );
 
 ALTER TABLE public.verification_requests ENABLE ROW LEVEL SECURITY;
