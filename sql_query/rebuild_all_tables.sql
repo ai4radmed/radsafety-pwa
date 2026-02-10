@@ -46,11 +46,11 @@ CREATE TABLE public.profiles (
     verification_date timestamp with time zone,
     
     society text, -- 'nuclear_medicine', 'technology', etc.
+    classification text, -- Role ('전공의', '방사선사', etc.)
+    society_email text, -- Verified Email
+    real_name text, -- Real Name
     affiliation text, -- Institution
     department text, -- Department
-    real_name text, -- Real Name
-    society_email text, -- Verified Email
-    classification text, -- Role ('전공의', '방사선사', etc.)
     
     -- 3. Safety Management Info
     license_type text, -- Single selection
@@ -108,7 +108,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON TABLE public.profiles IS '사용자 프로필 통합 테이블';
-COMMENT ON COLUMN public.profiles.member_type IS '회원 구분 (general:일반, society:학회원, special:특별회원)';
 COMMENT ON COLUMN public.profiles.verification_status IS '인증 상태 (none, pending, verified, rejected)';
 
 -- ==============================================================================
@@ -203,18 +202,17 @@ DROP TABLE IF EXISTS public.verification_requests CASCADE;
 
 CREATE TABLE public.verification_requests (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    verification_status text DEFAULT 'pending'::text,
+    verification_date timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     
-    status text DEFAULT 'pending'::text,
-    type text, -- 'society', 'special'
-    full_name text,
     society text, -- 'nuclear_medicine', 'technology' key
-    real_name text, -- Real Name (if verified, renamed from society_name)
-    classification text, -- '전공의', '방사선사' etc. (Renamed from role)
+    classification text, -- '전공의', '방사선사' etc.
+    society_email text,
+    real_name text,
     affiliation text,
     department text,
-    email text,
+    
     reason text
 );
 
@@ -271,10 +269,13 @@ COMMENT ON TABLE public.notifications IS '사용자 알림';
 DROP TABLE IF EXISTS public.allowed_members CASCADE;
 
 CREATE TABLE public.allowed_members (
-    email text PRIMARY KEY,
-    department text,
+    society_email text PRIMARY KEY,
+    society text,
     classification text,
-    society text
+    real_name text,
+    affiliation text,
+    department text,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 ALTER TABLE public.allowed_members ENABLE ROW LEVEL SECURITY;
@@ -294,4 +295,18 @@ COMMENT ON TABLE public.allowed_members IS '허용 회원 명단 (Whitelist)';
 -- COMPLETION MESSAGE
 -- ==============================================================================
 
-SELECT 'All tables have been successfully recreated!' as status;
+-- Sync existing users (Development Helper)
+-- Since auth.users is not dropped, we need to ensure they have profiles
+INSERT INTO public.profiles (id, login_email, nickname, created_at, is_admin)
+SELECT 
+    au.id, 
+    au.email, 
+    au.raw_user_meta_data->>'full_name',
+    au.created_at,
+    false
+FROM auth.users au
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.profiles p WHERE p.id = au.id
+);
+
+SELECT 'All tables have been successfully recreated and profiles synced!' as status;

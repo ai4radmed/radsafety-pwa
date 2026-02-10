@@ -28,11 +28,11 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `verification_status` | `text` | 인증 상태 (`none`:미인증, `society_list`:명부인증, `admin`:앱관리자승인) |
 | `verification_date` | `timestamp` | 인증 (요청/완료) 일시 |
 | `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
+| `classification` | `text` | 직종 구분 (의사, 방사선사 등) |
+| `society_email` | `text` | 학회/특별사용자 인증용 이메일 |
+| `real_name` | `text` | 실명 (학회 인증 정보) |
 | `affiliation` | `text` | 소속 기관 |
 | `department` | `text` | 소속 부서 |
-| `real_name` | `text` | 실명 (학회 인증 정보) |
-| `society_email` | `text` | 학회/특별사용자 인증용 이메일 |
-| `classification` | `text` | 직종 구분 (의사, 방사선사 등) |
 | `license_type` | `text` | 보유 면허 종류 |
 | `is_safety_manager` | `boolean` | 방사선안전관리자 여부 |
 | `safety_manager_start_year` | `text` | 업무 시작년도 |
@@ -78,10 +78,13 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
-| `email` | `text` (PK) | 허용된 이메일 |
-| `department` | `text` | 기본 배정 부서 |
-| `classification` | `text` | 구분 (기존 'role'에서 변경됨) |
-| `society` | `text` | 소속 학회 코드 |
+| `society_email` | `text` (PK) | 허용된 학회 이메일 |
+| `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
+| `classification` | `text` | 구분 (전공의, 방사선사 등) |
+| `real_name` | `text` | 실명 |
+| `affiliation` | `text` | 소속 기관 |
+| `department` | `text` | 부서 |
+| `created_at` | `timestamp` | 등록 일시 |
 
 ### 5. `verification_requests`
 등급 상향 또는 정회원 인증 요청 내역입니다.
@@ -90,17 +93,15 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | :--- | :--- | :--- |
 | `id` | `uuid` (PK) | 고유 식별자 |
 | `user_id` | `uuid` | 신청자 ID |
-| `status` | `text` | 상태 (`pending`, `approved`, `rejected`) |
-| `type` | `text` | 요청 유형 (`society`, `special`) |
-| `full_name` | `text` | 신청자 실명 |
+| `verification_status` | `text` | 상태 (`pending`, `approved`, `rejected`) |
+| `verification_date` | `timestamp` | 신청/인증 일시 |
 | `society` | `text` | 학회 코드 (`nuclear_medicine`, `technology`) |
-| `real_name` | `text` | 학회/실명 (인증 후 저장용, 기존 `society_name`) |
-| `role` | `text` | 구분 (전공의, 방사선사 등) |
+| `classification` | `text` | 구분 (전공의, 방사선사 등) |
+| `society_email` | `text` | 연락처 이메일 |
+| `real_name` | `text` | 신청자 실명 |
 | `affiliation` | `text` | 근무 기관 |
 | `department` | `text` | 소속 부서 |
-| `email` | `text` | 연락처 이메일 |
 | `reason` | `text` | 신청 사유 |
-| `created_at` | `timestamp` | 신청 일시 |
 
 ## RPC 함수 (Stored Procedures)
 

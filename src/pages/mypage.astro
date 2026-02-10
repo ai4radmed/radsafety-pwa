@@ -49,23 +49,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             justify-content: space-between; /* Space out Login Badge and Admin Badge */
         }
 
-        .login-badge {
-            font-size: 0.75rem;
-            padding: 0.15rem 0.5rem;
-            border-radius: 99px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 600;
-        }
-        .kakao-badge {
-            background: #fee500;
-            color: #3c1e1e;
-        }
-        .email-badge {
-            background: #e5e7eb;
-            color: #374151;
-        }
+        /* login-badge styles moved to global.css */
 
         .info-row {
             display: flex;
@@ -141,7 +125,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             font-weight: 500; /* Match header button weight */
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         .ver-req-btn:hover {
             opacity: 0.9;
@@ -233,19 +217,36 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
         <!-- 2. Verification & Affiliation Card -->
         <div class="info-card">
-            <h3 style="margin: 0 0 1rem 0; font-size: 1rem; font-weight: 600; color: var(--text-main);">파일업로드권한인증 및 소속정보</h3>
+            <h3
+                style="margin: 0 0 1rem 0; font-size: 1rem; font-weight: 600; color: var(--text-main);"
+            >
+                파일업로드 등 권한인증 및 소속정보
+            </h3>
 
-                <!-- 2. Authentication Status & Request -->
-                <div style="display:flex; flex-direction:column; gap:0.5rem;">
-                    <div class="row-info" style="display:flex; justify-content:space-between; align-items:center;">
-                       <div style="display:flex; align-items:center; gap:0.5rem;">
-                           <span id="userVerificationStatus" class="info-value" style="color:var(--accent);">미인증</span>
-                       </div>
-                       
-                       <div style="display:flex; align-items:center; gap:0.5rem;">
-                           <span id="userVerificationDate" style="color:var(--text-main); font-size:0.9rem;">-</span>
-                           <!-- Verify Button (Always visible) -->
-                           <button id="toggleVerifyBannerBtn" style="
+            <!-- 2. Authentication Status & Request -->
+            <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <div
+                    class="row-info"
+                    style="display:flex; justify-content:space-between; align-items:center;"
+                >
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span
+                            id="userVerificationStatus"
+                            class="info-value"
+                            style="color:var(--accent);">미인증</span
+                        >
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span
+                            id="userVerificationDate"
+                            style="color:var(--text-main); font-size:0.9rem;"
+                            >-</span
+                        >
+                        <!-- Verify Button (Always visible) -->
+                        <button
+                            id="toggleVerifyBannerBtn"
+                            style="
                                padding: 0.35rem 0.75rem;
                                background: var(--accent);
                                color: white;
@@ -256,95 +257,124 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                                cursor: pointer;
                                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
                                transition: all 0.2s;
-                           " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">(재)인증요청</button>
-                       </div>
+                           "
+                            onmouseover="this.style.opacity='0.9'"
+                            onmouseout="this.style.opacity='1'"
+                            >(재)인증요청</button
+                        >
                     </div>
                 </div>
+            </div>
 
-                <!-- Verification Request Section (Only visible when toggled) -->
-                <div id="verificationRequestSection" style="display:none; margin-top:1rem; border-top:1px dashed #e5e7eb; padding-top:1rem;">
-                    <h5 style="margin:0 0 0.75rem 0; font-size:0.95rem; color:var(--text-main);">인증 요청</h5>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
-                        <button id="reqNuclearBtn" class="ver-req-btn">대한핵의학회</button>
-                        <button id="reqTechBtn" class="ver-req-btn">대한핵의학기술학회</button>
-                    </div>
-                    <button id="reqSpecialBtn" class="ver-req-btn" style="width:100%; margin-top:0.5rem;">특별사용자</button>
-                    
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; display: flex; align-items: flex-start; gap: 4px;">
-                        <span style="color:var(--accent); font-size: 1.3rem; line-height: 0; vertical-align: sub;">*</span> 
-                        <span>학회 비소속 방사선안전관리자 등이 앱관리자에게 하는 요청</span>
-                    </p>
+            <!-- Verification Request Section (Only visible when toggled) -->
+            <div
+                id="verificationRequestSection"
+                style="display:none; margin-top:1rem; border-top:1px dashed #e5e7eb; padding-top:1rem;"
+            >
+                <h5
+                    style="margin:0 0 0.75rem 0; font-size:0.95rem; color:var(--text-main);"
+                >
+                    인증 요청
+                </h5>
+                <div
+                    style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;"
+                >
+                    <button id="reqNuclearBtn" class="ver-req-btn"
+                        >대한핵의학회</button
+                    >
+                    <button id="reqTechBtn" class="ver-req-btn"
+                        >대한핵의학기술학회</button
+                    >
                 </div>
+                <button
+                    id="reqSpecialBtn"
+                    class="ver-req-btn"
+                    style="width:100%; margin-top:0.5rem;">특별사용자</button
+                >
+
+                <p
+                    style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; display: flex; align-items: flex-start; gap: 4px;"
+                >
+                    <span
+                        style="color:var(--accent); font-size: 1.3rem; line-height: 0; vertical-align: sub;"
+                        >*</span
+                    >
+                    <span
+                        >학회 비소속 방사선안전관리자 등이 앱관리자에게 하는
+                        요청</span
+                    >
+                </p>
+            </div>
 
             <!-- Verified Info Display Area (Appears inside this card) -->
             <div
                 id="societyInfoContent"
                 style="display:none; margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed #e5e7eb;"
             >
-
                 <div
-                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 0.5rem;"
+                    style="display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 0.2rem 0.5rem;"
                 >
-                    <!-- Row 1: Classification | Society -->
-                    <div
-                        class="info-row"
-                        style="border:none; padding: 0;"
-                    >
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
-                            >구분</span
-                        >
-                        <span id="userSocietyRole" class="info-value" style="font-size: 0.9rem;">...</span>
-                    </div>
-                    <div
-                        class="info-row"
-                        style="border:none; padding: 0;"
-                    >
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
+                    <!-- Row 1: Society | Classification -->
+                    <div class="info-row" style="border:none; padding: 0;">
+                        <span
+                            class="info-label"
+                            style="min-width: 30px; font-size: 0.85rem;"
                             >학회</span
                         >
-                        <span id="userSocietyName" class="info-value" style="font-size: 0.9rem;">...</span>
+                        <span
+                            id="userSocietyName"
+                            class="info-value"
+                            style="font-size: 0.9rem;">...</span
+                        >
+                    </div>
+                    <div class="info-row" style="border:none; padding: 0;">
+                        <span
+                            class="info-label"
+                            style="min-width: 30px; font-size: 0.85rem;"
+                            >구분</span
+                        >
+                        <span
+                            id="userSocietyRole"
+                            class="info-value"
+                            style="font-size: 0.9rem;">...</span
+                        >
                     </div>
 
-                    <!-- Row 2: Name | Email -->
-                    <div
-                        class="info-row"
-                        style="border:none; padding: 0;"
-                    >
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
-                            >이름</span
-                        >
-                        <span id="userRealName" class="info-value" style="font-size: 0.9rem;">...</span>
-                    </div>
-                    <div
-                        class="info-row"
-                        style="border:none; padding: 0;"
-                    >
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
+                    <!-- Row 2: Email | Name -->
+                    <div class="info-row" style="border:none; padding: 0;">
+                        <span
+                            class="info-label"
+                            style="min-width: 30px; font-size: 0.85rem;"
                             >메일</span
                         >
                         <span
                             id="userSocietyEmail"
                             class="info-value"
-                            style="font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 140px;"
+                            style="font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;"
                             >...</span
                         >
                     </div>
-
-                    <!-- Row 3: Department | Affiliation -->
-                    <div
-                        class="info-row"
-                        style="border:none; padding: 0;"
-                    >
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
-                            >부서</span
+                    <div class="info-row" style="border:none; padding: 0;">
+                        <span
+                            class="info-label"
+                            style="min-width: 30px; font-size: 0.85rem;"
+                            >이름</span
                         >
-                        <span id="userDepartment" class="info-value" style="font-size: 0.9rem;">...</span>
+                        <span
+                            id="userRealName"
+                            class="info-value"
+                            style="font-size: 0.9rem;">...</span
+                        >
                     </div>
+
+                    <!-- Row 3: Affiliation | Department -->
                     <div
                         class="info-row"
                         style="border:none; padding: 0; min-width: 0;"
                     >
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
+                        <span
+                            class="info-label"
+                            style="min-width: 30px; font-size: 0.85rem;"
                             >기관</span
                         >
                         <span
@@ -352,6 +382,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                             class="info-value"
                             style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-size: 0.9rem;"
                             >...</span
+                        >
+                    </div>
+                    <div class="info-row" style="border:none; padding: 0;">
+                        <span
+                            class="info-label"
+                            style="min-width: 30px; font-size: 0.85rem;"
+                            >부서</span
+                        >
+                        <span
+                            id="userDepartment"
+                            class="info-value"
+                            style="font-size: 0.9rem;">...</span
                         >
                     </div>
                 </div>
@@ -408,55 +450,32 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     <!-- Date Inputs -->
                     <div
                         id="managerDates"
-                        style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px dashed #d1d5db;"
+                        style="display:none; margin-top:0.5rem;"
                     >
                         <div
-                            style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;"
-                        >
-                            <div>
-                                <label
-                                    style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem;"
-                                    >시작년도</label
-                                >
-                                <input
-                                    type="number"
-                                    id="managerStartDate"
-                                    placeholder="예: 2020"
-                                    min="1900"
-                                    max="2100"
-                                    style="width:100%; padding:0.5rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.9rem;"
-                                />
-                            </div>
-                            <div>
-                                <label
-                                    style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem;"
-                                    >종료년도</label
-                                >
-                                <input
-                                    type="number"
-                                    id="managerEndDate"
-                                    placeholder="예: 2025"
-                                    min="1900"
-                                    max="2100"
-                                    style="width:100%; padding:0.5rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.9rem;"
-                                />
-                            </div>
-                        </div>
-                        <label
-                            style="display: inline-flex; align-items: center; margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; white-space: nowrap;"
+                            style="display:flex; align-items:center; gap:0.5rem;"
                         >
                             <input
-                                type="checkbox"
-                                id="startDateUnknown"
-                                style="margin-right: 0.3rem; flex-shrink: 0;"
+                                type="number"
+                                id="managerStartDate"
+                                placeholder="시작년도"
+                                min="1900"
+                                max="2100"
+                                style="width:50px; padding:0.3rem; text-align:center; border:1px solid #d1d5db; border-radius:6px; font-size:0.85rem;"
                             />
-                            시작년도 기억나지 않음
-                        </label>
-                        <button
-                            id="saveManagerBtn"
-                            style="margin-top:1rem; width:100%; padding:0.6rem; background:var(--accent); color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;"
-                            >저장하기</button
-                        >
+                            <span
+                                style="color:var(--text-muted); font-size:0.9rem;"
+                                >-</span
+                            >
+                            <input
+                                type="number"
+                                id="managerEndDate"
+                                placeholder="종료년도"
+                                min="1900"
+                                max="2100"
+                                style="width:50px; padding:0.3rem; text-align:center; border:1px solid #d1d5db; border-radius:6px; font-size:0.85rem;"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -494,391 +513,419 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             </div>
         </div>
     </div>
-</DashboardLayout>
 
-<!-- Verification Modal (Reused) -->
-<div id="verifyModal" class="modal-overlay">
-    <div class="modal-card">
-        <h3 style="font-size:1.3rem; margin-bottom:1.5rem;">회원 인증</h3>
+    <!-- Verification Modal (Reused) -->
+    <div id="verifyModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 style="font-size:1.3rem; margin-bottom:1.5rem;">회원 인증</h3>
 
-        <div
-            class="tab-nav"
-            style="display:flex; border-bottom:2px solid #e5e7eb; margin-bottom:1.5rem;"
-            data-cache-bust="2026-02-08-v2"
-        >
-            <button
-                class="tab-btn active"
-                data-tab="auto"
-                style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; border-bottom:2px solid var(--accent); font-weight:bold; color:var(--accent);"
-                >학회원 명부로 인증진행</button
+            <div
+                class="tab-nav"
+                style="display:flex; border-bottom:2px solid #e5e7eb; margin-bottom:1.5rem;"
+                data-cache-bust="2026-02-08-v2"
             >
-            <button
-                class="tab-btn"
-                data-tab="society"
-                style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
-                >앱관리자에게 인증요청</button
-            >
-            <button
-                class="tab-btn"
-                data-tab="special"
-                style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
-                >특별사용자</button
-            >
-        </div>
-
-        <!-- Tab 1: Auto -->
-        <div class="tab-content" data-tab="auto">
-            <p style="color:#6b7280; margin-bottom:1rem;">
-                학회 명단에 등록된 이메일을 입력하세요.<br />
-                <span style="font-size: 0.9em; color: #ef4444;"
-                    >* 학회로부터 제공받은 명부에 누락되어 인증이 되지 않으면,
-                    상단의 [앱관리자에게 인증신청] 탭을 이용하여 인증을
-                    요청하세요.</span
-                >
-            </p>
-            <input
-                id="verificationEmail"
-                type="email"
-                placeholder="example@hospital.or.kr"
-                style="width:100%; padding:0.75rem; border:1px solid #d1d5db; border-radius:8px; margin-bottom:1rem;"
-            />
-            <div style="display:flex; gap:0.5rem;">
                 <button
-                    class="close-modal-btn"
-                    style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
-                    >닫기</button
+                    class="tab-btn active"
+                    data-tab="auto"
+                    style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; border-bottom:2px solid var(--accent); font-weight:bold; color:var(--accent);"
+                    >학회원 명부로 인증진행</button
                 >
                 <button
-                    id="confirmVerifyBtn"
-                    style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
-                    >인증 요청</button
+                    class="tab-btn"
+                    data-tab="society"
+                    style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
+                    >앱관리자에게 인증요청</button
                 >
+                <button
+                    class="tab-btn"
+                    data-tab="special"
+                    style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
+                    >특별사용자</button
+                >
+            </div>
+
+            <!-- Tab 1: Auto -->
+            <div class="tab-content" data-tab="auto">
+                <p style="color:#6b7280; margin-bottom:1rem;">
+                    학회 명단에 등록된 이메일을 입력하세요.<br />
+                    <span style="font-size: 0.9em; color: #ef4444;"
+                        >* 학회로부터 제공받은 명부에 누락되어 인증이 되지
+                        않으면, 상단의 [앱관리자에게 인증신청] 탭을 이용하여
+                        인증을 요청하세요.</span
+                    >
+                </p>
+                <input
+                    id="verificationEmail"
+                    type="email"
+                    placeholder="example@hospital.or.kr"
+                    style="width:100%; padding:0.75rem; border:1px solid #d1d5db; border-radius:8px; margin-bottom:1rem;"
+                />
+                <div style="display:flex; gap:0.5rem;">
+                    <button
+                        class="close-modal-btn"
+                        style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
+                        >닫기</button
+                    >
+                    <button
+                        id="confirmVerifyBtn"
+                        style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
+                        >인증 요청</button
+                    >
+                </div>
+            </div>
+
+            <!-- Tab 2: Manual Society -->
+            <div class="tab-content" data-tab="society" style="display:none;">
+                <p style="color:#6b7280; margin-bottom:1rem; font-size:0.9rem;">
+                    명단에 없는 경우 관리자 승인을 통해 인증받을 수 있습니다.
+                </p>
+                <form
+                    id="societyRequestForm"
+                    style="display:flex; flex-direction:column; gap:1rem;"
+                >
+                    <input
+                        name="full_name"
+                        type="text"
+                        placeholder="이름 (실명)"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <select
+                        name="society"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    >
+                        <option value="">학회 선택</option>
+                        <option value="nuclear_medicine">대한핵의학회</option>
+                        <option value="technology">대한핵의학기술학회</option>
+                    </select>
+                    <input
+                        name="affiliation"
+                        type="text"
+                        placeholder="근무 기관"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="department"
+                        type="text"
+                        placeholder="부서"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="classification"
+                        type="text"
+                        placeholder="구분 (전문의/방사선사/핵과학자/전공의/임상병리사/기타)"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="contact_email"
+                        type="email"
+                        placeholder="연락처 이메일"
+                        required
+                        autocomplete="email"
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <textarea
+                        name="reason"
+                        rows="2"
+                        placeholder="신청 사유 (예: 명단 누락)"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    ></textarea>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button
+                            type="button"
+                            class="close-modal-btn"
+                            style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
+                            >닫기</button
+                        >
+                        <button
+                            type="submit"
+                            style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
+                            >신청하기</button
+                        >
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tab 3: Special -->
+            <div class="tab-content" data-tab="special" style="display:none;">
+                <p style="color:#6b7280; margin-bottom:1rem; font-size:0.9rem;">
+                    규제기관 등 특별 권한이 필요한 경우 신청하세요.
+                </p>
+                <form
+                    id="specialRequestForm"
+                    style="display:flex; flex-direction:column; gap:1rem;"
+                >
+                    <input
+                        name="full_name"
+                        type="text"
+                        placeholder="이름"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="affiliation"
+                        type="text"
+                        placeholder="근무 기관"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="department"
+                        type="text"
+                        placeholder="부서"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="classification"
+                        type="text"
+                        placeholder="구분 (전문의/방사선사/핵과학자/전공의/임상병리사/기타)"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="contact_email"
+                        type="email"
+                        placeholder="연락처 이메일"
+                        required
+                        autocomplete="email"
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <textarea
+                        name="reason"
+                        rows="2"
+                        placeholder="신청 사유"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    ></textarea>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button
+                            type="button"
+                            class="close-modal-btn"
+                            style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
+                            >닫기</button
+                        >
+                        <button
+                            type="submit"
+                            style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
+                            >신청하기</button
+                        >
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- Tab 2: Manual Society -->
-        <div class="tab-content" data-tab="society" style="display:none;">
-            <p style="color:#6b7280; margin-bottom:1rem; font-size:0.9rem;">
-                명단에 없는 경우 관리자 승인을 통해 인증받을 수 있습니다.
-            </p>
-            <form
-                id="societyRequestForm"
-                style="display:flex; flex-direction:column; gap:1rem;"
-            >
-                <input
-                    name="full_name"
-                    type="text"
-                    placeholder="이름 (실명)"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <select
-                    name="society"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                >
-                    <option value="">학회 선택</option>
-                    <option value="nuclear_medicine">대한핵의학회</option>
-                    <option value="technology">대한핵의학기술학회</option>
-                </select>
-                <input
-                    name="affiliation"
-                    type="text"
-                    placeholder="근무 기관"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <input
-                    name="department"
-                    type="text"
-                    placeholder="부서"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <input
-                    name="classification"
-                    type="text"
-                    placeholder="구분 (전문의/방사선사/핵과학자/전공의/임상병리사/기타)"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <input
-                    name="contact_email"
-                    type="email"
-                    placeholder="연락처 이메일"
-                    required
-                    autocomplete="email"
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <textarea
-                    name="reason"
-                    rows="2"
-                    placeholder="신청 사유 (예: 명단 누락)"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                ></textarea>
-                <div style="display:flex; gap:0.5rem;">
-                    <button
-                        type="button"
-                        class="close-modal-btn"
-                        style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
-                        >닫기</button
-                    >
-                    <button
-                        type="submit"
-                        style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
-                        >신청하기</button
-                    >
-                </div>
-            </form>
-        </div>
-
-        <!-- Tab 3: Special -->
-        <div class="tab-content" data-tab="special" style="display:none;">
-            <p style="color:#6b7280; margin-bottom:1rem; font-size:0.9rem;">
-                규제기관 등 특별 권한이 필요한 경우 신청하세요.
-            </p>
-            <form
-                id="specialRequestForm"
-                style="display:flex; flex-direction:column; gap:1rem;"
-            >
-                <input
-                    name="full_name"
-                    type="text"
-                    placeholder="이름"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <input
-                    name="affiliation"
-                    type="text"
-                    placeholder="근무 기관"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <input
-                    name="department"
-                    type="text"
-                    placeholder="부서"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <input
-                    name="classification"
-                    type="text"
-                    placeholder="구분 (전문의/방사선사/핵과학자/전공의/임상병리사/기타)"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <input
-                    name="contact_email"
-                    type="email"
-                    placeholder="연락처 이메일"
-                    required
-                    autocomplete="email"
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                />
-                <textarea
-                    name="reason"
-                    rows="2"
-                    placeholder="신청 사유"
-                    required
-                    style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                ></textarea>
-                <div style="display:flex; gap:0.5rem;">
-                    <button
-                        type="button"
-                        class="close-modal-btn"
-                        style="flex:1; padding:0.75rem; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;"
-                        >닫기</button
-                    >
-                    <button
-                        type="submit"
-                        style="flex:1; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;"
-                        >신청하기</button
-                    >
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Delete Account Section -->
-    <div
-        style="margin-top: 3rem; text-align: center; border-top: 1px solid #eee; padding-top: 1rem;"
-    >
-        <button
-            id="deleteAccountBtn"
-            style="background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-size: 0.8rem;"
+        <!-- Delete Account Section -->
+        <div
+            style="margin-top: 3rem; text-align: center; border-top: 1px solid #eee; padding-top: 1rem;"
         >
-            회원 탈퇴
-        </button>
+            <button
+                id="deleteAccountBtn"
+                style="background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-size: 0.8rem;"
+            >
+                회원 탈퇴
+            </button>
+        </div>
     </div>
-</div>
 
-<script>
-    import { userProfile } from "../store/user";
-    import { supabase } from "../lib/supabase";
+    <script>
+        import { userProfile } from "../store/user";
+        import { supabase } from "../lib/supabase";
 
-    console.log("Mypage script loaded");
-    document.addEventListener("astro:page-load", async () => {
-        console.log("Mypage astro:page-load fired");
+        console.log("Mypage script loaded");
+        document.addEventListener("astro:page-load", async () => {
+            console.log("Mypage astro:page-load fired");
 
-        // Subscribe to store changes to handle async updates from DashboardLayout
-        userProfile.subscribe(async (currentUser) => {
-            if (!currentUser.id) return; // Wait for ID
+            // Subscribe to store changes to handle async updates from DashboardLayout
+            userProfile.subscribe(async (currentUser) => {
+                if (!currentUser.id) return; // Wait for ID
 
-            // --- 1. Identity Render ---
-            const loginBadge = document.getElementById("loginBadge");
-            if (loginBadge) {
-                if (currentUser.provider === "kakao") {
-                    loginBadge.className = "login-badge kakao-badge";
-                    loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.48 2 10.76c0 2.76 1.87 5.2 4.76 6.55-.21.78-.77 2.82-.88 3.23-.14.53.19.52.4.34.17-.14 2.65-1.8 3.71-2.53.64.09 1.31.14 2.01.14 5.52 0 10-3.48 10-7.76S17.52 3 12 3z"/></svg> <span>카카오 로그인 중</span>`;
-                } else {
-                    loginBadge.className = "login-badge email-badge";
-                    loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> <span>이메일 로그인 중</span>`;
+                // --- 1. Identity Render ---
+                const loginBadge = document.getElementById("loginBadge");
+                if (loginBadge) {
+                    if (currentUser.provider === "kakao") {
+                        loginBadge.classList.remove("email-badge");
+                        loginBadge.classList.add("kakao-badge");
+                        loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.48 2 10.76c0 2.76 1.87 5.2 4.76 6.55-.21.78-.77 2.82-.88 3.23-.14.53.19.52.4.34.17-.14 2.65-1.8 3.71-2.53.64.09 1.31.14 2.01.14 5.52 0 10-3.48 10-7.76S17.52 3 12 3z"/></svg> <span>카카오 로그인 중</span>`;
+                    } else {
+                        loginBadge.classList.remove("kakao-badge");
+                        loginBadge.classList.add("email-badge");
+                        loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> <span>이메일 로그인 중</span>`;
+                    }
                 }
-            }
 
-            const nameEl = document.getElementById("userIdentityName");
-            const emailEl = document.getElementById("userIdentityEmail");
-            if (nameEl)
-                nameEl.textContent =
-                    currentUser.real_name ||
-                    currentUser.nickname ||
-                    "이름 없음";
-            if (emailEl)
-                emailEl.textContent =
-                    currentUser.login_email || currentUser.email || "-";
+                const nameEl = document.getElementById("userIdentityName");
+                const emailEl = document.getElementById("userIdentityEmail");
+                if (nameEl)
+                    nameEl.textContent =
+                        currentUser.real_name ||
+                        currentUser.nickname ||
+                        "이름 없음";
+                if (emailEl)
+                    emailEl.textContent =
+                        currentUser.login_email || currentUser.email || "-";
 
-            // Joined At Format
-            const dateEl = document.getElementById("userJoinedAt");
-            if (dateEl) {
-                if (currentUser.created_at) {
-                    try {
-                        const joinedDate = new Date(currentUser.created_at);
-                        dateEl.textContent =
-                            joinedDate.toLocaleDateString("ko-KR");
-                    } catch (e) {
+                // Joined At Format
+                const dateEl = document.getElementById("userJoinedAt");
+                if (dateEl) {
+                    if (currentUser.created_at) {
+                        try {
+                            const joinedDate = new Date(currentUser.created_at);
+                            dateEl.textContent =
+                                joinedDate.toLocaleDateString("ko-KR");
+                        } catch (e) {
+                            dateEl.textContent = "-";
+                        }
+                    } else {
                         dateEl.textContent = "-";
                     }
-                } else {
-                    dateEl.textContent = "-";
                 }
-            }
 
-            // Verification Date
-            const vDateEl = document.getElementById("userVerificationDate");
-            if (vDateEl) {
-                if (currentUser.verification_date) {
-                    const d = new Date(currentUser.verification_date);
-                    vDateEl.textContent = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-                } else {
-                    vDateEl.textContent = "-";
+                // Verification Date
+                const vDateEl = document.getElementById("userVerificationDate");
+                if (vDateEl) {
+                    if (currentUser.verification_date) {
+                        const d = new Date(currentUser.verification_date);
+                        vDateEl.textContent = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+                    } else {
+                        vDateEl.textContent = "-";
+                    }
                 }
-            }
 
-            // Admin Badge
-            const adminBadge = document.getElementById("adminBadge");
-            if (adminBadge) {
-                if (String(currentUser.is_admin) === "true") {
-                    adminBadge.style.display = "block";
-                } else {
-                    adminBadge.style.display = "none";
+                // Admin Badge
+                const adminBadge = document.getElementById("adminBadge");
+                if (adminBadge) {
+                    if (String(currentUser.is_admin) === "true") {
+                        adminBadge.style.display = "block";
+                    } else {
+                        adminBadge.style.display = "none";
+                    }
                 }
-            }
 
-            // --- 2. Verification Logic ---
-            const userVerificationStatus = document.getElementById("userVerificationStatus");
-            const userVerificationDate = document.getElementById("userVerificationDate");
-            const toggleVerifyBannerBtn = document.getElementById("toggleVerifyBannerBtn");
-            const verificationRequestSection = document.getElementById("verificationRequestSection");
-            const societyInfoContent = document.getElementById("societyInfoContent");
+                // --- 2. Verification Logic ---
+                const userVerificationStatus = document.getElementById(
+                    "userVerificationStatus",
+                );
+                const userVerificationDate = document.getElementById(
+                    "userVerificationDate",
+                );
+                const toggleVerifyBannerBtn = document.getElementById(
+                    "toggleVerifyBannerBtn",
+                );
+                const verificationRequestSection = document.getElementById(
+                    "verificationRequestSection",
+                );
+                const societyInfoContent =
+                    document.getElementById("societyInfoContent");
 
-            let vStatusText = "미인증";
-            const vStatus = currentUser.verification_status || "none";
-            const cSociety = currentUser.society;
+                let vStatusText = "미인증";
+                const vStatus = currentUser.verification_status || "none";
+                const cSociety = currentUser.society;
 
-            // Determine Status Text
-            if (vStatus === 'society_list') {
-                if (cSociety === 'nuclear_medicine') vStatusText = "인증됨 (대한핵의학회회원명부)";
-                else if (cSociety === 'technology') vStatusText = "인증됨 (대한핵의학기술학회회원명부)";
-                else vStatusText = "인증됨 (학회회원명부)";
-            } else if (vStatus === 'admin') {
-                 vStatusText = "인증됨 (앱관리자)";
-            } else if (vStatus !== 'none') {
-                 vStatusText = "인증됨 (" + vStatus + ")";
-            }
-
-            if (userVerificationStatus) {
-                userVerificationStatus.textContent = vStatusText;
-            }
-            
-            // Set Verification Date
-            if (userVerificationDate) {
-                if (currentUser.verification_date) {
-                    const d = new Date(currentUser.verification_date);
-                    userVerificationDate.textContent = d.toLocaleDateString();
-                } else {
-                    userVerificationDate.textContent = "-";
+                // Determine Status Text
+                if (vStatus === "society_list") {
+                    vStatusText = "인증됨 (회원명부)";
+                } else if (vStatus === "admin") {
+                    vStatusText = "인증됨 (앱관리자)";
+                } else if (vStatus !== "none") {
+                    vStatusText = "인증됨 (" + vStatus + ")";
                 }
-            }
 
-            // Toggle Request Section & Info Content & Verify Button
-            // Always show toggle button and handle click
-            if (toggleVerifyBannerBtn) {
-                toggleVerifyBannerBtn.style.display = "block";
-                toggleVerifyBannerBtn.onclick = () => {
-                   if (verificationRequestSection) {
-                       verificationRequestSection.style.display = 
-                           verificationRequestSection.style.display === "none" ? "block" : "none";
-                   }
-                };
-            }
+                if (userVerificationStatus) {
+                    userVerificationStatus.textContent = vStatusText;
+                }
 
-            if (verificationRequestSection) verificationRequestSection.style.display = "none"; // Initially hidden
+                // Set Verification Date
+                if (userVerificationDate) {
+                    if (currentUser.verification_date) {
+                        const d = new Date(currentUser.verification_date);
+                        userVerificationDate.textContent =
+                            d.toLocaleDateString();
+                    } else {
+                        userVerificationDate.textContent = "-";
+                    }
+                }
 
-            if (vStatus === 'none') {
-                if (societyInfoContent) societyInfoContent.style.display = "none";
-            } else {
-                if (societyInfoContent) {
-                    societyInfoContent.style.display = "block";
-                    const societyMap = {
-                        nuclear_medicine: "대한핵의학회",
-                        technology: "대한핵의학기술학회",
+                // Toggle Request Section & Info Content & Verify Button
+                // Always show toggle button and handle click
+                if (toggleVerifyBannerBtn) {
+                    toggleVerifyBannerBtn.style.display = "block";
+                    toggleVerifyBannerBtn.onclick = () => {
+                        if (verificationRequestSection) {
+                            verificationRequestSection.style.display =
+                                verificationRequestSection.style.display ===
+                                "none"
+                                    ? "block"
+                                    : "none";
+                        }
                     };
-                    document.getElementById("userSocietyName").textContent =
-                        societyMap[currentUser.society] ||
-                        currentUser.society ||
-                        "-";
-                    document.getElementById("userSocietyRole").textContent =
-                        currentUser.classification || "-";
-                    document.getElementById("userRealName").textContent =
-                        currentUser.real_name ||
-                        currentUser.full_name ||
-                        "-";
-                    document.getElementById("userSocietyEmail").textContent =
-                        currentUser.society_email || currentUser.email || "-";
-                    document.getElementById("userAffiliation").textContent =
-                        currentUser.affiliation || "-";
-                    document.getElementById("userDepartment").textContent =
-                        currentUser.department || "-";
                 }
-            }
 
-            // --- 3. Safety Management Info (Init) ---
-            const radLicenseSelect = document.getElementById("radLicenseSelect");
-            const managerToggle = document.getElementById("managerToggle");
-            const deputyToggle = document.getElementById("deputyToggle");
-            const practiceToggle = document.getElementById("practiceToggle");
+                if (verificationRequestSection)
+                    verificationRequestSection.style.display = "none"; // Initially hidden
 
-            if (radLicenseSelect) radLicenseSelect.value = currentUser.license_type || "none";
-            if (managerToggle) managerToggle.checked = String(currentUser.is_safety_manager) === 'true';
-            if (deputyToggle) deputyToggle.checked = String(currentUser.is_safety_manager_deputy) === 'true';
-            if (practiceToggle) practiceToggle.checked = String(currentUser.is_safety_manager_practical) === 'true';
-        });
+                if (vStatus === "none") {
+                    if (societyInfoContent)
+                        societyInfoContent.style.display = "none";
+                } else {
+                    if (societyInfoContent) {
+                        societyInfoContent.style.display = "block";
+                        const societyMap = {
+                            nuclear_medicine: "대한핵의학회",
+                            technology: "대한핵의학기술학회",
+                        };
+                        document.getElementById("userSocietyName").textContent =
+                            societyMap[currentUser.society] ||
+                            currentUser.society ||
+                            "-";
+                        document.getElementById("userSocietyRole").textContent =
+                            currentUser.classification || "-";
+                        document.getElementById("userRealName").textContent =
+                            currentUser.real_name ||
+                            currentUser.full_name ||
+                            "-";
+                        document.getElementById(
+                            "userSocietyEmail",
+                        ).textContent =
+                            currentUser.society_email ||
+                            currentUser.email ||
+                            "-";
+                        document.getElementById("userAffiliation").textContent =
+                            currentUser.affiliation || "-";
+                        document.getElementById("userDepartment").textContent =
+                            currentUser.department || "-";
+                    }
+                }
+
+                // --- 3. Safety Management Info (Init) ---
+                const radLicenseSelect =
+                    document.getElementById("radLicenseSelect");
+                const managerToggle = document.getElementById("managerToggle");
+                const deputyToggle = document.getElementById("deputyToggle");
+                const practiceToggle =
+                    document.getElementById("practiceToggle");
+
+                if (radLicenseSelect)
+                    radLicenseSelect.value = currentUser.license_type || "none";
+                if (managerToggle)
+                    managerToggle.checked =
+                        String(currentUser.is_safety_manager) === "true";
+                if (deputyToggle)
+                    deputyToggle.checked =
+                        String(currentUser.is_safety_manager_deputy) === "true";
+                if (practiceToggle)
+                    practiceToggle.checked =
+                        String(currentUser.is_safety_manager_practical) ===
+                        "true";
+            });
 
             // 3. Button Helper Function to open Modal
-            const openModal = (tabName, mode = 'society') => {
+            const openModal = (tabName, mode = "society") => {
                 const modal = document.getElementById("verifyModal");
                 const tabBtns = document.querySelectorAll(".tab-btn");
                 const tabContents = document.querySelectorAll(".tab-content");
@@ -886,56 +933,87 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 modal.classList.add("active");
 
                 // Filter Tabs based on Mode
-                tabBtns.forEach(btn => {
+                tabBtns.forEach((btn) => {
                     const t = btn.dataset.tab;
-                    if (mode === 'society') {
+                    if (mode === "society") {
                         // Show Auto & Society, Hide Special
-                        if (t === 'special') btn.style.display = 'none';
-                        else btn.style.display = 'block'; 
-                    } else if (mode === 'special') {
+                        if (t === "special") btn.style.display = "none";
+                        else btn.style.display = "block";
+                    } else if (mode === "special") {
                         // Show Special, Hide Auto & Society
-                        if (t === 'special') btn.style.display = 'block';
-                        else btn.style.display = 'none';
+                        if (t === "special") btn.style.display = "block";
+                        else btn.style.display = "none";
                     }
                 });
 
                 // Activate Tab
                 tabBtns.forEach((b) => {
-                    if (b.dataset.tab === tabName)
-                        b.classList.add("active");
+                    if (b.dataset.tab === tabName) b.classList.add("active");
                     else b.classList.remove("active");
                 });
                 tabContents.forEach((c) => {
-                    if (c.dataset.tab === tabName)
-                        c.style.display = "block";
+                    if (c.dataset.tab === tabName) c.style.display = "block";
                     else c.style.display = "none";
                 });
-                
+
                 // Auto-fill form fields with current user data
                 const userData = userProfile.get();
                 if (userData) {
-                    ["societyRequestForm", "specialRequestForm"].forEach(formId => {
-                        const form = document.getElementById(formId);
-                        if (form) {
-                            const nameInput = form.querySelector('input[name="full_name"]');
-                            const emailInput = form.querySelector('input[name="contact_email"]');
-                            
-                            // Fill only if empty (preserves user edits if reopened)
-                            if (nameInput && !nameInput.value) {
-                                nameInput.value = userData.nickname || userData.full_name || userData.real_name || "";
+                    // Auto-fill for society list verification email (명부인증)
+                    const verificationEmailInput =
+                        document.getElementById("verificationEmail");
+                    if (
+                        verificationEmailInput &&
+                        !verificationEmailInput.value
+                    ) {
+                        verificationEmailInput.value =
+                            userData.login_email || userData.email || "";
+                    }
+
+                    ["societyRequestForm", "specialRequestForm"].forEach(
+                        (formId) => {
+                            const form = document.getElementById(formId);
+                            if (form) {
+                                const nameInput = form.querySelector(
+                                    'input[name="full_name"]',
+                                );
+                                const emailInput = form.querySelector(
+                                    'input[name="contact_email"]',
+                                );
+
+                                // Fill only if empty (preserves user edits if reopened)
+                                if (nameInput && !nameInput.value) {
+                                    nameInput.value =
+                                        userData.nickname ||
+                                        userData.full_name ||
+                                        userData.real_name ||
+                                        "";
+                                }
+                                if (emailInput && !emailInput.value) {
+                                    emailInput.value =
+                                        userData.login_email ||
+                                        userData.email ||
+                                        userData.society_email ||
+                                        "";
+                                }
                             }
-                            if (emailInput && !emailInput.value) {
-                                emailInput.value = userData.login_email || userData.email || userData.society_email || "";
-                            }
-                        }
-                    });
+                        },
+                    );
                 }
             };
 
             // Button Listeners
-            document.getElementById("reqNuclearBtn")?.addEventListener("click", () => openModal("auto", "society")); 
-            document.getElementById("reqTechBtn")?.addEventListener("click", () => openModal("auto", "society")); 
-            document.getElementById("reqSpecialBtn")?.addEventListener("click", () => openModal("special", "special"));
+            document
+                .getElementById("reqNuclearBtn")
+                ?.addEventListener("click", () => openModal("auto", "society"));
+            document
+                .getElementById("reqTechBtn")
+                ?.addEventListener("click", () => openModal("auto", "society"));
+            document
+                .getElementById("reqSpecialBtn")
+                ?.addEventListener("click", () =>
+                    openModal("special", "special"),
+                );
 
             // Modal Close & Tab Listeners (Added)
             const modal = document.getElementById("verifyModal");
@@ -996,7 +1074,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         const { data: allowedData, error } = await supabase
                             .from("allowed_members")
                             .select("*")
-                            .eq("email", email)
+                            .eq("society_email", email)
                             .single();
 
                         if (error || !allowedData)
@@ -1009,12 +1087,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
                             society: allowedData.society,
                             society_email: email,
-                            real_name:
-                                allowedData.name || allowedData.full_name,
+                            real_name: allowedData.real_name,
                             department: allowedData.department,
                             affiliation: allowedData.affiliation,
-                            classification:
-                                allowedData.classification || allowedData.role,
+                            classification: allowedData.classification,
                         };
 
                         const { error: updateError } = await supabase
@@ -1079,19 +1155,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         try {
                             const reqData = {
                                 user_id: currentUser.id,
-                                type: type, // 'society' or 'special'
-                                full_name: formData.get("full_name"),
+                                society:
+                                    type === "society"
+                                        ? formData.get("society")
+                                        : null,
+                                classification: formData.get("classification"),
+                                society_email: formData.get("contact_email"),
+                                real_name: formData.get("full_name"),
                                 affiliation: formData.get("affiliation"),
                                 department: formData.get("department"),
-                                classification: formData.get("classification"),
-                                email: formData.get("contact_email"),
+                                verification_status: "approved", // Auto-approved provisionally
                                 reason: formData.get("reason"),
-                                status: "approved", // Auto-approved provisionally
                             };
-
-                            if (type === "society") {
-                                reqData.society = formData.get("society");
-                            }
 
                             // 1. Insert Request
                             const { error } = await supabase
@@ -1201,49 +1276,135 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     }
                 });
 
-        // --- 4. Auto-Save Logic for Safety Info ---
-        const autoSaveFields = [
-            { id: "radLicenseSelect", field: "license_type", type: "value" },
-            { id: "managerToggle", field: "is_safety_manager", type: "checked" },
-            { id: "deputyToggle", field: "is_safety_manager_deputy", type: "checked" },
-            { id: "practiceToggle", field: "is_safety_manager_practical", type: "checked" }
-        ];
+            // --- 4. Auto-Save Logic for Safety Info ---
+            const autoSaveFields = [
+                {
+                    id: "radLicenseSelect",
+                    field: "license_type",
+                    type: "value",
+                },
+                {
+                    id: "managerToggle",
+                    field: "is_safety_manager",
+                    type: "checked",
+                },
+                {
+                    id: "deputyToggle",
+                    field: "is_safety_manager_deputy",
+                    type: "checked",
+                },
+                {
+                    id: "practiceToggle",
+                    field: "is_safety_manager_practical",
+                    type: "checked",
+                },
+            ];
 
-        autoSaveFields.forEach(({ id, field, type }) => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener("change", async (e) => {
-                    const currentUser = userProfile.get();
-                    if (!currentUser.id) return;
+            autoSaveFields.forEach(({ id, field, type }) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener("change", async (e) => {
+                        const currentUser = userProfile.get();
+                        if (!currentUser.id) return;
 
-                    const newValue = type === "checked" ? e.target.checked : e.target.value;
-                    const updateData = { [field]: newValue };
+                        const newValue =
+                            type === "checked"
+                                ? e.target.checked
+                                : e.target.value;
+                        const updateData = { [field]: newValue };
 
-                    // Optimistic UI Update (Store)
-                    userProfile.set({
-                        ...currentUser,
-                        ...updateData
-                    });
-
-
-                    // DB Upsert (create if not exists)
-                    const { error } = await supabase
-                        .from("profiles")
-                        .upsert({
-                            id: currentUser.id,
+                        // Optimistic UI Update (Store)
+                        userProfile.set({
+                            ...currentUser,
                             ...updateData,
-                            updated_at: new Date().toISOString(),
                         });
 
-                    if (error) {
-                        console.error("Auto-save failed:", error);
-                        alert("저장에 실패했습니다. 다시 시도해주세요.");
-                        // Revert store if needed (optional, complexity vs value)
-                    } else {
-                        console.log(`Auto-saved ${field}:`, newValue);
-                    }
-                });
+                        // DB Upsert (create if not exists)
+                        const { error } = await supabase
+                            .from("profiles")
+                            .upsert({
+                                id: currentUser.id,
+                                ...updateData,
+                            });
+
+                        if (error) {
+                            console.error("Auto-save failed:", error);
+                            alert("저장에 실패했습니다. 다시 시도해주세요.");
+                            // Revert store if needed (optional, complexity vs value)
+                        } else {
+                            console.log(`Auto-saved ${field}:`, newValue);
+                        }
+                        if (id === "managerToggle") {
+                            const managerDates =
+                                document.getElementById("managerDates");
+                            if (managerDates) {
+                                managerDates.style.display = newValue
+                                    ? "block"
+                                    : "none";
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Auto-Save Manager Dates Logic (Debounced or on Blur/Change)
+            const dateInputs = ["managerStartDate", "managerEndDate"];
+            dateInputs.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener("change", async (e) => {
+                        const currentUser = userProfile.get();
+                        const startYear =
+                            document.getElementById("managerStartDate").value;
+                        const endYear =
+                            document.getElementById("managerEndDate").value;
+
+                        console.log("Auto-saving dates:", startYear, endYear);
+
+                        const updateData = {
+                            safety_manager_start_year: startYear,
+                            safety_manager_end_year: endYear,
+                        };
+
+                        // Optimistic Update
+                        userProfile.set({
+                            ...currentUser,
+                            ...updateData,
+                        });
+
+                        const { error } = await supabase
+                            .from("profiles")
+                            .upsert({
+                                id: currentUser.id,
+                                ...updateData,
+                            });
+
+                        if (error) {
+                            console.error("Date save failed:", error);
+                            alert("저장에 실패했습니다.");
+                        }
+                    });
+                }
+            });
+
+            // Initialize Visibility based on current state
+            const currentUser = userProfile.get();
+            if (
+                currentUser &&
+                String(currentUser.is_safety_manager) === "true"
+            ) {
+                const managerDates = document.getElementById("managerDates");
+                if (managerDates) managerDates.style.display = "block";
+
+                // Init values
+                const startInput = document.getElementById("managerStartDate");
+                const endInput = document.getElementById("managerEndDate");
+                if (startInput)
+                    startInput.value =
+                        currentUser.safety_manager_start_year || "";
+                if (endInput)
+                    endInput.value = currentUser.safety_manager_end_year || "";
             }
         });
-    });
-</script>
+    </script>
+</DashboardLayout>
