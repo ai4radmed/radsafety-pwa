@@ -21,19 +21,20 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
 | `id` | `uuid` (PK) | `auth.users.id` 참조 (외래키) |
-| `login_email` | `text` | 로그인 이메일 (auth.users.email 복사본) |
 | `nickname` | `text` | 카카오 닉네임 (표시용) |
-| `joined_at` | `timestamp` | 앱 가입 일시 (auth.users.created_at 복사본) |
-| `is_admin` | `boolean` | 관리자 여부 (`role` 대체) |
-| `society_name` | `text` | 실명 (학회 인증 정보) |
-| `society_email` | `text` | 학회/특별사용자 인증용 이메일 |
-| `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
+| `login_email` | `text` | 로그인 이메일 (auth.users.email 복사본) |
+| `created_at` | `timestamp` | 프로필 생성 일시 (앱 가입일) |
+| `is_admin` | `boolean` | 관리자 여부 |
+| `verification_request_date` | `timestamp` | 인증 요청 일시 |
+| `verification_type` | `text` | 인증 유형 (`none`:미인증, `society_list`:명부인증, `admin`:앱관리자승인) |
 | `member_type` | `text` | 회원 구분 (`general`, `society`, `special`) |
-| `classification` | `text` | 직종 구분 (의사, 방사선사 등) |
+| `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
 | `affiliation` | `text` | 소속 기관 |
 | `department` | `text` | 소속 부서 |
-| `verification_status` | `text` | 인증 상태 (`none`, `pending`, `verified`, `rejected`) |
-| `verification_request_date` | `timestamp` | 인증 요청 일시 |
+| `society_name` | `text` | 실명 (학회 인증 정보) |
+| `society_email` | `text` | 학회/특별사용자 인증용 이메일 |
+| `society_role` | `text` | 학회 직책/구분 |
+| `classification` | `text` | 직종 구분 (의사, 방사선사 등) |
 | `license_type` | `text` | 보유 면허 종류 |
 | `is_safety_manager` | `boolean` | 방사선안전관리자 여부 |
 | `safety_manager_start_year` | `text` | 업무 시작년도 |
@@ -42,7 +43,6 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `is_safety_manager_deputy` | `boolean` | 대리자 여부 |
 | `is_safety_manager_practical` | `boolean` | 실무 담당자 여부 |
 | `is_approved` | `boolean` | 일반 접근 승인 여부 |
-| `created_at` | `timestamp` | 프로필 생성 일시 |
 | `updated_at` | `timestamp` | 수정 일시 |
 
 ### 2. `findings`

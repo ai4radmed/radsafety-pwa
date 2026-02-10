@@ -35,25 +35,23 @@ DROP TABLE IF EXISTS public.profiles CASCADE;
 CREATE TABLE public.profiles (
     id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     
-    -- 1. Identity (Mypage Order)
-    login_email text, -- Renamed from email
+    -- 1. Identity
     nickname text, -- Display Nickname (from Kakao)
-    joined_at timestamp with time zone, -- Copied from auth.users.created_at
-
-    -- Data Management Rules
+    login_email text, -- Renamed from email
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL, -- Joined Date
     is_admin boolean DEFAULT false, -- Admin status
     
     -- 2. Verification Info
-    society_name text, -- Real Name (Verified by Society)
-    society_email text, -- Email used for society/special user verification
-    society text, -- 'nuclear_medicine', 'technology', etc.
-    
+    verified_date timestamp with time zone, -- Renamed from verification_request_date
+    verification_type text DEFAULT 'none'::text, -- 'none', 'society_list', 'admin'
     member_type text DEFAULT 'general'::text, -- 'general', 'society', 'special'
-    classification text, -- '의사', '방사선사' 등 (Job Type)
+    
+    society text, -- 'nuclear_medicine', 'technology', etc.
     affiliation text, -- Institution
     department text, -- Department
-    verification_status text DEFAULT 'none'::text, -- 'none', 'pending', 'verified', 'rejected'
-    verification_request_date timestamp with time zone,
+    society_name text, -- Real Name
+    society_email text, -- Verified Email
+    classification text, -- Role ('전공의', '방사선사', etc.) - Consolidated from society_role
     
     -- 3. Safety Management Info
     license_type text, -- Single selection
@@ -64,13 +62,17 @@ CREATE TABLE public.profiles (
     is_safety_manager_deputy boolean DEFAULT false,
     is_safety_manager_practical boolean DEFAULT false,
 
-    -- System Limits / Metadata
+    -- 4. System / Meta
+    -- classification moved to Verification Info
     is_approved boolean DEFAULT false, -- For general access approval
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+GRANT ALL ON public.profiles TO postgres;
+GRANT ALL ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
 
 CREATE POLICY "Users can read own profile" ON public.profiles
     FOR SELECT USING (auth.uid() = id);
@@ -89,13 +91,13 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, login_email, nickname, is_admin, joined_at)
+  INSERT INTO public.profiles (id, login_email, nickname, is_admin, created_at)
   VALUES (
     new.id, 
     new.email, 
     new.raw_user_meta_data->>'full_name', -- Kakao sends nickname in 'full_name' field
     false,
-    new.created_at -- Copy auth.users.created_at to joined_at
+    new.created_at -- Copy auth.users.created_at to created_at
   );
   RETURN new;
 END;
@@ -115,7 +117,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 COMMENT ON TABLE public.profiles IS '사용자 프로필 통합 테이블';
 COMMENT ON COLUMN public.profiles.member_type IS '회원 구분 (general:일반, society:학회원, special:특별회원)';
 COMMENT ON COLUMN public.profiles.verification_status IS '인증 상태 (none, pending, verified, rejected)';
-COMMENT ON COLUMN public.profiles.joined_at IS '앱 가입일 (auth.users.created_at 복사본)';
 
 -- ==============================================================================
 -- TABLE 2: findings
@@ -217,7 +218,7 @@ CREATE TABLE public.verification_requests (
     full_name text,
     society text, -- 'nuclear_medicine', 'technology' key
     society_name text, -- Real Name (if verified)
-    role text, -- '전공의', '방사선사' etc.
+    classification text, -- '전공의', '방사선사' etc. (Renamed from role)
     affiliation text,
     department text,
     email text,
