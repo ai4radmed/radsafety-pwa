@@ -25,25 +25,20 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `login_email` | `text` | 로그인 이메일 (auth.users.email 복사본) |
 | `created_at` | `timestamp` | 프로필 생성 일시 (앱 가입일) |
 | `is_admin` | `boolean` | 관리자 여부 |
-| `verification_request_date` | `timestamp` | 인증 요청 일시 |
-| `verification_type` | `text` | 인증 유형 (`none`:미인증, `society_list`:명부인증, `admin`:앱관리자승인) |
-| `member_type` | `text` | 회원 구분 (`general`, `society`, `special`) |
+| `verification_status` | `text` | 인증 상태 (`none`:미인증, `society_list`:명부인증, `admin`:앱관리자승인) |
+| `verification_date` | `timestamp` | 인증 (요청/완료) 일시 |
 | `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
 | `affiliation` | `text` | 소속 기관 |
 | `department` | `text` | 소속 부서 |
-| `society_name` | `text` | 실명 (학회 인증 정보) |
+| `real_name` | `text` | 실명 (학회 인증 정보) |
 | `society_email` | `text` | 학회/특별사용자 인증용 이메일 |
-| `society_role` | `text` | 학회 직책/구분 |
 | `classification` | `text` | 직종 구분 (의사, 방사선사 등) |
 | `license_type` | `text` | 보유 면허 종류 |
 | `is_safety_manager` | `boolean` | 방사선안전관리자 여부 |
 | `safety_manager_start_year` | `text` | 업무 시작년도 |
 | `safety_manager_end_year` | `text` | 업무 종료년도 |
-| `safety_manager_start_unknown` | `boolean` | 시작년도 기억 안 남 여부 |
 | `is_safety_manager_deputy` | `boolean` | 대리자 여부 |
 | `is_safety_manager_practical` | `boolean` | 실무 담당자 여부 |
-| `is_approved` | `boolean` | 일반 접근 승인 여부 |
-| `updated_at` | `timestamp` | 수정 일시 |
 
 ### 2. `findings`
 지적 및 권고 사례 데이터를 저장합니다.
@@ -99,7 +94,7 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `type` | `text` | 요청 유형 (`society`, `special`) |
 | `full_name` | `text` | 신청자 실명 |
 | `society` | `text` | 학회 코드 (`nuclear_medicine`, `technology`) |
-| `society_name` | `text` | 학회/실명 (인증 후 저장용) |
+| `real_name` | `text` | 학회/실명 (인증 후 저장용, 기존 `society_name`) |
 | `role` | `text` | 구분 (전공의, 방사선사 등) |
 | `affiliation` | `text` | 근무 기관 |
 | `department` | `text` | 소속 부서 |

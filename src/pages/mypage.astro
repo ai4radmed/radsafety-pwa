@@ -130,29 +130,21 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             cursor: pointer;
         }
 
-        .radio-option {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            padding: 0.6rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            background: transparent;
+        /* Verification Request Buttons */
+        .ver-req-btn {
+            padding: 0.35rem 0.75rem; /* Match header button padding */
+            background: var(--accent); /* Match header button background */
+            border: none;
+            border-radius: 6px; /* Match header button radius */
+            color: white;
+            font-size: 0.8rem; /* Match header button font size */
+            font-weight: 500; /* Match header button weight */
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
-        .radio-option:hover {
-            background: rgba(0, 0, 0, 0.02);
-        }
-        .radio-option:has(input:checked) {
-            border: 2px solid var(--accent);
-            padding: calc(
-                0.6rem - 1px
-            ); /* Adjustment for border width difference */
-            background: transparent;
-        }
-        .radio-option:has(input:checked) .radio-title {
-            color: var(--accent);
+        .ver-req-btn:hover {
+            opacity: 0.9;
         }
         .radio-label {
             display: flex;
@@ -239,206 +231,128 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             </div>
         </div>
 
-        <!-- 1. Identity & Login Method Card -->
+        <!-- 2. Verification & Affiliation Card -->
         <div class="info-card">
-            <div
-                class="section-header"
-                style="justify-content: space-between; align-items: center;"
-            >
-                <div style="display:flex; align-items:baseline; gap:0.5rem;">
-                    <span class="section-title-text"
-                        >인증형태: <span
-                            id="userVerificationType"
-                            style="color:var(--accent);">...</span
-                        ></span
-                    >
-                </div>
-                <div style="font-size:0.85rem; color:var(--text-muted);">
-                    인증일: <span
-                        id="userVerificationDate"
-                        style="color:var(--text-main); font-weight:600;">-</span
-                    >
-                </div>
-            </div>
+            <h3 style="margin: 0 0 1rem 0; font-size: 1rem; font-weight: 600; color: var(--text-main);">파일업로드권한인증 및 소속정보</h3>
 
-            <div
-                style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;"
-            >
-                <label class="radio-option">
-                    <input
-                        type="radio"
-                        name="authType"
-                        value="nuclear_medicine"
-                        style="accent-color:var(--accent);"
-                    />
-                    <div class="radio-label">
-                        <span class="radio-title">대한핵의학회</span>
+                <!-- 2. Authentication Status & Request -->
+                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                    <div class="row-info" style="display:flex; justify-content:space-between; align-items:center;">
+                       <div style="display:flex; align-items:center; gap:0.5rem;">
+                           <span id="userVerificationStatus" class="info-value" style="color:var(--accent);">미인증</span>
+                       </div>
+                       
+                       <div style="display:flex; align-items:center; gap:0.5rem;">
+                           <span id="userVerificationDate" style="color:var(--text-main); font-size:0.9rem;">-</span>
+                           <!-- Verify Button (Always visible) -->
+                           <button id="toggleVerifyBannerBtn" style="
+                               padding: 0.35rem 0.75rem;
+                               background: var(--accent);
+                               color: white;
+                               border: none;
+                               border-radius: 6px;
+                               font-size: 0.8rem;
+                               font-weight: 500;
+                               cursor: pointer;
+                               box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                               transition: all 0.2s;
+                           " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">(재)인증요청</button>
+                       </div>
                     </div>
-                </label>
-                <label class="radio-option">
-                    <input
-                        type="radio"
-                        name="authType"
-                        value="technology"
-                        style="accent-color:var(--accent);"
-                    />
-                    <div class="radio-label">
-                        <span class="radio-title">대한핵의학기술학회</span>
+                </div>
+
+                <!-- Verification Request Section (Only visible when toggled) -->
+                <div id="verificationRequestSection" style="display:none; margin-top:1rem; border-top:1px dashed #e5e7eb; padding-top:1rem;">
+                    <h5 style="margin:0 0 0.75rem 0; font-size:0.95rem; color:var(--text-main);">인증 요청</h5>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                        <button id="reqNuclearBtn" class="ver-req-btn">대한핵의학회</button>
+                        <button id="reqTechBtn" class="ver-req-btn">대한핵의학기술학회</button>
                     </div>
-                </label>
-                <label class="radio-option">
-                    <input
-                        type="radio"
-                        name="authType"
-                        value="special"
-                        style="accent-color:var(--accent);"
-                    />
-                    <div class="radio-label">
-                        <span class="radio-title"
-                            >특별사용자 <span
-                                style="color:var(--accent); font-weight:normal; font-size:1.3rem; vertical-align:sub; line-height:0;"
-                                >*</span
-                            ></span
-                        >
-                    </div>
-                </label>
-                <label class="radio-option">
-                    <input
-                        type="radio"
-                        name="authType"
-                        value="none"
-                        style="accent-color:var(--text-muted);"
-                    />
-                    <div class="radio-label">
-                        <span class="radio-title">인증 요청 안함</span>
-                    </div>
-                </label>
-            </div>
-            <p
-                style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0; display: flex; align-items: center; gap: 4px;"
-            >
-                <span
-                    style="color:var(--accent); font-size: 1.3rem; line-height: 0; vertical-align: sub;"
-                    >*</span
-                > 학회 비소속 방사선안전관리자 등이 앱관리자에게 하는 요청
-            </p>
+                    <button id="reqSpecialBtn" class="ver-req-btn" style="width:100%; margin-top:0.5rem;">특별사용자</button>
+                    
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; display: flex; align-items: flex-start; gap: 4px;">
+                        <span style="color:var(--accent); font-size: 1.3rem; line-height: 0; vertical-align: sub;">*</span> 
+                        <span>학회 비소속 방사선안전관리자 등이 앱관리자에게 하는 요청</span>
+                    </p>
+                </div>
 
             <!-- Verified Info Display Area (Appears inside this card) -->
             <div
                 id="societyInfoContent"
                 style="display:none; margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed #e5e7eb;"
             >
-                <div
-                    style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1rem;"
-                >
-                    <h5
-                        style="margin:0; font-size:0.95rem; color:var(--accent);"
-                    >
-                        인증된 정보
-                    </h5>
-                    <button
-                        id="reverifyBtn"
-                        style="
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 0.3rem;
-                            padding: 0.35rem 0.75rem;
-                            background: var(--accent);
-                            color: white;
-                            border: none;
-                            border-radius: 6px;
-                            font-size: 0.8rem;
-                            font-weight: 500;
-                            cursor: pointer;
-                            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-                            transition: all 0.2s;
-                        "
-                        onmouseover="this.style.opacity='0.9'"
-                        onmouseout="this.style.opacity='1'"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            ><path d="M23 4v6h-6"></path><path
-                                d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"
-                            ></path></svg
-                        >
-                        정보 갱신
-                    </button>
-                </div>
 
                 <div
-                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem;"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 0.5rem;"
                 >
+                    <!-- Row 1: Classification | Society -->
                     <div
                         class="info-row"
-                        style="border:none; padding: 0.2rem 0;"
+                        style="border:none; padding: 0;"
                     >
-                        <span class="info-label" style="min-width: 40px;"
-                            >학회</span
-                        >
-                        <span id="userSocietyName" class="info-value">...</span>
-                    </div>
-                    <div
-                        class="info-row"
-                        style="border:none; padding: 0.2rem 0;"
-                    >
-                        <span class="info-label" style="min-width: 40px;"
+                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
                             >구분</span
                         >
-                        <span id="userSocietyRole" class="info-value">...</span>
+                        <span id="userSocietyRole" class="info-value" style="font-size: 0.9rem;">...</span>
                     </div>
                     <div
                         class="info-row"
-                        style="border:none; padding: 0.2rem 0;"
+                        style="border:none; padding: 0;"
                     >
-                        <span class="info-label" style="min-width: 40px;"
+                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
+                            >학회</span
+                        >
+                        <span id="userSocietyName" class="info-value" style="font-size: 0.9rem;">...</span>
+                    </div>
+
+                    <!-- Row 2: Name | Email -->
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0;"
+                    >
+                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
                             >이름</span
                         >
-                        <span id="userRealName" class="info-value">...</span>
+                        <span id="userRealName" class="info-value" style="font-size: 0.9rem;">...</span>
                     </div>
                     <div
                         class="info-row"
-                        style="border:none; padding: 0.2rem 0;"
+                        style="border:none; padding: 0;"
                     >
-                        <span class="info-label" style="min-width: 40px;"
-                            >이메일</span
+                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
+                            >메일</span
                         >
                         <span
                             id="userSocietyEmail"
                             class="info-value"
-                            style="font-size:0.85rem;">...</span
+                            style="font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 140px;"
+                            >...</span
                         >
+                    </div>
+
+                    <!-- Row 3: Department | Affiliation -->
+                    <div
+                        class="info-row"
+                        style="border:none; padding: 0;"
+                    >
+                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
+                            >부서</span
+                        >
+                        <span id="userDepartment" class="info-value" style="font-size: 0.9rem;">...</span>
                     </div>
                     <div
                         class="info-row"
-                        style="border:none; padding: 0.2rem 0; min-width: 0;"
+                        style="border:none; padding: 0; min-width: 0;"
                     >
-                        <span class="info-label" style="min-width: 40px;"
+                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;"
                             >기관</span
                         >
                         <span
                             id="userAffiliation"
                             class="info-value"
-                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; text-align: right;"
+                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-size: 0.9rem;"
                             >...</span
                         >
-                    </div>
-                    <div
-                        class="info-row"
-                        style="border:none; padding: 0.2rem 0;"
-                    >
-                        <span class="info-label" style="min-width: 40px;"
-                            >부서</span
-                        >
-                        <span id="userDepartment" class="info-value">...</span>
                     </div>
                 </div>
             </div>
@@ -602,7 +516,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 class="tab-btn"
                 data-tab="society"
                 style="flex:1; padding:0.75rem; border:none; background:none; cursor:pointer; color:#6b7280;"
-                >앱관리자에게 인증신청</button
+                >앱관리자에게 인증요청</button
             >
             <button
                 class="tab-btn"
@@ -829,7 +743,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             const emailEl = document.getElementById("userIdentityEmail");
             if (nameEl)
                 nameEl.textContent =
-                    currentUser.society_name ||
+                    currentUser.real_name ||
                     currentUser.nickname ||
                     "이름 없음";
             if (emailEl)
@@ -855,8 +769,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
             // Verification Date
             const vDateEl = document.getElementById("userVerificationDate");
             if (vDateEl) {
-                if (currentUser.verified_date) {
-                    const d = new Date(currentUser.verified_date);
+                if (currentUser.verification_date) {
+                    const d = new Date(currentUser.verification_date);
                     vDateEl.textContent = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
                 } else {
                     vDateEl.textContent = "-";
@@ -873,42 +787,59 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 }
             }
 
-            // --- 2. Verification (Radio) Logic ---
-            const radios = document.getElementsByName("authType");
-            const societyInfoContent =
-                document.getElementById("societyInfoContent");
-            const userVerificationType = document.getElementById(
-                "userVerificationType",
-            );
+            // --- 2. Verification Logic ---
+            const userVerificationStatus = document.getElementById("userVerificationStatus");
+            const userVerificationDate = document.getElementById("userVerificationDate");
+            const toggleVerifyBannerBtn = document.getElementById("toggleVerifyBannerBtn");
+            const verificationRequestSection = document.getElementById("verificationRequestSection");
+            const societyInfoContent = document.getElementById("societyInfoContent");
 
-            // 1. Set Initial UI State based on verification_type
-            let currentType = "none";
-            const vType = currentUser.verification_type || "none";
+            let vStatusText = "미인증";
+            const vStatus = currentUser.verification_status || "none";
+            const cSociety = currentUser.society;
 
-            // Map DB value to Readable Text
-            const vTypeMap = {
-                none: "미인증",
-                society_list: "학회명부인증",
-                admin: "앱관리자인증",
-            };
-            if (userVerificationType) {
-                userVerificationType.textContent = vTypeMap[vType] || vType;
+            // Determine Status Text
+            if (vStatus === 'society_list') {
+                if (cSociety === 'nuclear_medicine') vStatusText = "인증됨 (대한핵의학회회원명부)";
+                else if (cSociety === 'technology') vStatusText = "인증됨 (대한핵의학기술학회회원명부)";
+                else vStatusText = "인증됨 (학회회원명부)";
+            } else if (vStatus === 'admin') {
+                 vStatusText = "인증됨 (앱관리자)";
+            } else if (vStatus !== 'none') {
+                 vStatusText = "인증됨 (" + vStatus + ")";
             }
 
-            // Determine Radio State
-            if (vType !== "none") {
-                if (currentUser.member_type === "special")
-                    currentType = "special";
-                else if (currentUser.society === "nuclear_medicine")
-                    currentType = "nuclear_medicine";
-                else if (currentUser.society === "technology")
-                    currentType = "technology";
-                // If verified but legacy, might default to something else?
-                // For now, if no specific society match, maybe just don't check any radio or keep 'none' if inconsistent.
+            if (userVerificationStatus) {
+                userVerificationStatus.textContent = vStatusText;
+            }
+            
+            // Set Verification Date
+            if (userVerificationDate) {
+                if (currentUser.verification_date) {
+                    const d = new Date(currentUser.verification_date);
+                    userVerificationDate.textContent = d.toLocaleDateString();
+                } else {
+                    userVerificationDate.textContent = "-";
+                }
             }
 
-            // Show/Hide Verified Info
-            if (vType === "society_list" || vType === "admin") {
+            // Toggle Request Section & Info Content & Verify Button
+            // Always show toggle button and handle click
+            if (toggleVerifyBannerBtn) {
+                toggleVerifyBannerBtn.style.display = "block";
+                toggleVerifyBannerBtn.onclick = () => {
+                   if (verificationRequestSection) {
+                       verificationRequestSection.style.display = 
+                           verificationRequestSection.style.display === "none" ? "block" : "none";
+                   }
+                };
+            }
+
+            if (verificationRequestSection) verificationRequestSection.style.display = "none"; // Initially hidden
+
+            if (vStatus === 'none') {
+                if (societyInfoContent) societyInfoContent.style.display = "none";
+            } else {
                 if (societyInfoContent) {
                     societyInfoContent.style.display = "block";
                     const societyMap = {
@@ -920,9 +851,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         currentUser.society ||
                         "-";
                     document.getElementById("userSocietyRole").textContent =
-                        currentUser.society_role || "-";
+                        currentUser.classification || "-";
                     document.getElementById("userRealName").textContent =
-                        currentUser.society_name ||
+                        currentUser.real_name ||
                         currentUser.full_name ||
                         "-";
                     document.getElementById("userSocietyEmail").textContent =
@@ -932,140 +863,79 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     document.getElementById("userDepartment").textContent =
                         currentUser.department || "-";
                 }
-            } else {
-                if (societyInfoContent) {
-                    societyInfoContent.style.display = "none";
-                }
             }
 
-            // Update Radio UI
-            radios.forEach((r) => {
-                if (r.value === currentType) r.checked = true;
-            });
+            // --- 3. Safety Management Info (Init) ---
+            const radLicenseSelect = document.getElementById("radLicenseSelect");
+            const managerToggle = document.getElementById("managerToggle");
+            const deputyToggle = document.getElementById("deputyToggle");
+            const practiceToggle = document.getElementById("practiceToggle");
 
-            // 3. Radio Event Listener
-            radios.forEach((r) => {
-                r.addEventListener("change", async (e) => {
-                    const currentUser = userProfile.get();
-                    const selected = e.target.value;
-                    const vType = currentUser.verification_type || "none";
+            if (radLicenseSelect) radLicenseSelect.value = currentUser.license_type || "none";
+            if (managerToggle) managerToggle.checked = String(currentUser.is_safety_manager) === 'true';
+            if (deputyToggle) deputyToggle.checked = String(currentUser.is_safety_manager_deputy) === 'true';
+            if (practiceToggle) practiceToggle.checked = String(currentUser.is_safety_manager_practical) === 'true';
+        });
 
-                    // Determine current active radio based on stored state (to revert if needed)
-                    let activeRadioVal = "none";
-                    if (vType === "society_list") {
-                        // Map back to radio values if possible, though 'society_list' maps to 'society' member_type usually
-                        if (currentUser.member_type === "society") {
-                            if (currentUser.society === "nuclear_medicine")
-                                activeRadioVal = "nuclear_medicine";
-                            else if (currentUser.society === "technology")
-                                activeRadioVal = "technology";
-                        }
-                    } else if (vType === "admin") {
-                        // Admin verification might not directly map to these radios easily without more specific fields
-                        // But usually admin verification is for special users?
-                        if (currentUser.member_type === "special")
-                            activeRadioVal = "special";
+            // 3. Button Helper Function to open Modal
+            const openModal = (tabName, mode = 'society') => {
+                const modal = document.getElementById("verifyModal");
+                const tabBtns = document.querySelectorAll(".tab-btn");
+                const tabContents = document.querySelectorAll(".tab-content");
+
+                modal.classList.add("active");
+
+                // Filter Tabs based on Mode
+                tabBtns.forEach(btn => {
+                    const t = btn.dataset.tab;
+                    if (mode === 'society') {
+                        // Show Auto & Society, Hide Special
+                        if (t === 'special') btn.style.display = 'none';
+                        else btn.style.display = 'block'; 
+                    } else if (mode === 'special') {
+                        // Show Special, Hide Auto & Society
+                        if (t === 'special') btn.style.display = 'block';
+                        else btn.style.display = 'none';
                     }
-
-                    if (selected === activeRadioVal) return; // No change based on current stored state (idealistic)
-
-                    if (selected === "none") {
-                        if (
-                            confirm(
-                                "인증 정보를 해제하시겠습니까? (회원 권한이 일반회원으로 변경됩니다)",
-                            )
-                        ) {
-                            try {
-                                const { error } = await supabase
-                                    .from("profiles")
-                                    .update({
-                                        verification_type: "none",
-                                        member_type: "general",
-                                        is_approved: false, // Access might be revoked
-                                        society: null,
-                                        society_email: null,
-                                        society_name: null,
-                                        society_role: null,
-                                        affiliation: null,
-                                        department: null,
-                                    })
-                                    .eq("id", currentUser.id);
-
-                                if (error) throw error;
-
-                                userProfile.set({
-                                    ...currentUser,
-                                    verification_type: "none",
-                                    member_type: "general",
-                                    is_approved: "false",
-                                    society: "",
-                                    society_email: "",
-                                    society_name: "",
-                                    society_role: "",
-                                    affiliation: "",
-                                    department: "",
-                                });
-                                alert("인증 정보가 해제되었습니다.");
-                            } catch (err) {
-                                alert("오류 발생: " + err.message);
-                                // Revert UI
-                                e.target.checked = false;
-                                // Ideally select the correct one
-                            }
-                        } else {
-                            // Revert
-                            e.target.checked = false;
-                        }
-                        return;
-                    }
-
-                    // Show Modal for new verification structure
-                    // For society (nuclear_medicine / technology) -> default tab 'auto'
-                    // For special -> default tab 'special' (mapped in modal logic below)
-
-                    const modal = document.getElementById("verifyModal");
-                    const tabBtns = document.querySelectorAll(".tab-btn");
-                    const tabContents =
-                        document.querySelectorAll(".tab-content");
-
-                    modal.classList.add("active");
-
-                    // Set Initial Tab based on selection
-                    let targetTab = "auto";
-                    // If special user selected, show 'Request to Admin' tab directly?
-                    // Or keep default 'auto' (society list) and let them switch?
-                    // Original requirement: "앱관리자에게 인증요청" is the 2nd tab ("manual").
-                    // "Special" user implies manual verification.
-
-                    // Logic:
-                    // If nuclear/technology selected -> Tab 'auto' (List check) is primary.
-                    // If special selected -> Tab 'special' (Manual) is primary?
-                    // Wait, the tabs in HTML are generally: 'auto' (society list), 'manual' (society request), 'special' (special user request).
-
-                    // Let's refine based on HTML structure (assumed):
-                    // Tab 1: data-tab="auto" (Society List Check)
-                    // Tab 2: data-tab="society" (Society Manual Request)
-                    // Tab 3: data-tab="special" (Special User Request)
-
-                    if (selected === "special") {
-                        targetTab = "special";
-                    } else {
-                        targetTab = "auto";
-                    }
-
-                    // Activate Tab
-                    tabBtns.forEach((b) => {
-                        if (b.dataset.tab === targetTab)
-                            b.classList.add("active");
-                        else b.classList.remove("active");
-                    });
-                    tabContents.forEach((c) => {
-                        if (c.dataset.tab === targetTab)
-                            c.style.display = "block";
-                        else c.style.display = "none";
-                    });
                 });
-            });
+
+                // Activate Tab
+                tabBtns.forEach((b) => {
+                    if (b.dataset.tab === tabName)
+                        b.classList.add("active");
+                    else b.classList.remove("active");
+                });
+                tabContents.forEach((c) => {
+                    if (c.dataset.tab === tabName)
+                        c.style.display = "block";
+                    else c.style.display = "none";
+                });
+                
+                // Auto-fill form fields with current user data
+                const userData = userProfile.get();
+                if (userData) {
+                    ["societyRequestForm", "specialRequestForm"].forEach(formId => {
+                        const form = document.getElementById(formId);
+                        if (form) {
+                            const nameInput = form.querySelector('input[name="full_name"]');
+                            const emailInput = form.querySelector('input[name="contact_email"]');
+                            
+                            // Fill only if empty (preserves user edits if reopened)
+                            if (nameInput && !nameInput.value) {
+                                nameInput.value = userData.nickname || userData.full_name || userData.real_name || "";
+                            }
+                            if (emailInput && !emailInput.value) {
+                                emailInput.value = userData.login_email || userData.email || userData.society_email || "";
+                            }
+                        }
+                    });
+                }
+            };
+
+            // Button Listeners
+            document.getElementById("reqNuclearBtn")?.addEventListener("click", () => openModal("auto", "society")); 
+            document.getElementById("reqTechBtn")?.addEventListener("click", () => openModal("auto", "society")); 
+            document.getElementById("reqSpecialBtn")?.addEventListener("click", () => openModal("special", "special"));
 
             // Modal Close & Tab Listeners (Added)
             const modal = document.getElementById("verifyModal");
@@ -1107,7 +977,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
             // ... (Rest of safety info logic - Toggle Listeners) ...
 
-            // Auto Verification Submit (Updated for verification_type)
+            // Auto Verification Submit (Updated for verification_status)
             document
                 .getElementById("confirmVerifyBtn")
                 ?.addEventListener("click", async (e) => {
@@ -1134,18 +1004,16 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
                         // 2. Update Profile
                         const updateData = {
-                            verification_type: "society_list", // New Field
-                            verified_at: new Date().toISOString(), // Keep if needed for history? Or rely on updated_at?
-                            verified_date: new Date().toISOString(),
+                            verification_status: "society_list",
+                            verification_date: new Date().toISOString(),
 
-                            member_type: "society", // user_tier -> member_type
                             society: allowedData.society,
                             society_email: email,
-                            society_name:
-                                allowedData.name || allowedData.full_name, // Handle variation if any
+                            real_name:
+                                allowedData.name || allowedData.full_name,
                             department: allowedData.department,
                             affiliation: allowedData.affiliation,
-                            society_role:
+                            classification:
                                 allowedData.classification || allowedData.role,
                         };
 
@@ -1160,8 +1028,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         userProfile.set({
                             ...currentUser,
                             ...updateData,
-                            verification_type: "society_list",
-                            member_type: "society",
+                            verification_status: "society_list",
                         });
 
                         alert("✅ 인증되었습니다!");
@@ -1191,7 +1058,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     }
                 });
 
-            // Manual Forms (Updated for verification_type)
+            // Manual Forms (Updated for verification_status)
             [
                 { id: "societyRequestForm", type: "society" },
                 { id: "specialRequestForm", type: "special" },
@@ -1235,16 +1102,14 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
                             // 2. Profile Update (Immediate Provisional Approval)
                             const updateData = {
-                                verified_date: new Date().toISOString(),
-                                verification_type: "admin", // Provisionally approved as admin override
-                                member_type: type, // 'society' or 'special'
-                                is_approved: true,
+                                verification_date: new Date().toISOString(),
+                                verification_status: "admin",
                             };
 
                             // Map form fields to profile fields
                             if (type === "society") {
                                 updateData.society = formData.get("society");
-                                updateData.society_name =
+                                updateData.real_name =
                                     formData.get("full_name");
                                 updateData.affiliation =
                                     formData.get("affiliation");
@@ -1255,7 +1120,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                                 updateData.society_email =
                                     formData.get("contact_email");
                             } else if (type === "special") {
-                                updateData.society_name =
+                                updateData.real_name =
                                     formData.get("full_name");
                                 updateData.affiliation =
                                     formData.get("affiliation");
@@ -1335,6 +1200,50 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         );
                     }
                 });
+
+        // --- 4. Auto-Save Logic for Safety Info ---
+        const autoSaveFields = [
+            { id: "radLicenseSelect", field: "license_type", type: "value" },
+            { id: "managerToggle", field: "is_safety_manager", type: "checked" },
+            { id: "deputyToggle", field: "is_safety_manager_deputy", type: "checked" },
+            { id: "practiceToggle", field: "is_safety_manager_practical", type: "checked" }
+        ];
+
+        autoSaveFields.forEach(({ id, field, type }) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("change", async (e) => {
+                    const currentUser = userProfile.get();
+                    if (!currentUser.id) return;
+
+                    const newValue = type === "checked" ? e.target.checked : e.target.value;
+                    const updateData = { [field]: newValue };
+
+                    // Optimistic UI Update (Store)
+                    userProfile.set({
+                        ...currentUser,
+                        ...updateData
+                    });
+
+
+                    // DB Upsert (create if not exists)
+                    const { error } = await supabase
+                        .from("profiles")
+                        .upsert({
+                            id: currentUser.id,
+                            ...updateData,
+                            updated_at: new Date().toISOString(),
+                        });
+
+                    if (error) {
+                        console.error("Auto-save failed:", error);
+                        alert("저장에 실패했습니다. 다시 시도해주세요.");
+                        // Revert store if needed (optional, complexity vs value)
+                    } else {
+                        console.log(`Auto-saved ${field}:`, newValue);
+                    }
+                });
+            }
         });
     });
 </script>

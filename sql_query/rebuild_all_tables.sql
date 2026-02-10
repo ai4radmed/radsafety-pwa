@@ -42,30 +42,23 @@ CREATE TABLE public.profiles (
     is_admin boolean DEFAULT false, -- Admin status
     
     -- 2. Verification Info
-    verified_date timestamp with time zone, -- Renamed from verification_request_date
-    verification_type text DEFAULT 'none'::text, -- 'none', 'society_list', 'admin'
-    member_type text DEFAULT 'general'::text, -- 'general', 'society', 'special'
+    verification_status text DEFAULT 'none'::text, -- 'none', 'society_list', 'admin'
+    verification_date timestamp with time zone,
     
     society text, -- 'nuclear_medicine', 'technology', etc.
     affiliation text, -- Institution
     department text, -- Department
-    society_name text, -- Real Name
+    real_name text, -- Real Name
     society_email text, -- Verified Email
-    classification text, -- Role ('전공의', '방사선사', etc.) - Consolidated from society_role
+    classification text, -- Role ('전공의', '방사선사', etc.)
     
     -- 3. Safety Management Info
     license_type text, -- Single selection
     is_safety_manager boolean DEFAULT false,
     safety_manager_start_year text,
     safety_manager_end_year text,
-    safety_manager_start_unknown boolean DEFAULT false,
     is_safety_manager_deputy boolean DEFAULT false,
-    is_safety_manager_practical boolean DEFAULT false,
-
-    -- 4. System / Meta
-    -- classification moved to Verification Info
-    is_approved boolean DEFAULT false, -- For general access approval
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+    is_safety_manager_practical boolean DEFAULT false
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -217,7 +210,7 @@ CREATE TABLE public.verification_requests (
     type text, -- 'society', 'special'
     full_name text,
     society text, -- 'nuclear_medicine', 'technology' key
-    society_name text, -- Real Name (if verified)
+    real_name text, -- Real Name (if verified, renamed from society_name)
     classification text, -- '전공의', '방사선사' etc. (Renamed from role)
     affiliation text,
     department text,

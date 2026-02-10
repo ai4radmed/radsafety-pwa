@@ -260,48 +260,87 @@ const { title, description, scale } = Astro.props;
                     const baseUser = {
                         id: session.user.id,
                         login_email: session.user.email || "",
+                        created_at: session.user.created_at || "",
                         provider:
                             session.user.app_metadata?.provider || "email",
+                        nickname: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.user_name || "",
                     };
 
                     // Check if user is admin based on email
                     const userIsAdmin = isAdmin(baseUser.login_email);
 
                     // 2. Fetch Full Profile from DB
-                    const { data: profile } = await supabase
-                        .from("profiles")
-                        .select("*")
-                        .eq("id", session.user.id)
-                        .single();
+                    try {
+                        const { data: profile, error } = await supabase
+                            .from("profiles")
+                            .select("*")
+                            .eq("id", session.user.id)
+                            .maybeSingle(); // Use maybeSingle to prevent 406 on 0 rows, though 406 usually means format error. 
+                                            // However, 406 Not Acceptable in Supabase often means it returned more than 1 row when single() was expected, 
+                                            // or header issue. 'maybeSingle' is safer than 'single'.
 
-                    if (profile) {
-                        // If user is admin but DB doesn't reflect it, update DB
-                        if (userIsAdmin && !profile.is_admin) {
-                            console.log(
-                                "Updating is_admin=true in DB for:",
-                                baseUser.login_email,
-                            );
-                            await supabase
+                        if (error) {
+                            console.error("Supabase Profile Fetch Error:", error);
+                            // If error, we still have baseUser. Don't throw.
+                        } else if (profile) {
+                            // If user is admin but DB doesn't reflect it, update DB
+                            if (userIsAdmin && !profile.is_admin) {
+                                console.log(
+                                    "Updating is_admin=true in DB for:",
+                                    baseUser.login_email,
+                                );
+                                await supabase
+                                    .from("profiles")
+                                    .update({ is_admin: true })
+                                    .eq("id", session.user.id);
+                            }
+
+                            setUser({
+                                ...baseUser,
+                                ...profile,
+                                nickname: profile.nickname || baseUser.nickname,
+                                is_admin: userIsAdmin,
+                                licenses: profile.licenses || [],
+                            });
+                            checkNotifications(session.user.id);
+                        } else {
+                            // Valid response but no profile row found (Critical issue)
+                            console.warn("No profile row found for user:", session.user.id, "Attempting self-healing...");
+
+                            // Try to insert a default profile (Self-healing)
+                            const newProfile = {
+                                id: session.user.id,
+                                email: baseUser.login_email,
+                                nickname: baseUser.nickname,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString(),
+                                is_admin: userIsAdmin,
+                            };
+
+                            const { error: insertError } = await supabase
                                 .from("profiles")
-                                .update({ is_admin: true })
-                                .eq("id", session.user.id);
-                        }
+                                .insert(newProfile);
 
-                        setUser({
-                            ...baseUser,
-                            ...profile,
-                            is_admin: userIsAdmin,
-                            licenses: profile.licenses || [],
-                        });
-                        checkNotifications(session.user.id);
-                    } else {
-                        console.warn(
-                            "Fetch Profile Failed (using basic session):",
-                            "No profile found for user " + session.user.id,
-                        );
+                            if (insertError) {
+                                console.error("Self-healing failed (Insert Profile Error):", insertError);
+                                // Fallback to baseUser only
+                                setUser({ ...baseUser, is_admin: userIsAdmin });
+                            } else {
+                                console.log("Self-healing successful: Created new profile for user.");
+                                // Use the creating profile data
+                                setUser({
+                                    ...baseUser,
+                                    ...newProfile,
+                                    licenses: [],
+                                });
+                            }
+                            checkNotifications(session.user.id);
+                        }
+                    } catch (err) {
+                        console.error("Unexpected error fetching profile:", err);
                         setUser({ ...baseUser, is_admin: userIsAdmin });
-                        checkNotifications(session.user.id);
                     }
+
 
                     // Logged in user on /login -> redirect to /mypage
                     if (currentPath === "/login") {

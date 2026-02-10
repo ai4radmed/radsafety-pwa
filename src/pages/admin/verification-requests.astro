@@ -361,13 +361,12 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                 const { error: profileError } = await supabase
                     .from("profiles")
                     .update({
-                        is_verified: false,
-                        user_tier: "general",
+                        verification_status: "none",
                         society: null,
                         society_email: null,
-                        society_name: null,
+                        real_name: null,
                         department: null,
-                        society_role: null,
+                        classification: null,
                     })
                     .eq("id", req.user_id);
 
