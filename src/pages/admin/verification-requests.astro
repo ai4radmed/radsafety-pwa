@@ -206,8 +206,8 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                 const { data, error } = await supabase
                     .from("verification_requests") // Changed table name
                     .select("*")
-                    .eq("status", status)
-                    .order("created_at", { ascending: false });
+                    .eq("verification_status", status)
+                    .order("verification_date", { ascending: false });
 
                 if (error) throw error;
 
@@ -237,26 +237,17 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
         }
 
         function renderRequestCard(req) {
-            const typeBadge =
-                req.type === "society"
-                    ? '<span class="request-type-badge badge-society">학회원</span>'
-                    : '<span class="request-type-badge badge-special">특별사용자</span>';
-
-            const societyInfo =
-                req.type === "society"
-                    ? `<div class="info-item">
-                        <div class="info-label">학회</div>
-                        <div class="info-value">${req.society === "nuclear_medicine" ? "대한핵의학회" : "대한핵의학기술학회"}</div>
-                    </div>`
-                    : "";
+            const typeBadge = req.society
+                ? '<span class="request-type-badge badge-society">학회원</span>'
+                : '<span class="request-type-badge badge-special">특별사용자</span>';
 
             const actions =
-                req.status === "auto-approved"
+                req.verification_status === "auto-approved"
                     ? `<div class="request-actions">
                         <button class="btn btn-reject" data-action="reject" data-id="${req.id}" style="background-color:#ef4444;">승인 취소</button>
                         <button class="btn btn-approve" data-action="approve" data-id="${req.id}" style="background-color:#3b82f6;">검토 완료</button>
                     </div>`
-                    : req.status === "approved"
+                    : req.verification_status === "approved"
                       ? `<div class="info-item">
                         <div class="info-label" style="color:#10b981;">검토 완료됨</div>
                         <div class="info-value">${new Date(req.updated_at).toLocaleString("ko-KR")}</div>
@@ -270,28 +261,35 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                 <div class="request-card">
                     <div class="request-header">
                         <div>
-                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem;">${req.full_name}</h3>
+                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem;">${req.real_name}</h3>
                             ${typeBadge}
                         </div>
-                        <span style="color:var(--text-muted); font-size:0.85rem;">${new Date(req.created_at).toLocaleString("ko-KR")}</span>
+                        <span style="color:var(--text-muted); font-size:0.85rem;">${new Date(req.verification_date).toLocaleString("ko-KR")}</span>
                     </div>
                     <div class="request-info">
-                        ${societyInfo}
                         <div class="info-item">
-                            <div class="info-label">소속</div>
-                            <div class="info-value">${req.affiliation}</div>
+                            <div class="info-label">직책(구분)</div>
+                            <div class="info-value">${req.classification || "-"}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">부서</div>
                             <div class="info-value">${req.department || "-"}</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">직책(구분)</div>
-                            <div class="info-value">${req.role || "-"}</div>
+                            <div class="info-label">소속</div>
+                            <div class="info-value">${req.affiliation}</div>
                         </div>
+                         ${
+                             req.society
+                                 ? `<div class="info-item" style="grid-column: span 2;">
+                                <div class="info-label">학회</div>
+                                <div class="info-value">${req.society === "nuclear_medicine" ? "대한핵의학회" : "대한핵의학기술학회"}</div>
+                            </div>`
+                                 : ""
+                         }
                         <div class="info-item">
                             <div class="info-label">연락처</div>
-                            <div class="info-value">${req.email}</div>
+                            <div class="info-value">${req.society_email}</div>
                         </div>
                     </div>
                     <div class="request-reason">
@@ -323,18 +321,41 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                 return;
 
             try {
-                // 1. Update Request Status (Profile already updated on request)
+                const req = window.currentRequests.find(
+                    (r) => r.id === requestId,
+                );
+                if (!req) throw new Error("Request data not found");
+
+                // 1. Update Profile (Ensure profile is updated with verified data)
+                const profileUpdate = {
+                    verification_status: "admin",
+                    verification_date: new Date().toISOString(),
+                    society: req.society,
+                    real_name: req.real_name,
+                    society_email: req.society_email,
+                    classification: req.classification,
+                    affiliation: req.affiliation,
+                    department: req.department,
+                };
+
+                const { error: profileError } = await supabase
+                    .from("profiles")
+                    .update(profileUpdate)
+                    .eq("id", req.user_id);
+
+                if (profileError) throw profileError;
+
+                // 2. Update Request Status
                 const { error: reqError } = await supabase
                     .from("verification_requests")
                     .update({
-                        status: "approved",
-                        updated_at: new Date().toISOString(),
+                        verification_status: "approved",
                     })
                     .eq("id", requestId);
 
                 if (reqError) throw reqError;
 
-                alert("✅ 검토 완료 처리되었습니다.");
+                alert("✅ 검토 완료 및 프로필 업데이트가 처리되었습니다.");
                 loadRequests(currentStatus);
             } catch (err) {
                 console.error("Approve Error:", err);
@@ -376,8 +397,8 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                 const { error: reqError } = await supabase
                     .from("verification_requests")
                     .update({
-                        status: "rejected",
-                        updated_at: new Date().toISOString(),
+                        verification_status: "rejected",
+                        // updated_at: new Date().toISOString(),
                     })
                     .eq("id", requestId);
 
@@ -406,7 +427,8 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                 const { count } = await supabase
                     .from("verification_requests")
                     .select("*", { count: "exact", head: true })
-                    .eq("status", status);
+                    .select("*", { count: "exact", head: true })
+                    .eq("verification_status", status);
 
                 document.getElementById(`${status}Count`).textContent =
                     count || 0;

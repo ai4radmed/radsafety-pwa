@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const contentDir = '/home/ben/projects/radsafety-web/src/content/findings_recommendations';
+const contentDir = '/home/ben/projects/radsafety-pwa/src/content/findings_recommendations';
 const files = fs.readdirSync(contentDir).filter(f => f.startsWith('migrated-') && f.endsWith('.md'));
 
 const TAG_MAPPING = {

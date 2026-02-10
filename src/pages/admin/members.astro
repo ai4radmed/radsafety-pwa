@@ -173,8 +173,8 @@ import Icon from "../../components/Icon.astro";
             tr.innerHTML = `
                 <td>${societyName}</td>
                 <td>${row.classification || "-"}</td>
-                <td>${row.name || "-"}</td>
-                <td>${row.email || "-"}</td>
+                <td>${row.real_name || "-"}</td>
+                <td>${row.society_email || "-"}</td>
                 <td>${row.affiliation || "-"}</td>
                 <td>${row.department || "-"}</td>
             `;
@@ -193,8 +193,9 @@ import Icon from "../../components/Icon.astro";
         const keyword = e.target.value.toLowerCase();
         const filtered = allMembers.filter(
             (m) =>
-                (m.name && m.name.toLowerCase().includes(keyword)) ||
-                (m.email && m.email.toLowerCase().includes(keyword)),
+                (m.real_name && m.real_name.toLowerCase().includes(keyword)) ||
+                (m.society_email &&
+                    m.society_email.toLowerCase().includes(keyword)),
         );
         renderDbTable(filtered);
     });
@@ -477,7 +478,7 @@ import Icon from "../../components/Icon.astro";
                 const { error } = await supabase
                     .from("allowed_members")
                     .delete()
-                    .neq("id", 0);
+                    .neq("society_email", "");
                 if (error) {
                     alert("삭제 실패: " + error.message);
                 } else {
@@ -497,16 +498,15 @@ import Icon from "../../components/Icon.astro";
 
         const dataToUpload = window.parsedMemberData
             .map((row) => ({
-                name: row.name !== "-" ? row.name : null,
-                email: row.email !== "-" ? row.email : null,
+                real_name: row.name !== "-" ? row.name : null,
+                society_email: row.email !== "-" ? row.email : null,
                 affiliation: row.affiliation !== "-" ? row.affiliation : null,
                 department: row.department !== "-" ? row.department : null,
                 classification:
                     row.classification !== "-" ? row.classification : null,
-                society: row.society, // Send the determined society code
-                // Schema update required: Ensure 'society' column exists in allowed_members table
+                society: row.society,
             }))
-            .filter((r) => r.email && r.email.includes("@"));
+            .filter((r) => r.society_email && r.society_email.includes("@"));
 
         if (dataToUpload.length === 0) {
             alert("유효한 이메일이 포함된 데이터가 없습니다.");
@@ -516,7 +516,10 @@ import Icon from "../../components/Icon.astro";
         // Deduplicate Logic: Keep the last occurrence for each email
         const uniqueData = Array.from(
             dataToUpload
-                .reduce((map, item) => map.set(item.email, item), new Map())
+                .reduce(
+                    (map, item) => map.set(item.society_email, item),
+                    new Map(),
+                )
                 .values(),
         );
 
@@ -527,7 +530,7 @@ import Icon from "../../components/Icon.astro";
         if (confirmUpload) {
             const { data, error } = await supabase
                 .from("allowed_members")
-                .upsert(uniqueData, { onConflict: "email" });
+                .upsert(uniqueData, { onConflict: "society_email" });
 
             if (error) {
                 console.error(error);

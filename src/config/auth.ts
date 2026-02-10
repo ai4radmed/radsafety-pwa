@@ -6,10 +6,7 @@ const ENV_ADMINS = (import.meta.env.PUBLIC_ADMIN_EMAILS || "")
 
 export const ADMIN_EMAILS = [
     ...ENV_ADMINS,
-    "kimbi@kirams.re.kr", // Added for Admin Access
-    "dev@example.com", // Fallback/Dev
-    "admin@radsafety.com",
-    "ben@example.com"
+    "admin@radsafety.com" // Default fallback admin
 ];
 
 export const SPECIAL_GUESTS = [
@@ -48,5 +45,6 @@ export function getCertification(email: string): 'ksnm' | 'ksnmt' | 'special' | 
 
 export function isAdmin(email: string): boolean {
     if (!email) return false;
-    return ADMIN_EMAILS.includes(email);
+    const lowerEmail = email.toLowerCase();
+    return ADMIN_EMAILS.some(admin => admin.toLowerCase() === lowerEmail);
 }

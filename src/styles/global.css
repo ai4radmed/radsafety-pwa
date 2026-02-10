@@ -187,3 +187,22 @@ button {
 		padding: 0.5rem 0.75rem;
 	}
 }
+
+/* Auth Badges (Global) */
+.login-badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+.kakao-badge {
+    background: #fee500 !important;
+    color: #3c1e1e !important;
+}
+.email-badge {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+}
