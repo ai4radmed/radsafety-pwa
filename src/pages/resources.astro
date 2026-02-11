@@ -691,7 +691,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
 
         const { data, error } = await supabase
             .from("archives")
-            .select("*, profiles!inner(real_name, login_email)") // Join with profiles
+            .select("*")
             .order("created_at", { ascending: false });
 
         if (error) {
@@ -731,7 +731,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                 <div class="col-title">${item.title}</div>
                 <!-- Author & Date -->
                 <div class="col-date">
-                    ${item.author || (item.profiles ? (item.profiles.real_name || item.profiles.nickname) : '관리자')}
+                    ${item.author || '관리자'}
                     <span style="margin:0 4px; color:var(--text-muted);">·</span>
                     ${new Date(item.created_at).toLocaleDateString()}
                 </div>
