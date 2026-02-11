@@ -9,7 +9,7 @@ export const userProfile = persistentMap('userProfile', {
     provider: '',
     // 2. Verification Info
     verification_date: '',
-    verification_status: 'none', // 'none' | 'society_list' | 'admin'
+    verification_status: 'none', // 'none' | 'list' | 'admin'
 
     society: '', // 'nuclear_medicine' | 'technology'
     affiliation: '',
@@ -22,8 +22,6 @@ export const userProfile = persistentMap('userProfile', {
     is_safety_manager: 'false',
     safety_manager_start_year: '',
     safety_manager_end_year: '',
-    is_safety_manager_deputy: 'false',
-    is_safety_manager_practical: 'false',
 
     // 4. System / Meta
     classification: '',
@@ -54,14 +52,12 @@ export function setUser(user: {
     is_safety_manager?: boolean,
     safety_manager_start_year?: string,
     safety_manager_end_year?: string,
-    is_safety_manager_deputy?: boolean | string,
-    is_safety_manager_practical?: boolean | string,
 
     classification?: string,
     // Legacy mapping arguments
     licenses?: any,
     user_tier?: string,
-    is_verified?: boolean | string,
+    // is_verified removed
     safety_manager_start_date?: string,
     safety_manager_end_date?: string,
     is_safety_practice_staff?: boolean | string,
@@ -89,8 +85,6 @@ export function setUser(user: {
         is_safety_manager: String(user.is_safety_manager) || 'false',
         safety_manager_start_year: user.safety_manager_start_year || '',
         safety_manager_end_year: user.safety_manager_end_year || '',
-        is_safety_manager_deputy: String(user.is_safety_manager_deputy) || 'false',
-        is_safety_manager_practical: String(user.is_safety_manager_practical) || 'false',
 
         classification: user.classification || '',
 
@@ -124,8 +118,6 @@ export function clearUser() {
         is_safety_manager: 'false',
         safety_manager_start_year: '',
         safety_manager_end_year: '',
-        is_safety_manager_deputy: 'false',
-        is_safety_manager_practical: 'false',
 
         classification: '',
         certification: 'none',

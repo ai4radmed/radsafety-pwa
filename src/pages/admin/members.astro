@@ -119,428 +119,341 @@ import Icon from "../../components/Icon.astro";
     import { supabase } from "../../lib/supabase";
     import * as XLSX from "xlsx";
 
-    // ... (Existing Guard Logic) ...
-    // ... (Existing Excel Logic) ...
-
-    // --- NEW: DB Member List Logic ---
-    const dbTableBody = document.querySelector("#dbTable tbody");
-    const dbCountSpan = document.getElementById("dbCount");
-    const dbSearchInput = document.getElementById("dbSearch");
-    const refreshDbBtn = document.getElementById("refreshDbBtn");
-
+    // --- NEW: DB Member List Logic (Variables) ---
+    // These need to be re-queried on page load
+    let dbTableBody, dbCountSpan, dbSearchInput, refreshDbBtn;
     let allMembers = [];
+    let parsedMemberData = []; // Use local variable instead of window to avoid conflicts
 
-    async function fetchMembers() {
-        refreshDbBtn.disabled = true;
-        refreshDbBtn.textContent = "로딩 중...";
-
-        const { data, error } = await supabase
-            .from("allowed_members")
-            .select("*")
-            .order("created_at", { ascending: false });
-
-        if (error) {
-            console.error(error);
-            alert("DB 목록을 불러오지 못했습니다: " + error.message);
-            dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패</td></tr>`;
-        } else {
-            allMembers = data || [];
-            renderDbTable(allMembers);
+    // --- Page Load Handler ---
+    document.addEventListener("astro:page-load", () => {
+        // A. Guard Clause for Admin
+        const user = userProfile.get();
+        if (user.is_admin !== "true" && user.is_admin !== true) {
+            // alert("관리자 권한이 필요합니다."); // Optional: too annoying?
+            // window.location.href = "/";
+            // Check again inside specific actions if needed, or rely on RLS.
+            // But layout might render briefly.
+            // Ideally this check happens in server side (frontmatter) but we are SPA-ish.
         }
 
-        refreshDbBtn.disabled = false;
-        refreshDbBtn.textContent = "🔄 새로고침";
-    }
+        // B. Element Bindings
+        dbTableBody = document.querySelector("#dbTable tbody");
+        dbCountSpan = document.getElementById("dbCount");
+        dbSearchInput = document.getElementById("dbSearch");
+        refreshDbBtn = document.getElementById("refreshDbBtn");
 
-    function renderDbTable(list) {
-        dbCountSpan.textContent = list.length;
-        dbTableBody.innerHTML = "";
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById("fileInput");
+        const previewSection = document.getElementById("previewSection");
+        const tableBody = document.querySelector("#previewTable tbody");
+        const rowCountSpan = document.getElementById("rowCount");
+        const cancelBtn = document.getElementById("cancelBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const uploadBtn = document.getElementById("uploadBtn");
 
-        if (list.length === 0) {
-            dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">등록된 회원이 없습니다.</td></tr>`;
-            return;
-        }
+        // If elements are missing (e.g. user navigated away), stop.
+        if (!dropZone || !dbTableBody) return;
 
-        list.slice(0, 100).forEach((row) => {
-            // Limit display for performance
-            const tr = document.createElement("tr");
-            const societyName =
-                row.society === "nuclear_medicine"
-                    ? "대한핵의학회"
-                    : row.society === "technology"
-                      ? "대한핵의학기술학회"
-                      : row.society || "-";
-            tr.innerHTML = `
-                <td>${societyName}</td>
-                <td>${row.classification || "-"}</td>
-                <td>${row.real_name || "-"}</td>
-                <td>${row.society_email || "-"}</td>
-                <td>${row.affiliation || "-"}</td>
-                <td>${row.department || "-"}</td>
-            `;
-            dbTableBody.appendChild(tr);
+        // C. Fetch Initial DB Data
+        fetchMembers();
+
+        // D. Prevent Default Drag Behaviors (Global)
+        // We add this to document, but we should be careful about duplicates if we navigate back/forth.
+        // A simple way is to remove before add, or just add once. 
+        // But astro:page-load fires every time. 
+        // To be safe, we can use a named function or just rely on the fact that these are cheap lightweight handlers.
+        // Better: Add to window/document only if not already added? 
+        // Or simpler: Just add them, but maybe clean up on 'astro:before-preparation'?
+        // For now, let's keep it simple. Browsers handle multiple preventDefaults fine.
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.addEventListener(eventName, preventDefaults, false);
         });
 
-        if (list.length > 100) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td colspan="6" style="text-align:center; color:#888;">...외 ${list.length - 100}명 (검색하여 확인하세요)</td>`;
-            dbTableBody.appendChild(tr);
-        }
-    }
+        // E. Event Listeners
 
-    // Search Handler
-    dbSearchInput.addEventListener("input", (e) => {
-        const keyword = e.target.value.toLowerCase();
-        const filtered = allMembers.filter(
-            (m) =>
-                (m.real_name && m.real_name.toLowerCase().includes(keyword)) ||
-                (m.society_email &&
-                    m.society_email.toLowerCase().includes(keyword)),
-        );
-        renderDbTable(filtered);
-    });
+        // 1. DB Search & Refresh
+        if(dbSearchInput) dbSearchInput.addEventListener("input", handleSearch);
+        if(refreshDbBtn) refreshDbBtn.addEventListener("click", fetchMembers);
 
-    refreshDbBtn.addEventListener("click", fetchMembers);
-
-    // Initial Load
-    fetchMembers();
-
-    // 2. Excel Logic (Keep existing logic below...)
-
-    // 1. Admin Guard
-    const user = userProfile.get();
-    if (user.is_admin !== "true" && user.is_admin !== true) {
-        alert("관리자 권한이 필요합니다.");
-        window.location.href = "/";
-    }
-
-    // 2. Excel Logic
-    const dropZone = document.getElementById("dropZone");
-    const fileInput = document.getElementById("fileInput");
-    const previewSection = document.getElementById("previewSection");
-    const tableBody = document.querySelector("#previewTable tbody");
-    const rowCountSpan = document.getElementById("rowCount");
-
-    // Drag & Drop Handlers
-    dropZone.addEventListener("click", () => fileInput.click());
-
-    dropZone.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        dropZone.classList.add("drag-over");
-    });
-
-    dropZone.addEventListener("dragleave", () => {
-        dropZone.classList.remove("drag-over");
-    });
-
-    dropZone.addEventListener("drop", (e) => {
-        e.preventDefault();
-        dropZone.classList.remove("drag-over");
-        const files = e.dataTransfer.files;
-        if (files.length) handleFile(files[0]);
-    });
-
-    fileInput.addEventListener("change", (e) => {
-        if (e.target.files.length) handleFile(e.target.files[0]);
-    });
-
-    function handleFile(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: "array" });
-
-                // Read first sheet
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert to JSON
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                renderTable(jsonData);
-            } catch (err) {
-                console.error("Excel Read Error:", err);
-                alert("파일을 읽는 중 오류가 발생했습니다.\n" + err.message);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    function findValue(row, possibleKeys) {
-        const rowKeys = Object.keys(row);
-        // 1. Exact match attempt
-        for (const key of possibleKeys) {
-            if (row[key] !== undefined) return row[key];
+        // 2. Drop Zone Events
+        if(dropZone) {
+            dropZone.addEventListener("click", () => fileInput && fileInput.click());
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            dropZone.addEventListener("drop", handleDrop, false);
         }
 
-        // 2. Fuzzy match (ignore whitespace, case, special chars)
-        const normalizedKeys = rowKeys.reduce((acc, k) => {
-            const norm = k
-                .toString()
-                .toLowerCase()
-                .replace(/[\s\-_.]/g, "");
-            acc[norm] = k;
-            return acc;
-        }, {});
+        if(fileInput) fileInput.addEventListener("change", handleFileSelect);
+        if(cancelBtn) cancelBtn.addEventListener("click", handleCancel);
+        if(resetBtn) resetBtn.addEventListener("click", handleReset);
+        if(uploadBtn) uploadBtn.addEventListener("click", handleUpload);
 
-        for (const key of possibleKeys) {
-            const normSearch = key.toLowerCase().replace(/[\s\-_.]/g, "");
-            if (normalizedKeys[normSearch]) {
-                return row[normalizedKeys[normSearch]];
-            }
+        
+        // --- Functions defined inside to capture closure variables (elements) ---
 
-            // 3. Partial inclusion check (e.g. 'User Email' matches 'email')
-            const partialMatch = Object.keys(normalizedKeys).find((nk) =>
-                nk.includes(normSearch),
-            );
-            if (partialMatch) return row[normalizedKeys[partialMatch]];
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
         }
-        return null;
-    }
 
-    function renderTable(data) {
-        console.log("Raw Excel Data:", data); // Debug log
+        function highlight(e) {
+            preventDefaults(e); // Ensure default is prevented
+            dropZone.classList.add("drag-over");
+        }
 
-        // Get default society selection
-        const selectedSociety = document.querySelector(
-            'input[name="society"]:checked',
-        ).value;
+        function unhighlight(e) {
+            preventDefaults(e);
+            dropZone.classList.remove("drag-over");
+        }
 
-        const processedData = data.map((row) => {
-            const name = (
-                findValue(row, [
-                    "이름",
-                    "name",
-                    "성명",
-                    "membername",
-                    "user",
-                ]) || "-"
-            )
-                .toString()
-                .trim();
-            const email = (
-                findValue(row, [
-                    "이메일",
-                    "email",
-                    "e-mail",
-                    "mail",
-                    "전자우편",
-                    "계정",
-                ]) || "-"
-            )
-                .toString()
-                .trim();
-            const affiliation = (
-                findValue(row, [
-                    "근무기관명",
-                    "근무기관",
-                    "기관",
-                    "소속",
-                    "affiliation",
-                    "organization",
-                    "org",
-                    "company",
-                    "institution",
-                    "hospital",
-                    "workplace",
-                ]) || "-"
-            )
-                .toString()
-                .trim();
+        function handleDrop(e) {
+            unhighlight(e); // Remove highlight
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if(files.length) handleFile(files[0]);
+        }
 
-            const department = (
-                findValue(row, [
-                    "소속 부서",
-                    "부서",
-                    "과",
-                    "department",
-                    "dept",
-                    "part",
-                ]) || "-"
-            )
-                .toString()
-                .trim();
+        function handleFileSelect(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        }
 
-            const classification = (
-                findValue(row, [
-                    "직종",
-                    "구분",
-                    "classification",
-                    "role",
-                    "job",
-                    "position",
-                    "grade",
-                ]) || "-"
-            )
-                .toString()
-                .trim();
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: "array" });
 
-            // Society Parsing Logic
-            let societyRaw =
-                findValue(row, [
-                    "소속학회",
-                    // "구분", -> Removed to avoid conflict with classification
-                    "division",
-                    "society",
-                    "학회",
-                    "type",
-                ]) || "";
-            let society = selectedSociety; // Default to selection
-
-            if (societyRaw) {
-                const normalizedParams = societyRaw
-                    .toString()
-                    .trim()
-                    .replace(/[\s|_]/g, "");
-                if (
-                    [
-                        "대한핵의학회",
-                        "핵의학회",
-                        "nuclear_medicine",
-                        "의사",
-                        "prof",
-                    ].some((k) => normalizedParams.includes(k))
-                ) {
-                    society = "nuclear_medicine";
-                } else if (
-                    [
-                        "대한핵의학기술학회",
-                        "핵의학기술학회",
-                        "기술학회",
-                        "technology",
-                        "tech",
-                    ].some((k) => normalizedParams.includes(k))
-                ) {
-                    society = "technology";
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    renderTable(jsonData);
+                } catch (err) {
+                    console.error("Excel Read Error:", err);
+                    alert("파일을 읽는 중 오류가 발생했습니다.\n" + err.message);
                 }
-            }
-            // If raw exists but didn't match known keys, we keep default (or could fallback to raw if we trusted it, but safer to enforce schema)
-
-            const societyDisplay =
-                society === "nuclear_medicine"
-                    ? "대한핵의학회"
-                    : "대한핵의학기술학회";
-
-            return {
-                name,
-                email,
-                affiliation,
-                department,
-                classification,
-                society,
-                societyDisplay,
             };
-        });
+            reader.readAsArrayBuffer(file);
+        }
 
-        // Store normalized data for consistent upload
-        window.parsedMemberData = processedData;
+        function handleSearch(e) {
+            const keyword = e.target.value.toLowerCase();
+            const filtered = allMembers.filter(
+                (m) =>
+                    (m.real_name && m.real_name.toLowerCase().includes(keyword)) ||
+                    (m.society_email && m.society_email.toLowerCase().includes(keyword)),
+            );
+            renderDbTable(filtered);
+        }
 
-        tableBody.innerHTML = "";
+        async function fetchMembers() {
+            if(refreshDbBtn) {
+                refreshDbBtn.disabled = true;
+                refreshDbBtn.textContent = "로딩 중...";
+            }
 
-        processedData.forEach((row) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                    <td>${row.societyDisplay}</td>
-                    <td>${row.classification}</td>
-                    <td>${row.name}</td>
-                    <td>${row.email}</td>
-                    <td>${row.affiliation}</td>
-                    <td>${row.department}</td>
+            const { data, error } = await supabase
+                .from("allowed_members")
+                .select("*")
+                .order("created_at", { ascending: false });
+
+            if (error) {
+                console.error(error);
+                alert("DB 목록을 불러오지 못했습니다: " + error.message);
+                if(dbTableBody) dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패</td></tr>`;
+            } else {
+                allMembers = data || [];
+                renderDbTable(allMembers);
+            }
+
+            if(refreshDbBtn) {
+                refreshDbBtn.disabled = false;
+                refreshDbBtn.textContent = "🔄 새로고침";
+            }
+        }
+
+        function renderDbTable(list) {
+            if(!dbCountSpan || !dbTableBody) return;
+            
+            dbCountSpan.textContent = list.length;
+            dbTableBody.innerHTML = "";
+
+            if (list.length === 0) {
+                dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">등록된 회원이 없습니다.</td></tr>`;
+                return;
+            }
+
+            list.slice(0, 100).forEach((row) => {
+                const tr = document.createElement("tr");
+                const societyName =
+                    row.society === "nuclear_medicine"
+                        ? "대한핵의학회"
+                        : row.society === "technology"
+                        ? "대한핵의학기술학회"
+                        : row.society || "-";
+                tr.innerHTML = `
+                    <td>${societyName}</td>
+                    <td>${row.classification || "-"}</td>
+                    <td>${row.real_name || "-"}</td>
+                    <td>${row.society_email || "-"}</td>
+                    <td>${row.affiliation || "-"}</td>
+                    <td>${row.department || "-"}</td>
                 `;
-            tableBody.appendChild(tr);
-        });
+                dbTableBody.appendChild(tr);
+            });
 
-        rowCountSpan.textContent = data.length;
-        previewSection.style.display = "block";
-        dropZone.style.display = "none";
-        // Hide society selector during preview to avoid confusion? Or keep it?
-        // Let's keep it but maybe disable it implies it was only for initial defaults.
-        // For now, simple is best.
-    }
+            if (list.length > 100) {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td colspan="6" style="text-align:center; color:#888;">...외 ${list.length - 100}명 (검색하여 확인하세요)</td>`;
+                dbTableBody.appendChild(tr);
+            }
+        }
 
-    // Cancel
-    document.getElementById("cancelBtn").addEventListener("click", () => {
-        previewSection.style.display = "none";
-        dropZone.style.display = "flex";
-        fileInput.value = "";
-        tableBody.innerHTML = "";
-    });
+        function renderTable(data) {
+            console.log("Raw Excel Data:", data);
 
-    // Reset DB
-    const resetBtn = document.getElementById("resetBtn");
-    if (resetBtn) {
-        resetBtn.addEventListener("click", async () => {
-            if (
-                confirm(
-                    "정말로 모든 명단 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.",
-                )
-            ) {
-                const { error } = await supabase
-                    .from("allowed_members")
-                    .delete()
-                    .neq("society_email", "");
+            // Get default society selection
+            const selectedSocietyEl = document.querySelector('input[name="society"]:checked');
+            const selectedSociety = selectedSocietyEl ? selectedSocietyEl.value : "nuclear_medicine";
+
+            const processedData = data.map((row) => {
+                 // Reuse existing findValue logic
+                 const name = (findValue(row, ["이름", "name", "성명", "membername", "user"]) || "-").toString().trim();
+                 const email = (findValue(row, ["이메일", "email", "e-mail", "mail", "전자우편", "계정"]) || "-").toString().trim();
+                 const affiliation = (findValue(row, ["근무기관명", "근무기관", "기관", "소속", "affiliation", "organization", "org", "company", "institution", "hospital", "workplace"]) || "-").toString().trim();
+                 const department = (findValue(row, ["소속 부서", "부서", "과", "department", "dept", "part"]) || "-").toString().trim();
+                 const classification = (findValue(row, ["직종", "구분", "classification", "role", "job", "position", "grade"]) || "-").toString().trim();
+                 
+                 let societyRaw = findValue(row, ["소속학회", "division", "society", "학회", "type"]) || "";
+                 let society = selectedSociety;
+
+                 if (societyRaw) {
+                    const normalizedParams = societyRaw.toString().trim().replace(/[\s|_]/g, "");
+                    if (["대한핵의학회", "핵의학회", "nuclear_medicine", "의사", "prof"].some((k) => normalizedParams.includes(k))) {
+                        society = "nuclear_medicine";
+                    } else if (["대한핵의학기술학회", "핵의학기술학회", "기술학회", "technology", "tech"].some((k) => normalizedParams.includes(k))) {
+                        society = "technology";
+                    }
+                }
+                
+                const societyDisplay = society === "nuclear_medicine" ? "대한핵의학회" : "대한핵의학기술학회";
+                return { name, email, affiliation, department, classification, society, societyDisplay };
+            });
+
+            parsedMemberData = processedData; // Update closure variable
+
+            if(tableBody) {
+                tableBody.innerHTML = "";
+                processedData.forEach((row) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${row.societyDisplay}</td>
+                        <td>${row.classification}</td>
+                        <td>${row.name}</td>
+                        <td>${row.email}</td>
+                        <td>${row.affiliation}</td>
+                        <td>${row.department}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            if(rowCountSpan) rowCountSpan.textContent = data.length;
+            if(previewSection) previewSection.style.display = "block";
+            if(dropZone) dropZone.style.display = "none";
+        }
+
+        function handleCancel() {
+             if(previewSection) previewSection.style.display = "none";
+             if(dropZone) dropZone.style.display = "flex";
+             if(fileInput) fileInput.value = "";
+             if(tableBody) tableBody.innerHTML = "";
+             parsedMemberData = [];
+        }
+
+        async function handleReset() {
+             if (confirm("정말로 모든 명단 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
+                const { error } = await supabase.from("allowed_members").delete().neq("society_email", "");
                 if (error) {
                     alert("삭제 실패: " + error.message);
                 } else {
                     alert("모든 데이터가 초기화되었습니다.");
-                    window.location.reload();
+                    fetchMembers(); // Reload instead of refresh to keep SPA feel
                 }
             }
-        });
-    }
-
-    // Upload (Real)
-    document.getElementById("uploadBtn").addEventListener("click", async () => {
-        if (!window.parsedMemberData || window.parsedMemberData.length === 0) {
-            alert("등록할 데이터가 없습니다.");
-            return;
         }
 
-        const dataToUpload = window.parsedMemberData
-            .map((row) => ({
-                real_name: row.name !== "-" ? row.name : null,
-                society_email: row.email !== "-" ? row.email : null,
-                affiliation: row.affiliation !== "-" ? row.affiliation : null,
-                department: row.department !== "-" ? row.department : null,
-                classification:
-                    row.classification !== "-" ? row.classification : null,
-                society: row.society,
-            }))
-            .filter((r) => r.society_email && r.society_email.includes("@"));
+        async function handleUpload() {
+            if (!parsedMemberData || parsedMemberData.length === 0) {
+                alert("등록할 데이터가 없습니다.");
+                return;
+            }
 
-        if (dataToUpload.length === 0) {
-            alert("유효한 이메일이 포함된 데이터가 없습니다.");
-            return;
-        }
+            const dataToUpload = parsedMemberData
+                .map((row) => ({
+                    real_name: row.name !== "-" ? row.name : null,
+                    society_email: row.email !== "-" ? row.email : null,
+                    affiliation: row.affiliation !== "-" ? row.affiliation : null,
+                    department: row.department !== "-" ? row.department : null,
+                    classification: row.classification !== "-" ? row.classification : null,
+                    society: row.society,
+                }))
+                .filter((r) => r.society_email && r.society_email.includes("@"));
 
-        // Deduplicate Logic: Keep the last occurrence for each email
-        const uniqueData = Array.from(
-            dataToUpload
-                .reduce(
-                    (map, item) => map.set(item.society_email, item),
-                    new Map(),
-                )
-                .values(),
-        );
+            if (dataToUpload.length === 0) {
+                alert("유효한 이메일이 포함된 데이터가 없습니다.");
+                return;
+            }
 
-        const confirmUpload = confirm(
-            `${uniqueData.length}명의 회원을 DB에 등록하시겠습니까?\n(중복된 이메일은 업데이트됩니다)`,
-        );
+            const uniqueData = Array.from(
+                dataToUpload.reduce((map, item) => map.set(item.society_email, item), new Map()).values(),
+            );
 
-        if (confirmUpload) {
-            const { data, error } = await supabase
-                .from("allowed_members")
-                .upsert(uniqueData, { onConflict: "society_email" });
+            if (confirm(`${uniqueData.length}명의 회원을 DB에 등록하시겠습니까?\n(중복된 이메일은 업데이트됩니다)`)) {
+                const { data, error } = await supabase
+                    .from("allowed_members")
+                    .upsert(uniqueData, { onConflict: "society_email" });
 
-            if (error) {
-                console.error(error);
-                alert("업로드 실패:\n" + error.message);
-            } else {
-                alert("✅ 성공적으로 등록되었습니다!");
-                window.location.reload();
+                if (error) {
+                    console.error(error);
+                    alert("업로드 실패:\n" + error.message);
+                } else {
+                    alert("✅ 성공적으로 등록되었습니다!");
+                    // Clean up and refresh
+                    handleCancel();
+                    fetchMembers();
+                }
             }
         }
-    });
+
+        // Helper function (same as before)
+        function findValue(row, possibleKeys) {
+            const rowKeys = Object.keys(row);
+            for (const key of possibleKeys) {
+                if (row[key] !== undefined) return row[key];
+            }
+            const normalizedKeys = rowKeys.reduce((acc, k) => {
+                const norm = k.toString().toLowerCase().replace(/[\s\-_.]/g, "");
+                acc[norm] = k;
+                return acc;
+            }, {});
+            for (const key of possibleKeys) {
+                const normSearch = key.toLowerCase().replace(/[\s\-_.]/g, "");
+                if (normalizedKeys[normSearch]) return row[normalizedKeys[normSearch]];
+                const partialMatch = Object.keys(normalizedKeys).find((nk) => nk.includes(normSearch));
+                if (partialMatch) return row[normalizedKeys[partialMatch]];
+            }
+            return null;
+        }
+
+    }); // End of astro:page-load
 </script>
 
 <style>
