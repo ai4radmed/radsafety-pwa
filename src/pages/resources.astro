@@ -1093,8 +1093,12 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                         if (dbError) throw dbError;
                         alert("수정되었습니다.");
                     } else {
-                        // payload.registrant_email = userProfile.get()?.email; // Removed
-                        payload.user_id = session.user.id; // Added user_id from session
+                        // Get current session to extract user_id
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) {
+                            throw new Error("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+                        }
+                        payload.user_id = session.user.id;
                         const { error: dbError } = await supabase
                             .from("archives")
                             .insert(payload);
