@@ -25,7 +25,7 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `login_email` | `text` | 로그인 이메일 (auth.users.email 복사본) |
 | `created_at` | `timestamp` | 프로필 생성 일시 (앱 가입일) |
 | `is_admin` | `boolean` | 관리자 여부 |
-| `verification_status` | `text` | 인증 상태 (`none`:미인증, `society_list`:명부인증, `admin`:앱관리자승인) |
+| `verification_status` | `text` | 인증 상태 (`none`:미인증, `list`:명부인증, `admin`:앱관리자승인) |
 | `verification_date` | `timestamp` | 인증 (요청/완료) 일시 |
 | `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
 | `classification` | `text` | 직종 구분 (의사, 방사선사 등) |
@@ -37,8 +37,6 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `is_safety_manager` | `boolean` | 방사선안전관리자 여부 |
 | `safety_manager_start_year` | `text` | 업무 시작년도 |
 | `safety_manager_end_year` | `text` | 업무 종료년도 |
-| `is_safety_manager_deputy` | `boolean` | 대리자 여부 |
-| `is_safety_manager_practical` | `boolean` | 실무 담당자 여부 |
 
 ### 2. `findings`
 지적 및 권고 사례 데이터를 저장합니다.
@@ -59,20 +57,20 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 ### 3. `archives`
 자료실(Resources)의 게시물 및 파일 정보를 저장합니다.
 
-| 필드명 | 타입 | 설명 |
-| :--- | :--- | :--- |
-| `id` | `uuid` (PK) | 고유 식별자 |
-| `title` | `text` | 자료 제목 |
-| `category` | `text` | 분류 (예: 작성지침, 가이드북) |
-| `file_url` | `text` | Supabase Storage 파일 경로 |
-| `file_name` | `text` | 원본 파일명 |
-| `author` | `text` | 표시용 작성자명 |
-| `registrant_email` | `text` | 등록자 이메일 |
-| `view_count` | `integer` | 조회수 |
-| `content_html` | `text` | HTML/Markdown 미리보기 내용 |
-| `created_at` | `timestamp` | 생성 일시 |
-| `updated_at` | `timestamp` | 최종 수정 일시 |
+| 필드명 | 타입 | 설명 | 기본값 |
+| :--- | :--- | :--- | :--- |
+| `id` | `uuid` (PK) | 고유 식별자 | `gen_random_uuid()` |
+| `title` | `text` | 자료 제목 | |
+| `category` | `text` | 분류 (작성지침, 가이드북 등) | |
+| `file_url` | `text` | Supabase Storage 파일 경로 | |
+| `file_name` | `text` | 원본 파일명 | |
+| `author` | `text` | 표시용 작성자명 (보조/레거시) | |
+| `user_id` | `uuid` (FK) | 등록자 ID (`profiles.id` 참조) | `auth.uid()` |
+| `view_count` | `integer` | 조회수 | 0 |
+| `content_html` | `text` | HTML/Markdown 내용 | |
+| `created_at` | `timestamp` | 생성 일시 | `now()` |
 
+> **Note**: `registrant_email` 필드는 제거되었으며, `user_id`를 통해 `profiles` 테이블의 정보(`real_name`, `login_email`)를 참조합니다.
 ### 4. `allowed_members`
 회원 가입 승인을 위한 허용 목록(Whitelist)입니다.
 

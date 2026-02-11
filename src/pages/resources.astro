@@ -656,7 +656,8 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         // Check Permissions
         const canUpload =
             currentUser &&
-            (currentUser.is_admin === true || currentUser.is_verified === true);
+            (currentUser.is_admin === true || 
+             ['list', 'admin'].includes(currentUser.verification_status));
 
         if (canUpload) {
             const btn = document.getElementById("openModalBtn");
@@ -690,7 +691,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
 
         const { data, error } = await supabase
             .from("archives")
-            .select("*")
+            .select("*, profiles!inner(real_name, login_email)") // Join with profiles
             .order("created_at", { ascending: false });
 
         if (error) {
@@ -728,7 +729,12 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
             <div class="resource-card" data-id="${item.id}">
                 <div class="col-cat"><span class="cat-badge">${item.category}</span></div>
                 <div class="col-title">${item.title}</div>
-                <div class="col-date">${new Date(item.created_at).toLocaleDateString()}</div>
+                <!-- Author & Date -->
+                <div class="col-date">
+                    ${item.author || (item.profiles ? (item.profiles.real_name || item.profiles.nickname) : '관리자')}
+                    <span style="margin:0 4px; color:var(--text-muted);">·</span>
+                    ${new Date(item.created_at).toLocaleDateString()}
+                </div>
                 <div class="col-menu">
                     <button class="menu-btn" data-id="${item.id}" onclick="event.stopPropagation();">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
@@ -820,7 +826,9 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         document.getElementById("editId").value = item.id;
         document.getElementById("writeTitle").value = item.title;
         document.getElementById("writeCategory").value = item.category;
-        document.getElementById("writeAuthor").value = item.author;
+        // Author Priority: item.author > profile.real_name > profile.nickname > '관리자'
+        const authorName = item.author || (item.profiles ? (item.profiles.real_name || item.profiles.nickname) : "관리자");
+        document.getElementById("writeAuthor").value = authorName;
         document.getElementById("currentFileDisplay").textContent =
             item.file_name ? `현재 파일: ${item.file_name}` : "첨부 파일 없음";
 
@@ -899,6 +907,12 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         }
 
         document.getElementById("viewerModal").classList.add("active");
+
+        // Increment View Count (Background)
+        // Fire and forget - don't await to avoid UI delay
+        supabase.rpc("increment_archive_view_count", {
+            p_archive_id: id,
+        });
     }
 
     function setupEventListeners() {
@@ -1079,7 +1093,8 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                         if (dbError) throw dbError;
                         alert("수정되었습니다.");
                     } else {
-                        payload.registrant_email = userProfile.get()?.email;
+                        // payload.registrant_email = userProfile.get()?.email; // Removed
+                        payload.user_id = session.user.id; // Added user_id from session
                         const { error: dbError } = await supabase
                             .from("archives")
                             .insert(payload);

@@ -42,7 +42,7 @@ CREATE TABLE public.profiles (
     is_admin boolean DEFAULT false, -- Admin status
     
     -- 2. Verification Info
-    verification_status text DEFAULT 'none'::text, -- 'none', 'society_list', 'admin'
+    verification_status text DEFAULT 'none'::text, -- 'none', 'list', 'admin'
     verification_date timestamp with time zone,
     
     society text, -- 'nuclear_medicine', 'technology', etc.
@@ -56,9 +56,7 @@ CREATE TABLE public.profiles (
     license_type text, -- Single selection
     is_safety_manager boolean DEFAULT false,
     safety_manager_start_year text,
-    safety_manager_end_year text,
-    is_safety_manager_deputy boolean DEFAULT false,
-    is_safety_manager_practical boolean DEFAULT false
+    safety_manager_end_year text
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -164,12 +162,11 @@ DROP TABLE IF EXISTS public.archives CASCADE;
 CREATE TABLE public.archives (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
     
     -- Authorship (Linked to User)
     user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     author text,
-    registrant_email text,
+    -- registrant_email removed
     
     -- Content
     title text NOT NULL,
@@ -184,13 +181,57 @@ CREATE TABLE public.archives (
 
 ALTER TABLE public.archives ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Enable read for authenticated users" ON public.archives
-    FOR SELECT TO authenticated USING (true);
+-- 1. 누구나 조회 가능
+CREATE POLICY "Public archives are viewable by everyone" ON public.archives
+    FOR SELECT USING (true);
 
-CREATE POLICY "Admins can insert/update/delete" ON public.archives
-    FOR ALL USING (
-        (auth.jwt()->>'is_admin')::boolean = true
+-- 2. 인증된 사용자(관리자 또는 검증된 사용자)만 등록 가능
+CREATE POLICY "Authenticated users can insert archives" ON public.archives
+    FOR INSERT WITH CHECK (
+        auth.role() = 'authenticated' AND
+        (
+            EXISTS (
+                SELECT 1 FROM public.profiles
+                WHERE id = auth.uid() AND (
+                    is_admin = true OR 
+                    verification_status IN ('list', 'admin')
+                )
+            )
+        )
     );
+
+-- 3. 본인(user_id 일치) 또는 관리자만 수정 가능
+CREATE POLICY "Users can update own archives" ON public.archives
+    FOR UPDATE USING (
+        auth.uid() = user_id OR
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
+
+-- 4. 본인(user_id 일치) 또는 관리자만 삭제 가능
+CREATE POLICY "Users can delete own archives" ON public.archives
+    FOR DELETE USING (
+        auth.uid() = user_id OR
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
+
+-- Function to increment view_count (Security Definer to bypass RLS)
+CREATE OR REPLACE FUNCTION public.increment_archive_view_count(p_archive_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    UPDATE public.archives
+    SET view_count = view_count + 1
+    WHERE id = p_archive_id;
+END;
+$$;
 
 COMMENT ON TABLE public.archives IS '자료실 (Resources)';
 
@@ -310,3 +351,12 @@ WHERE NOT EXISTS (
 );
 
 SELECT 'All tables have been successfully recreated and profiles synced!' as status;
+
+-- ==============================================================================
+-- SEED DATA (Optional)
+-- ==============================================================================
+INSERT INTO public.allowed_members (society_email, society, classification, real_name, affiliation, department)
+VALUES 
+('test_doctor@example.com', 'nuclear_medicine', '전공의', '김철수', '대한대병원', '핵의학과'),
+('test_tech@example.com', 'technology', '방사선사', '이영희', '한국병원', '영상의학과')
+ON CONFLICT (society_email) DO NOTHING;

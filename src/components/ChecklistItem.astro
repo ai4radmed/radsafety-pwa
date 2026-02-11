@@ -595,6 +595,11 @@ import Icon from "./Icon.astro";
                         if (!response.ok) throw new Error("API Error");
                         const data = await response.json();
 
+                        // Increment View Count (Background)
+                        supabase.rpc("increment_archive_view_count", {
+                            p_archive_id: resourceId,
+                        });
+
                         // Call global viewer function (defined below)
                         window.openSmartViewer(data);
                     } catch (err) {
@@ -621,7 +626,7 @@ import Icon from "./Icon.astro";
                 <div class="smart-viewer-content">
                     <div class="smart-viewer-header">
                         <div style="display:flex; flex-direction:column;">
-                             <span style="font-size:0.8rem; color:var(--text-muted);">${data.category || "자료"}</span>
+                             <span style="font-size:0.8rem; color:var(--text-muted);">${data.category || "자료"} · ${data.display_author || "작성자 미상"}</span>
                              <h3 id="sv-title" style="margin:0; font-size:1.1rem; font-weight:700; color:var(--text-main);"></h3>
                         </div>
                         <button id="sv-close" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:var(--text-muted);">&times;</button>
