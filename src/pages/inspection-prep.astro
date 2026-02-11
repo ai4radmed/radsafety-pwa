@@ -290,7 +290,23 @@ const sortedItems = items.sort((a, b) => a.data.order - b.data.order);
 	<Lightbox />
 
 	<script>
-		// GLOBAL DELEGATION REMOVED TO PREVENT CONFLICT
-		// Original logic restored in ChecklistItem.astro
+		// Reset Button: Uncheck all checkboxes
+		document.addEventListener("astro:page-load", () => {
+			const resetBtn = document.getElementById("resetBtn");
+			if (resetBtn) {
+				resetBtn.addEventListener("click", () => {
+					// Find all checkboxes in the page
+					const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+					allCheckboxes.forEach(checkbox => {
+						if (checkbox.checked) {
+							checkbox.checked = false;
+							// Trigger change event to save state
+							checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+						}
+					});
+					alert("모든 항목이 선택 해제되었습니다.");
+				});
+			}
+		});
 	</script>
 </DashboardLayout>
