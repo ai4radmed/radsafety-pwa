@@ -564,13 +564,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                     id="societyRequestForm"
                     style="display:flex; flex-direction:column; gap:1rem;"
                 >
-                    <input
-                        name="full_name"
-                        type="text"
-                        placeholder="이름 (실명)"
-                        required
-                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                    />
                     <select
                         name="society"
                         required
@@ -580,20 +573,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         <option value="nuclear_medicine">대한핵의학회</option>
                         <option value="technology">대한핵의학기술학회</option>
                     </select>
-                    <input
-                        name="affiliation"
-                        type="text"
-                        placeholder="근무 기관"
-                        required
-                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                    />
-                    <input
-                        name="department"
-                        type="text"
-                        placeholder="부서"
-                        required
-                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                    />
                     <input
                         name="classification"
                         type="text"
@@ -607,6 +586,27 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         placeholder="연락처 이메일"
                         required
                         autocomplete="email"
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="full_name"
+                        type="text"
+                        placeholder="이름 (실명)"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="affiliation"
+                        type="text"
+                        placeholder="근무 기관"
+                        required
+                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                    />
+                    <input
+                        name="department"
+                        type="text"
+                        placeholder="부서"
+                        required
                         style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
                     />
                     <textarea
