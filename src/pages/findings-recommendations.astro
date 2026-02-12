@@ -63,11 +63,11 @@ const AVAILABLE_TAGS = [
             gap: 1rem;
         }
         .page-title {
-            font-size: 1.5rem;
+            font-size: 1rem;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
         }
 
         .controls-area {
@@ -141,14 +141,17 @@ const AVAILABLE_TAGS = [
             background: var(--accent);
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.85rem;
+            width: fit-content;
+            line-height: normal;
             transition: opacity 0.2s;
         }
         .action-btn:hover {
@@ -241,8 +244,23 @@ const AVAILABLE_TAGS = [
             border-radius: 4px;
             color: var(--text-main);
         }
-        .checkbox-item:hover {
+        .checkbox-item hover {
             background: var(--bg-hover);
+        }
+        .btn-apply-filter {
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-apply-filter:hover {
+            opacity: 0.9;
         }
         .checkbox-item input {
             cursor: pointer;
@@ -750,6 +768,7 @@ const AVAILABLE_TAGS = [
             border-radius: 8px;
             padding: 1rem;
             color: #10b981;
+            white-space: pre-wrap;
         }
         .clause-box {
             background: rgba(239, 68, 68, 0.05);
@@ -757,16 +776,19 @@ const AVAILABLE_TAGS = [
             border-radius: 8px;
             padding: 1rem;
             color: #ef4444;
+            white-space: pre-wrap;
+        }
+        #detailDesc {
+            white-space: pre-wrap;
+            word-break: break-all;
         }
     </style>
 
     <div class="page-header">
         <div class="page-title">
-            <Icon name="alert-circle" size="28" /> 지적권고사례
+            <Icon name="alert-circle" size="18" /> 지적권고사례
         </div>
-        <button id="registerBtn" class="action-btn">
-            <Icon name="plus" size="18" /> 사례 등록
-        </button>
+        <button id="registerBtn" class="action-btn"><Icon name="pencil" size="16" />사례 등록</button>
     </div>
 
     <!-- Search Bar -->
@@ -799,6 +821,7 @@ const AVAILABLE_TAGS = [
                         </label>
                     ))
                 }
+                <button id="applyTagFilter" class="btn-apply-filter">필터 적용</button>
             </div>
         </details>
 
@@ -848,11 +871,6 @@ const AVAILABLE_TAGS = [
                         })}
                     >
                         <div class="col-tags">
-                            {item.data.findingType && (
-                                <span class={`finding-type-badge ${item.data.findingType === '지적' ? 'type-finding' : 'type-recommendation'}`}>
-                                    {item.data.findingType}
-                                </span>
-                            )}
                             {tags.map((t) => (
                                 <span class="tag-badge">{t}</span>
                             ))}
@@ -862,21 +880,7 @@ const AVAILABLE_TAGS = [
                         </div>
                         <div class="col-year">{year}</div>
                         <div class="col-action">
-                             <div class="col-menu">
-                                <button class="menu-btn" aria-label="메뉴 열기">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <button class="dropdown-item edit-btn">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                        수정
-                                    </button>
-                                    <button class="dropdown-item delete-btn delete">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                        삭제
-                                    </button>
-                                </div>
-                             </div>
+                             {/* Static items are read-only */}
                         </div>
                     </div>
                 );
@@ -908,7 +912,11 @@ const AVAILABLE_TAGS = [
                         <label class="form-label">구분</label>
                         <div class="radio-group">
                             <label class="radio-label">
-                                <input type="radio" name="findingType" value="지적" checked />
+                                <input type="radio" name="findingType" value="없음" checked />
+                                없음
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="findingType" value="지적" />
                                 지적
                             </label>
                             <label class="radio-label">
@@ -937,7 +945,7 @@ const AVAILABLE_TAGS = [
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">년도</label>
+                        <label class="form-label">년도 (선택)</label>
                         <input
                             type="number"
                             name="year"
@@ -945,7 +953,6 @@ const AVAILABLE_TAGS = [
                             placeholder="예: 2024"
                             min="2000"
                             max="2100"
-                            required
                         />
                     </div>
                     <div class="form-group">
@@ -977,7 +984,7 @@ const AVAILABLE_TAGS = [
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel">취소</button>
-                <button class="btn-submit" id="submitReg">등록하기</button>
+                <button class="btn-submit" id="submitReg" type="button">등록하기</button>
             </div>
         </div>
     </div>
@@ -1030,11 +1037,6 @@ const AVAILABLE_TAGS = [
         document.addEventListener("astro:page-load", () => {
             initApp();
         });
-
-        // Fallback for first load
-        if (document.readyState !== "loading") {
-            initApp();
-        }
 
         function initApp() {
             const grid = document.getElementById("findingsGrid");
@@ -1152,6 +1154,12 @@ const AVAILABLE_TAGS = [
                 applyFilter();
             });
 
+            // Close dropdown on Apply button
+            const applyBtn = document.getElementById("applyTagFilter");
+            applyBtn.addEventListener("click", () => {
+                dropdownDetails.removeAttribute("open");
+            });
+
             // Search Event
             searchInput.addEventListener("input", () => {
                 applyFilter();
@@ -1214,9 +1222,11 @@ const AVAILABLE_TAGS = [
                         
                         if (currentSort.field === 'year') {
                              // Year is number-like string
-                             return currentSort.order === 'asc' 
-                                ? parseInt(valA) - parseInt(valB) 
-                                : parseInt(valB) - parseInt(valA);
+                         const numA = parseInt(valA) || 0;
+                         const numB = parseInt(valB) || 0;
+                         return currentSort.order === 'asc' 
+                            ? numA - numB 
+                            : numB - numA;
                         } else {
                              // Title string
                              return currentSort.order === 'asc'
@@ -1331,9 +1341,8 @@ const AVAILABLE_TAGS = [
                             card.dataset.search = `${newItem.title} ${newItem.description} ${newItem.violationClause||""} ${newItem.solution||""}`.toLowerCase();
                             card.dataset.content = JSON.stringify(newItem);
                             
-                            const findingTypeBadge = newItem.findingType ? `<span class="finding-type-badge ${newItem.findingType === '지적' ? 'type-finding' : 'type-recommendation'}">${newItem.findingType}</span>` : '';
                             const tagsHtml = newItem.tags.map(t => `<span class="tag-badge">${t}</span>`).join("");
-                            card.querySelector('.col-tags').innerHTML = findingTypeBadge + tagsHtml;
+                            card.querySelector('.col-tags').innerHTML = tagsHtml;
                             card.querySelector('.col-title').textContent = newItem.title;
                             card.querySelector('.col-title').title = newItem.description;
                             card.querySelector('.col-year').textContent = newItem.year;
@@ -1395,7 +1404,7 @@ const AVAILABLE_TAGS = [
                          regForm.querySelector('[name="year"]').value = content.year;
                          regForm.querySelector('[name="description"]').value = content.description;
                          
-                         const clauseInput = regForm.querySelector('[name="clause"]');
+                         const clauseInput = regForm.querySelector('[name="violationClause"]');
                          if(clauseInput) clauseInput.value = content.violationClause || "";
                          
                          const solInput = regForm.querySelector('[name="solution"]');
@@ -1532,32 +1541,42 @@ const AVAILABLE_TAGS = [
         function createCardElement(item) {
             const div = document.createElement("div");
             div.className = "finding-item";
-            div.dataset.tags = JSON.stringify(item.tags);
+            const tags = item.tags || [];
+            div.dataset.tags = JSON.stringify(tags);
             div.dataset.id = item.id;
             
             // Search & Sort Data
-            const searchText = `${item.title} ${item.description} ${item.violationClause || ""} ${item.solution || ""}`.toLowerCase();
+            const description = item.description || "";
+            const title = item.title || "제목 없음";
+            const violationClause = item.violationClause || "";
+            const solution = item.solution || "";
+            const year = item.year || "-";
+
+            const searchText = `${title} ${description} ${violationClause} ${solution}`.toLowerCase();
             div.dataset.search = searchText;
-            div.dataset.title = item.title;
-            div.dataset.year = item.year;
+            div.dataset.title = title;
+            div.dataset.year = year;
 
-            div.dataset.content = JSON.stringify(item);
+            div.dataset.content = JSON.stringify({
+                ...item,
+                tags,
+                title,
+                description,
+                year
+            });
 
-            const findingTypeBadge = item.findingType 
-                ? `<span class="finding-type-badge ${item.findingType === '지적' ? 'type-finding' : 'type-recommendation'}">${item.findingType}</span>` 
-                : '';
-            const tagsHtml = item.tags
+            const tagsHtml = tags
                 .map((t) => `<span class="tag-badge">${t}</span>`)
                 .join("");
 
             div.innerHTML = `
                 <div class="col-tags">
-                     ${findingTypeBadge}${tagsHtml}
+                     ${tagsHtml}
                 </div>
-                <div class="col-title" title="${item.description.replace(/"/g, "&quot;")}">
-                    ${item.title}
+                <div class="col-title" title="${description.replace(/"/g, "&quot;")}">
+                    ${title}
                 </div>
-                <div class="col-year">${item.year}</div>
+                <div class="col-year">${year}</div>
                 <div class="col-action">
                     <div class="col-menu">
                         <button class="menu-btn" aria-label="메뉴 열기">
