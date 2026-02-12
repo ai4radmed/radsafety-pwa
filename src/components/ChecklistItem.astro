@@ -613,6 +613,16 @@ import Icon from "./Icon.astro";
                     }
                 });
             });
+
+            // 6. Make all links in content open in new tab
+            const contentLinks = item.querySelectorAll(".content a");
+            contentLinks.forEach((link: HTMLAnchorElement) => {
+                // If it's an external link (has http) and doesn't already have a target, set to _blank
+                if (link.href && (link.href.startsWith("http") || link.href.includes("law.go.kr"))) {
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                }
+            });
         });
     }
 
