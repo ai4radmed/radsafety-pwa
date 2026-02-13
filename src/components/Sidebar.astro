@@ -1,6 +1,5 @@
 ---
 import { SITE_TITLE } from "../consts";
-import HeaderLink from "./HeaderLink.astro";
 import Icon from "./Icon.astro";
 
 // Sidebar Link Component (Local helper or separate file)
@@ -20,6 +19,11 @@ const isActive = (href) => {
         const glossaryBtn = document.getElementById("sidebarGlossaryBtn");
         glossaryBtn?.addEventListener("click", () => {
             document.dispatchEvent(new CustomEvent("open-glossary"));
+        });
+
+        const feedbackBtn = document.getElementById("sidebarFeedbackBtn");
+        feedbackBtn?.addEventListener("click", () => {
+            alert("의견보내기는 현재 개발 중입니다.\nkimbi.kirams@gmail.com으로 연락 부탁드립니다.");
         });
 
         // Auth State Handling
@@ -100,13 +104,22 @@ const isActive = (href) => {
         </a>
         <button
             type="button"
+            id="sidebarFeedbackBtn"
+            class="nav-btn"
+            aria-label="Feedback"
+        >
+            <span class="icon"><Icon name="mail" size="18" /></span>
+            <span class="link-text">의견보내기</span>
+        </button>
+        <button
+            type="button"
             id="sidebarGlossaryBtn"
             class="nav-btn"
             aria-label="Glossary"
         >
             <span class="icon"><Icon name="search" size="18" /></span>
             <span class="link-text">용어검색</span>
-        </button>
+        </button></invoke>
         <a
             href="/guide"
             class={pathname.startsWith("/guide") ? "active" : ""}

@@ -1040,14 +1040,23 @@ const AVAILABLE_TAGS = [
 
         function initApp() {
             const grid = document.getElementById("findingsGrid");
-            const searchInput = document.getElementById("findingSearch"); 
+            const searchInput = document.getElementById("findingSearch");
+            const selectAllCheckbox = document.getElementById("selectAllTags");
+            const dropdownDetails = document.getElementById("tagDropdown");
+            const applyBtn = document.getElementById("applyTagFilter");
+
+            // Early return if critical elements are missing
+            if (!grid || !searchInput || !selectAllCheckbox || !dropdownDetails || !applyBtn) {
+                console.warn("Findings page: Required DOM elements not found, skipping initialization");
+                return;
+            }
+
             let cards = Array.from(document.querySelectorAll(".finding-item"));
-            
+
             // Dropdown Elements
             const dropdownBtn = document.getElementById("tagDropdownBtn");
             const dropdownContent = document.getElementById("tagDropdownContent");
             const tagCheckboxes = document.querySelectorAll('input[name="filterTag"]');
-            const selectAllCheckbox = document.getElementById("selectAllTags");
 
             // Sort Elements
             const sortBtns = document.querySelectorAll(".sort-btn");
@@ -1085,15 +1094,14 @@ const AVAILABLE_TAGS = [
             loadSharedItems();
 
             // --- 1. Filter Logic (Dropdown) ---
-            
+
             // Note: Using native <details>, so no manual toggle listener needed for opening.
             // We just need to handle "Close on click outside".
 
-            const dropdownDetails = document.getElementById("tagDropdown");
-
             // Close on click outside
             document.addEventListener("click", (e) => {
-                if (!dropdownDetails.contains(e.target)) {
+                const target = e.target as Node;
+                if (dropdownDetails && target && !dropdownDetails.contains(target)) {
                     dropdownDetails.removeAttribute("open");
                 }
             });
