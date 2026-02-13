@@ -1,0 +1,20 @@
+# Build and output directories
+dist/
+.astro/
+.vercel/
+
+# Dependencies
+node_modules/
+
+# IDE and Environment
+.vscode/
+.env
+.env.*
+.DS_Store
+*.log
+
+# Git
+.git/
+
+# Package locks (optional, but often large and unnecessary for context)
+package-lock.json
