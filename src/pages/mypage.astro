@@ -580,14 +580,41 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         required
                         style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
                     />
-                    <input
-                        name="contact_email"
-                        type="email"
-                        placeholder="연락처 이메일"
-                        required
-                        autocomplete="email"
-                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                    />
+                    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                        <input
+                            name="contact_email"
+                            type="email"
+                            placeholder="연락처 이메일"
+                            required
+                            autocomplete="email"
+                            class="email-input-society"
+                            style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                        />
+                        <div class="email-verify-status-society" style="font-size:0.85rem; color:#6b7280; display:none;"></div>
+                        <div class="email-verify-section-society" style="display:none; gap:0.5rem;">
+                            <button
+                                type="button"
+                                class="send-code-btn-society"
+                                style="padding:0.5rem 1rem; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;"
+                            >인증 코드 발송</button>
+                        </div>
+                        <div class="code-input-section-society" style="display:none; flex-direction:column; gap:0.5rem;">
+                            <div style="display:flex; gap:0.5rem;">
+                                <input
+                                    type="text"
+                                    class="verification-code-society"
+                                    placeholder="6자리 코드 입력"
+                                    maxlength="6"
+                                    style="flex:1; padding:0.5rem; border:1px solid #d1d5db; border-radius:6px; font-family: monospace; letter-spacing: 0.1em;"
+                                />
+                                <button
+                                    type="button"
+                                    class="verify-code-btn-society"
+                                    style="padding:0.5rem 1rem; background:#10b981; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;"
+                                >확인</button>
+                            </div>
+                        </div>
+                    </div>
                     <input
                         name="full_name"
                         type="text"
@@ -669,14 +696,41 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         required
                         style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
                     />
-                    <input
-                        name="contact_email"
-                        type="email"
-                        placeholder="연락처 이메일"
-                        required
-                        autocomplete="email"
-                        style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
-                    />
+                    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                        <input
+                            name="contact_email"
+                            type="email"
+                            placeholder="연락처 이메일"
+                            required
+                            autocomplete="email"
+                            class="email-input-special"
+                            style="padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;"
+                        />
+                        <div class="email-verify-status-special" style="font-size:0.85rem; color:#6b7280; display:none;"></div>
+                        <div class="email-verify-section-special" style="display:none; gap:0.5rem;">
+                            <button
+                                type="button"
+                                class="send-code-btn-special"
+                                style="padding:0.5rem 1rem; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;"
+                            >인증 코드 발송</button>
+                        </div>
+                        <div class="code-input-section-special" style="display:none; flex-direction:column; gap:0.5rem;">
+                            <div style="display:flex; gap:0.5rem;">
+                                <input
+                                    type="text"
+                                    class="verification-code-special"
+                                    placeholder="6자리 코드 입력"
+                                    maxlength="6"
+                                    style="flex:1; padding:0.5rem; border:1px solid #d1d5db; border-radius:6px; font-family: monospace; letter-spacing: 0.1em;"
+                                />
+                                <button
+                                    type="button"
+                                    class="verify-code-btn-special"
+                                    style="padding:0.5rem 1rem; background:#10b981; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;"
+                                >확인</button>
+                            </div>
+                        </div>
+                    </div>
                     <textarea
                         name="reason"
                         rows="2"
@@ -1402,6 +1456,149 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 if (endInput)
                     endInput.value = currentUser.safety_manager_end_year || "";
             }
+
+            // ============================================================
+            // Email Verification Logic (Conditional)
+            // ============================================================
+
+            function setupEmailVerification(formType) {
+                const emailInput = document.querySelector(`.email-input-${formType}`);
+                const statusDiv = document.querySelector(`.email-verify-status-${formType}`);
+                const verifySection = document.querySelector(`.email-verify-section-${formType}`);
+                const codeInputSection = document.querySelector(`.code-input-section-${formType}`);
+                const sendCodeBtn = document.querySelector(`.send-code-btn-${formType}`);
+                const verifyCodeBtn = document.querySelector(`.verify-code-btn-${formType}`);
+                const codeInput = document.querySelector(`.verification-code-${formType}`);
+
+                if (!emailInput) return;
+
+                const currentUser = userProfile.get();
+                const loginEmail = currentUser.login_email || '';
+                let emailVerified = false;
+                let verifiedEmail = '';
+
+                // Check email on input
+                emailInput.addEventListener('input', () => {
+                    const inputEmail = emailInput.value.trim();
+
+                    if (!inputEmail) {
+                        statusDiv.style.display = 'none';
+                        verifySection.style.display = 'none';
+                        codeInputSection.style.display = 'none';
+                        emailVerified = false;
+                        return;
+                    }
+
+                    // Case 1: Same as login email
+                    if (inputEmail === loginEmail) {
+                        statusDiv.textContent = '✓ 이미 검증된 이메일입니다 (로그인 계정)';
+                        statusDiv.style.color = '#10b981';
+                        statusDiv.style.display = 'block';
+                        verifySection.style.display = 'none';
+                        codeInputSection.style.display = 'none';
+                        emailVerified = true;
+                        verifiedEmail = inputEmail;
+                    }
+                    // Case 2: Different email - needs verification
+                    else {
+                        statusDiv.textContent = '⚠️ 이메일 소유권 확인이 필요합니다';
+                        statusDiv.style.color = '#f59e0b';
+                        statusDiv.style.display = 'block';
+                        verifySection.style.display = 'flex';
+                        codeInputSection.style.display = 'none';
+                        emailVerified = false;
+                        verifiedEmail = '';
+                    }
+                });
+
+                // Send verification code
+                sendCodeBtn?.addEventListener('click', async () => {
+                    const email = emailInput.value.trim();
+                    if (!email) {
+                        alert('이메일을 입력하세요.');
+                        return;
+                    }
+
+                    if (email === loginEmail) {
+                        alert('로그인 이메일은 이미 검증되었습니다.');
+                        return;
+                    }
+
+                    sendCodeBtn.textContent = '발송 중...';
+                    sendCodeBtn.disabled = true;
+
+                    try {
+                        const { actions } = await import('astro:actions');
+                        const result = await actions.sendVerificationCode({
+                            email,
+                            userId: currentUser.id
+                        });
+
+                        alert(result.data?.message || '인증 코드가 발송되었습니다.');
+                        verifySection.style.display = 'none';
+                        codeInputSection.style.display = 'flex';
+                        codeInput.focus();
+                    } catch (err) {
+                        alert('코드 발송 실패: ' + (err as any).message);
+                    } finally {
+                        sendCodeBtn.textContent = '인증 코드 발송';
+                        sendCodeBtn.disabled = false;
+                    }
+                });
+
+                // Verify code
+                verifyCodeBtn?.addEventListener('click', async () => {
+                    const code = codeInput.value.trim();
+                    if (!code || code.length !== 6) {
+                        alert('6자리 코드를 입력하세요.');
+                        return;
+                    }
+
+                    verifyCodeBtn.textContent = '확인 중...';
+                    verifyCodeBtn.disabled = true;
+
+                    try {
+                        const { actions } = await import('astro:actions');
+                        const result = await actions.verifyEmailCode({
+                            code,
+                            userId: currentUser.id
+                        });
+
+                        statusDiv.textContent = '✓ 이메일이 검증되었습니다';
+                        statusDiv.style.color = '#10b981';
+                        codeInputSection.style.display = 'none';
+                        emailVerified = true;
+                        verifiedEmail = result.data?.email || emailInput.value;
+                        alert(result.data?.message || '이메일 검증 완료!');
+                    } catch (err) {
+                        alert('검증 실패: ' + (err as any).message);
+                    } finally {
+                        verifyCodeBtn.textContent = '확인';
+                        verifyCodeBtn.disabled = false;
+                    }
+                });
+
+                // Prevent form submission if email not verified
+                const form = emailInput.closest('form');
+                if (form) {
+                    const originalSubmit = form.onsubmit;
+                    form.onsubmit = function(e) {
+                        const inputEmail = emailInput.value.trim();
+                        if (!emailVerified && inputEmail !== loginEmail) {
+                            e.preventDefault();
+                            alert('이메일 검증을 완료해주세요.');
+                            return false;
+                        }
+                        if (originalSubmit) {
+                            return originalSubmit.call(this, e);
+                        }
+                    };
+                }
+            }
+
+            // Setup for both forms
+            setupEmailVerification('society');
+            setupEmailVerification('special');
         });
     </script>
 </DashboardLayout>
