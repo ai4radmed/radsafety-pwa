@@ -530,10 +530,7 @@ import Icon from "../../components/Icon.astro";
 
                 return `
                     <tr data-user-id="${user.id}">
-                        <td>
-                            <div class="user-name">${user.real_name || user.nickname || '이름 없음'}</div>
-                            <div class="user-email">${user.login_email || '-'}</div>
-                        </td>
+                        <td>${user.real_name || user.nickname || '이름 없음'}</td>
                         <td>${user.affiliation || '-'}</td>
                         <td>${user.classification || '-'}</td>
                         <td>${verificationDate}</td>
