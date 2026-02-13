@@ -1474,6 +1474,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
                 const currentUser = userProfile.get();
                 const loginEmail = currentUser.login_email || '';
+
                 let emailVerified = false;
                 let verifiedEmail = '';
 
@@ -1514,6 +1515,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 // Send verification code
                 sendCodeBtn?.addEventListener('click', async () => {
                     const email = emailInput.value.trim();
+
                     if (!email) {
                         alert('이메일을 입력하세요.');
                         return;
