@@ -20,20 +20,19 @@ export async function sendVerificationEmail({
     userName = '사용자',
 }: SendVerificationEmailOptions) {
     try {
-        // 환경 확인 (NODE_ENV 또는 빌드 타입)
-        const isDev = process.env.NODE_ENV === 'development' ||
-                      !process.env.RESEND_API_KEY;
+        // 환경 확인 (API Key 유무로 판단)
+        // Astro에서는 import.meta.env 사용 (process.env는 작동하지 않음)
+        const apiKey = import.meta.env.RESEND_API_KEY;
 
-        // 개발 환경에서는 콘솔에만 출력
-        if (isDev) {
+        // API Key가 없으면 개발 모드 (콘솔만)
+        if (!apiKey) {
             console.log(`[DEV] Verification email to ${to}`);
             console.log(`[DEV] Code: ${code}`);
-            console.log(`[DEV] Preview: http://localhost:4321/email-preview?code=${code}`);
             return { success: true, messageId: 'dev-mode' };
         }
 
         // 프로덕션: 실제 이메일 발송
-        const resend = new Resend(process.env.RESEND_API_KEY);
+        const resend = new Resend(apiKey);
 
         const { data, error } = await resend.emails.send({
             from: '방사선안전관리통합시스템 <noreply@resend.dev>', // Resend 기본 도메인 사용
