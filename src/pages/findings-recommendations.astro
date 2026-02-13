@@ -788,7 +788,7 @@ const AVAILABLE_TAGS = [
         <div class="page-title">
             <Icon name="alert-circle" size="18" /> 지적권고사례
         </div>
-        <button id="registerBtn" class="action-btn"><Icon name="pencil" size="16" />사례 등록</button>
+        <button id="registerBtn" class="action-btn" style="display:none;"><Icon name="pencil" size="16" />사례 등록</button>
     </div>
 
     <!-- Search Bar -->
@@ -1033,12 +1033,24 @@ const AVAILABLE_TAGS = [
 
     <script>
         import { supabase } from "../lib/supabase";
+        import { userProfile } from "../store/user";
 
         document.addEventListener("astro:page-load", () => {
             initApp();
         });
 
         function initApp() {
+            // Permission check for register button
+            const currentUser = userProfile.get();
+            const canUpload =
+                currentUser &&
+                (currentUser.is_admin === "true" ||
+                 ['list', 'admin'].includes(currentUser.verification_status));
+
+            if (canUpload) {
+                const regBtn = document.getElementById("registerBtn");
+                if (regBtn) regBtn.style.display = "flex";
+            }
             const grid = document.getElementById("findingsGrid");
             const searchInput = document.getElementById("findingSearch");
             const selectAllCheckbox = document.getElementById("selectAllTags");
@@ -1163,7 +1175,6 @@ const AVAILABLE_TAGS = [
             });
 
             // Close dropdown on Apply button
-            const applyBtn = document.getElementById("applyTagFilter");
             applyBtn.addEventListener("click", () => {
                 dropdownDetails.removeAttribute("open");
             });
@@ -1552,7 +1563,7 @@ const AVAILABLE_TAGS = [
             const tags = item.tags || [];
             div.dataset.tags = JSON.stringify(tags);
             div.dataset.id = item.id;
-            
+
             // Search & Sort Data
             const description = item.description || "";
             const title = item.title || "제목 없음";
@@ -1577,15 +1588,12 @@ const AVAILABLE_TAGS = [
                 .map((t) => `<span class="tag-badge">${t}</span>`)
                 .join("");
 
-            div.innerHTML = `
-                <div class="col-tags">
-                     ${tagsHtml}
-                </div>
-                <div class="col-title" title="${description.replace(/"/g, "&quot;")}">
-                    ${title}
-                </div>
-                <div class="col-year">${year}</div>
-                <div class="col-action">
+            // Permission check for edit/delete menu
+            const currentUser = userProfile.get();
+            const isAdmin = currentUser && currentUser.is_admin === "true";
+            const canManage = isAdmin || (currentUser && item.user_id === currentUser.id);
+
+            const menuHtml = canManage ? `
                     <div class="col-menu">
                         <button class="menu-btn" aria-label="메뉴 열기">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
@@ -1600,7 +1608,18 @@ const AVAILABLE_TAGS = [
                                 삭제
                             </button>
                         </div>
-                    </div>
+                    </div>` : '';
+
+            div.innerHTML = `
+                <div class="col-tags">
+                     ${tagsHtml}
+                </div>
+                <div class="col-title" title="${description.replace(/"/g, "&quot;")}">
+                    ${title}
+                </div>
+                <div class="col-year">${year}</div>
+                <div class="col-action">
+                    ${menuHtml}
                 </div>
             `;
             return div;

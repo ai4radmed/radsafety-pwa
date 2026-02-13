@@ -656,7 +656,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         // Check Permissions
         const canUpload =
             currentUser &&
-            (currentUser.is_admin === true || 
+            (currentUser.is_admin === "true" ||
              ['list', 'admin'].includes(currentUser.verification_status));
 
         if (canUpload) {
@@ -721,11 +721,13 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         }
 
         const currentUser = userProfile.get();
-        const isAdmin = currentUser && currentUser.is_admin === true;
+        const isAdmin = currentUser && currentUser.is_admin === "true";
 
         listEl.innerHTML = list
             .map(
-                (item) => `
+                (item) => {
+                    const canManage = isAdmin || (currentUser && item.user_id === currentUser.id);
+                    return `
             <div class="resource-card" data-id="${item.id}">
                 <div class="col-cat"><span class="cat-badge">${item.category}</span></div>
                 <div class="col-title">${item.title}</div>
@@ -735,6 +737,7 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                     <span style="margin:0 4px; color:var(--text-muted);">·</span>
                     ${new Date(item.created_at).toLocaleDateString()}
                 </div>
+                ${canManage ? `
                 <div class="col-menu">
                     <button class="menu-btn" data-id="${item.id}" onclick="event.stopPropagation();">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
@@ -744,21 +747,15 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             수정
                         </button>
-                        ${
-                            isAdmin
-                                ? `
                         <button class="dropdown-item delete delete-btn" data-id="${item.id}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                             삭제
                         </button>
-                        `
-                                : ""
-                        }
                     </div>
                 </div>
+                ` : '<div class="col-menu"></div>'}
             </div>
-        `,
-            )
+        `})
             .join("");
 
         // Attach Click - Card
