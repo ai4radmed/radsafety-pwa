@@ -13,6 +13,14 @@
 - Cloudflare는 DNS/CDN만 담당, SSL은 Full (Strict)
 - **프레임워크 선정**: 인터랙티브 비중이 낮으므로 Astro가 가장 적합함
 
+## 개발 규칙
+
+### 데이터베이스 마이그레이션
+- **IMPORTANT**: 모든 DB 스키마 변경은 `sql_query/rebuild_all_tables.sql` 파일에 **통합**하여 관리
+- 별도의 마이그레이션 SQL 파일을 생성하지 말 것
+- 변경 이력은 파일 상단 주석에 버전과 함께 기록
+- 기존 데이터를 보존하는 Safe Migration 방식 사용
+
 ## 검토 사항
 - PWA 오프라인 전략: @vite-pwa/astro 또는 직접 서비스워커 구현
 - Cloudflare 프록시 + Vercel 충돌 주의 (캐시 규칙, _vercel 경로)

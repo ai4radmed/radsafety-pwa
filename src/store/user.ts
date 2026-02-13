@@ -9,7 +9,7 @@ export const userProfile = persistentMap('userProfile', {
     provider: '',
     // 2. Verification Info
     verification_date: '',
-    verification_status: 'none', // 'none' | 'list' | 'admin'
+    verification_status: 'none', // 'none' | 'list' | 'temp_verified' | 'verified'
 
     society: '', // 'nuclear_medicine' | 'technology'
     affiliation: '',

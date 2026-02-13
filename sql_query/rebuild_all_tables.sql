@@ -1,10 +1,11 @@
 -- ==============================================================================
 -- Master Database Schema: Safe Migration Script (데이터 보존)
 -- Description: 기존 데이터를 유지하면서 스키마 변경 적용
--- Version: 2.0 (Email Verification 추가)
+-- Version: 2.1 (인증 상태 세분화)
 -- Usage: Supabase SQL Editor에서 실행
 --
 -- 변경 이력:
+-- - 2026-02-14: 인증 상태 세분화 (temp_verified 추가, admin → verified 마이그레이션)
 -- - 2026-02-14: 이메일 검증 시스템 추가 (email_verification_codes 테이블)
 -- - 기존: rebuild_all_tables.sql.backup 참조
 --
@@ -97,7 +98,39 @@ GRANT ALL ON public.email_verification_codes TO authenticated;
 GRANT ALL ON public.email_verification_codes TO service_role;
 
 -- ============================================================
--- 3. Update existing data (optional)
+-- 3. 인증 상태 세분화 마이그레이션
+-- ============================================================
+-- 목적:
+--   - 기존 'admin' 상태를 'verified'로 변경
+--   - 향후 'temp_verified' 상태로 임시 인증 관리
+--
+-- 인증 상태 정의:
+--   - 'none': 미인증 (기본값)
+--   - 'list': 회원명부 인증 (즉시 인증, 모든 권한)
+--   - 'temp_verified': 임시 인증 (이메일 검증 완료, 관리자 승인 대기, 권한 부여)
+--   - 'verified': 관리자 승인 완료 (최종 인증, 모든 권한)
+-- ============================================================
+
+DO $$
+DECLARE
+    admin_count int;
+BEGIN
+    -- 기존 'admin' 상태를 'verified'로 변경
+    UPDATE public.profiles
+    SET verification_status = 'verified'
+    WHERE verification_status = 'admin';
+
+    GET DIAGNOSTICS admin_count = ROW_COUNT;
+
+    IF admin_count > 0 THEN
+        RAISE NOTICE '✓ Migrated % profiles from admin to verified status', admin_count;
+    ELSE
+        RAISE NOTICE '✓ No admin status profiles found (already migrated or none exist)';
+    END IF;
+END $$;
+
+-- ============================================================
+-- 4. Update existing data (optional)
 -- ============================================================
 
 -- Mark users who logged in with email as verified
@@ -120,7 +153,7 @@ WHERE
     AND verification_method IS NULL;
 
 -- ============================================================
--- 4. Comments for documentation
+-- 5. Comments for documentation
 -- ============================================================
 
 COMMENT ON TABLE public.email_verification_codes IS 'Stores email verification codes (OTP) for society_email validation';
@@ -131,24 +164,40 @@ COMMENT ON COLUMN public.profiles.email_verified IS 'Whether society_email has b
 COMMENT ON COLUMN public.profiles.verification_method IS 'How society_email was verified: login_email, otp, or list';
 
 -- ============================================================
--- 5. Verification Summary
+-- 6. Verification Summary
 -- ============================================================
 
 DO $$
 DECLARE
     total_profiles int;
-    verified_profiles int;
+    email_verified_count int;
     verification_codes_count int;
+    status_none int;
+    status_list int;
+    status_temp int;
+    status_verified int;
 BEGIN
     SELECT COUNT(*) INTO total_profiles FROM public.profiles;
-    SELECT COUNT(*) INTO verified_profiles FROM public.profiles WHERE email_verified = true;
+    SELECT COUNT(*) INTO email_verified_count FROM public.profiles WHERE email_verified = true;
     SELECT COUNT(*) INTO verification_codes_count FROM public.email_verification_codes;
+
+    -- Count by verification_status
+    SELECT COUNT(*) INTO status_none FROM public.profiles WHERE verification_status = 'none';
+    SELECT COUNT(*) INTO status_list FROM public.profiles WHERE verification_status = 'list';
+    SELECT COUNT(*) INTO status_temp FROM public.profiles WHERE verification_status = 'temp_verified';
+    SELECT COUNT(*) INTO status_verified FROM public.profiles WHERE verification_status = 'verified';
 
     RAISE NOTICE '========================================';
     RAISE NOTICE 'Migration completed successfully!';
     RAISE NOTICE '========================================';
     RAISE NOTICE 'Total profiles: %', total_profiles;
-    RAISE NOTICE 'Verified profiles: %', verified_profiles;
+    RAISE NOTICE 'Email verified: %', email_verified_count;
     RAISE NOTICE 'Verification codes: %', verification_codes_count;
+    RAISE NOTICE '----------------------------------------';
+    RAISE NOTICE 'Verification Status Breakdown:';
+    RAISE NOTICE '  - none: %', status_none;
+    RAISE NOTICE '  - list: %', status_list;
+    RAISE NOTICE '  - temp_verified: %', status_temp;
+    RAISE NOTICE '  - verified: %', status_verified;
     RAISE NOTICE '========================================';
 END $$;
