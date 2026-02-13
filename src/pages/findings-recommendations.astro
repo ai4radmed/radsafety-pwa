@@ -1045,7 +1045,7 @@ const AVAILABLE_TAGS = [
             const canUpload =
                 currentUser &&
                 (currentUser.is_admin === "true" ||
-                 ['list', 'admin'].includes(currentUser.verification_status));
+                 ['list', 'temp_verified', 'verified'].includes(currentUser.verification_status));
 
             if (canUpload) {
                 const regBtn = document.getElementById("registerBtn");

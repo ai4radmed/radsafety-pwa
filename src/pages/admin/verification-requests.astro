@@ -328,7 +328,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
 
                 // 1. Update Profile (Ensure profile is updated with verified data)
                 const profileUpdate = {
-                    verification_status: "admin",
+                    verification_status: "verified", // 관리자 승인 완료 -> 'verified' 상태
                     verification_date: new Date().toISOString(),
                     society: req.society,
                     real_name: req.real_name,

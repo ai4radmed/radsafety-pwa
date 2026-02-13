@@ -25,7 +25,7 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `login_email` | `text` | 로그인 이메일 (auth.users.email 복사본) |
 | `created_at` | `timestamp` | 프로필 생성 일시 (앱 가입일) |
 | `is_admin` | `boolean` | 관리자 여부 |
-| `verification_status` | `text` | 인증 상태 (`none`:미인증, `list`:명부인증, `admin`:앱관리자승인) |
+| `verification_status` | `text` | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료) |
 | `verification_date` | `timestamp` | 인증 (요청/완료) 일시 |
 | `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
 | `classification` | `text` | 직종 구분 (의사, 방사선사 등) |

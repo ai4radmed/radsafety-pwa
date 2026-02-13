@@ -654,10 +654,13 @@ const categories = ["작성지침", "작성예시", "가이드북", "발표자�
         const currentUser = userProfile.get();
 
         // Check Permissions
+        // temp_verified: 임시 인증 (이메일 검증 완료, 관리자 승인 대기 중이지만 권한 부여)
+        // list: 회원명부 인증
+        // verified: 관리자 승인 완료
         const canUpload =
             currentUser &&
             (currentUser.is_admin === "true" ||
-             ['list', 'admin'].includes(currentUser.verification_status));
+             ['list', 'temp_verified', 'verified'].includes(currentUser.verification_status));
 
         if (canUpload) {
             const btn = document.getElementById("openModalBtn");

@@ -865,8 +865,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 // Determine Status Text
                 if (vStatus === "list") {
                     vStatusText = "인증됨 (회원명부)";
-                } else if (vStatus === "admin") {
-                    vStatusText = "인증됨 (앱관리자)";
+                } else if (vStatus === "verified") {
+                    vStatusText = "인증됨 (관리자승인)";
+                } else if (vStatus === "temp_verified") {
+                    vStatusText = "임시인증 (승인대기)";
                 } else if (vStatus !== "none") {
                     vStatusText = "인증됨 (" + vStatus + ")";
                 }
@@ -1236,10 +1238,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
                             if (error) throw error;
 
-                            // 2. Profile Update (Immediate Provisional Approval)
+                            // 2. Profile Update (Temporary Verification - Email verified, awaiting admin approval)
                             const updateData = {
                                 verification_date: new Date().toISOString(),
-                                verification_status: "admin",
+                                verification_status: "temp_verified",
                             };
 
                             // Map form fields to profile fields
@@ -1282,7 +1284,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                             });
 
                             alert(
-                                "✅ 일단 자동으로 승인되었습니다. 추후 관리자 검토 결과에 따라 승인이 취소될 수도 있습니다.",
+                                "✅ 이메일 검증이 완료되어 임시 인증되었습니다.\n권한이 부여되었지만, 관리자 승인 시 정식 인증으로 전환됩니다.",
                             );
                             form.reset();
                             document
