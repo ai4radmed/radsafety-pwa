@@ -1,11 +1,12 @@
 ---
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import Icon from "../../components/Icon.astro";
 ---
 
 <DashboardLayout title="회원 인증 관리">
     <style>
         .requests-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         .page-header {
@@ -28,6 +29,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
             gap: 1rem;
             margin-bottom: 2rem;
             border-bottom: 2px solid var(--border-color);
+            overflow-x: auto;
         }
         .status-tab {
             padding: 0.75rem 1.5rem;
@@ -38,6 +40,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
             font-weight: 600;
             color: var(--text-muted);
             transition: all 0.2s;
+            white-space: nowrap;
         }
         .status-tab.active {
             color: var(--accent);
@@ -47,79 +50,223 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
             background: var(--bg-body);
         }
 
-        /* Request Cards */
-        .requests-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        /* Search Bar */
+        .search-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+            max-width: 400px;
         }
-        .request-card {
+        .search-container input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+        .search-container input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            display: flex;
+        }
+
+        /* Table List */
+        .users-table-container {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 1.5rem;
-            transition: transform 0.2s;
+            overflow: hidden;
         }
-        .request-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .request-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 1rem;
+        .users-table thead {
+            background: var(--bg-body);
+            border-bottom: 2px solid var(--border-color);
         }
-        .request-type-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 99px;
-            font-size: 0.8rem;
+        .users-table th {
+            padding: 1rem;
+            text-align: left;
             font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
         }
-        .badge-society {
-            background: #dbeafe;
-            color: #1e40af;
+        .users-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
-        .badge-special {
+        .users-table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        .users-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        .users-table td {
+            padding: 1rem;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+        .user-name {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .user-email {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.35rem 0.85rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .badge-temp {
             background: #fef3c7;
             color: #92400e;
         }
-        .request-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
+        .badge-verified {
+            background: #d1fae5;
+            color: #065f46;
         }
-        .info-item {
-            font-size: 0.9rem;
+        .badge-list {
+            background: #dbeafe;
+            color: #1e40af;
         }
-        .info-label {
+        .badge-none {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 650px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg-card);
+            z-index: 10;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .close-btn {
+            background: none;
+            border: none;
             color: var(--text-muted);
-            font-weight: 600;
-            margin-bottom: 0.25rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
         }
-        .info-value {
+        .close-btn:hover {
+            background: var(--bg-hover);
             color: var(--text-main);
         }
-        .request-reason {
+        .modal-body {
+            padding: 1.5rem;
+        }
+        .info-grid {
+            display: grid;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .info-section {
             background: var(--bg-body);
             padding: 1rem;
             border-radius: 8px;
-            margin-bottom: 1rem;
         }
-        .request-actions {
-            display: flex;
+        .info-section-title {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        .info-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
             gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        .info-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .info-value {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
             justify-content: flex-end;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-card);
         }
         .btn {
-            padding: 0.5rem 1.5rem;
+            padding: 0.75rem 1.5rem;
             border: none;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.95rem;
         }
         .btn-approve {
             background: #10b981;
@@ -135,10 +282,48 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
         .btn-reject:hover {
             background: #dc2626;
         }
+        .btn-revoke {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-revoke:hover {
+            background: #d97706;
+        }
+        .btn-secondary {
+            background: var(--bg-body);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+        }
         .empty-state {
             text-align: center;
             padding: 3rem;
             color: var(--text-muted);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .users-table {
+                font-size: 0.85rem;
+            }
+            .users-table th,
+            .users-table td {
+                padding: 0.75rem 0.5rem;
+            }
+            .user-email {
+                display: none;
+            }
+            .modal-container {
+                max-width: 100%;
+                border-radius: 16px 16px 0 0;
+                max-height: 95vh;
+            }
+            .info-row {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+            }
         }
     </style>
 
@@ -146,7 +331,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
         <div class="page-header">
             <h1 class="page-title">회원 인증 관리</h1>
             <p class="page-subtitle">
-                학회원 및 특별회원 신청을 검토하고 승인/거부할 수 있습니다.
+                학회원 및 특별회원의 인증 상태를 관리합니다.
             </p>
         </div>
 
@@ -166,9 +351,109 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
             </button>
         </div>
 
-        <!-- Requests List -->
-        <div id="requestsList" class="requests-list">
-            <!-- Dynamically populated -->
+        <!-- Search Bar -->
+        <div class="search-container">
+            <span class="search-icon"><Icon name="search" size="18" /></span>
+            <input
+                type="text"
+                id="userSearch"
+                placeholder="이름, 이메일, 소속 검색..."
+                aria-label="사용자 검색"
+            />
+        </div>
+
+        <!-- Users Table -->
+        <div class="users-table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>이름</th>
+                        <th>상태</th>
+                        <th>학회</th>
+                        <th>소속</th>
+                        <th>이메일</th>
+                        <th>인증일</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="6" class="empty-state">로딩 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="userDetailModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalUserName">사용자 상세 정보</h2>
+                <button class="close-btn" id="closeModal">
+                    <Icon name="x" size="24" />
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="info-grid">
+                    <!-- Basic Info -->
+                    <div class="info-section">
+                        <div class="info-section-title">기본 정보</div>
+                        <div class="info-row">
+                            <span class="info-label">이름</span>
+                            <span class="info-value" id="detailName">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">인증 상태</span>
+                            <span class="info-value" id="detailStatus">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">로그인 이메일</span>
+                            <span class="info-value" id="detailLoginEmail">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">인증 이메일</span>
+                            <span class="info-value" id="detailSocietyEmail">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Organization Info -->
+                    <div class="info-section">
+                        <div class="info-section-title">소속 정보</div>
+                        <div class="info-row">
+                            <span class="info-label">학회</span>
+                            <span class="info-value" id="detailSociety">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">구분</span>
+                            <span class="info-value" id="detailClassification">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">소속 기관</span>
+                            <span class="info-value" id="detailAffiliation">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">부서</span>
+                            <span class="info-value" id="detailDepartment">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Verification Info -->
+                    <div class="info-section">
+                        <div class="info-section-title">인증 정보</div>
+                        <div class="info-row">
+                            <span class="info-label">인증 일시</span>
+                            <span class="info-value" id="detailVerificationDate">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">사용자 ID</span>
+                            <span class="info-value" id="detailUserId" style="font-family: monospace; font-size: 0.85rem;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" id="modalActions">
+                <!-- Actions will be dynamically populated -->
+            </div>
         </div>
     </div>
 </DashboardLayout>
@@ -180,7 +465,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
     document.addEventListener("astro:page-load", async () => {
         const currentUser = userProfile.get();
 
-        // Check if admin (using is_admin from store which we added)
+        // Check if admin
         if (currentUser.is_admin !== "true" && currentUser.is_admin !== true) {
             alert("관리자 권한이 필요합니다.");
             window.location.href = "/mypage";
@@ -188,6 +473,8 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
         }
 
         let currentStatus = "temp_verified";
+        let allUsers = [];
+        let selectedUser = null;
 
         // Tab switching
         const statusTabs = document.querySelectorAll(".status-tab");
@@ -196,169 +483,189 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                 currentStatus = tab.dataset.status;
                 statusTabs.forEach((t) => t.classList.remove("active"));
                 tab.classList.add("active");
-                loadRequests(currentStatus);
+                loadUsers(currentStatus);
             });
         });
 
-        // Load profiles from profiles table (Single Source of Truth)
-        async function loadRequests(status) {
-            const requestsList = document.getElementById("requestsList");
-            requestsList.innerHTML = '<p class="empty-state">로딩 중...</p>';
+        // Search functionality
+        const searchInput = document.getElementById("userSearch");
+        searchInput.addEventListener("input", (e) => {
+            filterUsers(e.target.value);
+        });
+
+        // Load users from profiles table
+        async function loadUsers(status) {
+            const tbody = document.getElementById("usersTableBody");
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">로딩 중...</td></tr>';
 
             try {
-                // Query profiles table directly
                 const { data, error } = await supabase
                     .from("profiles")
                     .select("*")
                     .eq("verification_status", status)
-                    .not("society_email", "is", null) // Has email (verified users)
+                    .not("society_email", "is", null)
                     .order("verification_date", { ascending: false });
 
                 if (error) throw error;
 
-                // Update counts
+                allUsers = data || [];
                 updateCounts();
-
-                if (!data || data.length === 0) {
-                    requestsList.innerHTML =
-                        '<p class="empty-state">해당 상태의 사용자가 없습니다.</p>';
-                    return;
-                }
-
-                // Store data for access in handlers
-                window.currentRequests = data;
-
-                requestsList.innerHTML = data
-                    .map((user) => renderRequestCard(user))
-                    .join("");
-
-                // Attach event listeners
-                attachActionListeners();
+                renderUsers(allUsers);
             } catch (err) {
-                console.error("Load Requests Error:", err);
-                requestsList.innerHTML =
-                    '<p class="empty-state">오류가 발생했습니다.</p>';
+                console.error("Load Users Error:", err);
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">오류가 발생했습니다.</td></tr>';
             }
         }
 
-        function renderRequestCard(user) {
-            const typeBadge = user.society
-                ? '<span class="request-type-badge badge-society">학회원</span>'
-                : '<span class="request-type-badge badge-special">특별사용자</span>';
+        function renderUsers(users) {
+            const tbody = document.getElementById("usersTableBody");
 
-            // Status badges and actions
-            const statusInfo = {
-                'temp_verified': {
-                    badge: '<span style="background:#fef3c7; color:#92400e; padding:0.25rem 0.75rem; border-radius:99px; font-size:0.8rem; font-weight:600;">⏳ 임시 인증</span>',
-                    actions: `<div class="request-actions">
-                        <button class="btn btn-reject" data-action="reject" data-id="${user.id}" style="background-color:#ef4444; color:white; padding:0.5rem 1rem; border:none; border-radius:8px; cursor:pointer;">미인증으로 변경</button>
-                        <button class="btn btn-approve" data-action="approve" data-id="${user.id}" style="background-color:#10b981; color:white; padding:0.5rem 1rem; border:none; border-radius:8px; cursor:pointer;">최종 승인</button>
-                    </div>`
-                },
-                'verified': {
-                    badge: '<span style="background:#d1fae5; color:#065f46; padding:0.25rem 0.75rem; border-radius:99px; font-size:0.8rem; font-weight:600;">✓ 최종 인증</span>',
-                    actions: `<div class="request-actions">
-                        <button class="btn btn-revoke" data-action="revoke" data-id="${user.id}" style="background-color:#f59e0b; color:white; padding:0.5rem 1rem; border:none; border-radius:8px; cursor:pointer;">임시인증으로 되돌리기</button>
-                    </div>`
-                },
-                'list': {
-                    badge: '<span style="background:#dbeafe; color:#1e40af; padding:0.25rem 0.75rem; border-radius:99px; font-size:0.8rem; font-weight:600;">📋 명부 인증</span>',
-                    actions: `<div class="info-item"><div class="info-label" style="color:#6b7280;">학회 명부 자동 인증</div></div>`
-                },
-                'none': {
-                    badge: '<span style="background:#f3f4f6; color:#6b7280; padding:0.25rem 0.75rem; border-radius:99px; font-size:0.8rem; font-weight:600;">미인증</span>',
-                    actions: `<div class="info-item"><div class="info-label" style="color:#6b7280;">인증 정보 없음</div></div>`
-                }
-            };
+            if (!users || users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">해당 상태의 사용자가 없습니다.</td></tr>';
+                return;
+            }
 
-            const currentStatus = statusInfo[user.verification_status] || statusInfo['none'];
+            tbody.innerHTML = users.map(user => {
+                const statusBadge = getStatusBadge(user.verification_status);
+                const societyName = getSocietyName(user.society);
+                const verificationDate = user.verification_date
+                    ? new Date(user.verification_date).toLocaleDateString("ko-KR")
+                    : "-";
 
-            return `
-                <div class="request-card">
-                    <div class="request-header">
-                        <div>
-                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem;">${user.real_name || user.nickname || '이름 없음'}</h3>
-                            <div style="display:flex; gap:0.5rem; align-items:center;">
-                                ${typeBadge}
-                                ${currentStatus.badge}
-                            </div>
-                        </div>
-                        <span style="color:var(--text-muted); font-size:0.85rem;">${user.verification_date ? new Date(user.verification_date).toLocaleString("ko-KR") : '날짜 없음'}</span>
-                    </div>
-                    <div class="request-info">
-                        <div class="info-item">
-                            <div class="info-label">로그인 이메일</div>
-                            <div class="info-value">${user.login_email || '-'}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">직책(구분)</div>
-                            <div class="info-value">${user.classification || "-"}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">부서</div>
-                            <div class="info-value">${user.department || "-"}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">소속</div>
-                            <div class="info-value">${user.affiliation || '-'}</div>
-                        </div>
-                         ${
-                             user.society
-                                 ? `<div class="info-item">
-                                <div class="info-label">학회</div>
-                                <div class="info-value">${user.society === "nuclear_medicine" ? "대한핵의학회" : user.society === "technology" ? "대한핵의학기술학회" : user.society}</div>
-                            </div>`
-                                 : ""
-                         }
-                        <div class="info-item">
-                            <div class="info-label">학회/인증 이메일</div>
-                            <div class="info-value">${user.society_email || '-'}</div>
-                        </div>
-                    </div>
-                    ${currentStatus.actions}
-                </div>
-            `;
-        }
+                return `
+                    <tr data-user-id="${user.id}">
+                        <td>
+                            <div class="user-name">${user.real_name || user.nickname || '이름 없음'}</div>
+                            <div class="user-email">${user.login_email || '-'}</div>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>${societyName}</td>
+                        <td>${user.affiliation || '-'}</td>
+                        <td>${user.society_email || '-'}</td>
+                        <td>${verificationDate}</td>
+                    </tr>
+                `;
+            }).join('');
 
-        function attachActionListeners() {
-            document.querySelectorAll("[data-action]").forEach((btn) => {
-                btn.addEventListener("click", async (e) => {
-                    const action = e.target.dataset.action;
-                    const userId = e.target.dataset.id;
-
-                    if (action === "approve") {
-                        await approveUser(userId); // temp_verified → verified
-                    } else if (action === "reject") {
-                        await rejectUser(userId); // temp_verified → none
-                    } else if (action === "revoke") {
-                        await revokeUser(userId); // verified → temp_verified
-                    }
+            // Attach click listeners
+            tbody.querySelectorAll('tr[data-user-id]').forEach(row => {
+                row.addEventListener('click', () => {
+                    const userId = row.dataset.userId;
+                    const user = users.find(u => u.id === userId);
+                    if (user) showUserDetail(user);
                 });
             });
         }
 
-        // Approve: temp_verified → verified
+        function filterUsers(query) {
+            if (!query.trim()) {
+                renderUsers(allUsers);
+                return;
+            }
+
+            const filtered = allUsers.filter(user => {
+                const searchText = `${user.real_name || ''} ${user.nickname || ''} ${user.login_email || ''} ${user.society_email || ''} ${user.affiliation || ''}`.toLowerCase();
+                return searchText.includes(query.toLowerCase());
+            });
+
+            renderUsers(filtered);
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'temp_verified': '<span class="status-badge badge-temp">⏳ 임시 인증</span>',
+                'verified': '<span class="status-badge badge-verified">✓ 최종 인증</span>',
+                'list': '<span class="status-badge badge-list">📋 명부 인증</span>',
+                'none': '<span class="status-badge badge-none">미인증</span>'
+            };
+            return badges[status] || badges['none'];
+        }
+
+        function getSocietyName(society) {
+            const names = {
+                'nuclear_medicine': '대한핵의학회',
+                'technology': '대한핵의학기술학회'
+            };
+            return names[society] || society || '-';
+        }
+
+        function showUserDetail(user) {
+            selectedUser = user;
+
+            // Populate modal
+            document.getElementById('modalUserName').textContent = user.real_name || user.nickname || '사용자';
+            document.getElementById('detailName').textContent = user.real_name || user.nickname || '-';
+            document.getElementById('detailStatus').innerHTML = getStatusBadge(user.verification_status);
+            document.getElementById('detailLoginEmail').textContent = user.login_email || '-';
+            document.getElementById('detailSocietyEmail').textContent = user.society_email || '-';
+            document.getElementById('detailSociety').textContent = getSocietyName(user.society);
+            document.getElementById('detailClassification').textContent = user.classification || '-';
+            document.getElementById('detailAffiliation').textContent = user.affiliation || '-';
+            document.getElementById('detailDepartment').textContent = user.department || '-';
+            document.getElementById('detailVerificationDate').textContent = user.verification_date
+                ? new Date(user.verification_date).toLocaleString("ko-KR")
+                : '-';
+            document.getElementById('detailUserId').textContent = user.id;
+
+            // Populate actions
+            const actionsContainer = document.getElementById('modalActions');
+            if (user.verification_status === 'temp_verified') {
+                actionsContainer.innerHTML = `
+                    <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+                    <button class="btn btn-reject" data-action="reject">미인증 처리</button>
+                    <button class="btn btn-approve" data-action="approve">최종 승인</button>
+                `;
+            } else if (user.verification_status === 'verified') {
+                actionsContainer.innerHTML = `
+                    <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+                    <button class="btn btn-revoke" data-action="revoke">임시인증으로 되돌리기</button>
+                `;
+            } else {
+                actionsContainer.innerHTML = `
+                    <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+                `;
+            }
+
+            // Attach action listeners
+            actionsContainer.querySelectorAll('[data-action]').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const action = e.target.dataset.action;
+                    if (action === 'approve') await approveUser(user.id);
+                    else if (action === 'reject') await rejectUser(user.id);
+                    else if (action === 'revoke') await revokeUser(user.id);
+                });
+            });
+
+            // Show modal
+            document.getElementById('userDetailModal').classList.add('open');
+        }
+
+        // Close modal
+        window.closeModal = function() {
+            document.getElementById('userDetailModal').classList.remove('open');
+            selectedUser = null;
+        };
+
+        document.getElementById('closeModal').addEventListener('click', closeModal);
+        document.getElementById('userDetailModal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeModal();
+            }
+        });
+
+        // Actions
         async function approveUser(userId) {
             if (!confirm("임시 인증을 최종 인증으로 승인하시겠습니까?"))
                 return;
 
             try {
-                const user = window.currentRequests.find(
-                    (u) => u.id === userId,
-                );
-                if (!user) throw new Error("User data not found");
-
-                // Update profile status
                 const { error } = await supabase
                     .from("profiles")
-                    .update({
-                        verification_status: "verified",
-                    })
+                    .update({ verification_status: "verified" })
                     .eq("id", userId);
 
                 if (error) throw error;
 
-                // Send notification
                 await supabase
                     .from("notifications")
                     .insert({
@@ -368,40 +675,29 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                     });
 
                 alert("✅ 최종 인증 처리가 완료되었습니다.");
-                loadRequests(currentStatus);
+                closeModal();
+                loadUsers(currentStatus);
             } catch (err) {
                 console.error("Approve Error:", err);
                 alert("❌ 오류가 발생했습니다: " + err.message);
             }
         }
 
-        // Reject: temp_verified → none
         async function rejectUser(userId) {
-            const note = prompt(
-                "미인증 처리 사유를 입력하세요 (사용자에게 알림으로 전송됩니다):",
-            );
+            const note = prompt("미인증 처리 사유를 입력하세요 (사용자에게 알림으로 전송됩니다):");
             if (!note) {
                 alert("사유를 입력해야 합니다.");
                 return;
             }
 
             try {
-                const user = window.currentRequests.find(
-                    (u) => u.id === userId,
-                );
-                if (!user) throw new Error("User data not found");
-
-                // Rollback to none status
                 const { error } = await supabase
                     .from("profiles")
-                    .update({
-                        verification_status: "none",
-                    })
+                    .update({ verification_status: "none" })
                     .eq("id", userId);
 
                 if (error) throw error;
 
-                // Send notification
                 await supabase
                     .from("notifications")
                     .insert({
@@ -411,35 +707,26 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                     });
 
                 alert("✅ 미인증 처리 및 알림 전송이 완료되었습니다.");
-                loadRequests(currentStatus);
+                closeModal();
+                loadUsers(currentStatus);
             } catch (err) {
                 console.error("Reject Error:", err);
                 alert("❌ 오류가 발생했습니다: " + err.message);
             }
         }
 
-        // Revoke: verified → temp_verified
         async function revokeUser(userId) {
             if (!confirm("최종 인증을 임시 인증으로 되돌리시겠습니까?"))
                 return;
 
             try {
-                const user = window.currentRequests.find(
-                    (u) => u.id === userId,
-                );
-                if (!user) throw new Error("User data not found");
-
-                // Downgrade to temp_verified
                 const { error } = await supabase
                     .from("profiles")
-                    .update({
-                        verification_status: "temp_verified",
-                    })
+                    .update({ verification_status: "temp_verified" })
                     .eq("id", userId);
 
                 if (error) throw error;
 
-                // Send notification
                 await supabase
                     .from("notifications")
                     .insert({
@@ -449,7 +736,8 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
                     });
 
                 alert("✅ 임시 인증으로 변경되었습니다.");
-                loadRequests(currentStatus);
+                closeModal();
+                loadUsers(currentStatus);
             } catch (err) {
                 console.error("Revoke Error:", err);
                 alert("❌ 오류가 발생했습니다: " + err.message);
@@ -473,6 +761,6 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
         }
 
         // Initial load
-        loadRequests("temp_verified");
+        loadUsers("temp_verified");
     });
 </script>
