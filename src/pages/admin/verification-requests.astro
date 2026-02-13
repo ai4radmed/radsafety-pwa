@@ -368,16 +368,14 @@ import Icon from "../../components/Icon.astro";
                 <thead>
                     <tr>
                         <th>이름</th>
-                        <th>상태</th>
-                        <th>학회</th>
                         <th>소속</th>
-                        <th>이메일</th>
-                        <th>인증일</th>
+                        <th>구분</th>
+                        <th>인증요청일</th>
                     </tr>
                 </thead>
                 <tbody id="usersTableBody">
                     <tr>
-                        <td colspan="6" class="empty-state">로딩 중...</td>
+                        <td colspan="4" class="empty-state">로딩 중...</td>
                     </tr>
                 </tbody>
             </table>
@@ -521,13 +519,11 @@ import Icon from "../../components/Icon.astro";
             const tbody = document.getElementById("usersTableBody");
 
             if (!users || users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">해당 상태의 사용자가 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">해당 상태의 사용자가 없습니다.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = users.map(user => {
-                const statusBadge = getStatusBadge(user.verification_status);
-                const societyName = getSocietyName(user.society);
                 const verificationDate = user.verification_date
                     ? new Date(user.verification_date).toLocaleDateString("ko-KR")
                     : "-";
@@ -538,10 +534,8 @@ import Icon from "../../components/Icon.astro";
                             <div class="user-name">${user.real_name || user.nickname || '이름 없음'}</div>
                             <div class="user-email">${user.login_email || '-'}</div>
                         </td>
-                        <td>${statusBadge}</td>
-                        <td>${societyName}</td>
                         <td>${user.affiliation || '-'}</td>
-                        <td>${user.society_email || '-'}</td>
+                        <td>${user.classification || '-'}</td>
                         <td>${verificationDate}</td>
                     </tr>
                 `;
