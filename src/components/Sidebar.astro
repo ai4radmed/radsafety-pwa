@@ -156,7 +156,7 @@ const isActive = (href) => {
         >
             <span class="icon">
                 <Icon name="bell" size="18" />
-                <span class="notification-dot"></span>
+                <span class="global-noti-dot notification-dot"></span>
             </span>
             <span class="link-text">알림함</span>
         </a>
@@ -191,10 +191,10 @@ const isActive = (href) => {
         <a
             href="/admin/members"
             class={pathname.startsWith("/admin/members") ? "active" : ""}
-            aria-label="Member Management"
+            aria-label="Member List Registration"
         >
-            <span class="icon"><Icon name="users" size="18" /></span>
-            <span class="link-text">회원 관리</span>
+            <span class="icon"><Icon name="clipboard" size="18" /></span>
+            <span class="link-text">회원명부 등록</span>
         </a>
         <a
             href="/admin/verification-requests"
@@ -203,8 +203,18 @@ const isActive = (href) => {
                 : ""}
             aria-label="Verification Requests"
         >
-            <span class="icon"><Icon name="check-circle" size="18" /></span>
-            <span class="link-text">인증 승인</span>
+            <span class="icon"><Icon name="check-square" size="18" /></span>
+            <span class="link-text">인증요청 검토</span>
+        </a>
+        <a
+            href="/admin/send-notification"
+            class={pathname.startsWith("/admin/send-notification")
+                ? "active"
+                : ""}
+            aria-label="Send Notification"
+        >
+            <span class="icon"><Icon name="bell" size="18" /></span>
+            <span class="link-text">알림 발송</span>
         </a>
     </div>
 
@@ -219,6 +229,7 @@ const isActive = (href) => {
             background-color: #ef4444;
             border-radius: 50%;
             border: 1px solid #1c1c1c;
+            display: none; /* Initially hidden, shown by DashboardLayout checkNotifications */
         }
     </style>
 

@@ -173,4 +173,19 @@ import Icon from "../components/Icon.astro";
 			}
 		}
 	</style>
+
+	<script>
+		console.log("✅ 5. Home Page Script Loaded");
+
+		document.addEventListener("astro:page-load", () => {
+			console.log("✅ 6. Home Page: astro:page-load Event Fired");
+			console.log("✅ 7. Home Page: Initialization Complete");
+		});
+
+		// Also run immediately if already loaded
+		if (document.readyState !== "loading") {
+			console.log("✅ 6. Home Page: Document Already Loaded");
+			console.log("✅ 7. Home Page: Initialization Complete");
+		}
+	</script>
 </DashboardLayout>

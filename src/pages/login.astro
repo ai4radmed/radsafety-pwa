@@ -250,7 +250,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 const { error } = await supabase.auth.signInWithOtp({
                     email: email,
                     options: {
-                        emailRedirectTo: `${window.location.origin}/mypage`,
+                        emailRedirectTo: `${window.location.origin}/auth/callback?next=/mypage`,
                     },
                 });
 
