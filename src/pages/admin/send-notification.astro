@@ -144,53 +144,6 @@ import Icon from "../../components/Icon.astro";
             font-weight: 600;
         }
 
-        .priority-options {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .priority-btn {
-            flex: 1;
-            padding: 0.75rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--bg-body);
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .priority-btn:hover {
-            border-color: var(--accent);
-        }
-
-        .priority-btn.active {
-            border-color: var(--accent);
-            background: var(--accent);
-            color: white;
-        }
-
-        .preview-card {
-            background: var(--bg-body);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .preview-title {
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 0.5rem;
-        }
-
-        .preview-message {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            white-space: pre-wrap;
-            line-height: 1.6;
-        }
-
         .form-actions {
             display: flex;
             gap: 1rem;
@@ -359,22 +312,7 @@ import Icon from "../../components/Icon.astro";
                 </div>
             </div>
 
-            <!-- 2. 우선순위 -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <Icon name="alert-circle" size="20" /> 우선순위
-                </h3>
-
-                <div class="priority-options">
-                    <button type="button" class="priority-btn" data-priority="low">낮음</button>
-                    <button type="button" class="priority-btn active" data-priority="normal">보통</button>
-                    <button type="button" class="priority-btn" data-priority="high">높음</button>
-                    <button type="button" class="priority-btn" data-priority="urgent">긴급</button>
-                </div>
-                <input type="hidden" id="priorityInput" name="priority" value="normal" />
-            </div>
-
-            <!-- 3. 내용 -->
+            <!-- 2. 내용 -->
             <div class="form-section">
                 <h3 class="section-title">
                     <Icon name="document-text" size="20" /> 내용
@@ -439,19 +377,7 @@ import Icon from "../../components/Icon.astro";
                 </div>
             </div>
 
-            <!-- 4. 미리보기 -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <Icon name="search" size="20" /> 미리보기
-                </h3>
-
-                <div class="preview-card">
-                    <div class="preview-title" id="previewTitle">알림 제목</div>
-                    <div class="preview-message" id="previewMessage">알림 메시지가 여기에 표시됩니다.</div>
-                </div>
-            </div>
-
-            <!-- 5. 액션 버튼 -->
+            <!-- 3. 액션 버튼 -->
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="history.back()">취소</button>
                 <button type="submit" class="btn btn-primary">발송하기</button>
@@ -509,18 +435,6 @@ import Icon from "../../components/Icon.astro";
                     } else if (target === 'specific') {
                         document.getElementById('specificOptions')?.classList.add('active');
                     }
-                });
-            });
-
-            // Priority buttons
-            const priorityBtns = document.querySelectorAll('.priority-btn');
-            const priorityInput = document.getElementById('priorityInput') as HTMLInputElement;
-
-            priorityBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    priorityBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    priorityInput.value = (btn as HTMLElement).dataset.priority || 'normal';
                 });
             });
 
@@ -594,24 +508,6 @@ import Icon from "../../components/Icon.astro";
                 }
             });
 
-            // Preview update
-            const titleInput = document.getElementById('title') as HTMLInputElement;
-            const messageInput = document.getElementById('message') as HTMLTextAreaElement;
-            const previewTitle = document.getElementById('previewTitle');
-            const previewMessage = document.getElementById('previewMessage');
-
-            titleInput?.addEventListener('input', (e) => {
-                if (previewTitle) {
-                    previewTitle.textContent = (e.target as HTMLInputElement).value || '알림 제목';
-                }
-            });
-
-            messageInput?.addEventListener('input', (e) => {
-                if (previewMessage) {
-                    previewMessage.textContent = (e.target as HTMLTextAreaElement).value || '알림 메시지가 여기에 표시됩니다.';
-                }
-            });
-
             // Form submission
             const form = document.getElementById('notificationForm');
             form?.addEventListener('submit', async (e) => {
@@ -640,7 +536,6 @@ import Icon from "../../components/Icon.astro";
                         targetType,
                         title: formData.get('title'),
                         message: formData.get('message'),
-                        priority: formData.get('priority'),
                     };
 
                     // Add optional fields

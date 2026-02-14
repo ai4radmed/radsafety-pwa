@@ -1,0 +1,454 @@
+---
+export const prerender = false;
+
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+import Icon from "../components/Icon.astro";
+---
+
+<DashboardLayout title="의견보내기">
+    <style>
+        .feedback-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .form-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .required {
+            color: #ef4444;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 200px;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .form-select {
+            cursor: pointer;
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: var(--bg-body);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-box p {
+            margin: 0;
+            color: #1e40af;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .file-remove {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-remove:hover {
+            background: #dc2626;
+        }
+    </style>
+
+    <div class="feedback-container">
+        <div class="page-header">
+            <h1 class="page-title">
+                <Icon name="mail" size="32" /> 의견보내기
+            </h1>
+            <p class="page-subtitle">
+                시스템에 대한 의견, 문의, 버그 신고 등을 관리자에게 전달할 수 있습니다.
+            </p>
+        </div>
+
+        <form id="feedbackForm" class="form-card">
+            <div class="form-group">
+                <label class="form-label" for="title">
+                    제목 <span class="required">*</span>
+                </label>
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    class="form-input"
+                    placeholder="예: 로그인 오류 문의"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="message">
+                    내용 <span class="required">*</span>
+                </label>
+                <textarea
+                    id="message"
+                    name="message"
+                    class="form-textarea"
+                    placeholder="의견을 상세히 작성해주세요. (최소 10자 이상)"
+                    required
+                    minlength="10"
+                ></textarea>
+                <div class="char-counter">
+                    <span id="charCount">0</span>자
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="fileInput">
+                    첨부파일 (선택)
+                </label>
+                <input
+                    type="file"
+                    id="fileInput"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.txt"
+                    style="display: none;"
+                />
+                <button type="button" id="fileSelectBtn" class="btn btn-secondary" style="width: auto; padding: 0.75rem 1.5rem;">
+                    📎 파일 선택
+                </button>
+                <div class="help-text">이미지, PDF, 문서 파일 등을 첨부할 수 있습니다. (최대 5MB, 최대 3개)</div>
+                <div id="fileList" style="margin-top: 1rem;"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">
+                    취소
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    전송하기
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        import { actions } from "astro:actions";
+        import { userProfile } from "../store/user";
+        import { supabase } from "../lib/supabase";
+
+        document.addEventListener("astro:page-load", () => {
+            const currentUser = userProfile.get();
+            const form = document.getElementById('feedbackForm') as HTMLFormElement;
+            const messageInput = document.getElementById('message') as HTMLTextAreaElement;
+            const charCount = document.getElementById('charCount');
+
+            // Character counter
+            messageInput?.addEventListener('input', () => {
+                if (charCount) {
+                    charCount.textContent = messageInput.value.length.toString();
+                }
+            });
+
+            // File upload handling
+            const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+            const fileSelectBtn = document.getElementById('fileSelectBtn');
+            const fileList = document.getElementById('fileList');
+            let selectedFiles: Array<{ file: File; preview?: string }> = [];
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+            const MAX_FILES = 3;
+
+            fileSelectBtn?.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput?.addEventListener('change', (e) => {
+                const files = (e.target as HTMLInputElement).files;
+                if (!files) return;
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+
+                    // Check file count
+                    if (selectedFiles.length >= MAX_FILES) {
+                        alert(`최대 ${MAX_FILES}개까지만 첨부할 수 있습니다.`);
+                        break;
+                    }
+
+                    // Check file size
+                    if (file.size > MAX_FILE_SIZE) {
+                        alert(`${file.name}은(는) 5MB를 초과합니다.`);
+                        continue;
+                    }
+
+                    selectedFiles.push({ file });
+                }
+
+                renderFileList();
+                fileInput.value = ''; // Reset input
+            });
+
+            function renderFileList() {
+                if (!fileList) return;
+
+                if (selectedFiles.length === 0) {
+                    fileList.innerHTML = '';
+                    return;
+                }
+
+                fileList.innerHTML = selectedFiles.map((item, index) => {
+                    const sizeKB = (item.file.size / 1024).toFixed(1);
+                    return `
+                        <div class="file-item">
+                            <div class="file-info">
+                                <div class="file-name">📎 ${item.file.name}</div>
+                                <div class="file-size">${sizeKB} KB</div>
+                            </div>
+                            <button type="button" class="file-remove" data-index="${index}">삭제</button>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add remove handlers
+                fileList.querySelectorAll('.file-remove').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt((e.target as HTMLElement).dataset.index || '0');
+                        selectedFiles.splice(index, 1);
+                        renderFileList();
+                    });
+                });
+            }
+
+            // Form submission
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+                const title = formData.get('title') as string;
+                const message = formData.get('message') as string;
+
+                // Get user info from profile
+                const userName = currentUser?.real_name || currentUser?.nickname || '익명';
+                const userEmail = currentUser?.login_email || currentUser?.society_email || 'noreply@example.com';
+
+                // Validation
+                if (!title || !message) {
+                    alert('제목과 내용을 입력해주세요.');
+                    return;
+                }
+
+                if (message.length < 10) {
+                    alert('의견 내용은 최소 10자 이상 입력해주세요.');
+                    return;
+                }
+
+                if (!confirm('의견을 전송하시겠습니까?')) {
+                    return;
+                }
+
+                const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+                submitBtn.disabled = true;
+                submitBtn.textContent = '전송 중...';
+
+                try {
+                    // Get current authenticated user from Supabase
+                    const { data: { user: authUser } } = await supabase.auth.getUser();
+                    console.log('[feedback] Auth user:', authUser);
+
+                    // Upload files to Supabase Storage and collect metadata
+                    const uploadedFiles: Array<{ filename: string; storage_path: string; size: number }> = [];
+
+                    if (selectedFiles.length > 0) {
+                        const userId = authUser?.id || 'anonymous';
+                        const timestamp = Date.now();
+
+                        for (let i = 0; i < selectedFiles.length; i++) {
+                            const { file } = selectedFiles[i];
+                            const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                            const storagePath = `${userId}/${timestamp}-${safeFilename}`;
+
+                            const { error: uploadError } = await supabase.storage
+                                .from('feedback-attachments')
+                                .upload(storagePath, file, {
+                                    cacheControl: '3600',
+                                    upsert: false
+                                });
+
+                            if (uploadError) {
+                                console.error('File upload error:', uploadError);
+                                throw new Error(`파일 업로드 실패: ${file.name}`);
+                            }
+
+                            uploadedFiles.push({
+                                filename: file.name,
+                                storage_path: storagePath,
+                                size: file.size
+                            });
+                        }
+                    }
+
+                    console.log('[feedback] Sending feedback with userId:', authUser?.id);
+
+                    const { data, error } = await actions.sendFeedback({
+                        userId: authUser?.id,
+                        userName,
+                        userEmail,
+                        title,
+                        message,
+                        attachments: uploadedFiles.length > 0 ? uploadedFiles : undefined,
+                    });
+
+                    if (error) throw error;
+
+                    alert(data.message);
+                    form.reset();
+                    if (charCount) charCount.textContent = '0';
+                    selectedFiles = [];
+                    renderFileList();
+                } catch (err) {
+                    console.error('Feedback send error:', err);
+                    alert('의견 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '전송하기';
+                }
+            });
+        });
+    </script>
+</DashboardLayout>

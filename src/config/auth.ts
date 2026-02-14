@@ -6,7 +6,7 @@ const ENV_ADMINS = (import.meta.env.PUBLIC_ADMIN_EMAILS || "")
 
 export const ADMIN_EMAILS = [
     ...ENV_ADMINS,
-    "admin@radsafety.com" // Default fallback admin
+    "benkorea.ai@gmail.com" // Default fallback admin (Resend 테스트 모드에서 사용 가능)
 ];
 
 export const SPECIAL_GUESTS = [

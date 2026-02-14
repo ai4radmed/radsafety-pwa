@@ -2,7 +2,8 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 import { supabase, supabaseAdmin } from '../lib/supabase';
-import { sendVerificationEmail } from '../lib/email';
+import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
+import { ADMIN_EMAILS } from '../config/auth';
 
 export const server = {
     saveFinding: defineAction({
@@ -201,7 +202,6 @@ export const server = {
             specificUserId: z.string().uuid().optional(),
             title: z.string().min(1),
             message: z.string().min(1),
-            priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
             link: z.string().optional(),
             actionLabel: z.string().optional(),
             actionUrl: z.string().optional(),
@@ -247,7 +247,7 @@ export const server = {
                     user_id: u.id,
                     sender_id: input.senderId,
                     type: 'admin_message',
-                    priority: input.priority,
+                    priority: 'normal',
                     title: input.title,
                     message: input.message,
                     link: input.link || null,
@@ -272,6 +272,72 @@ export const server = {
             } catch (error) {
                 console.error('[sendNotification] Error:', error);
                 throw error;
+            }
+        },
+    }),
+
+    // Send Feedback Action
+    sendFeedback: defineAction({
+        input: z.object({
+            userId: z.string().uuid().optional(),
+            userName: z.string().min(1),
+            userEmail: z.string().email(),
+            title: z.string().min(1, '제목을 입력해주세요.'),
+            message: z.string().min(10, '의견 내용은 최소 10자 이상 입력해주세요.'),
+            attachments: z.array(z.object({
+                filename: z.string(),
+                storage_path: z.string(),
+                size: z.number(),
+            })).optional(),
+        }),
+        handler: async (input) => {
+            try {
+                // Use userId from input (passed from client)
+                const userId = input.userId || null;
+
+                // Insert feedback into database
+                const { data: feedback, error: insertError } = await supabaseAdmin
+                    .from('feedback')
+                    .insert({
+                        user_id: userId,
+                        user_name: input.userName,
+                        user_email: input.userEmail,
+                        title: input.title,
+                        message: input.message,
+                        attachments: input.attachments || [],
+                        status: 'pending',
+                    })
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    console.error('[sendFeedback] Database insert error:', insertError);
+                    throw new Error('의견 저장에 실패했습니다.');
+                }
+
+                // Send email notification to admins
+                try {
+                    await sendFeedbackEmail({
+                        adminEmails: ADMIN_EMAILS,
+                        userName: input.userName,
+                        userEmail: input.userEmail,
+                        title: input.title,
+                        message: input.message,
+                        feedbackId: feedback.id,
+                        attachments: input.attachments,
+                    });
+                } catch (emailError) {
+                    console.error('[sendFeedback] Email send error:', emailError);
+                    // Don't fail the whole operation if email fails - data is saved
+                }
+
+                return {
+                    success: true,
+                    message: '의견이 성공적으로 전송되었습니다. 감사합니다!'
+                };
+            } catch (error) {
+                console.error('[sendFeedback] Error:', error);
+                throw new Error('의견 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
             }
         },
     }),
