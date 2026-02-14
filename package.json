@@ -15,6 +15,7 @@
     "@astrojs/sitemap": "^3.7.0",
     "@astrojs/vercel": "^9.0.4",
     "@nanostores/persistent": "^1.2.0",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.91.1",
     "@vite-pwa/astro": "^1.2.0",
     "astro": "^5.16.15",

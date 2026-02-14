@@ -1,7 +1,7 @@
 
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 import { sendVerificationEmail } from '../lib/email';
 
 export const server = {
@@ -94,8 +94,8 @@ export const server = {
 
                 console.log('[sendVerificationCode] Generated code:', code);
 
-                // Store code in database
-                const { data: insertData, error } = await supabase
+                // Store code in database using admin client to bypass RLS
+                const { data: insertData, error } = await supabaseAdmin
                     .from('email_verification_codes')
                     .insert({
                         user_id: userId,
@@ -144,8 +144,8 @@ export const server = {
             try {
                 console.log('[verifyEmailCode] Starting for user:', userId, 'code:', code);
 
-                // Find valid code
-                const { data, error } = await supabase
+                // Find valid code using admin client
+                const { data, error } = await supabaseAdmin
                     .from('email_verification_codes')
                     .select('*')
                     .eq('user_id', userId)
@@ -163,8 +163,8 @@ export const server = {
 
                 console.log('[verifyEmailCode] Code found:', data);
 
-                // Mark as verified
-                const { error: updateError } = await supabase
+                // Mark as verified using admin client
+                const { error: updateError } = await supabaseAdmin
                     .from('email_verification_codes')
                     .update({
                         verified: true,
@@ -186,6 +186,91 @@ export const server = {
                 };
             } catch (error) {
                 console.error('[verifyEmailCode] Caught error:', error);
+                throw error;
+            }
+        },
+    }),
+
+    // Send Notification Action
+    sendNotification: defineAction({
+        input: z.object({
+            senderId: z.string().uuid(),
+            targetType: z.enum(['all', 'provider', 'verification_status', 'specific']),
+            provider: z.enum(['kakao', 'email']).optional(),
+            verificationStatus: z.enum(['none', 'list', 'temp_verified', 'verified']).optional(),
+            specificUserId: z.string().uuid().optional(),
+            title: z.string().min(1),
+            message: z.string().min(1),
+            priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
+            link: z.string().optional(),
+            actionLabel: z.string().optional(),
+            actionUrl: z.string().optional(),
+        }),
+        handler: async (input) => {
+            try {
+                // Check if sender is admin
+                const { data: profile, error: profileError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', input.senderId)
+                    .single();
+
+                if (profileError || !profile) {
+                    throw new Error('사용자를 찾을 수 없습니다.');
+                }
+
+                if (!profile.is_admin) {
+                    throw new Error('관리자 권한이 필요합니다.');
+                }
+
+                // Get target users
+                let query = supabaseAdmin.from('profiles').select('id');
+
+                if (input.targetType === 'specific' && input.specificUserId) {
+                    query = query.eq('id', input.specificUserId);
+                } else if (input.targetType === 'provider' && input.provider) {
+                    query = query.eq('provider', input.provider);
+                } else if (input.targetType === 'verification_status' && input.verificationStatus) {
+                    query = query.eq('verification_status', input.verificationStatus);
+                }
+                // 'all' type doesn't add any filters
+
+                const { data: users, error: usersError } = await query;
+
+                if (usersError) throw usersError;
+                if (!users || users.length === 0) {
+                    throw new Error('대상 사용자가 없습니다.');
+                }
+
+                // Create notifications for all target users
+                const notifications = users.map(u => ({
+                    user_id: u.id,
+                    sender_id: input.senderId,
+                    type: 'admin_message',
+                    priority: input.priority,
+                    title: input.title,
+                    message: input.message,
+                    link: input.link || null,
+                    action_label: input.actionLabel || null,
+                    action_url: input.actionUrl || null,
+                    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    is_read: false,
+                    created_at: new Date().toISOString()
+                }));
+
+                const { error: insertError } = await supabaseAdmin
+                    .from('notifications')
+                    .insert(notifications);
+
+                if (insertError) throw insertError;
+
+                return {
+                    success: true,
+                    count: users.length,
+                    message: `${users.length}명에게 알림을 발송했습니다.`
+                };
+            } catch (error) {
+                console.error('[sendNotification] Error:', error);
                 throw error;
             }
         },

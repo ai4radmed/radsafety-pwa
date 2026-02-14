@@ -1,32 +1,50 @@
 ---
+export const prerender = false;
+
 import DashboardLayout from "../layouts/DashboardLayout.astro";
 import Icon from "../components/Icon.astro";
+import { createSupabaseServerClient } from "../lib/supabase-server";
 
-// Mock Notifications
-const notifications = [
-    {
-        id: 1,
-        title: "2024년 정기검사 가이드가 업데이트되었습니다.",
-        timestamp: "5분 전",
-        isRead: false,
-        type: "notice",
-    },
-    // Item removed as per request
-    {
-        id: 3,
-        title: "새로운 지적권고사례가 등록되었습니다: #방사선원 관리",
-        timestamp: "1일 전",
-        isRead: true,
-        type: "info",
-    },
-    {
-        id: 4,
-        title: "서비스 점검 안내 (1월 30일 02:00 ~ 04:00)",
-        timestamp: "3일 전",
-        isRead: true,
-        type: "notice",
-    },
-];
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+    return Astro.redirect("/login");
+}
+
+// Fetch user's notifications from database
+const { data: notifications } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+const notificationList = notifications || [];
+
+// Helper function to format timestamp
+function getRelativeTime(timestamp: string): string {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return "방금 전";
+    if (diffMins < 60) return `${diffMins}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    if (diffDays < 7) return `${diffDays}일 전`;
+
+    return then.toLocaleDateString("ko-KR");
+}
+
+// Determine notification type from title/message
+function getNotificationType(title: string): string {
+    if (title.includes("취소") || title.includes("❌")) return "alert";
+    if (title.includes("완료") || title.includes("✅")) return "notice";
+    if (title.includes("변경") || title.includes("⚠️")) return "alert";
+    return "info";
+}
 ---
 
 <DashboardLayout title="알림함">
@@ -122,6 +140,13 @@ const notifications = [
         .notification-item.unread .noti-title {
             font-weight: 600;
         }
+        .noti-message {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
         .noti-time {
             font-size: 0.8rem;
             color: var(--text-muted);
@@ -152,34 +177,52 @@ const notifications = [
     </div>
 
     <div class="notification-list">
-        {
-            notifications.map((noti) => (
-                <div
-                    class={`notification-item ${noti.isRead ? "" : "unread"} type-${noti.type}`}
-                >
-                    <div class="noti-icon">
-                        <Icon
-                            name={
-                                noti.type === "alert"
-                                    ? "bell"
-                                    : noti.type === "notice"
-                                      ? "document-text"
-                                      : "clipboard"
-                            }
-                            size="20"
-                        />
+        {notificationList.length === 0 ? (
+            <div class="empty-state">
+                <Icon name="bell" size="48" />
+                <p style="margin-top: 1rem;">알림이 없습니다.</p>
+            </div>
+        ) : (
+            notificationList.map((noti) => {
+                const notiType = getNotificationType(noti.title || "");
+                return (
+                    <div
+                        class={`notification-item ${noti.is_read ? "" : "unread"} type-${notiType}`}
+                        data-id={noti.id}
+                        data-link={noti.link || ""}
+                    >
+                        <div class="noti-icon">
+                            <Icon
+                                name={
+                                    notiType === "alert"
+                                        ? "bell"
+                                        : notiType === "notice"
+                                          ? "document-text"
+                                          : "clipboard"
+                                }
+                                size="20"
+                            />
+                        </div>
+                        <div class="noti-content">
+                            <div class="noti-title">{noti.title || "알림"}</div>
+                            {noti.message && noti.title && (
+                                <div class="noti-message">{noti.message}</div>
+                            )}
+                            <div class="noti-time">{getRelativeTime(noti.created_at)}</div>
+                        </div>
+                        {!noti.is_read && <div class="unread-dot" />}
                     </div>
-                    <div class="noti-content">
-                        <div class="noti-title">{noti.title}</div>
-                        <div class="noti-time">{noti.timestamp}</div>
-                    </div>
-                    {!noti.isRead && <div class="unread-dot" />}
-                </div>
-            ))
-        }
+                );
+            })
+        )}
     </div>
     <script>
+        import { supabase } from "../lib/supabase";
+
+        console.log("🔔 Notifications page script loaded");
+
         document.addEventListener("astro:page-load", () => {
+            console.log("🔔 Notifications astro:page-load fired");
             initNotifications();
         });
 
@@ -187,17 +230,45 @@ const notifications = [
             initNotifications();
         }
 
+        async function markAllAsRead() {
+            const unreadItems = document.querySelectorAll(".notification-item.unread");
+            const unreadIds = Array.from(unreadItems).map(item => (item as HTMLElement).dataset.id);
+
+            if (unreadIds.length === 0) return false;
+
+            const { error } = await supabase
+                .from("notifications")
+                .update({ is_read: true })
+                .in("id", unreadIds);
+
+            if (error) {
+                console.error("Failed to mark as read:", error);
+                return false;
+            }
+
+            return true;
+        }
+
+        async function markAsRead(notificationId: string) {
+            const { error } = await supabase
+                .from("notifications")
+                .update({ is_read: true })
+                .eq("id", notificationId);
+
+            if (error) {
+                console.error("Failed to mark notification as read:", error);
+                return false;
+            }
+
+            return true;
+        }
+
         function initNotifications() {
             const markReadBtn = document.querySelector(".mark-read-btn");
-            const items = document.querySelectorAll(
-                ".notification-item.unread",
-            );
-            const dots = document.querySelectorAll(".unread-dot");
 
-            markReadBtn?.addEventListener("click", () => {
-                const unreadCount = document.querySelectorAll(
-                    ".notification-item.unread",
-                ).length;
+            // Mark all as read button
+            markReadBtn?.addEventListener("click", async () => {
+                const unreadCount = document.querySelectorAll(".notification-item.unread").length;
 
                 if (unreadCount === 0) {
                     alert("읽지 않은 알림이 없습니다.");
@@ -205,38 +276,56 @@ const notifications = [
                 }
 
                 if (confirm("모든 알림을 읽음으로 표시하시겠습니까?")) {
-                    items.forEach((item) => item.classList.remove("unread"));
-                    dots.forEach((dot) => (dot.style.display = "none"));
+                    const success = await markAllAsRead();
 
-                    // Update Global Header Badge
-                    const globalDots =
-                        document.querySelectorAll(".global-noti-dot");
-                    globalDots.forEach((d) => (d.style.display = "none"));
+                    if (success) {
+                        // Update UI
+                        const items = document.querySelectorAll(".notification-item.unread");
+                        const dots = document.querySelectorAll(".unread-dot");
+
+                        items.forEach((item) => item.classList.remove("unread"));
+                        dots.forEach((dot) => (dot as HTMLElement).style.display = "none");
+
+                        // Update Global Header Badge
+                        const globalDots = document.querySelectorAll(".global-noti-dot");
+                        globalDots.forEach((d) => (d as HTMLElement).style.display = "none");
+
+                        alert("모든 알림을 읽음으로 표시했습니다.");
+                    } else {
+                        alert("알림 업데이트에 실패했습니다.");
+                    }
                 }
             });
 
             // Handle Individual Item Click
-            const allItems = document.querySelectorAll(
-                ".notification-item.unread",
-            );
+            const allItems = document.querySelectorAll(".notification-item");
             allItems.forEach((item) => {
-                item.addEventListener("click", () => {
-                    if (item.classList.contains("unread")) {
-                        item.classList.remove("unread");
-                        const dot = item.querySelector(".unread-dot");
-                        if (dot) dot.style.display = "none";
+                item.addEventListener("click", async () => {
+                    const itemEl = item as HTMLElement;
+                    const notificationId = itemEl.dataset.id;
+                    const link = itemEl.dataset.link;
 
-                        // Check if ANY unread remain
-                        const remaining = document.querySelectorAll(
-                            ".notification-item.unread",
-                        ).length;
-                        if (remaining === 0) {
-                            const globalDots =
-                                document.querySelectorAll(".global-noti-dot");
-                            globalDots.forEach(
-                                (d) => (d.style.display = "none"),
-                            );
+                    // Mark as read if unread
+                    if (item.classList.contains("unread") && notificationId) {
+                        const success = await markAsRead(notificationId);
+
+                        if (success) {
+                            item.classList.remove("unread");
+                            const dot = item.querySelector(".unread-dot");
+                            if (dot) (dot as HTMLElement).style.display = "none";
+
+                            // Check if ANY unread remain
+                            const remaining = document.querySelectorAll(".notification-item.unread").length;
+                            if (remaining === 0) {
+                                const globalDots = document.querySelectorAll(".global-noti-dot");
+                                globalDots.forEach((d) => (d as HTMLElement).style.display = "none");
+                            }
                         }
+                    }
+
+                    // Navigate to link if exists
+                    if (link) {
+                        window.location.href = link;
                     }
                 });
             });

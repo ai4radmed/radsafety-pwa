@@ -201,3 +201,237 @@ BEGIN
     RAISE NOTICE '  - verified: %', status_verified;
     RAISE NOTICE '========================================';
 END $$;
+
+-- ============================================================
+-- 7. Add verification_requests history tracking columns
+-- ============================================================
+
+DO $$
+BEGIN
+    -- Add reject_reason column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'verification_requests'
+        AND column_name = 'reject_reason'
+    ) THEN
+        ALTER TABLE public.verification_requests
+        ADD COLUMN reject_reason text;
+
+        RAISE NOTICE 'Added reject_reason column to verification_requests';
+    ELSE
+        RAISE NOTICE 'reject_reason column already exists';
+    END IF;
+
+    -- Add approved_at column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'verification_requests'
+        AND column_name = 'approved_at'
+    ) THEN
+        ALTER TABLE public.verification_requests
+        ADD COLUMN approved_at timestamp with time zone;
+
+        RAISE NOTICE 'Added approved_at column to verification_requests';
+    ELSE
+        RAISE NOTICE 'approved_at column already exists';
+    END IF;
+
+    -- Add rejected_at column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'verification_requests'
+        AND column_name = 'rejected_at'
+    ) THEN
+        ALTER TABLE public.verification_requests
+        ADD COLUMN rejected_at timestamp with time zone;
+
+        RAISE NOTICE 'Added rejected_at column to verification_requests';
+    ELSE
+        RAISE NOTICE 'rejected_at column already exists';
+    END IF;
+END $$;
+
+COMMENT ON COLUMN public.verification_requests.reject_reason IS '인증 취소 사유 (관리자가 입력)';
+COMMENT ON COLUMN public.verification_requests.approved_at IS '인증 승인 일시';
+COMMENT ON COLUMN public.verification_requests.rejected_at IS '인증 취소 일시';
+
+-- ============================================================
+-- 8. Add title column to notifications table
+-- ============================================================
+
+DO $$
+BEGIN
+    -- Add title column for notification headers
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'title'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN title text;
+
+        RAISE NOTICE 'Added title column to notifications';
+    ELSE
+        RAISE NOTICE 'title column already exists';
+    END IF;
+END $$;
+
+COMMENT ON COLUMN public.notifications.title IS '알림 제목 (짧은 요약)';
+
+-- ============================================================
+-- 9. Extend notifications table with additional fields
+-- ============================================================
+
+DO $$
+BEGIN
+    -- Add sender_id column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'sender_id'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN sender_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+
+        RAISE NOTICE 'Added sender_id column to notifications';
+    ELSE
+        RAISE NOTICE 'sender_id column already exists';
+    END IF;
+
+    -- Add type column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'type'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN type varchar(50) DEFAULT 'admin_message';
+
+        RAISE NOTICE 'Added type column to notifications';
+    ELSE
+        RAISE NOTICE 'type column already exists';
+    END IF;
+
+    -- Add priority column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'priority'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN priority varchar(20) DEFAULT 'normal';
+
+        RAISE NOTICE 'Added priority column to notifications';
+    ELSE
+        RAISE NOTICE 'priority column already exists';
+    END IF;
+
+    -- Add action_label column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'action_label'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN action_label text;
+
+        RAISE NOTICE 'Added action_label column to notifications';
+    ELSE
+        RAISE NOTICE 'action_label column already exists';
+    END IF;
+
+    -- Add action_url column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'action_url'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN action_url text;
+
+        RAISE NOTICE 'Added action_url column to notifications';
+    ELSE
+        RAISE NOTICE 'action_url column already exists';
+    END IF;
+
+    -- Add read_at column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'read_at'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN read_at timestamp with time zone;
+
+        RAISE NOTICE 'Added read_at column to notifications';
+    ELSE
+        RAISE NOTICE 'read_at column already exists';
+    END IF;
+
+    -- Add expires_at column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'expires_at'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN expires_at timestamp with time zone;
+
+        RAISE NOTICE 'Added expires_at column to notifications';
+    ELSE
+        RAISE NOTICE 'expires_at column already exists';
+    END IF;
+
+    -- Add metadata column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'notifications'
+        AND column_name = 'metadata'
+    ) THEN
+        ALTER TABLE public.notifications
+        ADD COLUMN metadata jsonb;
+
+        RAISE NOTICE 'Added metadata column to notifications';
+    ELSE
+        RAISE NOTICE 'metadata column already exists';
+    END IF;
+
+    RAISE NOTICE '✓ Notifications table columns added successfully';
+END $$;
+
+-- Add indexes for notifications
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread
+    ON public.notifications(user_id, is_read)
+    WHERE is_read = FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_notifications_type
+    ON public.notifications(type);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_priority
+    ON public.notifications(priority)
+    WHERE priority IN ('high', 'urgent');
+
+CREATE INDEX IF NOT EXISTS idx_notifications_created
+    ON public.notifications(user_id, created_at DESC);
+
+-- Add comments
+COMMENT ON COLUMN public.notifications.sender_id IS '발신자 ID (관리자 등, NULL이면 시스템 알림)';
+COMMENT ON COLUMN public.notifications.type IS '알림 타입 (verification_approved, admin_message 등)';
+COMMENT ON COLUMN public.notifications.priority IS '우선순위 (low, normal, high, urgent)';
+COMMENT ON COLUMN public.notifications.action_label IS '액션 버튼 라벨';
+COMMENT ON COLUMN public.notifications.action_url IS '액션 버튼 클릭 시 이동할 URL';
+COMMENT ON COLUMN public.notifications.read_at IS '읽은 일시';
+COMMENT ON COLUMN public.notifications.expires_at IS '만료 일시 (자동 삭제 시점)';
+COMMENT ON COLUMN public.notifications.metadata IS '추가 메타데이터 (JSON)';

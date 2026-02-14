@@ -1,0 +1,676 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import Icon from "../../components/Icon.astro";
+---
+
+<DashboardLayout title="알림 발송">
+    <style>
+        .send-notification-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .form-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .radio-option:hover {
+            background: var(--bg-body);
+        }
+
+        .radio-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .radio-label {
+            flex: 1;
+            font-weight: 500;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .sub-options {
+            margin-top: 1rem;
+            padding-left: 2rem;
+            display: none;
+        }
+
+        .sub-options.active {
+            display: block;
+        }
+
+        .user-count {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .priority-options {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .priority-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-body);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .priority-btn:hover {
+            border-color: var(--accent);
+        }
+
+        .priority-btn.active {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: white;
+        }
+
+        .preview-card {
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .preview-title {
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-message {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: var(--bg-body);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .user-search {
+            position: relative;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        .user-dropdown.active {
+            display: block;
+        }
+
+        .user-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-item:hover {
+            background: var(--bg-body);
+        }
+
+        .user-item:last-child {
+            border-bottom: none;
+        }
+
+        .selected-user {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--accent);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin-top: 0.5rem;
+        }
+
+        .remove-user {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0 0.25rem;
+        }
+    </style>
+
+    <div class="send-notification-container">
+        <div class="page-header">
+            <h1 class="page-title">📢 알림 발송</h1>
+            <p class="page-subtitle">사용자에게 알림 메시지를 발송합니다.</p>
+        </div>
+
+        <form id="notificationForm" class="form-card">
+            <!-- 1. 받는 사람 -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <Icon name="user" size="20" /> 받는 사람
+                </h3>
+
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="targetType" value="all" checked />
+                        <span class="radio-label">전체 사용자 <span id="countAll" class="user-count">...</span></span>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="targetType" value="provider" />
+                        <span class="radio-label">로그인 방법별</span>
+                    </label>
+                    <div id="providerOptions" class="sub-options">
+                        <select id="providerSelect" class="form-select">
+                            <option value="email">이메일 로그인 사용자</option>
+                            <option value="kakao">카카오 로그인 사용자</option>
+                        </select>
+                        <div class="help-text">선택된 로그인 방법을 사용하는 사용자에게만 발송됩니다.</div>
+                    </div>
+
+                    <label class="radio-option">
+                        <input type="radio" name="targetType" value="verification_status" />
+                        <span class="radio-label">인증 상태별</span>
+                    </label>
+                    <div id="verificationOptions" class="sub-options">
+                        <select id="verificationSelect" class="form-select">
+                            <option value="verified">최종 인증 완료</option>
+                            <option value="temp_verified">임시 인증 (승인 대기)</option>
+                            <option value="list">명부 인증</option>
+                            <option value="none">미인증</option>
+                        </select>
+                        <div class="help-text">선택된 인증 상태의 사용자에게만 발송됩니다.</div>
+                    </div>
+
+                    <label class="radio-option">
+                        <input type="radio" name="targetType" value="specific" />
+                        <span class="radio-label">특정 사용자</span>
+                    </label>
+                    <div id="specificOptions" class="sub-options">
+                        <div class="user-search">
+                            <input
+                                type="text"
+                                id="userSearch"
+                                class="form-input"
+                                placeholder="이름 또는 이메일로 검색..."
+                            />
+                            <div id="userDropdown" class="user-dropdown"></div>
+                        </div>
+                        <div id="selectedUser" style="margin-top: 0.5rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 우선순위 -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <Icon name="alert-circle" size="20" /> 우선순위
+                </h3>
+
+                <div class="priority-options">
+                    <button type="button" class="priority-btn" data-priority="low">낮음</button>
+                    <button type="button" class="priority-btn active" data-priority="normal">보통</button>
+                    <button type="button" class="priority-btn" data-priority="high">높음</button>
+                    <button type="button" class="priority-btn" data-priority="urgent">긴급</button>
+                </div>
+                <input type="hidden" id="priorityInput" name="priority" value="normal" />
+            </div>
+
+            <!-- 3. 내용 -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <Icon name="document-text" size="20" /> 내용
+                </h3>
+
+                <div class="form-group">
+                    <label class="form-label" for="title">제목 *</label>
+                    <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        class="form-input"
+                        placeholder="알림 제목을 입력하세요"
+                        required
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="message">메시지 *</label>
+                    <textarea
+                        id="message"
+                        name="message"
+                        class="form-textarea"
+                        placeholder="알림 메시지를 입력하세요"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="link">링크 (선택)</label>
+                    <input
+                        type="text"
+                        id="link"
+                        name="link"
+                        class="form-input"
+                        placeholder="/mypage"
+                    />
+                    <div class="help-text">알림 클릭 시 이동할 URL을 입력하세요.</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="actionLabel">버튼 라벨 (선택)</label>
+                    <input
+                        type="text"
+                        id="actionLabel"
+                        name="actionLabel"
+                        class="form-input"
+                        placeholder="확인하기"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="actionUrl">버튼 URL (선택)</label>
+                    <input
+                        type="text"
+                        id="actionUrl"
+                        name="actionUrl"
+                        class="form-input"
+                        placeholder="/mypage"
+                    />
+                    <div class="help-text">액션 버튼 클릭 시 이동할 URL을 입력하세요.</div>
+                </div>
+            </div>
+
+            <!-- 4. 미리보기 -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <Icon name="search" size="20" /> 미리보기
+                </h3>
+
+                <div class="preview-card">
+                    <div class="preview-title" id="previewTitle">알림 제목</div>
+                    <div class="preview-message" id="previewMessage">알림 메시지가 여기에 표시됩니다.</div>
+                </div>
+            </div>
+
+            <!-- 5. 액션 버튼 -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">취소</button>
+                <button type="submit" class="btn btn-primary">발송하기</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        import { actions } from "astro:actions";
+        import { supabase } from "../../lib/supabase";
+        import { userProfile } from "../../store/user";
+
+        document.addEventListener("astro:page-load", async () => {
+            const currentUser = userProfile.get();
+
+            // Check if admin
+            if (currentUser.is_admin !== "true" && currentUser.is_admin !== true) {
+                alert("관리자 권한이 필요합니다.");
+                window.location.href = "/mypage";
+                return;
+            }
+
+            let selectedUserId: string | null = null;
+
+            // Load user counts
+            async function loadUserCounts() {
+                const { count } = await supabase
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: true });
+
+                const countEl = document.getElementById('countAll');
+                if (countEl) {
+                    countEl.textContent = `${count || 0}명`;
+                }
+            }
+
+            loadUserCounts();
+
+            // Target type radio handling
+            const targetRadios = document.querySelectorAll('input[name="targetType"]');
+            targetRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const target = (e.target as HTMLInputElement).value;
+
+                    // Hide all sub-options
+                    document.querySelectorAll('.sub-options').forEach(el => {
+                        (el as HTMLElement).classList.remove('active');
+                    });
+
+                    // Show selected sub-option
+                    if (target === 'provider') {
+                        document.getElementById('providerOptions')?.classList.add('active');
+                    } else if (target === 'verification_status') {
+                        document.getElementById('verificationOptions')?.classList.add('active');
+                    } else if (target === 'specific') {
+                        document.getElementById('specificOptions')?.classList.add('active');
+                    }
+                });
+            });
+
+            // Priority buttons
+            const priorityBtns = document.querySelectorAll('.priority-btn');
+            const priorityInput = document.getElementById('priorityInput') as HTMLInputElement;
+
+            priorityBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    priorityBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    priorityInput.value = (btn as HTMLElement).dataset.priority || 'normal';
+                });
+            });
+
+            // User search
+            const userSearch = document.getElementById('userSearch') as HTMLInputElement;
+            const userDropdown = document.getElementById('userDropdown');
+            const selectedUserDiv = document.getElementById('selectedUser');
+
+            let searchTimeout: number;
+            userSearch?.addEventListener('input', async (e) => {
+                clearTimeout(searchTimeout);
+                const query = (e.target as HTMLInputElement).value.trim();
+
+                if (query.length < 2) {
+                    userDropdown?.classList.remove('active');
+                    return;
+                }
+
+                searchTimeout = window.setTimeout(async () => {
+                    const { data: users } = await supabase
+                        .from('profiles')
+                        .select('id, real_name, login_email, society_email')
+                        .or(`real_name.ilike.%${query}%,login_email.ilike.%${query}%,society_email.ilike.%${query}%`)
+                        .limit(10);
+
+                    if (users && users.length > 0 && userDropdown) {
+                        userDropdown.innerHTML = users.map(u => `
+                            <div class="user-item" data-id="${u.id}">
+                                <div style="font-weight: 600;">${u.real_name || '이름 없음'}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">${u.login_email || u.society_email || '-'}</div>
+                            </div>
+                        `).join('');
+                        userDropdown.classList.add('active');
+
+                        // Add click handlers
+                        userDropdown.querySelectorAll('.user-item').forEach(item => {
+                            item.addEventListener('click', () => {
+                                const userId = (item as HTMLElement).dataset.id;
+                                const userName = item.querySelector('div')?.textContent || '';
+
+                                selectedUserId = userId || null;
+                                if (selectedUserDiv) {
+                                    selectedUserDiv.innerHTML = `
+                                        <div class="selected-user">
+                                            ${userName}
+                                            <button type="button" class="remove-user">✕</button>
+                                        </div>
+                                    `;
+
+                                    selectedUserDiv.querySelector('.remove-user')?.addEventListener('click', () => {
+                                        selectedUserId = null;
+                                        selectedUserDiv.innerHTML = '';
+                                    });
+                                }
+
+                                userSearch.value = '';
+                                userDropdown.classList.remove('active');
+                            });
+                        });
+                    } else if (userDropdown) {
+                        userDropdown.innerHTML = '<div class="user-item" style="text-align: center; color: var(--text-muted);">검색 결과가 없습니다.</div>';
+                        userDropdown.classList.add('active');
+                    }
+                }, 300);
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!userSearch?.contains(e.target as Node) && !userDropdown?.contains(e.target as Node)) {
+                    userDropdown?.classList.remove('active');
+                }
+            });
+
+            // Preview update
+            const titleInput = document.getElementById('title') as HTMLInputElement;
+            const messageInput = document.getElementById('message') as HTMLTextAreaElement;
+            const previewTitle = document.getElementById('previewTitle');
+            const previewMessage = document.getElementById('previewMessage');
+
+            titleInput?.addEventListener('input', (e) => {
+                if (previewTitle) {
+                    previewTitle.textContent = (e.target as HTMLInputElement).value || '알림 제목';
+                }
+            });
+
+            messageInput?.addEventListener('input', (e) => {
+                if (previewMessage) {
+                    previewMessage.textContent = (e.target as HTMLTextAreaElement).value || '알림 메시지가 여기에 표시됩니다.';
+                }
+            });
+
+            // Form submission
+            const form = document.getElementById('notificationForm');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(e.target as HTMLFormElement);
+                const targetType = formData.get('targetType') as string;
+
+                // Validate specific user
+                if (targetType === 'specific' && !selectedUserId) {
+                    alert('사용자를 선택해주세요.');
+                    return;
+                }
+
+                if (!confirm('알림을 발송하시겠습니까?')) {
+                    return;
+                }
+
+                const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+                submitBtn.disabled = true;
+                submitBtn.textContent = '발송 중...';
+
+                try {
+                    const input: any = {
+                        senderId: currentUser.id,
+                        targetType,
+                        title: formData.get('title'),
+                        message: formData.get('message'),
+                        priority: formData.get('priority'),
+                    };
+
+                    // Add optional fields
+                    if (formData.get('link')) input.link = formData.get('link');
+                    if (formData.get('actionLabel')) input.actionLabel = formData.get('actionLabel');
+                    if (formData.get('actionUrl')) input.actionUrl = formData.get('actionUrl');
+
+                    // Add target-specific fields
+                    if (targetType === 'provider') {
+                        input.provider = (document.getElementById('providerSelect') as HTMLSelectElement).value;
+                    } else if (targetType === 'verification_status') {
+                        input.verificationStatus = (document.getElementById('verificationSelect') as HTMLSelectElement).value;
+                    } else if (targetType === 'specific') {
+                        input.specificUserId = selectedUserId;
+                    }
+
+                    const { data, error } = await actions.sendNotification(input);
+
+                    if (error) throw error;
+
+                    alert(`✅ ${data.message}`);
+                    window.location.href = '/admin/verification-requests';
+                } catch (err) {
+                    console.error('Send notification error:', err);
+                    alert('❌ 알림 발송 실패: ' + (err as Error).message);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '발송하기';
+                }
+            });
+        });
+    </script>
+</DashboardLayout>

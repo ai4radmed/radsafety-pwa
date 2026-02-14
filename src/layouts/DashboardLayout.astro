@@ -173,7 +173,7 @@ const { title, description, scale } = Astro.props;
         <script is:inline>
             // Mobile Menu Toggle
             function initMobileMenu() {
-                console.log("Initializing Mobile Menu...");
+                console.log("✅ 1. Initializing Mobile Menu...");
                 const menuBtn = document.getElementById("menuBtn");
                 const sidebar = document.querySelector(".sidebar");
                 const overlay = document.getElementById("sidebarOverlay");
@@ -238,7 +238,7 @@ const { title, description, scale } = Astro.props;
 
             // Auth Check & Store Sync on every page load (supports View Transitions)
             document.addEventListener("astro:page-load", async () => {
-                console.log("Page Load: Checking Auth...");
+                console.log("✅ 2. Page Load Event: Checking Auth...");
                 const {
                     data: { session },
                 } = await supabase.auth.getSession();
@@ -374,6 +374,7 @@ const { title, description, scale } = Astro.props;
 
             async function checkNotifications(userId) {
                 try {
+                    console.log("✅ 3. Checking Notifications for user:", userId);
                     const { count, error } = await supabase
                         .from("notifications")
                         .select("*", { count: "exact", head: true })
@@ -381,14 +382,17 @@ const { title, description, scale } = Astro.props;
                         .eq("is_read", false);
 
                     if (!error) {
+                        console.log("✅ 4. Notification Check Complete. Unread count:", count);
                         const dots =
                             document.querySelectorAll(".global-noti-dot");
                         dots.forEach((dot) => {
                             dot.style.display = count > 0 ? "block" : "none";
                         });
+                    } else {
+                        console.error("❌ Notification Check Error:", error);
                     }
                 } catch (e) {
-                    console.error("Check Noti Error:", e);
+                    console.error("❌ Check Noti Exception:", e);
                 }
             }
         </script>

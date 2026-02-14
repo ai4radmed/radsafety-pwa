@@ -26,18 +26,19 @@ import Icon from "../../components/Icon.astro";
         /* Tabs */
         .status-tabs {
             display: flex;
-            gap: 1rem;
+            gap: 0.5rem;
             margin-bottom: 2rem;
             border-bottom: 2px solid var(--border-color);
             overflow-x: auto;
         }
         .status-tab {
-            padding: 0.75rem 1.5rem;
+            padding: 0.65rem 1rem;
             background: none;
             border: none;
             border-bottom: 2px solid transparent;
             cursor: pointer;
             font-weight: 600;
+            font-size: 0.9rem;
             color: var(--text-muted);
             transition: all 0.2s;
             white-space: nowrap;
@@ -145,6 +146,10 @@ import Icon from "../../components/Icon.astro";
         .badge-list {
             background: #dbeafe;
             color: #1e40af;
+        }
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
         }
         .badge-none {
             background: #f3f4f6;
@@ -329,22 +334,25 @@ import Icon from "../../components/Icon.astro";
 
     <div class="requests-container">
         <div class="page-header">
-            <h1 class="page-title">회원 인증 관리</h1>
+            <h1 class="page-title">인증요청 검토</h1>
             <p class="page-subtitle">
-                학회원 및 특별회원의 인증 상태를 관리합니다.
+                회원들의 인증 요청을 검토하고 승인/반려 처리합니다.
             </p>
         </div>
 
         <!-- Status Tabs -->
         <div class="status-tabs">
             <button class="status-tab active" data-status="temp_verified">
-                임시 인증 (<span id="temp_verifiedCount">0</span>)
+                임시인증 (<span id="temp_verifiedCount">0</span>)
             </button>
             <button class="status-tab" data-status="verified">
-                최종 인증 (<span id="verifiedCount">0</span>)
+                최종인증 (<span id="verifiedCount">0</span>)
+            </button>
+            <button class="status-tab" data-status="rejected">
+                인증취소 (<span id="rejectedCount">0</span>)
             </button>
             <button class="status-tab" data-status="list">
-                명부 인증 (<span id="listCount">0</span>)
+                명부인증 (<span id="listCount">0</span>)
             </button>
             <button class="status-tab" data-status="none">
                 미인증 (<span id="noneCount">0</span>)
@@ -393,59 +401,40 @@ import Icon from "../../components/Icon.astro";
             </div>
             <div class="modal-body">
                 <div class="info-grid">
-                    <!-- Basic Info -->
+                    <!-- 이메일 -->
                     <div class="info-section">
-                        <div class="info-section-title">기본 정보</div>
                         <div class="info-row">
-                            <span class="info-label">이름</span>
-                            <span class="info-value" id="detailName">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">인증 상태</span>
-                            <span class="info-value" id="detailStatus">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">로그인 이메일</span>
-                            <span class="info-value" id="detailLoginEmail">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">인증 이메일</span>
-                            <span class="info-value" id="detailSocietyEmail">-</span>
+                            <span class="info-label">이메일</span>
+                            <span class="info-value" id="detailEmail" style="font-size: 0.9rem;">-</span>
                         </div>
                     </div>
 
-                    <!-- Organization Info -->
+                    <!-- 부서 -->
                     <div class="info-section">
-                        <div class="info-section-title">소속 정보</div>
-                        <div class="info-row">
-                            <span class="info-label">학회</span>
-                            <span class="info-value" id="detailSociety">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">구분</span>
-                            <span class="info-value" id="detailClassification">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">소속 기관</span>
-                            <span class="info-value" id="detailAffiliation">-</span>
-                        </div>
                         <div class="info-row">
                             <span class="info-label">부서</span>
                             <span class="info-value" id="detailDepartment">-</span>
                         </div>
                     </div>
 
-                    <!-- Verification Info -->
+                    <!-- 신청 이유 -->
                     <div class="info-section">
-                        <div class="info-section-title">인증 정보</div>
                         <div class="info-row">
-                            <span class="info-label">인증 일시</span>
-                            <span class="info-value" id="detailVerificationDate">-</span>
+                            <span class="info-label">신청 이유</span>
+                            <span class="info-value" id="detailReason">-</span>
                         </div>
+                    </div>
+
+                    <!-- 취소 사유 입력 (취소 시에만 표시) -->
+                    <div class="info-section" id="rejectReasonSection" style="display: none;">
                         <div class="info-row">
-                            <span class="info-label">사용자 ID</span>
-                            <span class="info-value" id="detailUserId" style="font-family: monospace; font-size: 0.85rem;">-</span>
+                            <span class="info-label">취소 사유</span>
                         </div>
+                        <textarea
+                            id="rejectReasonInput"
+                            placeholder="취소 사유를 입력하세요 (사용자에게 알림으로 전송됩니다)"
+                            style="width: 100%; min-height: 80px; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-main); resize: vertical;"
+                        ></textarea>
                     </div>
                 </div>
             </div>
@@ -481,9 +470,26 @@ import Icon from "../../components/Icon.astro";
                 currentStatus = tab.dataset.status;
                 statusTabs.forEach((t) => t.classList.remove("active"));
                 tab.classList.add("active");
+                updateTableHeader(currentStatus);
                 loadUsers(currentStatus);
             });
         });
+
+        // Update table header based on status
+        function updateTableHeader(status) {
+            const headerCells = document.querySelectorAll('.users-table thead th');
+            if (headerCells.length >= 4) {
+                // 4번째 헤더 (인덱스 3)를 상태에 따라 변경
+                const headerTexts = {
+                    'temp_verified': '인증요청일',
+                    'verified': '최종인증일',
+                    'list': '자동인증일',
+                    'rejected': '인증취소일',
+                    'none': '인증요청일'
+                };
+                headerCells[3].textContent = headerTexts[status] || '인증요청일';
+            }
+        }
 
         // Search functionality
         const searchInput = document.getElementById("userSearch");
@@ -491,27 +497,47 @@ import Icon from "../../components/Icon.astro";
             filterUsers(e.target.value);
         });
 
-        // Load users from profiles table
+        // Load users from verification_requests JOIN profiles
         async function loadUsers(status) {
             const tbody = document.getElementById("usersTableBody");
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">로딩 중...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">로딩 중...</td></tr>';
 
             try {
-                const { data, error } = await supabase
+                // verification_requests와 profiles를 JOIN
+                const { data: requests, error: reqError } = await supabase
+                    .from("verification_requests")
+                    .select("*")
+                    .order("verification_date", { ascending: false });
+
+                if (reqError) throw reqError;
+
+                // profiles 데이터 가져오기
+                const { data: profiles, error: profError } = await supabase
                     .from("profiles")
                     .select("*")
                     .eq("verification_status", status)
-                    .not("society_email", "is", null)
-                    .order("verification_date", { ascending: false });
+                    .not("society_email", "is", null);
 
-                if (error) throw error;
+                if (profError) throw profError;
 
-                allUsers = data || [];
+                // user_id 기준으로 JOIN
+                allUsers = (profiles || []).map(profile => {
+                    const request = (requests || []).find(req => req.user_id === profile.id);
+                    return {
+                        ...profile,
+                        reason: request?.reason || '-',
+                        reject_reason: request?.reject_reason || '-',
+                        rejected_at: request?.rejected_at,
+                        approved_at: request?.approved_at,
+                        request_id: request?.id
+                    };
+                });
+
                 updateCounts();
                 renderUsers(allUsers);
             } catch (err) {
                 console.error("Load Users Error:", err);
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">오류가 발생했습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">오류가 발생했습니다.</td></tr>';
             }
         }
 
@@ -524,16 +550,40 @@ import Icon from "../../components/Icon.astro";
             }
 
             tbody.innerHTML = users.map(user => {
-                const verificationDate = user.verification_date
-                    ? new Date(user.verification_date).toLocaleDateString("ko-KR")
-                    : "-";
+                // 각 탭별로 적절한 날짜 표시
+                let dateToShow = "-";
+
+                if (currentStatus === 'temp_verified') {
+                    // 임시 인증: 인증 요청일 (verification_date)
+                    dateToShow = user.verification_date
+                        ? new Date(user.verification_date).toLocaleDateString("ko-KR")
+                        : "-";
+                } else if (currentStatus === 'verified') {
+                    // 최종 인증: 최종 인증일 (approved_at)
+                    dateToShow = user.approved_at
+                        ? new Date(user.approved_at).toLocaleDateString("ko-KR")
+                        : "-";
+                } else if (currentStatus === 'list') {
+                    // 명부 인증: 자동 인증일 (verification_date)
+                    dateToShow = user.verification_date
+                        ? new Date(user.verification_date).toLocaleDateString("ko-KR")
+                        : "-";
+                } else if (currentStatus === 'rejected') {
+                    // 인증 취소: 인증 취소일 (rejected_at)
+                    dateToShow = user.rejected_at
+                        ? new Date(user.rejected_at).toLocaleDateString("ko-KR")
+                        : "-";
+                } else if (currentStatus === 'none') {
+                    // 미인증: 데이터 없음 (항상 "-")
+                    dateToShow = "-";
+                }
 
                 return `
                     <tr data-user-id="${user.id}">
                         <td>${user.real_name || user.nickname || '이름 없음'}</td>
                         <td>${user.affiliation || '-'}</td>
                         <td>${user.classification || '-'}</td>
-                        <td>${verificationDate}</td>
+                        <td>${dateToShow}</td>
                     </tr>
                 `;
             }).join('');
@@ -567,6 +617,7 @@ import Icon from "../../components/Icon.astro";
                 'temp_verified': '<span class="status-badge badge-temp">⏳ 임시 인증</span>',
                 'verified': '<span class="status-badge badge-verified">✓ 최종 인증</span>',
                 'list': '<span class="status-badge badge-list">📋 명부 인증</span>',
+                'rejected': '<span class="status-badge badge-rejected">❌ 인증취소</span>',
                 'none': '<span class="status-badge badge-none">미인증</span>'
             };
             return badges[status] || badges['none'];
@@ -583,28 +634,36 @@ import Icon from "../../components/Icon.astro";
         function showUserDetail(user) {
             selectedUser = user;
 
-            // Populate modal
+            // Populate modal - 이메일, 부서, 이유 표시
             document.getElementById('modalUserName').textContent = user.real_name || user.nickname || '사용자';
-            document.getElementById('detailName').textContent = user.real_name || user.nickname || '-';
-            document.getElementById('detailStatus').innerHTML = getStatusBadge(user.verification_status);
-            document.getElementById('detailLoginEmail').textContent = user.login_email || '-';
-            document.getElementById('detailSocietyEmail').textContent = user.society_email || '-';
-            document.getElementById('detailSociety').textContent = getSocietyName(user.society);
-            document.getElementById('detailClassification').textContent = user.classification || '-';
-            document.getElementById('detailAffiliation').textContent = user.affiliation || '-';
+            document.getElementById('detailEmail').textContent = user.society_email || user.login_email || '-';
             document.getElementById('detailDepartment').textContent = user.department || '-';
-            document.getElementById('detailVerificationDate').textContent = user.verification_date
-                ? new Date(user.verification_date).toLocaleString("ko-KR")
-                : '-';
-            document.getElementById('detailUserId').textContent = user.id;
+
+            // 인증취소 탭에서는 취소 이유 표시, 그 외는 신청 이유 표시
+            const reasonLabelEl = document.querySelector('#detailReason').previousElementSibling;
+            const reasonValueEl = document.getElementById('detailReason');
+
+            if (user.verification_status === 'rejected') {
+                reasonLabelEl.textContent = '취소 이유';
+                reasonValueEl.textContent = user.reject_reason || '-';
+            } else {
+                reasonLabelEl.textContent = '신청 이유';
+                reasonValueEl.textContent = user.reason || '-';
+            }
+
+            // 취소 사유 섹션 초기화
+            const rejectSection = document.getElementById('rejectReasonSection');
+            const rejectInput = document.getElementById('rejectReasonInput');
+            rejectSection.style.display = 'none';
+            rejectInput.value = '';
 
             // Populate actions
             const actionsContainer = document.getElementById('modalActions');
             if (user.verification_status === 'temp_verified') {
                 actionsContainer.innerHTML = `
                     <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
-                    <button class="btn btn-reject" data-action="reject">미인증 처리</button>
-                    <button class="btn btn-approve" data-action="approve">최종 승인</button>
+                    <button class="btn btn-reject" data-action="show-reject">취소</button>
+                    <button class="btn btn-approve" data-action="approve">확정</button>
                 `;
             } else if (user.verification_status === 'verified') {
                 actionsContainer.innerHTML = `
@@ -621,9 +680,29 @@ import Icon from "../../components/Icon.astro";
             actionsContainer.querySelectorAll('[data-action]').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const action = e.target.dataset.action;
-                    if (action === 'approve') await approveUser(user.id);
-                    else if (action === 'reject') await rejectUser(user.id);
-                    else if (action === 'revoke') await revokeUser(user.id);
+                    if (action === 'approve') {
+                        await approveUser(user.id);
+                    } else if (action === 'show-reject') {
+                        // 취소 사유 입력창 표시 및 버튼 변경
+                        rejectSection.style.display = 'block';
+                        actionsContainer.innerHTML = `
+                            <button class="btn btn-secondary" data-action="cancel-reject">취소 사유 입력 취소</button>
+                            <button class="btn btn-reject" data-action="confirm-reject">취소 확정</button>
+                        `;
+                        // 새 버튼에 리스너 재부착
+                        actionsContainer.querySelectorAll('[data-action]').forEach(newBtn => {
+                            newBtn.addEventListener('click', async (e2) => {
+                                const newAction = e2.target.dataset.action;
+                                if (newAction === 'confirm-reject') {
+                                    await rejectUser(user.id);
+                                } else if (newAction === 'cancel-reject') {
+                                    showUserDetail(user); // 모달 다시 로드
+                                }
+                            });
+                        });
+                    } else if (action === 'revoke') {
+                        await revokeUser(user.id);
+                    }
                 });
             });
 
@@ -650,59 +729,130 @@ import Icon from "../../components/Icon.astro";
                 return;
 
             try {
-                const { error } = await supabase
+                // 사용자 정보 조회
+                const { data: profile, error: fetchError } = await supabase
+                    .from("profiles")
+                    .select("society, classification, real_name")
+                    .eq("id", userId)
+                    .single();
+
+                if (fetchError) throw fetchError;
+
+                // profiles 테이블 업데이트
+                const { error: profileError } = await supabase
                     .from("profiles")
                     .update({ verification_status: "verified" })
                     .eq("id", userId);
 
-                if (error) throw error;
+                if (profileError) throw profileError;
 
+                // verification_requests 테이블 업데이트 (승인 일시 기록)
+                const { error: requestError } = await supabase
+                    .from("verification_requests")
+                    .update({
+                        verification_status: "approved",
+                        approved_at: new Date().toISOString()
+                    })
+                    .eq("user_id", userId);
+
+                if (requestError) console.warn("verification_requests 업데이트 실패:", requestError);
+
+                // 학회 이름 매핑
+                const societyMap = {
+                    nuclear_medicine: '대한핵의학회',
+                    technology: '대한핵의학기술학회'
+                };
+                const societyName = societyMap[profile.society] || profile.society || '-';
+                const classification = profile.classification || '-';
+
+                // 알림 생성 (확장된 필드 사용)
                 await supabase
                     .from("notifications")
                     .insert({
                         user_id: userId,
-                        title: "✅ 최종 인증 완료",
-                        message: `임시 인증이 관리자 승인을 거쳐 최종 인증으로 확정되었습니다.`,
+                        sender_id: currentUser.id,
+                        type: "verification_approved",
+                        priority: "high",
+                        title: "✅ 인증이 최종 승인되었습니다",
+                        message: `인증 요청이 앱관리자에 의해 최종 승인되었습니다.\n\n${societyName} ${classification}으로 등록되었습니다.`,
+                        link: "/mypage",
+                        action_label: "프로필 확인",
+                        action_url: "/mypage",
+                        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                        metadata: JSON.stringify({
+                            society_name: societyName,
+                            classification: classification
+                        })
                     });
 
                 alert("✅ 최종 인증 처리가 완료되었습니다.");
-                closeModal();
-                loadUsers(currentStatus);
+                window.location.reload(); // 모달 닫기 대신 페이지 새로고침
             } catch (err) {
                 console.error("Approve Error:", err);
-                alert("❌ 오류가 발생했습니다: " + err.message);
+                alert("❌ 오류가 발생했습니다: " + (err as Error).message);
             }
         }
 
         async function rejectUser(userId) {
-            const note = prompt("미인증 처리 사유를 입력하세요 (사용자에게 알림으로 전송됩니다):");
+            // 입력창에서 취소 사유 가져오기
+            const rejectInput = document.getElementById('rejectReasonInput') as HTMLInputElement;
+            const note = rejectInput?.value.trim() || '';
+
             if (!note) {
-                alert("사유를 입력해야 합니다.");
+                alert("취소 사유를 입력해야 합니다.");
+                rejectInput?.focus();
+                return;
+            }
+
+            if (!confirm("이 사용자를 미인증으로 처리하시겠습니까?")) {
                 return;
             }
 
             try {
-                const { error } = await supabase
+                // profiles 테이블 업데이트 - 'rejected' 상태로 변경
+                const { error: profileError } = await supabase
                     .from("profiles")
-                    .update({ verification_status: "none" })
+                    .update({ verification_status: "rejected" })
                     .eq("id", userId);
 
-                if (error) throw error;
+                if (profileError) throw profileError;
 
+                // verification_requests 테이블 업데이트 (취소 일시 및 사유 기록)
+                const { error: requestError } = await supabase
+                    .from("verification_requests")
+                    .update({
+                        verification_status: "rejected",
+                        rejected_at: new Date().toISOString(),
+                        reject_reason: note
+                    })
+                    .eq("user_id", userId);
+
+                if (requestError) console.warn("verification_requests 업데이트 실패:", requestError);
+
+                // 알림 생성 (확장된 필드 사용)
                 await supabase
                     .from("notifications")
                     .insert({
                         user_id: userId,
+                        sender_id: currentUser.id,
+                        type: "verification_rejected",
+                        priority: "high",
                         title: "❌ 인증이 취소되었습니다",
-                        message: `관리자 검토 결과 인증이 취소되었습니다.\n사유: ${note}\n\n정보를 수정하여 다시 신청해주시기 바랍니다.`,
+                        message: `관리자 검토 결과 인증이 취소되었습니다.\n\n사유: ${note}\n\n정보를 수정하여 다시 신청해주시기 바랍니다.`,
+                        link: "/mypage",
+                        action_label: "재신청",
+                        action_url: "/mypage",
+                        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                        metadata: JSON.stringify({
+                            reject_reason: note
+                        })
                     });
 
                 alert("✅ 미인증 처리 및 알림 전송이 완료되었습니다.");
-                closeModal();
-                loadUsers(currentStatus);
+                window.location.reload(); // 모달 닫기 대신 페이지 새로고침
             } catch (err) {
                 console.error("Reject Error:", err);
-                alert("❌ 오류가 발생했습니다: " + err.message);
+                alert("❌ 오류가 발생했습니다: " + (err as Error).message);
             }
         }
 
@@ -711,19 +861,30 @@ import Icon from "../../components/Icon.astro";
                 return;
 
             try {
-                const { error } = await supabase
+                // profiles 테이블 업데이트
+                const { error: profileError } = await supabase
                     .from("profiles")
                     .update({ verification_status: "temp_verified" })
                     .eq("id", userId);
 
-                if (error) throw error;
+                if (profileError) throw profileError;
+
+                // verification_requests 테이블 업데이트
+                const { error: requestError } = await supabase
+                    .from("verification_requests")
+                    .update({ verification_status: "pending" })
+                    .eq("user_id", userId);
+
+                if (requestError) console.warn("verification_requests 업데이트 실패:", requestError);
 
                 await supabase
                     .from("notifications")
                     .insert({
                         user_id: userId,
+                        type: "verification",
                         title: "⚠️ 인증 상태 변경",
                         message: `최종 인증이 임시 인증으로 되돌려졌습니다. 재검토가 필요합니다.`,
+                        link: "/mypage",
                     });
 
                 alert("✅ 임시 인증으로 변경되었습니다.");
@@ -736,7 +897,7 @@ import Icon from "../../components/Icon.astro";
         }
 
         async function updateCounts() {
-            const statuses = ["temp_verified", "verified", "list", "none"];
+            const statuses = ["temp_verified", "verified", "list", "rejected", "none"];
             for (const status of statuses) {
                 const { count } = await supabase
                     .from("profiles")

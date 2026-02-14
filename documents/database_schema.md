@@ -18,25 +18,34 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 ### 1. `profiles`
 사용자 프로필 정보를 저장하며, `auth.users` 테이블과 1:1로 연결됩니다.
 
-| 필드명 | 타입 | 설명 |
-| :--- | :--- | :--- |
-| `id` | `uuid` (PK) | `auth.users.id` 참조 (외래키) |
-| `nickname` | `text` | 카카오 닉네임 (표시용) |
-| `login_email` | `text` | 로그인 이메일 (auth.users.email 복사본) |
-| `created_at` | `timestamp` | 프로필 생성 일시 (앱 가입일) |
-| `is_admin` | `boolean` | 관리자 여부 |
-| `verification_status` | `text` | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료) |
-| `verification_date` | `timestamp` | 인증 (요청/완료) 일시 |
-| `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
-| `classification` | `text` | 직종 구분 (의사, 방사선사 등) |
-| `society_email` | `text` | 학회/특별사용자 인증용 이메일 |
-| `real_name` | `text` | 실명 (학회 인증 정보) |
-| `affiliation` | `text` | 소속 기관 |
-| `department` | `text` | 소속 부서 |
-| `license_type` | `text` | 보유 면허 종류 |
-| `is_safety_manager` | `boolean` | 방사선안전관리자 여부 |
-| `safety_manager_start_year` | `text` | 업무 시작년도 |
-| `safety_manager_end_year` | `text` | 업무 종료년도 |
+| 필드명 | 타입 | 설명 | 기본값 |
+| :--- | :--- | :--- | :--- |
+| `id` | `uuid` (PK) | `auth.users.id` 참조 (외래키) | |
+| `nickname` | `text` | 카카오 닉네임 (표시용) | |
+| `login_email` | `text` | 로그인 이메일 (auth.users.email 복사본) | |
+| `provider` | `text` | 로그인 제공자 (`kakao`, `email` 등) | |
+| `created_at` | `timestamp` | 프로필 생성 일시 (앱 가입일) | `now()` |
+| `is_admin` | `boolean` | 관리자 여부 | `false` |
+| `verification_status` | `text` | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료) | `'none'` |
+| `verification_date` | `timestamp` | 인증 (요청/완료) 일시 | |
+| `society` | `text` | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) | |
+| `classification` | `text` | 직종 구분 (의사, 방사선사 등) | |
+| `society_email` | `text` | 학회/특별사용자 인증용 이메일 | |
+| `real_name` | `text` | 실명 (학회 인증 정보) | |
+| `affiliation` | `text` | 소속 기관 | |
+| `department` | `text` | 소속 부서 | |
+| `license_type` | `text` | 보유 면허 종류 (`none`, `supervisor`, `special`, `general`, `engineer`) | |
+| `is_safety_manager` | `boolean` | 방사선안전관리자 여부 | `false` |
+| `safety_manager_start_year` | `text` | 안전관리자 업무 시작년도 | |
+| `safety_manager_end_year` | `text` | 안전관리자 업무 종료년도 | |
+| `email_verified` | `boolean` | society_email 검증 완료 여부 | `false` |
+| `verification_method` | `text` | 이메일 검증 방법 (`login_email`, `otp`, `list`) | |
+
+> **Note**: `verification_status`는 4단계로 구분됩니다:
+> - `none`: 미인증 (기본값, 권한 없음)
+> - `list`: 회원명부 인증 (즉시 인증, 모든 권한)
+> - `temp_verified`: 임시 인증 (이메일 검증 완료, 관리자 승인 대기, 권한 부여)
+> - `verified`: 관리자 승인 완료 (최종 인증, 모든 권한)
 
 ### 2. `findings`
 지적 및 권고 사례 데이터를 저장합니다.
@@ -100,6 +109,40 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `affiliation` | `text` | 근무 기관 |
 | `department` | `text` | 소속 부서 |
 | `reason` | `text` | 신청 사유 |
+| `reject_reason` | `text` | 인증 취소 사유 (관리자가 입력) |
+| `approved_at` | `timestamp` | 인증 승인 일시 |
+| `rejected_at` | `timestamp` | 인증 취소 일시 |
+
+### 6. `notifications`
+사용자 알림 메시지를 저장합니다.
+
+| 필드명 | 타입 | 설명 | 기본값 |
+| :--- | :--- | :--- | :--- |
+| `id` | `uuid` (PK) | 고유 식별자 | `gen_random_uuid()` |
+| `user_id` | `uuid` (FK) | 수신자 ID (`profiles.id` 참조) | |
+| `title` | `text` | 알림 제목 (짧은 요약) | |
+| `message` | `text` | 알림 메시지 본문 | |
+| `link` | `text` | 클릭 시 이동할 URL (선택적) | |
+| `is_read` | `boolean` | 읽음 여부 | `false` |
+| `created_at` | `timestamp` | 생성 일시 | `now()` |
+
+> **Note**: 관리자가 인증 승인/취소 시 자동으로 알림이 생성되며, 사용자는 알림함에서 읽음 여부를 관리할 수 있습니다.
+
+### 7. `email_verification_codes`
+이메일 소유권 확인을 위한 OTP 코드를 저장합니다.
+
+| 필드명 | 타입 | 설명 | 기본값 |
+| :--- | :--- | :--- | :--- |
+| `id` | `uuid` (PK) | 고유 식별자 | `gen_random_uuid()` |
+| `user_id` | `uuid` (FK) | 사용자 ID (`auth.users.id` 참조) | |
+| `email` | `text` | 인증할 이메일 주소 | |
+| `code` | `text` | 6자리 인증 코드 | |
+| `created_at` | `timestamp` | 생성 일시 | `now()` |
+| `expires_at` | `timestamp` | 만료 일시 (생성 후 10분) | `now() + 10분` |
+| `verified` | `boolean` | 인증 완료 여부 | `false` |
+| `verified_at` | `timestamp` | 인증 완료 일시 | |
+
+> **Note**: 학회 이메일 인증 시 사용되며, 10분 후 자동 만료됩니다.
 
 ## RPC 함수 (Stored Procedures)
 
