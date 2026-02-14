@@ -21,10 +21,6 @@ const isActive = (href) => {
             document.dispatchEvent(new CustomEvent("open-glossary"));
         });
 
-        const feedbackBtn = document.getElementById("sidebarFeedbackBtn");
-        feedbackBtn?.addEventListener("click", () => {
-            alert("의견보내기는 현재 개발 중입니다.\nkimbi.kirams@gmail.com으로 연락 부탁드립니다.");
-        });
 
         // Auth State Handling
         const apiLoginLink = document.getElementById("navLoginLink");
@@ -104,15 +100,6 @@ const isActive = (href) => {
         </a>
         <button
             type="button"
-            id="sidebarFeedbackBtn"
-            class="nav-btn"
-            aria-label="Feedback"
-        >
-            <span class="icon"><Icon name="mail" size="18" /></span>
-            <span class="link-text">의견보내기</span>
-        </button>
-        <button
-            type="button"
             id="sidebarGlossaryBtn"
             class="nav-btn"
             aria-label="Glossary"
@@ -159,6 +146,22 @@ const isActive = (href) => {
                 <span class="global-noti-dot notification-dot"></span>
             </span>
             <span class="link-text">알림함</span>
+        </a>
+        <a
+            href="/feedback"
+            class={pathname === "/feedback" ? "active" : ""}
+            aria-label="Feedback"
+        >
+            <span class="icon"><Icon name="mail" size="18" /></span>
+            <span class="link-text">의견보내기</span>
+        </a>
+        <a
+            href="/my-feedback"
+            class={pathname.startsWith("/my-feedback") ? "active" : ""}
+            aria-label="My Feedback"
+        >
+            <span class="icon"><Icon name="inbox" size="18" /></span>
+            <span class="link-text">내 의견함</span>
         </a>
         <a
             href="/login"
@@ -215,6 +218,16 @@ const isActive = (href) => {
         >
             <span class="icon"><Icon name="bell" size="18" /></span>
             <span class="link-text">알림 발송</span>
+        </a>
+        <a
+            href="/admin/feedback"
+            class={pathname.startsWith("/admin/feedback")
+                ? "active"
+                : ""}
+            aria-label="Feedback Management"
+        >
+            <span class="icon"><Icon name="mail" size="18" /></span>
+            <span class="link-text">의견 관리</span>
         </a>
     </div>
 

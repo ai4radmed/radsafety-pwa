@@ -435,3 +435,131 @@ COMMENT ON COLUMN public.notifications.action_url IS '액션 버튼 클릭 시 �
 COMMENT ON COLUMN public.notifications.read_at IS '읽은 일시';
 COMMENT ON COLUMN public.notifications.expires_at IS '만료 일시 (자동 삭제 시점)';
 COMMENT ON COLUMN public.notifications.metadata IS '추가 메타데이터 (JSON)';
+
+-- ============================================================
+-- 6. Feedback Table (의견보내기)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.feedback (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    user_name text NOT NULL,
+    user_email text NOT NULL,
+    title text NOT NULL,
+    message text NOT NULL,
+    attachments jsonb DEFAULT '[]'::jsonb,
+    status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'resolved')),
+    admin_note text,
+    created_at timestamptz DEFAULT now(),
+    resolved_at timestamptz,
+    resolved_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- RLS for feedback
+ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+
+-- Users can view their own feedback
+CREATE POLICY "Users can view own feedback"
+    ON public.feedback
+    FOR SELECT
+    USING (auth.uid() = user_id);
+
+-- Users can insert their own feedback
+CREATE POLICY "Users can insert own feedback"
+    ON public.feedback
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+-- Admins can view all feedback
+CREATE POLICY "Admins can view all feedback"
+    ON public.feedback
+    FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
+
+-- Admins can update all feedback
+CREATE POLICY "Admins can update all feedback"
+    ON public.feedback
+    FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
+
+-- Admins can delete all feedback
+CREATE POLICY "Admins can delete all feedback"
+    ON public.feedback
+    FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
+
+-- Indexes for feedback
+CREATE INDEX IF NOT EXISTS idx_feedback_user_id
+    ON public.feedback(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_status
+    ON public.feedback(status);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_created
+    ON public.feedback(created_at DESC);
+
+-- Comments
+COMMENT ON TABLE public.feedback IS '사용자 의견/문의 저장';
+COMMENT ON COLUMN public.feedback.user_id IS '작성자 ID (NULL 가능 - 탈퇴한 사용자)';
+COMMENT ON COLUMN public.feedback.attachments IS '첨부파일 정보 배열 [{filename, url, size}]';
+COMMENT ON COLUMN public.feedback.status IS '처리 상태 (pending: 미처리, processing: 처리중, resolved: 완료)';
+COMMENT ON COLUMN public.feedback.admin_note IS '관리자 메모';
+COMMENT ON COLUMN public.feedback.resolved_by IS '처리한 관리자 ID';
+
+-- ============================================================
+-- 7. Storage Bucket for Feedback Attachments
+-- ============================================================
+
+-- Create feedback-attachments bucket
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('feedback-attachments', 'feedback-attachments', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for feedback-attachments
+CREATE POLICY "Users can upload their own feedback attachments"
+    ON storage.objects
+    FOR INSERT
+    WITH CHECK (
+        bucket_id = 'feedback-attachments' AND
+        auth.uid()::text = (storage.foldername(name))[1]
+    );
+
+CREATE POLICY "Users can view their own feedback attachments"
+    ON storage.objects
+    FOR SELECT
+    USING (
+        bucket_id = 'feedback-attachments' AND
+        (
+            auth.uid()::text = (storage.foldername(name))[1] OR
+            EXISTS (
+                SELECT 1 FROM public.profiles
+                WHERE id = auth.uid() AND is_admin = true
+            )
+        )
+    );
+
+CREATE POLICY "Admins can delete feedback attachments"
+    ON storage.objects
+    FOR DELETE
+    USING (
+        bucket_id = 'feedback-attachments' AND
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
