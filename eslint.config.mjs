@@ -14,6 +14,7 @@ export default [
             '.astro/',
             'manuscripts/',
             'scripts/',
+            'src/scripts/',
         ],
     },
     {

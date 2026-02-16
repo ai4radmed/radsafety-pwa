@@ -2,11 +2,7 @@
     <div class="lightbox-header">
         <span class="lightbox-title">문서 미리보기</span>
         <div class="controls">
-            <button
-                id="view-toggle"
-                class="view-toggle-btn"
-                title="보기 방식 변경"
-            >
+            <button id="view-toggle" class="view-toggle-btn" title="보기 방식 변경">
                 <span class="icon">📄</span> 1쪽 보기
             </button>
             <span class="close">&times;</span>
@@ -155,25 +151,23 @@
 
 <script>
     function initLightbox() {
-        const lightbox = document.getElementById("image-lightbox");
-        const pagesContainer = document.getElementById("lightbox-pages");
-        const closeBtn = lightbox.querySelector(".close");
-        const viewToggleBtn = document.getElementById("view-toggle");
+        const lightbox = document.getElementById('image-lightbox')!;
+        const pagesContainer = document.getElementById('lightbox-pages')!;
+        const closeBtn = lightbox.querySelector('.close') as HTMLElement;
+        const viewToggleBtn = document.getElementById('view-toggle') as HTMLElement;
 
         let isSpreadView = false;
 
         // View Toggle Logic
         const updateView = () => {
             if (isSpreadView) {
-                pagesContainer.classList.add("spread-view");
-                viewToggleBtn.innerHTML =
-                    '<span class="icon">📖</span> 2쪽 보기'; // Active state indicator
-                viewToggleBtn.style.background = "rgba(255, 255, 255, 0.3)";
+                pagesContainer.classList.add('spread-view');
+                viewToggleBtn.innerHTML = '<span class="icon">📖</span> 2쪽 보기'; // Active state indicator
+                viewToggleBtn.style.background = 'rgba(255, 255, 255, 0.3)';
             } else {
-                pagesContainer.classList.remove("spread-view");
-                viewToggleBtn.innerHTML =
-                    '<span class="icon">📄</span> 1쪽 보기';
-                viewToggleBtn.style.background = "rgba(255, 255, 255, 0.1)";
+                pagesContainer.classList.remove('spread-view');
+                viewToggleBtn.innerHTML = '<span class="icon">📄</span> 1쪽 보기';
+                viewToggleBtn.style.background = 'rgba(255, 255, 255, 0.1)';
             }
         };
 
@@ -185,10 +179,10 @@
 
         // Close functions
         const closeLightbox = () => {
-            lightbox.classList.remove("show");
+            lightbox.classList.remove('show');
             setTimeout(() => {
-                lightbox.style.display = "none";
-                pagesContainer.innerHTML = ""; // Clear content
+                lightbox.style.display = 'none';
+                pagesContainer.innerHTML = ''; // Clear content
                 // Reset view on close
                 isSpreadView = false;
                 updateView();
@@ -198,35 +192,35 @@
         closeBtn.onclick = closeLightbox;
 
         // Close on background click (area outside pages)
-        lightbox.querySelector(".lightbox-scroll-container").onclick =
-            function (e) {
-                if (e.target === this) {
-                    closeLightbox();
-                }
-            };
+        const scrollContainer = lightbox.querySelector('.lightbox-scroll-container') as HTMLElement;
+        scrollContainer.onclick = function (e) {
+            if (e.target === scrollContainer) {
+                closeLightbox();
+            }
+        };
 
         // Handle Escape key
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape" && lightbox.style.display === "flex") {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.style.display === 'flex') {
                 closeLightbox();
             }
         });
 
         // Open function
-        window.openLightbox = (srcString) => {
+        (window as any).openLightbox = (srcString: string) => {
             // Support multiple images separated by comma
             const srcs = srcString
-                .split(",")
+                .split(',')
                 .map((s) => s.trim())
                 .filter((s) => s);
 
-            pagesContainer.innerHTML = "";
+            pagesContainer.innerHTML = '';
 
             srcs.forEach((src) => {
-                const img = document.createElement("img");
+                const img = document.createElement('img');
                 img.src = src;
-                img.className = "lightbox-page";
-                img.loading = "lazy";
+                img.className = 'lightbox-page';
+                img.loading = 'lazy';
                 pagesContainer.appendChild(img);
             });
 
@@ -235,26 +229,27 @@
             isSpreadView = false;
             updateView();
 
-            lightbox.style.display = "flex";
+            lightbox.style.display = 'flex';
             // force reflow
             void lightbox.offsetWidth;
-            lightbox.classList.add("show");
+            lightbox.classList.add('show');
         };
 
         // Event Delegation
-        document.body.addEventListener("click", (e) => {
-            if (e.target.matches(".inline-example-btn")) {
+        document.body.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.matches('.inline-example-btn')) {
                 e.preventDefault();
                 e.stopPropagation();
-                const src = e.target.dataset.img;
+                const src = target.dataset.img;
                 if (src) {
-                    window.openLightbox(src);
+                    (window as any).openLightbox(src);
                 }
             }
         });
     }
 
-    document.addEventListener("astro:page-load", initLightbox);
-    if (document.readyState !== "loading") initLightbox();
-    else document.addEventListener("DOMContentLoaded", initLightbox);
+    document.addEventListener('astro:page-load', initLightbox);
+    if (document.readyState !== 'loading') initLightbox();
+    else document.addEventListener('DOMContentLoaded', initLightbox);
 </script>

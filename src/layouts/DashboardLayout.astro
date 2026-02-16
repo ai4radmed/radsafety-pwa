@@ -174,7 +174,7 @@ const { title, description, scale } = Astro.props;
                 if (menuBtn && sidebar) {
                     // Remove old listener to avoid duplicates if re-running
                     const newBtn = menuBtn.cloneNode(true);
-                    menuBtn.parentNode.replaceChild(newBtn, menuBtn);
+                    if (menuBtn.parentNode) menuBtn.parentNode.replaceChild(newBtn, menuBtn);
 
                     newBtn.addEventListener('click', () => {
                         console.log('Menu clicked');
@@ -186,7 +186,7 @@ const { title, description, scale } = Astro.props;
                 if (overlay && sidebar) {
                     // Remove old listener
                     const newOverlay = overlay.cloneNode(true);
-                    overlay.parentNode.replaceChild(newOverlay, overlay);
+                    if (overlay.parentNode) overlay.parentNode.replaceChild(newOverlay, overlay);
 
                     newOverlay.addEventListener('click', () => {
                         console.log('Overlay clicked');
@@ -197,7 +197,7 @@ const { title, description, scale } = Astro.props;
 
                 if (glossaryBtn) {
                     const newGlossaryBtn = glossaryBtn.cloneNode(true);
-                    glossaryBtn.parentNode.replaceChild(newGlossaryBtn, glossaryBtn);
+                    if (glossaryBtn.parentNode) glossaryBtn.parentNode.replaceChild(newGlossaryBtn, glossaryBtn);
 
                     newGlossaryBtn.addEventListener('click', () => {
                         document.dispatchEvent(new CustomEvent('open-glossary'));
@@ -231,7 +231,7 @@ const { title, description, scale } = Astro.props;
                 await updateUserStore(session);
             });
 
-            async function updateUserStore(session) {
+            async function updateUserStore(session: any) {
                 const currentPath = window.location.pathname;
                 const publicPaths = ['/', '/login'];
                 const isPublic = publicPaths.some(
@@ -338,7 +338,7 @@ const { title, description, scale } = Astro.props;
                 }
             }
 
-            async function checkNotifications(userId) {
+            async function checkNotifications(userId: string) {
                 try {
                     console.log('✅ 3. Checking Notifications for user:', userId);
                     const { count, error } = await supabase
@@ -351,7 +351,7 @@ const { title, description, scale } = Astro.props;
                         console.log('✅ 4. Notification Check Complete. Unread count:', count);
                         const dots = document.querySelectorAll('.global-noti-dot');
                         dots.forEach((dot) => {
-                            dot.style.display = count > 0 ? 'block' : 'none';
+                            (dot as HTMLElement).style.display = count! > 0 ? 'block' : 'none';
                         });
                     } else {
                         console.error('❌ Notification Check Error:', error);

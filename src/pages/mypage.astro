@@ -1,7 +1,6 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Icon from '../components/Icon.astro'; // Import Icon component
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 ---
 
 <DashboardLayout title="마이페이지">
@@ -662,7 +661,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             console.log('Mypage astro:page-load fired');
 
             // Subscribe to store changes to handle async updates from DashboardLayout
-            userProfile.subscribe(async (currentUser) => {
+            userProfile.subscribe(async (currentUser: any) => {
                 if (!currentUser.id) return; // Wait for ID
 
                 // --- 1. Identity Render ---
@@ -691,7 +690,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                         try {
                             const joinedDate = new Date(currentUser.created_at);
                             dateEl.textContent = joinedDate.toLocaleDateString('ko-KR');
-                        } catch (e) {
+                        } catch {
                             dateEl.textContent = '-';
                         }
                     } else {
@@ -729,7 +728,6 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
                 let vStatusText = '미인증';
                 const vStatus = currentUser.verification_status || 'none';
-                const cSociety = currentUser.society;
 
                 // Determine Status Text
                 if (vStatus === 'list') {
@@ -775,68 +773,70 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 } else {
                     if (societyInfoContent) {
                         societyInfoContent.style.display = 'block';
-                        const societyMap = {
+                        const societyMap: Record<string, string> = {
                             nuclear_medicine: '대한핵의학회',
                             technology: '대한핵의학기술학회',
                         };
-                        document.getElementById('userSocietyName').textContent =
+                        document.getElementById('userSocietyName')!.textContent =
                             societyMap[currentUser.society] || currentUser.society || '-';
-                        document.getElementById('userSocietyRole').textContent = currentUser.classification || '-';
-                        document.getElementById('userRealName').textContent = currentUser.real_name || '-';
-                        document.getElementById('userSocietyEmail').textContent =
+                        document.getElementById('userSocietyRole')!.textContent = currentUser.classification || '-';
+                        document.getElementById('userRealName')!.textContent = currentUser.real_name || '-';
+                        document.getElementById('userSocietyEmail')!.textContent =
                             currentUser.society_email || currentUser.login_email || '-';
-                        document.getElementById('userAffiliation').textContent = currentUser.affiliation || '-';
-                        document.getElementById('userDepartment').textContent = currentUser.department || '-';
+                        document.getElementById('userAffiliation')!.textContent = currentUser.affiliation || '-';
+                        document.getElementById('userDepartment')!.textContent = currentUser.department || '-';
                     }
                 }
 
                 // --- 3. Safety Management Info (Init) ---
-                const radLicenseSelect = document.getElementById('radLicenseSelect');
-                const managerToggle = document.getElementById('managerToggle');
-                const deputyToggle = document.getElementById('deputyToggle');
-                const practiceToggle = document.getElementById('practiceToggle');
+                const radLicenseSelect = document.getElementById('radLicenseSelect') as HTMLSelectElement | null;
+                const managerToggle = document.getElementById('managerToggle') as HTMLInputElement | null;
 
                 if (radLicenseSelect) radLicenseSelect.value = currentUser.license_type || 'none';
                 if (managerToggle) managerToggle.checked = String(currentUser.is_safety_manager) === 'true';
             });
 
             // 3. Button Helper Function to open Modal
-            const openModal = (tabName, mode = 'society') => {
+            const openModal = (tabName: string, mode = 'society') => {
                 const modal = document.getElementById('verifyModal');
                 const tabBtns = document.querySelectorAll('.tab-btn');
                 const tabContents = document.querySelectorAll('.tab-content');
 
-                modal.classList.add('active');
+                modal!.classList.add('active');
 
                 // Filter Tabs based on Mode
                 tabBtns.forEach((btn) => {
-                    const t = btn.dataset.tab;
+                    const b = btn as HTMLElement;
+                    const t = b.dataset.tab;
                     if (mode === 'society') {
                         // Show Auto & Society, Hide Special
-                        if (t === 'special') btn.style.display = 'none';
-                        else btn.style.display = 'block';
+                        if (t === 'special') b.style.display = 'none';
+                        else b.style.display = 'block';
                     } else if (mode === 'special') {
                         // Show Special, Hide Auto & Society
-                        if (t === 'special') btn.style.display = 'block';
-                        else btn.style.display = 'none';
+                        if (t === 'special') b.style.display = 'block';
+                        else b.style.display = 'none';
                     }
                 });
 
                 // Activate Tab
                 tabBtns.forEach((b) => {
-                    if (b.dataset.tab === tabName) b.classList.add('active');
+                    if ((b as HTMLElement).dataset.tab === tabName) b.classList.add('active');
                     else b.classList.remove('active');
                 });
                 tabContents.forEach((c) => {
-                    if (c.dataset.tab === tabName) c.style.display = 'block';
-                    else c.style.display = 'none';
+                    const el = c as HTMLElement;
+                    if (el.dataset.tab === tabName) el.style.display = 'block';
+                    else el.style.display = 'none';
                 });
 
                 // Auto-fill form fields with current user data
                 const userData = userProfile.get();
                 if (userData) {
                     // Auto-fill for society list verification email (명부인증)
-                    const verificationEmailInput = document.getElementById('verificationEmail');
+                    const verificationEmailInput = document.getElementById(
+                        'verificationEmail',
+                    ) as HTMLInputElement | null;
                     if (verificationEmailInput && !verificationEmailInput.value) {
                         verificationEmailInput.value = userData.login_email || '';
                     }
@@ -893,7 +893,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             // Close Buttons
             closeBtns.forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    modal.classList.remove('active');
+                    modal!.classList.remove('active');
                     // Reset forms if needed?
                 });
             });
@@ -901,7 +901,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             // Tab Switching
             tabBtns.forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    const target = btn.dataset.tab;
+                    const target = (btn as HTMLElement).dataset.tab;
 
                     // Update Buttons
                     tabBtns.forEach((b) => b.classList.remove('active'));
@@ -909,8 +909,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
                     // Update Content
                     tabContents.forEach((c) => {
-                        if (c.dataset.tab === target) c.style.display = 'block';
-                        else c.style.display = 'none';
+                        const el = c as HTMLElement;
+                        if (el.dataset.tab === target) el.style.display = 'block';
+                        else el.style.display = 'none';
                     });
                 });
             });
@@ -918,7 +919,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             // Close on click outside
             window.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    modal.classList.remove('active');
+                    modal!.classList.remove('active');
                 }
             });
 
@@ -927,11 +928,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             // Auto Verification Submit (Updated for verification_status)
             document.getElementById('confirmVerifyBtn')?.addEventListener('click', async (e) => {
                 const currentUser = userProfile.get();
-                const emailInput = document.getElementById('verificationEmail');
+                const emailInput = document.getElementById('verificationEmail') as HTMLInputElement;
                 const email = emailInput.value.trim();
                 if (!email) return alert('이메일을 입력해주세요.');
 
-                const btn = e.target;
+                const btn = e.target as HTMLButtonElement;
                 btn.textContent = '확인 중...';
                 btn.disabled = true;
 
@@ -973,19 +974,19 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                     });
 
                     alert('✅ 인증되었습니다!');
-                    document.getElementById('verifyModal').classList.remove('active');
+                    document.getElementById('verifyModal')!.classList.remove('active');
                     // window.location.reload(); // Not needed needed if store reactive? But safe.
                 } catch (err) {
-                    if (err.message.includes('명단에서 찾을 수 없습니다')) {
+                    if ((err as Error).message.includes('명단에서 찾을 수 없습니다')) {
                         if (
                             confirm(
                                 '학회 명단에 없거나 정보가 일치하지 않습니다.\n[앱관리자에게 인증신청] 탭으로 이동하시겠습니까?',
                             )
                         ) {
-                            document.querySelector('.tab-btn[data-tab="society"]')?.click();
+                            (document.querySelector('.tab-btn[data-tab="society"]') as HTMLElement)?.click();
                         }
                     } else {
-                        alert('인증 실패: ' + err.message);
+                        alert('인증 실패: ' + (err as Error).message);
                     }
                 } finally {
                     btn.textContent = '인증 요청';
@@ -1001,12 +1002,12 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 const formEl = document.getElementById(id);
                 if (formEl) {
                     // Use onsubmit to prevent multiple listeners stacking
-                    formEl.onsubmit = async (e) => {
+                    (formEl as HTMLFormElement).onsubmit = async (e: Event) => {
                         e.preventDefault();
                         const currentUser = userProfile.get();
-                        const form = e.target;
+                        const form = e.target as HTMLFormElement;
                         const formData = new FormData(form);
-                        const btn = form.querySelector('button[type="submit"]');
+                        const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
 
                         btn.textContent = '신청 중...';
                         btn.disabled = true;
@@ -1030,25 +1031,25 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                             if (error) throw error;
 
                             // 2. Profile Update (Temporary Verification - Email verified, awaiting admin approval)
-                            const updateData = {
+                            const updateData: any = {
                                 verification_date: new Date().toISOString(),
                                 verification_status: 'temp_verified',
                             };
 
                             // Map form fields to profile fields
                             if (type === 'society') {
-                                updateData.society = formData.get('society');
-                                updateData.real_name = formData.get('full_name');
-                                updateData.affiliation = formData.get('affiliation');
-                                updateData.department = formData.get('department');
-                                updateData.classification = formData.get('classification');
-                                updateData.society_email = formData.get('contact_email');
+                                updateData.society = formData.get('society') as string;
+                                updateData.real_name = formData.get('full_name') as string;
+                                updateData.affiliation = formData.get('affiliation') as string;
+                                updateData.department = formData.get('department') as string;
+                                updateData.classification = formData.get('classification') as string;
+                                updateData.society_email = formData.get('contact_email') as string;
                             } else if (type === 'special') {
-                                updateData.real_name = formData.get('full_name');
-                                updateData.affiliation = formData.get('affiliation');
-                                updateData.department = formData.get('department');
-                                updateData.classification = formData.get('classification');
-                                updateData.society_email = formData.get('contact_email');
+                                updateData.real_name = formData.get('full_name') as string;
+                                updateData.affiliation = formData.get('affiliation') as string;
+                                updateData.department = formData.get('department') as string;
+                                updateData.classification = formData.get('classification') as string;
+                                updateData.society_email = formData.get('contact_email') as string;
                             }
 
                             const { error: profileError } = await supabase
@@ -1068,10 +1069,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                                 '✅ 이메일 검증이 완료되어 임시 인증되었습니다.\n권한이 부여되었지만, 관리자 승인 시 정식 인증으로 전환됩니다.',
                             );
                             form.reset();
-                            document.getElementById('verifyModal').classList.remove('active');
+                            document.getElementById('verifyModal')!.classList.remove('active');
                         } catch (err) {
                             console.error(err);
-                            alert('신청 실패: ' + err.message);
+                            alert('신청 실패: ' + (err as Error).message);
                         } finally {
                             btn.textContent = '신청하기';
                             btn.disabled = false;
@@ -1105,7 +1106,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                     window.location.href = '/';
                 } catch (err) {
                     console.error(err);
-                    alert('탈퇴 처리 중 오류가 발생했습니다: ' + err.message);
+                    alert('탈퇴 처리 중 오류가 발생했습니다: ' + (err as Error).message);
                 }
             });
 
@@ -1126,11 +1127,12 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             autoSaveFields.forEach(({ id, field, type }) => {
                 const el = document.getElementById(id);
                 if (el) {
-                    el.addEventListener('change', async (e) => {
+                    el.addEventListener('change', async (e: Event) => {
                         const currentUser = userProfile.get();
                         if (!currentUser.id) return;
 
-                        const newValue = type === 'checked' ? e.target.checked : e.target.value;
+                        const target = e.target as HTMLInputElement;
+                        const newValue = type === 'checked' ? target.checked : target.value;
                         const updateData = { [field]: newValue };
 
                         // Optimistic UI Update (Store)
@@ -1167,10 +1169,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             dateInputs.forEach((id) => {
                 const el = document.getElementById(id);
                 if (el) {
-                    el.addEventListener('change', async (e) => {
+                    el.addEventListener('change', async (_e) => {
                         const currentUser = userProfile.get();
-                        const startYear = document.getElementById('managerStartDate').value;
-                        const endYear = document.getElementById('managerEndDate').value;
+                        const startYear = (document.getElementById('managerStartDate') as HTMLInputElement).value;
+                        const endYear = (document.getElementById('managerEndDate') as HTMLInputElement).value;
 
                         console.log('Auto-saving dates:', startYear, endYear);
 
@@ -1205,8 +1207,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 if (managerDates) managerDates.style.display = 'block';
 
                 // Init values
-                const startInput = document.getElementById('managerStartDate');
-                const endInput = document.getElementById('managerEndDate');
+                const startInput = document.getElementById('managerStartDate') as HTMLInputElement | null;
+                const endInput = document.getElementById('managerEndDate') as HTMLInputElement | null;
                 if (startInput) startInput.value = currentUser.safety_manager_start_year || '';
                 if (endInput) endInput.value = currentUser.safety_manager_end_year || '';
             }
@@ -1215,14 +1217,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             // Email Verification Logic (Conditional)
             // ============================================================
 
-            function setupEmailVerification(formType) {
-                const emailInput = document.querySelector(`.email-input-${formType}`);
-                const statusDiv = document.querySelector(`.email-verify-status-${formType}`);
-                const verifySection = document.querySelector(`.email-verify-section-${formType}`);
-                const codeInputSection = document.querySelector(`.code-input-section-${formType}`);
-                const sendCodeBtn = document.querySelector(`.send-code-btn-${formType}`);
-                const verifyCodeBtn = document.querySelector(`.verify-code-btn-${formType}`);
-                const codeInput = document.querySelector(`.verification-code-${formType}`);
+            function setupEmailVerification(formType: string) {
+                const emailInput = document.querySelector(`.email-input-${formType}`) as HTMLInputElement | null;
+                const statusDiv = document.querySelector(`.email-verify-status-${formType}`) as HTMLElement | null;
+                const verifySection = document.querySelector(`.email-verify-section-${formType}`) as HTMLElement | null;
+                const codeInputSection = document.querySelector(
+                    `.code-input-section-${formType}`,
+                ) as HTMLElement | null;
+                const sendCodeBtn = document.querySelector(`.send-code-btn-${formType}`) as HTMLButtonElement | null;
+                const verifyCodeBtn = document.querySelector(
+                    `.verify-code-btn-${formType}`,
+                ) as HTMLButtonElement | null;
+                const codeInput = document.querySelector(`.verification-code-${formType}`) as HTMLInputElement | null;
 
                 if (!emailInput) return;
 
@@ -1230,45 +1236,42 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 const loginEmail = currentUser.login_email || '';
 
                 let emailVerified = false;
-                let verifiedEmail = '';
 
                 // Check email on input
                 emailInput.addEventListener('input', () => {
-                    const inputEmail = emailInput.value.trim();
+                    const inputEmail = emailInput!.value.trim();
 
                     if (!inputEmail) {
-                        statusDiv.style.display = 'none';
-                        verifySection.style.display = 'none';
-                        codeInputSection.style.display = 'none';
+                        statusDiv!.style.display = 'none';
+                        verifySection!.style.display = 'none';
+                        codeInputSection!.style.display = 'none';
                         emailVerified = false;
                         return;
                     }
 
                     // Case 1: Same as login email
                     if (inputEmail === loginEmail) {
-                        statusDiv.textContent = '✓ 이미 검증된 이메일입니다 (로그인 계정)';
-                        statusDiv.style.color = '#10b981';
-                        statusDiv.style.display = 'block';
-                        verifySection.style.display = 'none';
-                        codeInputSection.style.display = 'none';
+                        statusDiv!.textContent = '✓ 이미 검증된 이메일입니다 (로그인 계정)';
+                        statusDiv!.style.color = '#10b981';
+                        statusDiv!.style.display = 'block';
+                        verifySection!.style.display = 'none';
+                        codeInputSection!.style.display = 'none';
                         emailVerified = true;
-                        verifiedEmail = inputEmail;
                     }
                     // Case 2: Different email - needs verification
                     else {
-                        statusDiv.textContent = '⚠️ 이메일 소유권 확인이 필요합니다';
-                        statusDiv.style.color = '#f59e0b';
-                        statusDiv.style.display = 'block';
-                        verifySection.style.display = 'flex';
-                        codeInputSection.style.display = 'none';
+                        statusDiv!.textContent = '⚠️ 이메일 소유권 확인이 필요합니다';
+                        statusDiv!.style.color = '#f59e0b';
+                        statusDiv!.style.display = 'block';
+                        verifySection!.style.display = 'flex';
+                        codeInputSection!.style.display = 'none';
                         emailVerified = false;
-                        verifiedEmail = '';
                     }
                 });
 
                 // Send verification code
                 sendCodeBtn?.addEventListener('click', async () => {
-                    const email = emailInput.value.trim();
+                    const email = emailInput!.value.trim();
 
                     if (!email) {
                         alert('이메일을 입력하세요.');
@@ -1280,8 +1283,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                         return;
                     }
 
-                    sendCodeBtn.textContent = '발송 중...';
-                    sendCodeBtn.disabled = true;
+                    sendCodeBtn!.textContent = '발송 중...';
+                    sendCodeBtn!.disabled = true;
 
                     try {
                         const { actions } = await import('astro:actions');
@@ -1291,27 +1294,27 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                         });
 
                         alert(result.data?.message || '인증 코드가 발송되었습니다.');
-                        verifySection.style.display = 'none';
-                        codeInputSection.style.display = 'flex';
-                        codeInput.focus();
+                        verifySection!.style.display = 'none';
+                        codeInputSection!.style.display = 'flex';
+                        codeInput!.focus();
                     } catch (err) {
                         alert('코드 발송 실패: ' + (err as any).message);
                     } finally {
-                        sendCodeBtn.textContent = '인증 코드 발송';
-                        sendCodeBtn.disabled = false;
+                        sendCodeBtn!.textContent = '인증 코드 발송';
+                        sendCodeBtn!.disabled = false;
                     }
                 });
 
                 // Verify code
                 verifyCodeBtn?.addEventListener('click', async () => {
-                    const code = codeInput.value.trim();
+                    const code = codeInput!.value.trim();
                     if (!code || code.length !== 6) {
                         alert('6자리 코드를 입력하세요.');
                         return;
                     }
 
-                    verifyCodeBtn.textContent = '확인 중...';
-                    verifyCodeBtn.disabled = true;
+                    verifyCodeBtn!.textContent = '확인 중...';
+                    verifyCodeBtn!.disabled = true;
 
                     try {
                         const { actions } = await import('astro:actions');
@@ -1320,17 +1323,16 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                             userId: currentUser.id,
                         });
 
-                        statusDiv.textContent = '✓ 이메일이 검증되었습니다';
-                        statusDiv.style.color = '#10b981';
-                        codeInputSection.style.display = 'none';
+                        statusDiv!.textContent = '✓ 이메일이 검증되었습니다';
+                        statusDiv!.style.color = '#10b981';
+                        codeInputSection!.style.display = 'none';
                         emailVerified = true;
-                        verifiedEmail = result.data?.email || emailInput.value;
                         alert(result.data?.message || '이메일 검증 완료!');
                     } catch (err) {
                         alert('검증 실패: ' + (err as any).message);
                     } finally {
-                        verifyCodeBtn.textContent = '확인';
-                        verifyCodeBtn.disabled = false;
+                        verifyCodeBtn!.textContent = '확인';
+                        verifyCodeBtn!.disabled = false;
                     }
                 });
 
@@ -1339,7 +1341,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 if (form) {
                     const originalSubmit = form.onsubmit;
                     form.onsubmit = function (e) {
-                        const inputEmail = emailInput.value.trim();
+                        const inputEmail = emailInput!.value.trim();
                         if (!emailVerified && inputEmail !== loginEmail) {
                             e.preventDefault();
                             alert('이메일 검증을 완료해주세요.');
