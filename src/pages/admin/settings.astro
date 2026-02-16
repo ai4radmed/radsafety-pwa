@@ -66,19 +66,20 @@ import { ADMIN_EMAILS } from "../../config/auth";
 
         // Guard
         const user = userProfile.get();
-        if (user.is_admin !== "true" && user.is_admin !== true) {
+        if (user.is_admin !== "true") {
             alert("관리자 권한이 필요합니다.");
             window.location.href = "/";
         }
 
         // Mock State (Simulating DB)
-        let dbAdmins = ["manager@test.com"];
+        const dbAdmins = ["manager@test.com"];
 
         const tableBody = document.querySelector("#adminTable tbody");
-        const input = document.getElementById("newAdminEmail");
+        const input = document.getElementById("newAdminEmail") as HTMLInputElement | null;
         const addBtn = document.getElementById("addAdminBtn");
 
         function render() {
+            if (!tableBody) return;
             tableBody.innerHTML = "";
 
             // 1. Env Admins (Super Admins)
@@ -87,7 +88,7 @@ import { ADMIN_EMAILS } from "../../config/auth";
                 tr.innerHTML = `
                     <td>
                         <span class="email-text">${email}</span>
-                        ${email === user.email ? '<span class="badge me">나</span>' : ""}
+                        ${email === user.login_email ? '<span class="badge me">나</span>' : ""}
                     </td>
                     <td><span class="badge env">시스템(Env)</span></td>
                     <td><span class="lock-icon">🔒 제거 불가</span></td>

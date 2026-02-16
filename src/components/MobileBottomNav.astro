@@ -1,22 +1,22 @@
 ---
-import Icon from "./Icon.astro";
+import Icon from './Icon.astro';
 const { pathname } = Astro.url;
 
 // Navigation Items
 const navItems = [
-    { name: "홈", path: "/", icon: "home" },
-    { name: "수검준비", path: "/inspection-prep", icon: "check-square" },
+    { name: '홈', path: '/', icon: 'home' as const },
+    { name: '수검준비', path: '/inspection-prep', icon: 'check-square' as const },
     {
-        name: "지적권고사례",
-        path: "/findings-recommendations",
-        icon: "alert-circle",
+        name: '지적권고사례',
+        path: '/findings-recommendations',
+        icon: 'alert-circle' as const,
     },
-    { name: "자료실", path: "/resources", icon: "folder" },
-    { name: "의견보내기", path: "#", icon: "mail" },
+    { name: '자료실', path: '/resources', icon: 'folder' as const },
+    { name: '의견보내기', path: '#', icon: 'mail' as const },
 ];
 
-const isActive = (path) => {
-    if (path === "/") return pathname === "/" || pathname === "";
+const isActive = (path: string) => {
+    if (path === '/') return pathname === '/' || pathname === '';
     return pathname.startsWith(path);
 };
 ---
@@ -24,22 +24,15 @@ const isActive = (path) => {
 <nav class="mobile-bottom-nav">
     {
         navItems.map((item) =>
-            item.path === "#" ? (
-                <div
-                    class="nav-item feedback-trigger"
-                    role="button"
-                    style="cursor: pointer;"
-                >
+            item.path === '#' ? (
+                <div class="nav-item feedback-trigger" role="button" style="cursor: pointer;">
                     <div class="icon-container">
                         <Icon name={item.icon} size="24" />
                     </div>
                     <span class="label">{item.name}</span>
                 </div>
             ) : (
-                <a
-                    href={item.path}
-                    class={`nav-item ${isActive(item.path) ? "active" : ""}`}
-                >
+                <a href={item.path} class={`nav-item ${isActive(item.path) ? 'active' : ''}`}>
                     <div class="icon-container">
                         <Icon name={item.icon} size="24" />
                     </div>
@@ -52,19 +45,17 @@ const isActive = (path) => {
 
 <script is:inline>
     function initFeedbackAlert() {
-        const triggers = document.querySelectorAll(".feedback-trigger");
+        const triggers = document.querySelectorAll('.feedback-trigger');
         triggers.forEach((trigger) => {
             // Remove existing listener to avoid duplicates
             trigger.onclick = () => {
-                alert(
-                    "의견보내기는 현재 개발 중입니다.\nkimbi.kirams@gmail.com으로 연락 부탁드립니다.",
-                );
+                alert('의견보내기는 현재 개발 중입니다.\nkimbi.kirams@gmail.com으로 연락 부탁드립니다.');
             };
         });
     }
 
     initFeedbackAlert();
-    document.addEventListener("astro:after-swap", initFeedbackAlert);
+    document.addEventListener('astro:after-swap', initFeedbackAlert);
 </script>
 
 <style>

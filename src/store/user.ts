@@ -1,11 +1,12 @@
-
 import { persistentMap } from '@nanostores/persistent';
-import { getRole, getCertification } from '../config/auth';
+import { getCertification } from '../config/auth';
 
 export const userProfile = persistentMap('userProfile', {
     id: '',
     login_email: '',
-    nickname: '', // Added missing field
+    nickname: '',
+    created_at: '',
+    is_admin: 'false',
     provider: '',
     // 2. Verification Info
     verification_date: '',
@@ -27,42 +28,44 @@ export const userProfile = persistentMap('userProfile', {
     classification: '',
     certification: 'none',
     has_radiation_license: 'false',
-    radiation_license_type: 'none'
+    radiation_license_type: 'none',
+    users_licenses: '[]',
 });
 
 export function setUser(user: {
-    id: string,
-    email: string,
-    login_email?: string,
-    provider: string,
-    nickname?: string,
-    created_at?: string,
-    is_admin?: boolean | string,
+    id: string;
+    email: string;
+    login_email?: string;
+    provider: string;
+    nickname?: string;
+    created_at?: string;
+    is_admin?: boolean | string;
 
-    verification_date?: string,
-    verification_status?: string,
+    verification_date?: string;
+    verification_status?: string;
 
-    society?: string,
-    affiliation?: string,
-    department?: string,
-    real_name?: string,
-    society_email?: string,
+    society?: string;
+    affiliation?: string;
+    department?: string;
+    real_name?: string;
+    society_email?: string;
 
-    license_type?: string,
-    is_safety_manager?: boolean,
-    safety_manager_start_year?: string,
-    safety_manager_end_year?: string,
+    license_type?: string;
+    is_safety_manager?: boolean;
+    safety_manager_start_year?: string;
+    safety_manager_end_year?: string;
 
-    classification?: string,
+    classification?: string;
     // Legacy mapping arguments
-    licenses?: any,
-    user_tier?: string,
+    society_name?: string;
+    licenses?: any;
+    user_tier?: string;
     // is_verified removed
-    safety_manager_start_date?: string,
-    safety_manager_end_date?: string,
-    is_safety_practice_staff?: boolean | string,
-    has_radiation_license?: boolean | string,
-    radiation_license_type?: string
+    safety_manager_start_date?: string;
+    safety_manager_end_date?: string;
+    is_safety_practice_staff?: boolean | string;
+    has_radiation_license?: boolean | string;
+    radiation_license_type?: string;
 }) {
     userProfile.set({
         id: user.id || '',
@@ -92,7 +95,7 @@ export function setUser(user: {
         certification: getCertification(user.email),
         has_radiation_license: String(user.has_radiation_license) || 'false',
         radiation_license_type: user.radiation_license_type || 'none',
-        users_licenses: typeof user.licenses === 'string' ? user.licenses : JSON.stringify(user.licenses || [])
+        users_licenses: typeof user.licenses === 'string' ? user.licenses : JSON.stringify(user.licenses || []),
     });
 }
 
@@ -122,6 +125,7 @@ export function clearUser() {
         classification: '',
         certification: 'none',
         has_radiation_license: 'false',
-        radiation_license_type: 'none'
+        radiation_license_type: 'none',
+        users_licenses: '[]',
     });
 }

@@ -129,7 +129,7 @@ import Icon from "../../components/Icon.astro";
     document.addEventListener("astro:page-load", () => {
         // A. Guard Clause for Admin
         const user = userProfile.get();
-        if (user.is_admin !== "true" && user.is_admin !== true) {
+        if (user.is_admin !== "true") {
             // alert("관리자 권한이 필요합니다."); // Optional: too annoying?
             // window.location.href = "/";
             // Check again inside specific actions if needed, or rely on RLS.
@@ -331,7 +331,7 @@ import Icon from "../../components/Icon.astro";
                  const department = (findValue(row, ["소속 부서", "부서", "과", "department", "dept", "part"]) || "-").toString().trim();
                  const classification = (findValue(row, ["직종", "구분", "classification", "role", "job", "position", "grade"]) || "-").toString().trim();
                  
-                 let societyRaw = findValue(row, ["소속학회", "division", "society", "학회", "type"]) || "";
+                 const societyRaw = findValue(row, ["소속학회", "division", "society", "학회", "type"]) || "";
                  let society = selectedSociety;
 
                  if (societyRaw) {

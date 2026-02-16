@@ -1,9 +1,11 @@
-
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 import { supabase, supabaseAdmin } from '../lib/supabase';
 import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
 import { ADMIN_EMAILS } from '../config/auth';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('actions');
 
 export const server = {
     saveFinding: defineAction({
@@ -32,7 +34,7 @@ export const server = {
                         year,
                         description,
                         violation_clause: violationClause,
-                        solution
+                        solution,
                     })
                     .eq('id', id)
                     .select()
@@ -51,7 +53,7 @@ export const server = {
                         year,
                         description,
                         violation_clause: violationClause,
-                        solution
+                        solution,
                     })
                     .select()
                     .single();
@@ -69,10 +71,7 @@ export const server = {
         handler: async ({ id }) => {
             if (id.startsWith('local-')) return { success: true };
 
-            const { error } = await supabase
-                .from('findings')
-                .delete()
-                .eq('id', id);
+            const { error } = await supabase.from('findings').delete().eq('id', id);
 
             if (error) throw new Error(error.message);
             return { success: true };
@@ -87,13 +86,11 @@ export const server = {
         }),
         handler: async ({ email, userId }) => {
             try {
-                console.log('[sendVerificationCode] Starting for user:', userId, 'email:', email);
+                logger.info('인증코드 발송 시작', { userId, email });
 
                 // Generate 6-digit code
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                 const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-                console.log('[sendVerificationCode] Generated code:', code);
 
                 // Store code in database using admin client to bypass RLS
                 const { data: insertData, error } = await supabaseAdmin
@@ -108,11 +105,11 @@ export const server = {
                     .single();
 
                 if (error) {
-                    console.error('[sendVerificationCode] Insert error:', error);
+                    logger.error('인증코드 DB 저장 실패', { error });
                     throw new Error('코드 생성 실패: ' + error.message);
                 }
 
-                console.log('[sendVerificationCode] Insert successful:', insertData);
+                logger.info('인증코드 DB 저장 성공', { id: insertData?.id });
 
                 // Send email with verification code
                 try {
@@ -121,16 +118,16 @@ export const server = {
                         code,
                         userName: '사용자', // TODO: 실제 사용자 이름을 프로필에서 가져오기
                     });
-                    console.log('[sendVerificationCode] Email sent to:', email);
+                    logger.info('인증 이메일 발송 성공', { email });
                 } catch (emailError) {
-                    console.error('[sendVerificationCode] Email send failed:', emailError);
+                    logger.error('인증 이메일 발송 실패', { error: emailError });
                     // 이메일 발송 실패해도 DB에는 저장되었으므로 성공으로 처리
                     // 실제 프로덕션에서는 재시도 로직 또는 에러 처리 필요
                 }
 
                 return { success: true, message: '인증 코드가 발송되었습니다.' };
             } catch (error) {
-                console.error('[sendVerificationCode] Caught error:', error);
+                logger.error('인증코드 발송 실패', { error });
                 throw error;
             }
         },
@@ -143,7 +140,7 @@ export const server = {
         }),
         handler: async ({ code, userId }) => {
             try {
-                console.log('[verifyEmailCode] Starting for user:', userId, 'code:', code);
+                logger.info('이메일 코드 검증 시작', { userId });
 
                 // Find valid code using admin client
                 const { data, error } = await supabaseAdmin
@@ -158,11 +155,11 @@ export const server = {
                     .single();
 
                 if (error || !data) {
-                    console.error('[verifyEmailCode] Code not found or error:', error);
+                    logger.error('인증코드 조회 실패', { error });
                     throw new Error('유효하지 않거나 만료된 코드입니다.');
                 }
 
-                console.log('[verifyEmailCode] Code found:', data);
+                logger.info('인증코드 조회 성공', { id: data.id });
 
                 // Mark as verified using admin client
                 const { error: updateError } = await supabaseAdmin
@@ -174,11 +171,11 @@ export const server = {
                     .eq('id', data.id);
 
                 if (updateError) {
-                    console.error('[verifyEmailCode] Update error:', updateError);
+                    logger.error('인증코드 검증 업데이트 실패', { error: updateError });
                     throw new Error('검증 처리 실패');
                 }
 
-                console.log('[verifyEmailCode] Verification successful');
+                logger.info('이메일 검증 완료', { userId, email: data.email });
 
                 return {
                     success: true,
@@ -186,7 +183,7 @@ export const server = {
                     message: '이메일이 성공적으로 검증되었습니다.',
                 };
             } catch (error) {
-                console.error('[verifyEmailCode] Caught error:', error);
+                logger.error('이메일 코드 검증 실패', { error });
                 throw error;
             }
         },
@@ -243,7 +240,7 @@ export const server = {
                 }
 
                 // Create notifications for all target users
-                const notifications = users.map(u => ({
+                const notifications = users.map((u) => ({
                     user_id: u.id,
                     sender_id: input.senderId,
                     type: 'admin_message',
@@ -255,22 +252,20 @@ export const server = {
                     action_url: input.actionUrl || null,
                     expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                     is_read: false,
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
                 }));
 
-                const { error: insertError } = await supabaseAdmin
-                    .from('notifications')
-                    .insert(notifications);
+                const { error: insertError } = await supabaseAdmin.from('notifications').insert(notifications);
 
                 if (insertError) throw insertError;
 
                 return {
                     success: true,
                     count: users.length,
-                    message: `${users.length}명에게 알림을 발송했습니다.`
+                    message: `${users.length}명에게 알림을 발송했습니다.`,
                 };
             } catch (error) {
-                console.error('[sendNotification] Error:', error);
+                logger.error('알림 발송 실패', { error });
                 throw error;
             }
         },
@@ -284,11 +279,15 @@ export const server = {
             userEmail: z.string().email(),
             title: z.string().min(1, '제목을 입력해주세요.'),
             message: z.string().min(10, '의견 내용은 최소 10자 이상 입력해주세요.'),
-            attachments: z.array(z.object({
-                filename: z.string(),
-                storage_path: z.string(),
-                size: z.number(),
-            })).optional(),
+            attachments: z
+                .array(
+                    z.object({
+                        filename: z.string(),
+                        storage_path: z.string(),
+                        size: z.number(),
+                    }),
+                )
+                .optional(),
         }),
         handler: async (input) => {
             try {
@@ -311,7 +310,7 @@ export const server = {
                     .single();
 
                 if (insertError) {
-                    console.error('[sendFeedback] Database insert error:', insertError);
+                    logger.error('피드백 DB 저장 실패', { error: insertError });
                     throw new Error('의견 저장에 실패했습니다.');
                 }
 
@@ -327,17 +326,17 @@ export const server = {
                         attachments: input.attachments,
                     });
                 } catch (emailError) {
-                    console.error('[sendFeedback] Email send error:', emailError);
+                    logger.error('피드백 이메일 발송 실패', { error: emailError });
                     // Don't fail the whole operation if email fails - data is saved
                 }
 
                 return {
                     success: true,
-                    message: '의견이 성공적으로 전송되었습니다. 감사합니다!'
+                    message: '의견이 성공적으로 전송되었습니다. 감사합니다!',
                 };
             } catch (error) {
-                console.error('[sendFeedback] Error:', error);
-                throw new Error('의견 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                logger.error('피드백 전송 실패', { error });
+                throw new Error('의견 전송에 실패했습니다. 잠시 후 다시 시도해주세요.', { cause: error });
             }
         },
     }),

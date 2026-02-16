@@ -1,6 +1,6 @@
 ---
-import DashboardLayout from "../../layouts/DashboardLayout.astro";
-import Icon from "../../components/Icon.astro";
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
 ---
 
 <DashboardLayout title="알림 발송">
@@ -110,7 +110,7 @@ import Icon from "../../components/Icon.astro";
             background: var(--bg-body);
         }
 
-        .radio-option input[type="radio"] {
+        .radio-option input[type='radio'] {
             width: 18px;
             height: 18px;
             cursor: pointer;
@@ -337,42 +337,23 @@ import Icon from "../../components/Icon.astro";
                         name="message"
                         class="form-textarea"
                         placeholder="알림 메시지를 입력하세요"
-                        required
-                    ></textarea>
+                        required></textarea>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="link">링크 (선택)</label>
-                    <input
-                        type="text"
-                        id="link"
-                        name="link"
-                        class="form-input"
-                        placeholder="/mypage"
-                    />
+                    <input type="text" id="link" name="link" class="form-input" placeholder="/mypage" />
                     <div class="help-text">알림 클릭 시 이동할 URL을 입력하세요.</div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="actionLabel">버튼 라벨 (선택)</label>
-                    <input
-                        type="text"
-                        id="actionLabel"
-                        name="actionLabel"
-                        class="form-input"
-                        placeholder="확인하기"
-                    />
+                    <input type="text" id="actionLabel" name="actionLabel" class="form-input" placeholder="확인하기" />
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="actionUrl">버튼 URL (선택)</label>
-                    <input
-                        type="text"
-                        id="actionUrl"
-                        name="actionUrl"
-                        class="form-input"
-                        placeholder="/mypage"
-                    />
+                    <input type="text" id="actionUrl" name="actionUrl" class="form-input" placeholder="/mypage" />
                     <div class="help-text">액션 버튼 클릭 시 이동할 URL을 입력하세요.</div>
                 </div>
             </div>
@@ -386,17 +367,17 @@ import Icon from "../../components/Icon.astro";
     </div>
 
     <script>
-        import { actions } from "astro:actions";
-        import { supabase } from "../../lib/supabase";
-        import { userProfile } from "../../store/user";
+        import { actions } from 'astro:actions';
+        import { supabase } from '../../lib/supabase';
+        import { userProfile } from '../../store/user';
 
-        document.addEventListener("astro:page-load", async () => {
+        document.addEventListener('astro:page-load', async () => {
             const currentUser = userProfile.get();
 
             // Check if admin
-            if (currentUser.is_admin !== "true" && currentUser.is_admin !== true) {
-                alert("관리자 권한이 필요합니다.");
-                window.location.href = "/mypage";
+            if (currentUser.is_admin !== 'true') {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/mypage';
                 return;
             }
 
@@ -404,9 +385,7 @@ import Icon from "../../components/Icon.astro";
 
             // Load user counts
             async function loadUserCounts() {
-                const { count } = await supabase
-                    .from('profiles')
-                    .select('*', { count: 'exact', head: true });
+                const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
 
                 const countEl = document.getElementById('countAll');
                 if (countEl) {
@@ -418,12 +397,12 @@ import Icon from "../../components/Icon.astro";
 
             // Target type radio handling
             const targetRadios = document.querySelectorAll('input[name="targetType"]');
-            targetRadios.forEach(radio => {
+            targetRadios.forEach((radio) => {
                 radio.addEventListener('change', (e) => {
                     const target = (e.target as HTMLInputElement).value;
 
                     // Hide all sub-options
-                    document.querySelectorAll('.sub-options').forEach(el => {
+                    document.querySelectorAll('.sub-options').forEach((el) => {
                         (el as HTMLElement).classList.remove('active');
                     });
 
@@ -461,16 +440,20 @@ import Icon from "../../components/Icon.astro";
                         .limit(10);
 
                     if (users && users.length > 0 && userDropdown) {
-                        userDropdown.innerHTML = users.map(u => `
+                        userDropdown.innerHTML = users
+                            .map(
+                                (u) => `
                             <div class="user-item" data-id="${u.id}">
                                 <div style="font-weight: 600;">${u.real_name || '이름 없음'}</div>
                                 <div style="font-size: 0.85rem; color: var(--text-muted);">${u.login_email || u.society_email || '-'}</div>
                             </div>
-                        `).join('');
+                        `,
+                            )
+                            .join('');
                         userDropdown.classList.add('active');
 
                         // Add click handlers
-                        userDropdown.querySelectorAll('.user-item').forEach(item => {
+                        userDropdown.querySelectorAll('.user-item').forEach((item) => {
                             item.addEventListener('click', () => {
                                 const userId = (item as HTMLElement).dataset.id;
                                 const userName = item.querySelector('div')?.textContent || '';
@@ -495,7 +478,8 @@ import Icon from "../../components/Icon.astro";
                             });
                         });
                     } else if (userDropdown) {
-                        userDropdown.innerHTML = '<div class="user-item" style="text-align: center; color: var(--text-muted);">검색 결과가 없습니다.</div>';
+                        userDropdown.innerHTML =
+                            '<div class="user-item" style="text-align: center; color: var(--text-muted);">검색 결과가 없습니다.</div>';
                         userDropdown.classList.add('active');
                     }
                 }, 300);
@@ -547,7 +531,9 @@ import Icon from "../../components/Icon.astro";
                     if (targetType === 'provider') {
                         input.provider = (document.getElementById('providerSelect') as HTMLSelectElement).value;
                     } else if (targetType === 'verification_status') {
-                        input.verificationStatus = (document.getElementById('verificationSelect') as HTMLSelectElement).value;
+                        input.verificationStatus = (
+                            document.getElementById('verificationSelect') as HTMLSelectElement
+                        ).value;
                     } else if (targetType === 'specific') {
                         input.specificUserId = selectedUserId;
                     }
