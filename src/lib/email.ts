@@ -4,6 +4,9 @@
  */
 
 import { Resend } from 'resend';
+import { createLogger } from './logger';
+
+const logger = createLogger('email');
 
 interface SendVerificationEmailOptions {
     to: string;
@@ -28,11 +31,7 @@ interface SendFeedbackEmailOptions {
 /**
  * 이메일 인증 코드 발송
  */
-export async function sendVerificationEmail({
-    to,
-    code,
-    userName = '사용자',
-}: SendVerificationEmailOptions) {
+export async function sendVerificationEmail({ to, code, userName = '사용자' }: SendVerificationEmailOptions) {
     try {
         // 환경 확인 (API Key 유무로 판단)
         // Astro에서는 import.meta.env 사용 (process.env는 작동하지 않음)
@@ -40,8 +39,7 @@ export async function sendVerificationEmail({
 
         // API Key가 없으면 개발 모드 (콘솔만)
         if (!apiKey) {
-            console.log(`[DEV] Verification email to ${to}`);
-            console.log(`[DEV] Code: ${code}`);
+            logger.info('개발모드: 인증 이메일 스킵', { to, code });
             return { success: true, messageId: 'dev-mode' };
         }
 
@@ -57,14 +55,14 @@ export async function sendVerificationEmail({
         });
 
         if (error) {
-            console.error('[Email] Send error:', error);
+            logger.error('이메일 발송 실패', { error });
             throw new Error(`이메일 발송 실패: ${error.message}`);
         }
 
-        console.log('[Email] Sent successfully:', data?.id);
+        logger.info('이메일 발송 성공', { messageId: data?.id });
         return { success: true, messageId: data?.id };
     } catch (error) {
-        console.error('[Email] Unexpected error:', error);
+        logger.error('이메일 발송 중 예외', { error });
         throw error;
     }
 }
@@ -157,12 +155,13 @@ export async function sendFeedbackEmail({
 
         // API Key가 없으면 개발 모드 (콘솔만)
         if (!apiKey) {
-            console.log(`[DEV] Feedback email to admins`);
-            console.log(`[DEV] From: ${userName} (${userEmail})`);
-            console.log(`[DEV] Title: ${title}`);
-            console.log(`[DEV] Message: ${message}`);
-            console.log(`[DEV] Feedback ID: ${feedbackId}`);
-            console.log(`[DEV] Attachments: ${attachments?.length || 0} files`);
+            logger.info('개발모드: 피드백 이메일 스킵', {
+                userName,
+                userEmail,
+                title,
+                feedbackId,
+                attachmentCount: attachments?.length || 0,
+            });
             return { success: true, messageId: 'dev-mode' };
         }
 
@@ -183,14 +182,14 @@ export async function sendFeedbackEmail({
         const { data, error } = await resend.emails.send(emailPayload);
 
         if (error) {
-            console.error('[Email] Feedback send error:', error);
+            logger.error('피드백 이메일 발송 실패', { error });
             throw new Error(`의견 이메일 발송 실패: ${error.message}`);
         }
 
-        console.log('[Email] Feedback sent successfully:', data?.id);
+        logger.info('피드백 이메일 발송 성공', { messageId: data?.id });
         return { success: true, messageId: data?.id };
     } catch (error) {
-        console.error('[Email] Feedback unexpected error:', error);
+        logger.error('피드백 이메일 발송 중 예외', { error });
         throw error;
     }
 }
@@ -204,7 +203,7 @@ function getFeedbackEmailTemplate(
     title: string,
     message: string,
     feedbackId: string,
-    attachments?: Array<{ filename: string; storage_path: string; size: number }>
+    attachments?: Array<{ filename: string; storage_path: string; size: number }>,
 ): string {
     const baseUrl = import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321';
     const adminUrl = `${baseUrl}/admin/feedback`;
@@ -261,26 +260,32 @@ function getFeedbackEmailTemplate(
                                 </div>
                             </div>
 
-                            ${attachments && attachments.length > 0 ? `
+                            ${
+                                attachments && attachments.length > 0
+                                    ? `
                             <!-- Attachments -->
                             <div style="margin-bottom: 20px;">
                                 <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px; font-weight: 600;">첨부파일 (${attachments.length}개)</p>
                                 <div style="padding: 15px; background-color: #fef3c7; border-radius: 8px; border: 1px solid #fde047;">
-                                    ${attachments.map(att => {
-                                        const sizeKB = (att.size / 1024).toFixed(1);
-                                        return `
+                                    ${attachments
+                                        .map((att) => {
+                                            const sizeKB = (att.size / 1024).toFixed(1);
+                                            return `
                                         <div style="padding: 8px 0;">
                                             <span style="color: #92400e; font-size: 14px;">📎 ${att.filename}</span>
                                             <span style="color: #92400e; font-size: 12px; margin-left: 8px;">(${sizeKB} KB)</span>
                                         </div>
                                     `;
-                                    }).join('')}
+                                        })
+                                        .join('')}
                                 </div>
                                 <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">
                                     ℹ️ 첨부파일은 관리 페이지에서 다운로드할 수 있습니다.
                                 </p>
                             </div>
-                            ` : ''}
+                            `
+                                    : ''
+                            }
 
                             <!-- Admin Link -->
                             <div style="margin-top: 30px; text-align: center;">

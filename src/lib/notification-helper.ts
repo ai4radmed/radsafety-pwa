@@ -5,6 +5,9 @@
  */
 
 import { supabaseAdmin } from './supabase';
+import { createLogger } from './logger';
+
+const logger = createLogger('notification');
 
 export interface NotificationData {
     type: 'verification_approved' | 'verification_rejected' | 'admin_message' | 'system_notice';
@@ -35,12 +38,10 @@ export async function createNotification(data: NotificationData) {
         actionLabel = null,
         actionUrl = null,
         expiresInDays = 30,
-        metadata = null
+        metadata = null,
     } = data;
 
-    const expiresAt = expiresInDays
-        ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
-        : null;
+    const expiresAt = expiresInDays ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString() : null;
 
     const notification = {
         user_id: userId,
@@ -55,21 +56,17 @@ export async function createNotification(data: NotificationData) {
         expires_at: expiresAt,
         metadata: metadata ? JSON.stringify(metadata) : null,
         is_read: false,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
     };
 
-    const { data: result, error } = await supabaseAdmin
-        .from('notifications')
-        .insert(notification)
-        .select()
-        .single();
+    const { data: result, error } = await supabaseAdmin.from('notifications').insert(notification).select().single();
 
     if (error) {
-        console.error('Failed to create notification:', error);
+        logger.error('알림 생성 실패', { error, type, userId });
         throw error;
     }
 
-    console.log('✓ Notification created:', result.id, type, 'for user:', userId);
+    logger.info('알림 생성 완료', { id: result.id, type, userId });
     return result;
 }
 
@@ -80,7 +77,7 @@ export async function createVerificationApprovedNotification(
     userId: string,
     senderId: string,
     societyName: string,
-    classification: string
+    classification: string,
 ) {
     return createNotification({
         type: 'verification_approved',
@@ -94,19 +91,15 @@ export async function createVerificationApprovedNotification(
         actionUrl: '/mypage',
         metadata: {
             society_name: societyName,
-            classification
-        }
+            classification,
+        },
     });
 }
 
 /**
  * 인증 거부 알림 생성
  */
-export async function createVerificationRejectedNotification(
-    userId: string,
-    senderId: string,
-    rejectReason: string
-) {
+export async function createVerificationRejectedNotification(userId: string, senderId: string, rejectReason: string) {
     return createNotification({
         type: 'verification_rejected',
         userId,
@@ -118,19 +111,16 @@ export async function createVerificationRejectedNotification(
         actionLabel: '재신청',
         actionUrl: '/mypage',
         metadata: {
-            reject_reason: rejectReason
-        }
+            reject_reason: rejectReason,
+        },
     });
 }
 
 /**
  * 대량 알림 생성 (여러 사용자에게 동일한 메시지)
  */
-export async function createBulkNotifications(
-    userIds: string[],
-    data: Omit<NotificationData, 'userId'>
-) {
-    const notifications = userIds.map(userId => ({
+export async function createBulkNotifications(userIds: string[], data: Omit<NotificationData, 'userId'>) {
+    const notifications = userIds.map((userId) => ({
         user_id: userId,
         sender_id: data.senderId || null,
         type: data.type,
@@ -145,20 +135,17 @@ export async function createBulkNotifications(
             : null,
         metadata: data.metadata ? JSON.stringify(data.metadata) : null,
         is_read: false,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
     }));
 
-    const { data: result, error } = await supabaseAdmin
-        .from('notifications')
-        .insert(notifications)
-        .select();
+    const { data: result, error } = await supabaseAdmin.from('notifications').insert(notifications).select();
 
     if (error) {
-        console.error('Failed to create bulk notifications:', error);
+        logger.error('대량 알림 생성 실패', { error, count: userIds.length });
         throw error;
     }
 
-    console.log(`✓ ${result.length} notifications created`);
+    logger.info('대량 알림 생성 완료', { count: result.length });
     return result;
 }
 
@@ -195,9 +182,9 @@ export async function getUserIdsByFilter(filter: {
     const { data, error } = await query;
 
     if (error) {
-        console.error('Failed to get users by filter:', error);
+        logger.error('사용자 필터 조회 실패', { error, filter });
         throw error;
     }
 
-    return data.map(user => user.id);
+    return data.map((user) => user.id);
 }

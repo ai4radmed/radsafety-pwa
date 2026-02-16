@@ -1,7 +1,7 @@
 ---
-import DashboardLayout from "../layouts/DashboardLayout.astro";
-import LoginButton from "../components/auth/LoginButton.astro";
-import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import LoginButton from '../components/auth/LoginButton.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 ---
 
 <DashboardLayout title="간편인증으로 시작하기">
@@ -39,7 +39,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
         }
         .divider::before,
         .divider::after {
-            content: "";
+            content: '';
             flex: 1;
             border-bottom: 1px solid #e5e7eb;
         }
@@ -131,15 +131,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
             <div class="email-login-section">
                 <form id="emailLoginForm" class="email-form">
-                    <input
-                        type="email"
-                        id="emailInput"
-                        placeholder="이메일 주소를 입력하세요"
-                        required
-                    />
-                    <button type="submit" class="email-btn"
-                        >이메일 인증으로 RadSafety 시작하기</button
-                    >
+                    <input type="email" id="emailInput" placeholder="이메일 주소를 입력하세요" required />
+                    <button type="submit" class="email-btn">이메일 인증으로 RadSafety 시작하기</button>
                 </form>
             </div>
 
@@ -147,9 +140,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
             <div class="test-login">
                 <div style="margin-bottom:0.5rem;">[개발자 모드]</div>
-                <div
-                    style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;"
-                >
+                <div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;">
                     <button id="mockLoginBtn">대기 계정</button>
                     <button
                         id="mockLoginApprovedBtn"
@@ -167,84 +158,64 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
     </div>
 
     <script>
-        import { userProfile, setUser, clearUser } from "../store/user";
-        import { supabase } from "../lib/supabase";
+        import { userProfile, setUser, clearUser } from '../store/user';
+        import { supabase } from '../lib/supabase';
 
         // Mock Login Logic
         const mockLogin = (isApproved) => {
             const user = {
-                id: "mock-user-123",
-                login_email: isApproved
-                    ? "admin@radsafety.com"
-                    : "newuser@example.com",
-                provider: "google",
+                id: 'mock-user-123',
+                email: isApproved ? 'admin@radsafety.com' : 'newuser@example.com',
+                login_email: isApproved ? 'admin@radsafety.com' : 'newuser@example.com',
+                provider: 'google',
             };
             setUser(user);
 
-            alert(
-                "로그인되었습니다. (Mock Role: " +
-                    (isApproved ? "Admin" : "User") +
-                    ")",
-            );
-            window.location.href = "/mypage";
+            alert('로그인되었습니다. (Mock Role: ' + (isApproved ? 'Admin' : 'User') + ')');
+            window.location.href = '/mypage';
         };
 
-        document
-            .getElementById("mockLoginBtn")
-            ?.addEventListener("click", () => mockLogin(false));
-        document
-            .getElementById("mockLoginApprovedBtn")
-            ?.addEventListener("click", () => mockLogin(true));
+        document.getElementById('mockLoginBtn')?.addEventListener('click', () => mockLogin(false));
+        document.getElementById('mockLoginApprovedBtn')?.addEventListener('click', () => mockLogin(true));
 
         // Session Reset Logic
-        document
-            .getElementById("resetSessionBtn")
-            ?.addEventListener("click", async () => {
-                if (
-                    confirm(
-                        "모든 로그인 정보와 캐시를 초기화하고 로그아웃 하시겠습니까?",
-                    )
-                ) {
-                    try {
-                        // 1. Clear Nano Stores (User Profile)
-                        clearUser();
+        document.getElementById('resetSessionBtn')?.addEventListener('click', async () => {
+            if (confirm('모든 로그인 정보와 캐시를 초기화하고 로그아웃 하시겠습니까?')) {
+                try {
+                    // 1. Clear Nano Stores (User Profile)
+                    clearUser();
 
-                        // 2. Supabase Logout
-                        await supabase.auth.signOut();
+                    // 2. Supabase Logout
+                    await supabase.auth.signOut();
 
-                        // 3. Clear All Storage
-                        localStorage.clear();
-                        sessionStorage.clear();
+                    // 3. Clear All Storage
+                    localStorage.clear();
+                    sessionStorage.clear();
 
-                        // 4. Clear Cookie (Optional but safe)
-                        document.cookie.split(";").forEach((c) => {
-                            document.cookie = c
-                                .replace(/^ +/, "")
-                                .replace(
-                                    /=.*/,
-                                    "=;expires=" +
-                                        new Date().toUTCString() +
-                                        ";path=/",
-                                );
-                        });
+                    // 4. Clear Cookie (Optional but safe)
+                    document.cookie.split(';').forEach((c) => {
+                        document.cookie = c
+                            .replace(/^ +/, '')
+                            .replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+                    });
 
-                        alert("세션이 성공적으로 초기화되었습니다.");
-                        window.location.reload();
-                    } catch (err) {
-                        alert("초기화 중 오류 발생: " + err.message);
-                    }
+                    alert('세션이 성공적으로 초기화되었습니다.');
+                    window.location.reload();
+                } catch (err) {
+                    alert('초기화 중 오류 발생: ' + err.message);
                 }
-            });
+            }
+        });
 
         // Email Login Logic (Magic Link)
-        const emailForm = document.getElementById("emailLoginForm");
-        emailForm?.addEventListener("submit", async (e) => {
+        const emailForm = document.getElementById('emailLoginForm');
+        emailForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById("emailInput").value;
-            const btn = emailForm.querySelector("button");
+            const email = document.getElementById('emailInput').value;
+            const btn = emailForm.querySelector('button');
 
             btn.disabled = true;
-            btn.textContent = "전송 중...";
+            btn.textContent = '전송 중...';
 
             try {
                 const { error } = await supabase.auth.signInWithOtp({
@@ -255,21 +226,19 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                 });
 
                 if (error) throw error;
-                alert(
-                    "이메일로 로그인 링크를 보냈습니다!\n메일함을 확인해주세요.",
-                );
+                alert('이메일로 로그인 링크를 보냈습니다!\n메일함을 확인해주세요.');
             } catch (err) {
-                alert("오류 발생: " + err.message);
+                alert('오류 발생: ' + err.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = "이메일로 로그인 (매직링크)";
+                btn.textContent = '이메일로 로그인 (매직링크)';
             }
         });
 
         // Real Logic
-        const btns = document.querySelectorAll(".login-btn");
+        const btns = document.querySelectorAll('.login-btn');
         btns.forEach((btn) => {
-            btn.addEventListener("click", async () => {
+            btn.addEventListener('click', async () => {
                 const provider = btn.dataset.provider;
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: provider,
@@ -277,11 +246,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
                         redirectTo: `${window.location.origin}/auth/callback`,
                         // Force override scope using queryParams (Supabase sometimes ignores 'scopes' prop)
                         queryParams: {
-                            scope: "account_email,profile_nickname", // Request Email explicitly!
+                            scope: 'account_email,profile_nickname', // Request Email explicitly!
                         },
                     },
                 });
-                if (error) alert("로그인 오류: " + error.message);
+                if (error) alert('로그인 오류: ' + error.message);
             });
         });
 

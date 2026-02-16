@@ -1,8 +1,8 @@
 ---
 export const prerender = false;
 
-import DashboardLayout from "../../layouts/DashboardLayout.astro";
-import Icon from "../../components/Icon.astro";
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
 ---
 
 <DashboardLayout title="의견 관리">
@@ -293,25 +293,15 @@ import Icon from "../../components/Icon.astro";
             <h1 class="page-title">
                 <Icon name="mail" size="32" /> 의견 관리
             </h1>
-            <p class="page-subtitle">
-                사용자가 제출한 의견을 확인하고 관리할 수 있습니다.
-            </p>
+            <p class="page-subtitle">사용자가 제출한 의견을 확인하고 관리할 수 있습니다.</p>
         </div>
 
         <!-- Status Tabs -->
         <div class="status-tabs">
-            <button class="status-tab active" data-status="all">
-                전체
-            </button>
-            <button class="status-tab" data-status="pending">
-                대기중
-            </button>
-            <button class="status-tab" data-status="processing">
-                처리중
-            </button>
-            <button class="status-tab" data-status="resolved">
-                완료
-            </button>
+            <button class="status-tab active" data-status="all"> 전체 </button>
+            <button class="status-tab" data-status="pending"> 대기중 </button>
+            <button class="status-tab" data-status="processing"> 처리중 </button>
+            <button class="status-tab" data-status="resolved"> 완료 </button>
         </div>
 
         <!-- Feedback Table -->
@@ -328,9 +318,7 @@ import Icon from "../../components/Icon.astro";
                 </thead>
                 <tbody id="feedbackTableBody">
                     <tr>
-                        <td colspan="5" class="empty-state">
-                            로딩 중...
-                        </td>
+                        <td colspan="5" class="empty-state"> 로딩 중... </td>
                     </tr>
                 </tbody>
             </table>
@@ -354,14 +342,14 @@ import Icon from "../../components/Icon.astro";
     </div>
 
     <script>
-        import { supabaseAdmin } from "../../lib/supabase";
-        import { userProfile } from "../../store/user";
+        import { supabaseAdmin } from '../../lib/supabase';
+        import { userProfile } from '../../store/user';
 
         // Guard: Admin only
         const user = userProfile.get();
-        if (user.is_admin !== "true" && user.is_admin !== true) {
-            alert("관리자 권한이 필요합니다.");
-            window.location.href = "/";
+        if (user.is_admin !== 'true') {
+            alert('관리자 권한이 필요합니다.');
+            window.location.href = '/';
         }
 
         interface Feedback {
@@ -421,9 +409,8 @@ import Icon from "../../components/Icon.astro";
         function renderTable() {
             if (!tableBody) return;
 
-            const filtered = currentStatus === 'all'
-                ? allFeedback
-                : allFeedback.filter(f => f.status === currentStatus);
+            const filtered =
+                currentStatus === 'all' ? allFeedback : allFeedback.filter((f) => f.status === currentStatus);
 
             if (filtered.length === 0) {
                 tableBody.innerHTML = `
@@ -436,16 +423,17 @@ import Icon from "../../components/Icon.astro";
                 return;
             }
 
-            tableBody.innerHTML = filtered.map(feedback => {
-                const date = new Date(feedback.created_at).toLocaleDateString('ko-KR');
-                const statusClass = `badge-${feedback.status}`;
-                const statusText = {
-                    pending: '대기중',
-                    processing: '처리중',
-                    resolved: '완료'
-                }[feedback.status];
+            tableBody.innerHTML = filtered
+                .map((feedback) => {
+                    const date = new Date(feedback.created_at).toLocaleDateString('ko-KR');
+                    const statusClass = `badge-${feedback.status}`;
+                    const statusText = {
+                        pending: '대기중',
+                        processing: '처리중',
+                        resolved: '완료',
+                    }[feedback.status];
 
-                return `
+                    return `
                     <tr data-id="${feedback.id}">
                         <td>
                             <div style="font-weight: 600;">${feedback.title}</div>
@@ -463,13 +451,14 @@ import Icon from "../../components/Icon.astro";
                         <td>${date}</td>
                     </tr>
                 `;
-            }).join('');
+                })
+                .join('');
 
             // Add click handlers
-            tableBody.querySelectorAll('tr[data-id]').forEach(row => {
+            tableBody.querySelectorAll('tr[data-id]').forEach((row) => {
                 row.addEventListener('click', () => {
                     const id = row.dataset.id;
-                    const feedback = allFeedback.find(f => f.id === id);
+                    const feedback = allFeedback.find((f) => f.id === id);
                     if (feedback) {
                         openModal(feedback);
                     }
@@ -483,14 +472,12 @@ import Icon from "../../components/Icon.astro";
             if (!modal || !modalBody || !modalFooter) return;
 
             const date = new Date(feedback.created_at).toLocaleString('ko-KR');
-            const resolvedDate = feedback.resolved_at
-                ? new Date(feedback.resolved_at).toLocaleString('ko-KR')
-                : '-';
+            const resolvedDate = feedback.resolved_at ? new Date(feedback.resolved_at).toLocaleString('ko-KR') : '-';
 
             const statusText = {
                 pending: '대기중',
                 processing: '처리중',
-                resolved: '완료'
+                resolved: '완료',
             }[feedback.status];
 
             modalBody.innerHTML = `
@@ -516,13 +503,16 @@ import Icon from "../../components/Icon.astro";
                     <div class="info-label">내용</div>
                     <div class="info-message">${feedback.message}</div>
                 </div>
-                ${feedback.attachments && feedback.attachments.length > 0 ? `
+                ${
+                    feedback.attachments && feedback.attachments.length > 0
+                        ? `
                 <div class="info-row">
                     <div class="info-label">첨부파일 (${feedback.attachments.length}개)</div>
                     <div class="attachments-list">
-                        ${feedback.attachments.map(att => {
-                            const sizeKB = (att.size / 1024).toFixed(1);
-                            return `
+                        ${feedback.attachments
+                            .map((att) => {
+                                const sizeKB = (att.size / 1024).toFixed(1);
+                                return `
                                 <div class="attachment-item">
                                     <div class="attachment-info">
                                         <span class="attachment-name">📎 ${att.filename}</span>
@@ -533,10 +523,13 @@ import Icon from "../../components/Icon.astro";
                                     </button>
                                 </div>
                             `;
-                        }).join('')}
+                            })
+                            .join('')}
                     </div>
                 </div>
-                ` : ''}
+                `
+                        : ''
+                }
                 <div class="info-row">
                     <div class="info-label">관리자 메모</div>
                     <textarea id="adminNote" class="admin-note-textarea" placeholder="메모를 입력하세요...">${feedback.admin_note || ''}</textarea>
@@ -593,10 +586,7 @@ import Icon from "../../components/Icon.astro";
                     updateData.resolved_by = user.id;
                 }
 
-                const { error } = await supabaseAdmin
-                    .from('feedback')
-                    .update(updateData)
-                    .eq('id', selectedFeedback.id);
+                const { error } = await supabaseAdmin.from('feedback').update(updateData).eq('id', selectedFeedback.id);
 
                 if (error) throw error;
 
@@ -620,17 +610,12 @@ import Icon from "../../components/Icon.astro";
             try {
                 // Delete attachments from storage
                 if (selectedFeedback.attachments && selectedFeedback.attachments.length > 0) {
-                    const paths = selectedFeedback.attachments.map(att => att.storage_path);
-                    await supabaseAdmin.storage
-                        .from('feedback-attachments')
-                        .remove(paths);
+                    const paths = selectedFeedback.attachments.map((att) => att.storage_path);
+                    await supabaseAdmin.storage.from('feedback-attachments').remove(paths);
                 }
 
                 // Delete feedback record
-                const { error } = await supabaseAdmin
-                    .from('feedback')
-                    .delete()
-                    .eq('id', selectedFeedback.id);
+                const { error } = await supabaseAdmin.from('feedback').delete().eq('id', selectedFeedback.id);
 
                 if (error) throw error;
 
@@ -644,11 +629,9 @@ import Icon from "../../components/Icon.astro";
         }
 
         // Download attachment
-        (window as any).downloadAttachment = async function(storagePath: string, filename: string) {
+        (window as any).downloadAttachment = async function (storagePath: string, filename: string) {
             try {
-                const { data, error } = await supabaseAdmin.storage
-                    .from('feedback-attachments')
-                    .download(storagePath);
+                const { data, error } = await supabaseAdmin.storage.from('feedback-attachments').download(storagePath);
 
                 if (error) throw error;
 
@@ -665,12 +648,12 @@ import Icon from "../../components/Icon.astro";
         };
 
         // Tab switching
-        document.querySelectorAll('.status-tab').forEach(tab => {
+        document.querySelectorAll('.status-tab').forEach((tab) => {
             tab.addEventListener('click', (e) => {
                 const target = e.target as HTMLElement;
                 const status = target.dataset.status || 'all';
 
-                document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.status-tab').forEach((t) => t.classList.remove('active'));
                 target.classList.add('active');
 
                 currentStatus = status;

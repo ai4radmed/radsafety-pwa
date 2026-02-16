@@ -1,13 +1,13 @@
 ---
-import BaseHead from "../components/BaseHead.astro";
-import Sidebar from "../components/Sidebar.astro";
-import MobileBottomNav from "../components/MobileBottomNav.astro";
-import Icon from "../components/Icon.astro";
-import PWAInstall from "../components/PWAInstall.astro";
-import LoginGuide from "../components/LoginGuide.astro";
-import { ViewTransitions } from "astro:transitions";
-import GlossaryModal from "../components/GlossaryModal.astro";
-import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+import BaseHead from '../components/BaseHead.astro';
+import Sidebar from '../components/Sidebar.astro';
+import MobileBottomNav from '../components/MobileBottomNav.astro';
+import Icon from '../components/Icon.astro';
+import PWAInstall from '../components/PWAInstall.astro';
+import LoginGuide from '../components/LoginGuide.astro';
+import { ViewTransitions } from 'astro:transitions';
+import GlossaryModal from '../components/GlossaryModal.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 const { title, description, scale } = Astro.props;
 ---
@@ -23,14 +23,11 @@ const { title, description, scale } = Astro.props;
         <ViewTransitions />
         <script is:inline>
             function applyFontSize() {
-                const savedSize = localStorage.getItem("fontSize") || "medium";
-                document.documentElement.setAttribute(
-                    "data-font-size",
-                    savedSize,
-                );
+                const savedSize = localStorage.getItem('fontSize') || 'medium';
+                document.documentElement.setAttribute('data-font-size', savedSize);
             }
             applyFontSize();
-            document.addEventListener("astro:after-swap", applyFontSize);
+            document.addEventListener('astro:after-swap', applyFontSize);
         </script>
         <style>
             body {
@@ -122,9 +119,7 @@ const { title, description, scale } = Astro.props;
                 <button id="menuBtn" class="hamburger" aria-label="Menu">
                     <Icon name="menu" size="24" />
                 </button>
-                <span style="font-weight:bold; font-size:1.1rem;"
-                    >{SITE_TITLE} 0.1</span
-                >
+                <span style="font-weight:bold; font-size:1.1rem;">{SITE_TITLE} 0.1</span>
             </div>
 
             <div class="header-actions">
@@ -135,10 +130,7 @@ const { title, description, scale } = Astro.props;
                 >
                     <Icon name="search" size="24" />
                 </button>
-                <a
-                    href="/notifications"
-                    style="color:white; position:relative;"
-                >
+                <a href="/notifications" style="color:white; position:relative;">
                     <Icon name="bell" size="24" />
                     <span
                         class="global-noti-dot"
@@ -173,22 +165,21 @@ const { title, description, scale } = Astro.props;
         <script is:inline>
             // Mobile Menu Toggle
             function initMobileMenu() {
-                console.log("✅ 1. Initializing Mobile Menu...");
-                const menuBtn = document.getElementById("menuBtn");
-                const sidebar = document.querySelector(".sidebar");
-                const overlay = document.getElementById("sidebarOverlay");
-                const glossaryBtn =
-                    document.getElementById("headerGlossaryBtn");
+                console.log('✅ 1. Initializing Mobile Menu...');
+                const menuBtn = document.getElementById('menuBtn');
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                const glossaryBtn = document.getElementById('headerGlossaryBtn');
 
                 if (menuBtn && sidebar) {
                     // Remove old listener to avoid duplicates if re-running
                     const newBtn = menuBtn.cloneNode(true);
                     menuBtn.parentNode.replaceChild(newBtn, menuBtn);
 
-                    newBtn.addEventListener("click", () => {
-                        console.log("Menu clicked");
-                        sidebar.classList.toggle("open");
-                        overlay?.classList.toggle("active");
+                    newBtn.addEventListener('click', () => {
+                        console.log('Menu clicked');
+                        sidebar.classList.toggle('open');
+                        overlay?.classList.toggle('active');
                     });
                 }
 
@@ -197,24 +188,19 @@ const { title, description, scale } = Astro.props;
                     const newOverlay = overlay.cloneNode(true);
                     overlay.parentNode.replaceChild(newOverlay, overlay);
 
-                    newOverlay.addEventListener("click", () => {
-                        console.log("Overlay clicked");
-                        sidebar.classList.remove("open");
-                        newOverlay.classList.remove("active");
+                    newOverlay.addEventListener('click', () => {
+                        console.log('Overlay clicked');
+                        sidebar.classList.remove('open');
+                        newOverlay.classList.remove('active');
                     });
                 }
 
                 if (glossaryBtn) {
                     const newGlossaryBtn = glossaryBtn.cloneNode(true);
-                    glossaryBtn.parentNode.replaceChild(
-                        newGlossaryBtn,
-                        glossaryBtn,
-                    );
+                    glossaryBtn.parentNode.replaceChild(newGlossaryBtn, glossaryBtn);
 
-                    newGlossaryBtn.addEventListener("click", () => {
-                        document.dispatchEvent(
-                            new CustomEvent("open-glossary"),
-                        );
+                    newGlossaryBtn.addEventListener('click', () => {
+                        document.dispatchEvent(new CustomEvent('open-glossary'));
                     });
                 }
             }
@@ -223,22 +209,22 @@ const { title, description, scale } = Astro.props;
             initMobileMenu();
 
             // Run on ViewTransitions navigation
-            document.addEventListener("astro:after-swap", initMobileMenu);
+            document.addEventListener('astro:after-swap', initMobileMenu);
         </script>
         <script>
-            import { supabase } from "../lib/supabase";
-            import { setUser, clearUser } from "../store/user";
-            import { isAdmin } from "../config/auth";
+            import { supabase } from '../lib/supabase';
+            import { setUser, clearUser } from '../store/user';
+            import { isAdmin } from '../config/auth';
 
             // Global Auth Listener (Needs to be set once)
             supabase.auth.onAuthStateChange(async (event, session) => {
-                console.log("Auth State Change:", event, session?.user?.email);
+                console.log('Auth State Change:', event, session?.user?.email);
                 updateUserStore(session);
             });
 
             // Auth Check & Store Sync on every page load (supports View Transitions)
-            document.addEventListener("astro:page-load", async () => {
-                console.log("✅ 2. Page Load Event: Checking Auth...");
+            document.addEventListener('astro:page-load', async () => {
+                console.log('✅ 2. Page Load Event: Checking Auth...');
                 const {
                     data: { session },
                 } = await supabase.auth.getSession();
@@ -247,26 +233,24 @@ const { title, description, scale } = Astro.props;
 
             async function updateUserStore(session) {
                 const currentPath = window.location.pathname;
-                const publicPaths = ["/", "/login"];
+                const publicPaths = ['/', '/login'];
                 const isPublic = publicPaths.some(
-                    (path) =>
-                        currentPath === path ||
-                        (path !== "/" && currentPath.startsWith(path)),
+                    (path) => currentPath === path || (path !== '/' && currentPath.startsWith(path)),
                 );
 
                 if (session?.user) {
                     // 1. Basic Info from Session
                     const baseUser = {
                         id: session.user.id,
-                        login_email: session.user.email || "",
-                        created_at: session.user.created_at || "",
-                        provider:
-                            session.user.app_metadata?.provider || "email",
+                        email: session.user.email || '',
+                        login_email: session.user.email || '',
+                        created_at: session.user.created_at || '',
+                        provider: session.user.app_metadata?.provider || 'email',
                         nickname:
                             session.user.user_metadata?.full_name ||
                             session.user.user_metadata?.name ||
                             session.user.user_metadata?.user_name ||
-                            "",
+                            '',
                     };
 
                     // Check if user is admin based on email
@@ -275,28 +259,22 @@ const { title, description, scale } = Astro.props;
                     // 2. Fetch Full Profile from DB
                     try {
                         const { data: profile, error } = await supabase
-                            .from("profiles")
-                            .select("*")
-                            .eq("id", session.user.id)
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
                             .maybeSingle(); // Use maybeSingle to prevent 406 on 0 rows, though 406 usually means format error.
                         // However, 406 Not Acceptable in Supabase often means it returned more than 1 row when single() was expected,
                         // or header issue. 'maybeSingle' is safer than 'single'.
 
                         if (error) {
-                            console.error(
-                                "Supabase Profile Fetch Error:",
-                                error,
-                            );
+                            console.error('Supabase Profile Fetch Error:', error);
                             // If error, we still have baseUser. Don't throw.
                         }
 
                         if (profile) {
                             // If user is admin but DB doesn't reflect it, update DB
                             if (userIsAdmin && !profile.is_admin) {
-                                await supabase
-                                    .from("profiles")
-                                    .update({ is_admin: true })
-                                    .eq("id", session.user.id);
+                                await supabase.from('profiles').update({ is_admin: true }).eq('id', session.user.id);
                             }
 
                             setUser({
@@ -310,9 +288,9 @@ const { title, description, scale } = Astro.props;
                         } else {
                             // Valid response but no profile row found (Critical issue)
                             console.warn(
-                                "No profile row found for user:",
+                                'No profile row found for user:',
                                 session.user.id,
-                                "Attempting self-healing...",
+                                'Attempting self-healing...',
                             );
 
                             // Try to insert a default profile (Self-healing)
@@ -324,21 +302,14 @@ const { title, description, scale } = Astro.props;
                                 is_admin: userIsAdmin,
                             };
 
-                            const { error: insertError } = await supabase
-                                .from("profiles")
-                                .insert(newProfile);
+                            const { error: insertError } = await supabase.from('profiles').insert(newProfile);
 
                             if (insertError) {
-                                console.error(
-                                    "Self-healing failed (Insert Profile Error):",
-                                    insertError,
-                                );
+                                console.error('Self-healing failed (Insert Profile Error):', insertError);
                                 // Fallback to baseUser only
                                 setUser({ ...baseUser, is_admin: userIsAdmin });
                             } else {
-                                console.log(
-                                    "Self-healing successful: Created new profile for user.",
-                                );
+                                console.log('Self-healing successful: Created new profile for user.');
                                 // Use the creating profile data
                                 setUser({
                                     ...baseUser,
@@ -349,50 +320,44 @@ const { title, description, scale } = Astro.props;
                             checkNotifications(session.user.id);
                         }
                     } catch (err) {
-                        console.error(
-                            "Unexpected error fetching profile:",
-                            err,
-                        );
+                        console.error('Unexpected error fetching profile:', err);
                         setUser({ ...baseUser, is_admin: userIsAdmin });
                     }
 
                     // Logged in user on /login -> redirect to /mypage
-                    if (currentPath === "/login") {
-                        window.location.href = "/mypage";
+                    if (currentPath === '/login') {
+                        window.location.href = '/mypage';
                     }
                 } else {
                     clearUser();
                     // Auth Guard: Redirect to login if on a protected page
                     if (!isPublic) {
-                        console.log(
-                            "Unauthorized access. Redirecting to /login...",
-                        );
-                        window.location.href = "/login";
+                        console.log('Unauthorized access. Redirecting to /login...');
+                        window.location.href = '/login';
                     }
                 }
             }
 
             async function checkNotifications(userId) {
                 try {
-                    console.log("✅ 3. Checking Notifications for user:", userId);
+                    console.log('✅ 3. Checking Notifications for user:', userId);
                     const { count, error } = await supabase
-                        .from("notifications")
-                        .select("*", { count: "exact", head: true })
-                        .eq("user_id", userId)
-                        .eq("is_read", false);
+                        .from('notifications')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', userId)
+                        .eq('is_read', false);
 
                     if (!error) {
-                        console.log("✅ 4. Notification Check Complete. Unread count:", count);
-                        const dots =
-                            document.querySelectorAll(".global-noti-dot");
+                        console.log('✅ 4. Notification Check Complete. Unread count:', count);
+                        const dots = document.querySelectorAll('.global-noti-dot');
                         dots.forEach((dot) => {
-                            dot.style.display = count > 0 ? "block" : "none";
+                            dot.style.display = count > 0 ? 'block' : 'none';
                         });
                     } else {
-                        console.error("❌ Notification Check Error:", error);
+                        console.error('❌ Notification Check Error:', error);
                     }
                 } catch (e) {
-                    console.error("❌ Check Noti Exception:", e);
+                    console.error('❌ Check Noti Exception:', e);
                 }
             }
         </script>
