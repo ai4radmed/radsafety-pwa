@@ -437,7 +437,81 @@ COMMENT ON COLUMN public.notifications.expires_at IS '만료 일시 (자동 삭�
 COMMENT ON COLUMN public.notifications.metadata IS '추가 메타데이터 (JSON)';
 
 -- ============================================================
--- 6. Feedback Table (의견보내기)
+-- 6. Glossary Terms Table (법령용어사전)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.glossary_terms (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    term text NOT NULL,
+    definition text NOT NULL,
+    category text,
+    sort_order integer DEFAULT 0,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.glossary_terms ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can view glossary terms
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'glossary_terms' AND policyname = 'Anyone can view glossary'
+    ) THEN
+        CREATE POLICY "Anyone can view glossary" ON public.glossary_terms
+            FOR SELECT USING (true);
+    END IF;
+END $$;
+
+-- Admins can manage glossary terms (insert, update, delete)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'glossary_terms' AND policyname = 'Admins can manage glossary'
+    ) THEN
+        CREATE POLICY "Admins can manage glossary" ON public.glossary_terms
+            FOR ALL USING (
+                EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
+            );
+    END IF;
+END $$;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_glossary_terms_sort_order
+    ON public.glossary_terms(sort_order);
+
+CREATE INDEX IF NOT EXISTS idx_glossary_terms_category
+    ON public.glossary_terms(category);
+
+-- Seed data (기존 정적 데이터 이관, 중복 삽입 방지)
+INSERT INTO public.glossary_terms (term, definition, category, sort_order)
+SELECT * FROM (VALUES
+    ('허가사용자', '원자력안전법 제53조에 따라 허가를 받고 방사성동위원소 또는 방사선발생장치를 생산, 판매, 사용 또는 이동사용하는 자를 말합니다.', '인물/자격', 1),
+    ('신고사용자', '밀봉된 방사성동위원소 또는 방사선발생장치로서 방사선량이 적은 것을 사용하기 위해 법 제53조제2항에 따라 신고를 한 자를 말합니다.', '인물/자격', 2),
+    ('방사선안전관리자', '방사선 안전관리에 관한 기술적인 사항을 관리·감독하고, 방사선재해 방지를 위해 선임된 사람으로 원자력 관계 면허를 소지한 자입니다.', '인물/자격', 3),
+    ('수시출입자', '방사선관리구역에 청소, 시설관리 등의 업무상 출입하는 사람(방사선작업종사자 제외)으로서 안전관리자의 안내에 따르는 사람을 말합니다.', '인물/자격', 4),
+    ('방사선작업종사자', '방사선관리구역에서 방사선 이용 시설의 운전, 조작, 점검, 보수 등 방사선 피폭 우려가 있는 업무에 종사하는 사람입니다.', '인물/자격', 5),
+    ('방사선관리구역', '외부방사선량률, 공기중 방사성물질의 농도 또는 방사성물질로 오염된 표면의 오염도가 원자력안전위원회규칙으로 정하는 값을 초과할 우려가 있는 곳으로, 방사선 방호를 위해 사람의 출입이 관리되는 구역입니다.', '장소/시설', 6),
+    ('자체처분', '방사성폐기물 중 방사능 농도가 법적 허용기준 미만인 경우, 원자력안전위원회의 규정에 따라 일반 폐기물로 소각, 매립, 재활용하여 처분하는 절차입니다.', '폐기물', 7),
+    ('표면오염도', '물체 또는 인체의 표면에 묻어 있는 방사성물질의 양을 면적당 방사능(Bq/cm²)으로 나타낸 값입니다.', '측정', 8),
+    ('공간선량률', '특정 공간에서의 방사선의 세기를 나타내는 단위로, 보통 시간당 마이크로시버트(μSv/h)를 사용합니다.', '측정', 9),
+    ('선임', '방사선안전관리자 등 법적 자격 요건을 갖춘 자를 해당 직무 수행자로 지정하여 원자력안전위원회(또는 한국원자력안전기술원)에 보고하는 행위입니다.', '행정', 10),
+    ('정기검사', '허가사용자가 허가받은 사항대로 시설을 운영하고 있는지, 안전관리 규정을 준수하고 있는지 매년(또는 주기적으로) 확인하는 법정 검사입니다.', '행정', 11)
+) AS v(term, definition, category, sort_order)
+WHERE NOT EXISTS (SELECT 1 FROM public.glossary_terms LIMIT 1);
+
+-- Comments
+COMMENT ON TABLE public.glossary_terms IS '법령용어사전 용어 저장';
+COMMENT ON COLUMN public.glossary_terms.term IS '용어명';
+COMMENT ON COLUMN public.glossary_terms.definition IS '용어 정의';
+COMMENT ON COLUMN public.glossary_terms.category IS '용어 분류 (인물/자격, 장소/시설, 측정 등)';
+COMMENT ON COLUMN public.glossary_terms.sort_order IS '표시 순서';
+
+-- ============================================================
+-- 7. Feedback Table (의견보내기)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.feedback (

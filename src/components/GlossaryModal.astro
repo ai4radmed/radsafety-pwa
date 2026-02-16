@@ -1,6 +1,7 @@
 ---
-import Icon from "./Icon.astro";
-import { glossaryTerms } from "../data/glossary";
+import Icon from './Icon.astro';
+import { fetchGlossaryTerms } from '../data/glossary';
+const glossaryTerms = await fetchGlossaryTerms();
 ---
 
 <div id="glossaryModal" class="modal-backdrop" style="display: none;">
@@ -16,26 +17,16 @@ import { glossaryTerms } from "../data/glossary";
         </div>
 
         <div class="search-box">
-            <input
-                type="text"
-                id="glossarySearch"
-                placeholder="궁금한 용어를 검색해보세요..."
-            />
+            <input type="text" id="glossarySearch" placeholder="궁금한 용어를 검색해보세요..." />
         </div>
 
         <div class="terms-list" id="termsList">
             {
                 glossaryTerms.map((term) => (
-                    <div
-                        class="term-item"
-                        data-term={term.term}
-                        data-def={term.definition}
-                    >
+                    <div class="term-item" data-term={term.term} data-def={term.definition}>
                         <div class="term-header">
                             <span class="term-name">{term.term}</span>
-                            {term.category && (
-                                <span class="term-badge">{term.category}</span>
-                            )}
+                            {term.category && <span class="term-badge">{term.category}</span>}
                         </div>
                         <p class="term-def">{term.definition}</p>
                     </div>
@@ -43,9 +34,7 @@ import { glossaryTerms } from "../data/glossary";
             }
         </div>
 
-        <div id="glossaryEmpty" class="empty-state" style="display: none;">
-            검색 결과가 없습니다.
-        </div>
+        <div id="glossaryEmpty" class="empty-state" style="display: none;">검색 결과가 없습니다.</div>
     </div>
 </div>
 
@@ -235,35 +224,32 @@ import { glossaryTerms } from "../data/glossary";
 
 <script>
     function initGlossary() {
-        const modal = document.getElementById("glossaryModal");
-        const closeBtn = document.getElementById("closeGlossaryBtn");
-        const searchInput = document.getElementById(
-            "glossarySearch",
-        ) as HTMLInputElement;
-        const termsList = document.getElementById("termsList");
-        const emptyState = document.getElementById("glossaryEmpty");
-        const items = document.querySelectorAll(".term-item");
+        const modal = document.getElementById('glossaryModal');
+        const closeBtn = document.getElementById('closeGlossaryBtn');
+        const searchInput = document.getElementById('glossarySearch') as HTMLInputElement;
+        const emptyState = document.getElementById('glossaryEmpty');
+        const items = document.querySelectorAll('.term-item');
 
         if (!modal || !closeBtn) return;
 
         // Open Logic is handled by global event listener dispatched from layout
-        document.addEventListener("open-glossary", () => {
-            modal.style.display = "flex";
+        document.addEventListener('open-glossary', () => {
+            modal.style.display = 'flex';
             if (searchInput) {
-                searchInput.value = "";
+                searchInput.value = '';
                 searchInput.focus();
-                filterTerms("");
+                filterTerms('');
             }
-            document.body.style.overflow = "hidden"; // Prevent background scrolling
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
         });
 
         const closeGlossary = () => {
-            modal.style.display = "none";
-            document.body.style.overflow = "";
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
         };
 
-        closeBtn.addEventListener("click", closeGlossary);
-        modal.addEventListener("click", (e) => {
+        closeBtn.addEventListener('click', closeGlossary);
+        modal.addEventListener('click', (e) => {
             if (e.target === modal) closeGlossary();
         });
 
@@ -274,28 +260,28 @@ import { glossaryTerms } from "../data/glossary";
                 const term = item.dataset.term.toLowerCase();
                 const def = item.dataset.def.toLowerCase();
                 if (term.includes(query) || def.includes(query)) {
-                    item.style.display = "";
+                    item.style.display = '';
                     hasVisible = true;
                 } else {
-                    item.style.display = "none";
+                    item.style.display = 'none';
                 }
             });
 
             if (emptyState) {
-                emptyState.style.display = hasVisible ? "none" : "block";
+                emptyState.style.display = hasVisible ? 'none' : 'block';
             }
         };
 
         if (searchInput) {
             // Real-time search
-            searchInput.addEventListener("input", (e) => {
+            searchInput.addEventListener('input', (e) => {
                 const target = e.target as HTMLInputElement;
                 filterTerms(target.value.toLowerCase().trim());
             });
 
             // Handle Enter key
-            searchInput.addEventListener("keydown", (e) => {
-                if (e.key === "Enter") {
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
                     e.preventDefault(); // Prevent form submission if any
                     filterTerms(searchInput.value.toLowerCase().trim());
                     // Optional: Blur to hide keyboard on mobile or indicate completion
@@ -304,13 +290,13 @@ import { glossaryTerms } from "../data/glossary";
             });
 
             // Handle Korean IME composition end
-            searchInput.addEventListener("compositionend", (e) => {
+            searchInput.addEventListener('compositionend', () => {
                 filterTerms(searchInput.value.toLowerCase().trim());
             });
         }
     }
 
     // Init on load and page transition
-    document.addEventListener("astro:page-load", initGlossary);
-    if (document.readyState !== "loading") initGlossary();
+    document.addEventListener('astro:page-load', initGlossary);
+    if (document.readyState !== 'loading') initGlossary();
 </script>
