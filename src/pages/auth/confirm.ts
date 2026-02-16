@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 
+export const prerender = false;
+
 export const GET: APIRoute = async ({ request, cookies, redirect }) => {
     const url = new URL(request.url);
     const token_hash = url.searchParams.get('token_hash');
