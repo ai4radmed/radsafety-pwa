@@ -1,7 +1,6 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import LoginButton from '../components/auth/LoginButton.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 ---
 
 <DashboardLayout title="간편인증으로 시작하기">
@@ -158,11 +157,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
     </div>
 
     <script>
-        import { userProfile, setUser, clearUser } from '../store/user';
+        import { setUser, clearUser } from '../store/user';
         import { supabase } from '../lib/supabase';
 
         // Mock Login Logic
-        const mockLogin = (isApproved) => {
+        const mockLogin = (isApproved: boolean) => {
             const user = {
                 id: 'mock-user-123',
                 email: isApproved ? 'admin@radsafety.com' : 'newuser@example.com',
@@ -202,7 +201,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                     alert('세션이 성공적으로 초기화되었습니다.');
                     window.location.reload();
                 } catch (err) {
-                    alert('초기화 중 오류 발생: ' + err.message);
+                    alert('초기화 중 오류 발생: ' + (err instanceof Error ? err.message : String(err)));
                 }
             }
         });
@@ -211,11 +210,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
         const emailForm = document.getElementById('emailLoginForm');
         emailForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('emailInput').value;
-            const btn = emailForm.querySelector('button');
+            const email = (document.getElementById('emailInput') as HTMLInputElement).value;
+            const btn = emailForm.querySelector('button') as HTMLButtonElement;
 
-            btn.disabled = true;
-            btn.textContent = '전송 중...';
+            btn!.disabled = true;
+            btn!.textContent = '전송 중...';
 
             try {
                 const { error } = await supabase.auth.signInWithOtp({
@@ -228,10 +227,10 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 if (error) throw error;
                 alert('이메일로 로그인 링크를 보냈습니다!\n메일함을 확인해주세요.');
             } catch (err) {
-                alert('오류 발생: ' + err.message);
+                alert('오류 발생: ' + (err instanceof Error ? err.message : String(err)));
             } finally {
-                btn.disabled = false;
-                btn.textContent = '이메일로 로그인 (매직링크)';
+                btn!.disabled = false;
+                btn!.textContent = '이메일로 로그인 (매직링크)';
             }
         });
 
@@ -239,8 +238,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
         const btns = document.querySelectorAll('.login-btn');
         btns.forEach((btn) => {
             btn.addEventListener('click', async () => {
-                const provider = btn.dataset.provider;
-                const { data, error } = await supabase.auth.signInWithOAuth({
+                const provider = (btn as HTMLElement).dataset.provider as any;
+                const { error } = await supabase.auth.signInWithOAuth({
                     provider: provider,
                     options: {
                         redirectTo: `${window.location.origin}/auth/callback`,

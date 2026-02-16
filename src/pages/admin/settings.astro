@@ -1,7 +1,6 @@
 ---
-import DashboardLayout from "../../layouts/DashboardLayout.astro";
-import Icon from "../../components/Icon.astro";
-import { ADMIN_EMAILS } from "../../config/auth";
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
 ---
 
 <DashboardLayout title="관리자 설정">
@@ -10,12 +9,9 @@ import { ADMIN_EMAILS } from "../../config/auth";
         <div class="header">
             <div class="title-group">
                 <h1>
-                    <Icon name="settings" size="32" class="title-icon" /> 관리자 권한
-                    관리
+                    <Icon name="settings" size="32" class="title-icon" /> 관리자 권한 관리
                 </h1>
-                <p class="subtitle">
-                    앱의 관리자(Admin) 권한을 가진 사용자 목록입니다.
-                </p>
+                <p class="subtitle">앱의 관리자(Admin) 권한을 가진 사용자 목록입니다.</p>
             </div>
             <div class="nav-links">
                 <a href="/admin/members" class="nav-btn">
@@ -27,15 +23,9 @@ import { ADMIN_EMAILS } from "../../config/auth";
         <!-- Add Admin Form -->
         <div class="card add-admin-card">
             <h3><Icon name="user" size="20" /> 관리자 추가</h3>
-            <p class="card-desc">
-                새로운 관리자의 이메일을 입력하세요. (DB에 저장됩니다)
-            </p>
+            <p class="card-desc">새로운 관리자의 이메일을 입력하세요. (DB에 저장됩니다)</p>
             <div class="input-group">
-                <input
-                    type="email"
-                    id="newAdminEmail"
-                    placeholder="email@example.com"
-                />
+                <input type="email" id="newAdminEmail" placeholder="email@example.com" />
                 <button id="addAdminBtn" class="btn-primary">추가</button>
             </div>
         </div>
@@ -61,34 +51,34 @@ import { ADMIN_EMAILS } from "../../config/auth";
     </div>
 
     <script>
-        import { userProfile } from "../../store/user";
-        import { ADMIN_EMAILS } from "../../config/auth";
+        import { userProfile } from '../../store/user';
+        import { ADMIN_EMAILS } from '../../config/auth';
 
         // Guard
-        const user = userProfile.get();
-        if (user.is_admin !== "true") {
-            alert("관리자 권한이 필요합니다.");
-            window.location.href = "/";
+        const user = userProfile.get() as any;
+        if (user.is_admin !== 'true') {
+            alert('관리자 권한이 필요합니다.');
+            window.location.href = '/';
         }
 
         // Mock State (Simulating DB)
-        const dbAdmins = ["manager@test.com"];
+        const dbAdmins = ['manager@test.com'];
 
-        const tableBody = document.querySelector("#adminTable tbody");
-        const input = document.getElementById("newAdminEmail") as HTMLInputElement | null;
-        const addBtn = document.getElementById("addAdminBtn");
+        const tableBody = document.querySelector('#adminTable tbody');
+        const input = document.getElementById('newAdminEmail') as HTMLInputElement | null;
+        const addBtn = document.getElementById('addAdminBtn');
 
         function render() {
             if (!tableBody) return;
-            tableBody.innerHTML = "";
+            tableBody.innerHTML = '';
 
             // 1. Env Admins (Super Admins)
             ADMIN_EMAILS.forEach((email) => {
-                const tr = document.createElement("tr");
+                const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
                         <span class="email-text">${email}</span>
-                        ${email === user.login_email ? '<span class="badge me">나</span>' : ""}
+                        ${email === user.login_email ? '<span class="badge me">나</span>' : ''}
                     </td>
                     <td><span class="badge env">시스템(Env)</span></td>
                     <td><span class="lock-icon">🔒 제거 불가</span></td>
@@ -98,7 +88,7 @@ import { ADMIN_EMAILS } from "../../config/auth";
 
             // 2. DB Admins (Sub Admins)
             dbAdmins.forEach((email, index) => {
-                const tr = document.createElement("tr");
+                const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${email}</td>
                     <td><span class="badge db">DB</span></td>
@@ -108,10 +98,10 @@ import { ADMIN_EMAILS } from "../../config/auth";
             });
 
             // Re-attach delete listeners
-            document.querySelectorAll(".btn-delete").forEach((btn) => {
-                btn.addEventListener("click", (e) => {
-                    const idx = e.target.dataset.index;
-                    if (confirm("이 관리자를 삭제하시겠습니까?")) {
+            document.querySelectorAll('.btn-delete').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const idx = Number((e.target as HTMLElement).dataset.index);
+                    if (confirm('이 관리자를 삭제하시겠습니까?')) {
                         dbAdmins.splice(idx, 1);
                         render();
                     }
@@ -120,16 +110,16 @@ import { ADMIN_EMAILS } from "../../config/auth";
         }
 
         // Add Admin
-        addBtn.addEventListener("click", () => {
-            const email = input.value.trim();
-            if (!email) return alert("이메일을 입력하세요.");
+        addBtn?.addEventListener('click', () => {
+            const email = input!.value.trim();
+            if (!email) return alert('이메일을 입력하세요.');
             if (ADMIN_EMAILS.includes(email) || dbAdmins.includes(email)) {
-                return alert("이미 존재하는 관리자입니다.");
+                return alert('이미 존재하는 관리자입니다.');
             }
 
             // Mock Save
             dbAdmins.push(email);
-            input.value = "";
+            input!.value = '';
             alert(`${email} 님을 관리자로 추가했습니다. (Mock)`);
             render();
         });

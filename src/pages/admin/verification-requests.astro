@@ -443,7 +443,7 @@ import Icon from '../../components/Icon.astro';
     import { userProfile } from '../../store/user';
 
     document.addEventListener('astro:page-load', async () => {
-        const currentUser = userProfile.get();
+        const currentUser = userProfile.get() as any;
 
         // Check if admin
         if (currentUser.is_admin !== 'true') {
@@ -453,14 +453,12 @@ import Icon from '../../components/Icon.astro';
         }
 
         let currentStatus = 'temp_verified';
-        let allUsers = [];
-        let selectedUser = null;
-
+        let allUsers: any[] = [];
         // Tab switching
         const statusTabs = document.querySelectorAll('.status-tab');
         statusTabs.forEach((tab) => {
             tab.addEventListener('click', () => {
-                currentStatus = tab.dataset.status;
+                currentStatus = (tab as HTMLElement).dataset.status!;
                 statusTabs.forEach((t) => t.classList.remove('active'));
                 tab.classList.add('active');
                 updateTableHeader(currentStatus);
@@ -469,11 +467,11 @@ import Icon from '../../components/Icon.astro';
         });
 
         // Update table header based on status
-        function updateTableHeader(status) {
+        function updateTableHeader(status: string) {
             const headerCells = document.querySelectorAll('.users-table thead th');
             if (headerCells.length >= 4) {
                 // 4번째 헤더 (인덱스 3)를 상태에 따라 변경
-                const headerTexts = {
+                const headerTexts: Record<string, string> = {
                     temp_verified: '인증요청일',
                     verified: '최종인증일',
                     list: '자동인증일',
@@ -485,14 +483,14 @@ import Icon from '../../components/Icon.astro';
         }
 
         // Search functionality
-        const searchInput = document.getElementById('userSearch');
+        const searchInput = document.getElementById('userSearch')!;
         searchInput.addEventListener('input', (e) => {
-            filterUsers(e.target.value);
+            filterUsers((e.target as HTMLInputElement).value);
         });
 
         // Load users from verification_requests JOIN profiles
-        async function loadUsers(status) {
-            const tbody = document.getElementById('usersTableBody');
+        async function loadUsers(status: string) {
+            const tbody = document.getElementById('usersTableBody')!;
             tbody.innerHTML = '<tr><td colspan="4" class="empty-state">로딩 중...</td></tr>';
 
             try {
@@ -534,8 +532,8 @@ import Icon from '../../components/Icon.astro';
             }
         }
 
-        function renderUsers(users) {
-            const tbody = document.getElementById('usersTableBody');
+        function renderUsers(users: any[]) {
+            const tbody = document.getElementById('usersTableBody')!;
 
             if (!users || users.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="empty-state">해당 상태의 사용자가 없습니다.</td></tr>';
@@ -582,14 +580,14 @@ import Icon from '../../components/Icon.astro';
             // Attach click listeners
             tbody.querySelectorAll('tr[data-user-id]').forEach((row) => {
                 row.addEventListener('click', () => {
-                    const userId = row.dataset.userId;
+                    const userId = (row as HTMLElement).dataset.userId;
                     const user = users.find((u) => u.id === userId);
                     if (user) showUserDetail(user);
                 });
             });
         }
 
-        function filterUsers(query) {
+        function filterUsers(query: string) {
             if (!query.trim()) {
                 renderUsers(allUsers);
                 return;
@@ -604,36 +602,15 @@ import Icon from '../../components/Icon.astro';
             renderUsers(filtered);
         }
 
-        function getStatusBadge(status) {
-            const badges = {
-                temp_verified: '<span class="status-badge badge-temp">⏳ 임시 인증</span>',
-                verified: '<span class="status-badge badge-verified">✓ 최종 인증</span>',
-                list: '<span class="status-badge badge-list">📋 명부 인증</span>',
-                rejected: '<span class="status-badge badge-rejected">❌ 인증취소</span>',
-                none: '<span class="status-badge badge-none">미인증</span>',
-            };
-            return badges[status] || badges['none'];
-        }
-
-        function getSocietyName(society) {
-            const names = {
-                nuclear_medicine: '대한핵의학회',
-                technology: '대한핵의학기술학회',
-            };
-            return names[society] || society || '-';
-        }
-
-        function showUserDetail(user) {
-            selectedUser = user;
-
+        function showUserDetail(user: any) {
             // Populate modal - 이메일, 부서, 이유 표시
-            document.getElementById('modalUserName').textContent = user.real_name || user.nickname || '사용자';
-            document.getElementById('detailEmail').textContent = user.society_email || user.login_email || '-';
-            document.getElementById('detailDepartment').textContent = user.department || '-';
+            document.getElementById('modalUserName')!.textContent = user.real_name || user.nickname || '사용자';
+            document.getElementById('detailEmail')!.textContent = user.society_email || user.login_email || '-';
+            document.getElementById('detailDepartment')!.textContent = user.department || '-';
 
             // 인증취소 탭에서는 취소 이유 표시, 그 외는 신청 이유 표시
-            const reasonLabelEl = document.querySelector('#detailReason').previousElementSibling;
-            const reasonValueEl = document.getElementById('detailReason');
+            const reasonLabelEl = document.querySelector('#detailReason')!.previousElementSibling as HTMLElement;
+            const reasonValueEl = document.getElementById('detailReason')!;
 
             if (user.verification_status === 'rejected') {
                 reasonLabelEl.textContent = '취소 이유';
@@ -644,13 +621,13 @@ import Icon from '../../components/Icon.astro';
             }
 
             // 취소 사유 섹션 초기화
-            const rejectSection = document.getElementById('rejectReasonSection');
-            const rejectInput = document.getElementById('rejectReasonInput');
+            const rejectSection = document.getElementById('rejectReasonSection')! as HTMLElement;
+            const rejectInput = document.getElementById('rejectReasonInput')! as HTMLTextAreaElement;
             rejectSection.style.display = 'none';
             rejectInput.value = '';
 
             // Populate actions
-            const actionsContainer = document.getElementById('modalActions');
+            const actionsContainer = document.getElementById('modalActions')!;
             if (user.verification_status === 'temp_verified') {
                 actionsContainer.innerHTML = `
                     <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
@@ -671,7 +648,7 @@ import Icon from '../../components/Icon.astro';
             // Attach action listeners
             actionsContainer.querySelectorAll('[data-action]').forEach((btn) => {
                 btn.addEventListener('click', async (e) => {
-                    const action = e.target.dataset.action;
+                    const action = (e.target as HTMLElement).dataset.action;
                     if (action === 'approve') {
                         await approveUser(user.id);
                     } else if (action === 'show-reject') {
@@ -684,7 +661,7 @@ import Icon from '../../components/Icon.astro';
                         // 새 버튼에 리스너 재부착
                         actionsContainer.querySelectorAll('[data-action]').forEach((newBtn) => {
                             newBtn.addEventListener('click', async (e2) => {
-                                const newAction = e2.target.dataset.action;
+                                const newAction = (e2.target as HTMLElement).dataset.action;
                                 if (newAction === 'confirm-reject') {
                                     await rejectUser(user.id);
                                 } else if (newAction === 'cancel-reject') {
@@ -699,24 +676,23 @@ import Icon from '../../components/Icon.astro';
             });
 
             // Show modal
-            document.getElementById('userDetailModal').classList.add('open');
+            document.getElementById('userDetailModal')!.classList.add('open');
         }
 
         // Close modal
-        window.closeModal = function () {
-            document.getElementById('userDetailModal').classList.remove('open');
-            selectedUser = null;
+        (window as any).closeModal = function () {
+            document.getElementById('userDetailModal')!.classList.remove('open');
         };
 
-        document.getElementById('closeModal').addEventListener('click', closeModal);
-        document.getElementById('userDetailModal').addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                closeModal();
+        document.getElementById('closeModal')!.addEventListener('click', (window as any).closeModal);
+        document.getElementById('userDetailModal')!.addEventListener('click', (e) => {
+            if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
+                (window as any).closeModal();
             }
         });
 
         // Actions
-        async function approveUser(userId) {
+        async function approveUser(userId: string) {
             if (!confirm('임시 인증을 최종 인증으로 승인하시겠습니까?')) return;
 
             try {
@@ -749,7 +725,7 @@ import Icon from '../../components/Icon.astro';
                 if (requestError) console.warn('verification_requests 업데이트 실패:', requestError);
 
                 // 학회 이름 매핑
-                const societyMap = {
+                const societyMap: Record<string, string> = {
                     nuclear_medicine: '대한핵의학회',
                     technology: '대한핵의학기술학회',
                 };
@@ -782,7 +758,7 @@ import Icon from '../../components/Icon.astro';
             }
         }
 
-        async function rejectUser(userId) {
+        async function rejectUser(userId: string) {
             // 입력창에서 취소 사유 가져오기
             const rejectInput = document.getElementById('rejectReasonInput') as HTMLInputElement;
             const note = rejectInput?.value.trim() || '';
@@ -843,7 +819,7 @@ import Icon from '../../components/Icon.astro';
             }
         }
 
-        async function revokeUser(userId) {
+        async function revokeUser(userId: string) {
             if (!confirm('최종 인증을 임시 인증으로 되돌리시겠습니까?')) return;
 
             try {
@@ -872,11 +848,11 @@ import Icon from '../../components/Icon.astro';
                 });
 
                 alert('✅ 임시 인증으로 변경되었습니다.');
-                closeModal();
+                (window as any).closeModal();
                 loadUsers(currentStatus);
             } catch (err) {
                 console.error('Revoke Error:', err);
-                alert('❌ 오류가 발생했습니다: ' + err.message);
+                alert('❌ 오류가 발생했습니다: ' + (err as Error).message);
             }
         }
 
@@ -891,7 +867,7 @@ import Icon from '../../components/Icon.astro';
 
                 const countEl = document.getElementById(`${status}Count`);
                 if (countEl) {
-                    countEl.textContent = count || 0;
+                    countEl.textContent = String(count || 0);
                 }
             }
         }
