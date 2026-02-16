@@ -1,7 +1,6 @@
 
 import sharp from 'sharp';
 import fs from 'fs';
-import path from 'path';
 
 const svgPath = 'public/favicon.svg';
 const sizes = [192, 512];

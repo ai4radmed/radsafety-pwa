@@ -8,17 +8,16 @@ interface LogEntry {
     timestamp: string;
 }
 
-// 환경변수로 최소 로그 레벨 제어 (기본값: warn)
-const MIN_LOG_LEVEL = (import.meta.env.PUBLIC_LOG_LEVEL || 'warn') as LogLevel;
-
 const LEVEL_PRIORITY: Record<LogLevel, number> = {
     info: 0,
     warn: 1,
     error: 2,
 };
 
+// 환경변수로 최소 로그 레벨 제어 (기본값: warn)
 function shouldLog(level: LogLevel): boolean {
-    return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[MIN_LOG_LEVEL];
+    const minLevel = (import.meta.env.PUBLIC_LOG_LEVEL || 'warn') as LogLevel;
+    return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[minLevel];
 }
 
 function createLog(level: LogLevel, module: string, message: string, data?: unknown): LogEntry {

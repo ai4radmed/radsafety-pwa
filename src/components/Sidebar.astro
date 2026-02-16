@@ -6,7 +6,7 @@ const { pathname } = Astro.url;
 ---
 
 <script>
-    import { userProfile } from '../store/user';
+    import { userProfile, clearUser } from '../store/user';
     import { supabase } from '../lib/supabase';
 
     document.addEventListener('astro:page-load', () => {
@@ -21,7 +21,7 @@ const { pathname } = Astro.url;
 
         const adminNavGroup = document.getElementById('adminNavGroup');
 
-        function updateAuthUI(user) {
+        function updateAuthUI(user: any) {
             if (user) {
                 if (apiLoginLink) apiLoginLink.style.display = 'none';
                 if (apiLogoutBtn) apiLogoutBtn.style.display = 'flex';
@@ -44,7 +44,7 @@ const { pathname } = Astro.url;
         apiLogoutBtn?.addEventListener('click', async () => {
             if (confirm('로그아웃 하시겠습니까?')) {
                 await supabase.auth.signOut();
-                userProfile.set(null); // Clear store
+                clearUser();
                 window.location.href = '/';
             }
         });
