@@ -1,10 +1,12 @@
 -- ==============================================================================
 -- Master Database Schema: Safe Migration Script (데이터 보존)
 -- Description: 기존 데이터를 유지하면서 스키마 변경 적용
--- Version: 2.1 (인증 상태 세분화)
--- Usage: Supabase SQL Editor에서 실행
+-- Version: 2.2 (멱등성 보장 + glossary_terms)
+-- Usage: Supabase SQL Editor에서 실행 (반복 실행 가능)
 --
 -- 변경 이력:
+-- - 2026-02-16: 모든 CREATE POLICY를 IF NOT EXISTS로 래핑 (멱등성 보장)
+-- - 2026-02-16: glossary_terms 테이블 추가 (법령용어사전)
 -- - 2026-02-14: 인증 상태 세분화 (temp_verified 추가, admin → verified 마이그레이션)
 -- - 2026-02-14: 이메일 검증 시스템 추가 (email_verification_codes 테이블)
 -- - 기존: rebuild_all_tables.sql.backup 참조
@@ -532,50 +534,73 @@ CREATE TABLE IF NOT EXISTS public.feedback (
 -- RLS for feedback
 ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
 
--- Users can view their own feedback
-CREATE POLICY "Users can view own feedback"
-    ON public.feedback
-    FOR SELECT
-    USING (auth.uid() = user_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'feedback' AND policyname = 'Users can view own feedback'
+    ) THEN
+        CREATE POLICY "Users can view own feedback"
+            ON public.feedback
+            FOR SELECT
+            USING (auth.uid() = user_id);
+    END IF;
 
--- Users can insert their own feedback
-CREATE POLICY "Users can insert own feedback"
-    ON public.feedback
-    FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'feedback' AND policyname = 'Users can insert own feedback'
+    ) THEN
+        CREATE POLICY "Users can insert own feedback"
+            ON public.feedback
+            FOR INSERT
+            WITH CHECK (auth.uid() = user_id);
+    END IF;
 
--- Admins can view all feedback
-CREATE POLICY "Admins can view all feedback"
-    ON public.feedback
-    FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND is_admin = true
-        )
-    );
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'feedback' AND policyname = 'Admins can view all feedback'
+    ) THEN
+        CREATE POLICY "Admins can view all feedback"
+            ON public.feedback
+            FOR SELECT
+            USING (
+                EXISTS (
+                    SELECT 1 FROM public.profiles
+                    WHERE id = auth.uid() AND is_admin = true
+                )
+            );
+    END IF;
 
--- Admins can update all feedback
-CREATE POLICY "Admins can update all feedback"
-    ON public.feedback
-    FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND is_admin = true
-        )
-    );
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'feedback' AND policyname = 'Admins can update all feedback'
+    ) THEN
+        CREATE POLICY "Admins can update all feedback"
+            ON public.feedback
+            FOR UPDATE
+            USING (
+                EXISTS (
+                    SELECT 1 FROM public.profiles
+                    WHERE id = auth.uid() AND is_admin = true
+                )
+            );
+    END IF;
 
--- Admins can delete all feedback
-CREATE POLICY "Admins can delete all feedback"
-    ON public.feedback
-    FOR DELETE
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND is_admin = true
-        )
-    );
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'feedback' AND policyname = 'Admins can delete all feedback'
+    ) THEN
+        CREATE POLICY "Admins can delete all feedback"
+            ON public.feedback
+            FOR DELETE
+            USING (
+                EXISTS (
+                    SELECT 1 FROM public.profiles
+                    WHERE id = auth.uid() AND is_admin = true
+                )
+            );
+    END IF;
+END $$;
 
 -- Indexes for feedback
 CREATE INDEX IF NOT EXISTS idx_feedback_user_id
@@ -605,35 +630,53 @@ VALUES ('feedback-attachments', 'feedback-attachments', false)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for feedback-attachments
-CREATE POLICY "Users can upload their own feedback attachments"
-    ON storage.objects
-    FOR INSERT
-    WITH CHECK (
-        bucket_id = 'feedback-attachments' AND
-        auth.uid()::text = (storage.foldername(name))[1]
-    );
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'objects' AND policyname = 'Users can upload their own feedback attachments'
+    ) THEN
+        CREATE POLICY "Users can upload their own feedback attachments"
+            ON storage.objects
+            FOR INSERT
+            WITH CHECK (
+                bucket_id = 'feedback-attachments' AND
+                auth.uid()::text = (storage.foldername(name))[1]
+            );
+    END IF;
 
-CREATE POLICY "Users can view their own feedback attachments"
-    ON storage.objects
-    FOR SELECT
-    USING (
-        bucket_id = 'feedback-attachments' AND
-        (
-            auth.uid()::text = (storage.foldername(name))[1] OR
-            EXISTS (
-                SELECT 1 FROM public.profiles
-                WHERE id = auth.uid() AND is_admin = true
-            )
-        )
-    );
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'objects' AND policyname = 'Users can view their own feedback attachments'
+    ) THEN
+        CREATE POLICY "Users can view their own feedback attachments"
+            ON storage.objects
+            FOR SELECT
+            USING (
+                bucket_id = 'feedback-attachments' AND
+                (
+                    auth.uid()::text = (storage.foldername(name))[1] OR
+                    EXISTS (
+                        SELECT 1 FROM public.profiles
+                        WHERE id = auth.uid() AND is_admin = true
+                    )
+                )
+            );
+    END IF;
 
-CREATE POLICY "Admins can delete feedback attachments"
-    ON storage.objects
-    FOR DELETE
-    USING (
-        bucket_id = 'feedback-attachments' AND
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND is_admin = true
-        )
-    );
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'objects' AND policyname = 'Admins can delete feedback attachments'
+    ) THEN
+        CREATE POLICY "Admins can delete feedback attachments"
+            ON storage.objects
+            FOR DELETE
+            USING (
+                bucket_id = 'feedback-attachments' AND
+                EXISTS (
+                    SELECT 1 FROM public.profiles
+                    WHERE id = auth.uid() AND is_admin = true
+                )
+            );
+    END IF;
+END $$;
