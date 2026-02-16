@@ -1,49 +1,39 @@
 ---
-import { SITE_TITLE } from "../consts";
-import Icon from "./Icon.astro";
+import { SITE_TITLE } from '../consts';
+import Icon from './Icon.astro';
 
-// Sidebar Link Component (Local helper or separate file)
 const { pathname } = Astro.url;
-const isActive = (href) => {
-    const subpath = href.match(/[^\/]+/g);
-    const mainpath = pathname.match(/[^\/]+/g);
-    return href === pathname || href === "/" + (subpath?.[0] || "");
-};
 ---
 
 <script>
-    import { userProfile } from "../store/user";
-    import { supabase } from "../lib/supabase";
+    import { userProfile } from '../store/user';
+    import { supabase } from '../lib/supabase';
 
-    document.addEventListener("astro:page-load", () => {
-        const glossaryBtn = document.getElementById("sidebarGlossaryBtn");
-        glossaryBtn?.addEventListener("click", () => {
-            document.dispatchEvent(new CustomEvent("open-glossary"));
+    document.addEventListener('astro:page-load', () => {
+        const glossaryBtn = document.getElementById('sidebarGlossaryBtn');
+        glossaryBtn?.addEventListener('click', () => {
+            document.dispatchEvent(new CustomEvent('open-glossary'));
         });
 
-
         // Auth State Handling
-        const apiLoginLink = document.getElementById("navLoginLink");
-        const apiLogoutBtn = document.getElementById("navLogoutBtn");
+        const apiLoginLink = document.getElementById('navLoginLink');
+        const apiLogoutBtn = document.getElementById('navLogoutBtn');
 
-        const adminNavGroup = document.getElementById("adminNavGroup");
+        const adminNavGroup = document.getElementById('adminNavGroup');
 
         function updateAuthUI(user) {
             if (user) {
-                if (apiLoginLink) apiLoginLink.style.display = "none";
-                if (apiLogoutBtn) apiLogoutBtn.style.display = "flex";
+                if (apiLoginLink) apiLoginLink.style.display = 'none';
+                if (apiLogoutBtn) apiLogoutBtn.style.display = 'flex';
 
                 // Admin Menu Toggle
                 if (adminNavGroup) {
-                    adminNavGroup.style.display =
-                        user.is_admin === "true" || user.is_admin === true
-                            ? "flex"
-                            : "none";
+                    adminNavGroup.style.display = user.is_admin === 'true' || user.is_admin === true ? 'flex' : 'none';
                 }
             } else {
-                if (apiLoginLink) apiLoginLink.style.display = "flex";
-                if (apiLogoutBtn) apiLogoutBtn.style.display = "none";
-                if (adminNavGroup) adminNavGroup.style.display = "none";
+                if (apiLoginLink) apiLoginLink.style.display = 'flex';
+                if (apiLogoutBtn) apiLogoutBtn.style.display = 'none';
+                if (adminNavGroup) adminNavGroup.style.display = 'none';
             }
         }
 
@@ -51,11 +41,11 @@ const isActive = (href) => {
         userProfile.subscribe(updateAuthUI);
 
         // Logout Handler
-        apiLogoutBtn?.addEventListener("click", async () => {
-            if (confirm("로그아웃 하시겠습니까?")) {
+        apiLogoutBtn?.addEventListener('click', async () => {
+            if (confirm('로그아웃 하시겠습니까?')) {
                 await supabase.auth.signOut();
                 userProfile.set(null); // Clear store
-                window.location.href = "/";
+                window.location.href = '/';
             }
         });
     });
@@ -68,13 +58,13 @@ const isActive = (href) => {
 
     <div class="nav-group">
         <span class="group-title">메뉴</span>
-        <a href="/" class={pathname === "/" ? "active" : ""} aria-label="Home">
+        <a href="/" class={pathname === '/' ? 'active' : ''} aria-label="Home">
             <span class="icon"><Icon name="home" size="18" /></span>
             <span class="link-text">홈</span>
         </a>
         <a
             href="/inspection-prep"
-            class={pathname.startsWith("/inspection-prep") ? "active" : ""}
+            class={pathname.startsWith('/inspection-prep') ? 'active' : ''}
             aria-label="Inspection Guide"
         >
             <span class="icon"><Icon name="check-square" size="18" /></span>
@@ -82,174 +72,134 @@ const isActive = (href) => {
         </a>
         <a
             href="/findings-recommendations"
-            class={pathname.startsWith("/findings-recommendations")
-                ? "active"
-                : ""}
+            class={pathname.startsWith('/findings-recommendations') ? 'active' : ''}
             aria-label="Findings"
         >
             <span class="icon"><Icon name="alert-circle" size="18" /></span>
             <span class="link-text">지적권고사례</span>
         </a>
-        <a
-            href="/resources"
-            class={pathname.startsWith("/resources") ? "active" : ""}
-            aria-label="Resources"
-        >
+        <a href="/resources" class={pathname.startsWith('/resources') ? 'active' : ''} aria-label="Resources">
             <span class="icon"><Icon name="folder" size="18" /></span>
             <span class="link-text">자료실</span>
         </a>
-        <button
-            type="button"
-            id="sidebarGlossaryBtn"
-            class="nav-btn"
-            aria-label="Glossary"
-        >
+        <button type="button" id="sidebarGlossaryBtn" class="nav-btn" aria-label="Glossary">
             <span class="icon"><Icon name="search" size="18" /></span>
             <span class="link-text">용어검색</span>
-        </button></invoke>
-        <a
-            href="/guide"
-            class={pathname.startsWith("/guide") ? "active" : ""}
-            aria-label="Usage Guide"
-        >
-            <span class="icon"><Icon name="help" size="18" /></span>
-            <span class="link-text">이용안내</span>
-        </a>
-        <a
-            href="/settings"
-            class={pathname.startsWith("/settings") ? "active" : ""}
-            aria-label="Settings"
-        >
-            <span class="icon"><Icon name="settings" size="18" /></span>
-            <span class="link-text">설정</span>
-        </a>
-    </div>
-
-    <div class="nav-group">
-        <span class="group-title">사용자</span>
-        <a
-            href="/mypage"
-            class={pathname.startsWith("/mypage") ? "active" : ""}
-            aria-label="My Page"
-        >
-            <span class="icon"><Icon name="user" size="18" /></span>
-            <span class="link-text">마이페이지</span>
-        </a>
-        <a
-            href="/notifications"
-            class={pathname.startsWith("/notifications") ? "active" : ""}
-            aria-label="Notifications"
-            style="position: relative;"
-        >
-            <span class="icon">
-                <Icon name="bell" size="18" />
-                <span class="global-noti-dot notification-dot"></span>
-            </span>
-            <span class="link-text">알림함</span>
-        </a>
-        <a
-            href="/feedback"
-            class={pathname === "/feedback" ? "active" : ""}
-            aria-label="Feedback"
-        >
-            <span class="icon"><Icon name="mail" size="18" /></span>
-            <span class="link-text">의견보내기</span>
-        </a>
-        <a
-            href="/my-feedback"
-            class={pathname.startsWith("/my-feedback") ? "active" : ""}
-            aria-label="My Feedback"
-        >
-            <span class="icon"><Icon name="inbox" size="18" /></span>
-            <span class="link-text">내 의견함</span>
-        </a>
-        <a
-            href="/login"
-            id="navLoginLink"
-            class={pathname.startsWith("/login") ? "active" : ""}
-            aria-label="Login"
-        >
-            <span class="icon"><Icon name="lock-closed" size="18" /></span>
-            <span class="link-text">로그인</span>
-        </a>
-        <button
-            type="button"
-            id="navLogoutBtn"
-            class="nav-btn"
-            aria-label="Logout"
-            style="display: none;"
-        >
-            <span class="icon"><Icon name="lock-closed" size="18" /></span>
-            <span class="link-text">로그아웃</span>
         </button>
     </div>
-
-    <!-- Admin Group (Hidden by default, toggled by JS) -->
-    <div
-        id="adminNavGroup"
-        class="nav-group"
-        style="display:none; border-top:1px solid #333; padding-top:1rem; margin-top:1rem;"
-    >
-        <span class="group-title" style="color:#ef4444;">관리자</span>
-        <a
-            href="/admin/members"
-            class={pathname.startsWith("/admin/members") ? "active" : ""}
-            aria-label="Member List Registration"
-        >
-            <span class="icon"><Icon name="clipboard" size="18" /></span>
-            <span class="link-text">회원명부 등록</span>
-        </a>
-        <a
-            href="/admin/verification-requests"
-            class={pathname.startsWith("/admin/verification-requests")
-                ? "active"
-                : ""}
-            aria-label="Verification Requests"
-        >
-            <span class="icon"><Icon name="check-square" size="18" /></span>
-            <span class="link-text">인증요청 검토</span>
-        </a>
-        <a
-            href="/admin/send-notification"
-            class={pathname.startsWith("/admin/send-notification")
-                ? "active"
-                : ""}
-            aria-label="Send Notification"
-        >
-            <span class="icon"><Icon name="bell" size="18" /></span>
-            <span class="link-text">알림 발송</span>
-        </a>
-        <a
-            href="/admin/feedback"
-            class={pathname.startsWith("/admin/feedback")
-                ? "active"
-                : ""}
-            aria-label="Feedback Management"
-        >
-            <span class="icon"><Icon name="mail" size="18" /></span>
-            <span class="link-text">의견 관리</span>
-        </a>
-    </div>
-
-    <style>
-        /* Add notification dot style here locally if not global */
-        .notification-dot {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 8px;
-            height: 8px;
-            background-color: #ef4444;
-            border-radius: 50%;
-            border: 1px solid #1c1c1c;
-            display: none; /* Initially hidden, shown by DashboardLayout checkNotifications */
-        }
-    </style>
-
-    <div class="sidebar-footer">
-        <span class="version">v0.1.0 (Beta)</span>
-    </div>
+    <a href="/guide" class={pathname.startsWith('/guide') ? 'active' : ''} aria-label="Usage Guide">
+        <span class="icon"><Icon name="help" size="18" /></span>
+        <span class="link-text">이용안내</span>
+    </a>
+    <a href="/settings" class={pathname.startsWith('/settings') ? 'active' : ''} aria-label="Settings">
+        <span class="icon"><Icon name="settings" size="18" /></span>
+        <span class="link-text">설정</span>
+    </a>
 </aside>
+
+<div class="nav-group">
+    <span class="group-title">사용자</span>
+    <a href="/mypage" class={pathname.startsWith('/mypage') ? 'active' : ''} aria-label="My Page">
+        <span class="icon"><Icon name="user" size="18" /></span>
+        <span class="link-text">마이페이지</span>
+    </a>
+    <a
+        href="/notifications"
+        class={pathname.startsWith('/notifications') ? 'active' : ''}
+        aria-label="Notifications"
+        style="position: relative;"
+    >
+        <span class="icon">
+            <Icon name="bell" size="18" />
+            <span class="global-noti-dot notification-dot"></span>
+        </span>
+        <span class="link-text">알림함</span>
+    </a>
+    <a href="/feedback" class={pathname === '/feedback' ? 'active' : ''} aria-label="Feedback">
+        <span class="icon"><Icon name="mail" size="18" /></span>
+        <span class="link-text">의견보내기</span>
+    </a>
+    <a href="/my-feedback" class={pathname.startsWith('/my-feedback') ? 'active' : ''} aria-label="My Feedback">
+        <span class="icon"><Icon name="inbox" size="18" /></span>
+        <span class="link-text">내 의견함</span>
+    </a>
+    <a href="/login" id="navLoginLink" class={pathname.startsWith('/login') ? 'active' : ''} aria-label="Login">
+        <span class="icon"><Icon name="lock-closed" size="18" /></span>
+        <span class="link-text">로그인</span>
+    </a>
+    <button type="button" id="navLogoutBtn" class="nav-btn" aria-label="Logout" style="display: none;">
+        <span class="icon"><Icon name="lock-closed" size="18" /></span>
+        <span class="link-text">로그아웃</span>
+    </button>
+</div>
+
+<!-- Admin Group (Hidden by default, toggled by JS) -->
+<div
+    id="adminNavGroup"
+    class="nav-group"
+    style="display:none; border-top:1px solid #333; padding-top:1rem; margin-top:1rem;"
+>
+    <span class="group-title" style="color:#ef4444;">관리자</span>
+    <a
+        href="/admin/members"
+        class={pathname.startsWith('/admin/members') ? 'active' : ''}
+        aria-label="Member List Registration"
+    >
+        <span class="icon"><Icon name="clipboard" size="18" /></span>
+        <span class="link-text">회원명부 등록</span>
+    </a>
+    <a
+        href="/admin/verification-requests"
+        class={pathname.startsWith('/admin/verification-requests') ? 'active' : ''}
+        aria-label="Verification Requests"
+    >
+        <span class="icon"><Icon name="check-square" size="18" /></span>
+        <span class="link-text">인증요청 검토</span>
+    </a>
+    <a
+        href="/admin/send-notification"
+        class={pathname.startsWith('/admin/send-notification') ? 'active' : ''}
+        aria-label="Send Notification"
+    >
+        <span class="icon"><Icon name="bell" size="18" /></span>
+        <span class="link-text">알림 발송</span>
+    </a>
+    <a
+        href="/admin/feedback"
+        class={pathname.startsWith('/admin/feedback') ? 'active' : ''}
+        aria-label="Feedback Management"
+    >
+        <span class="icon"><Icon name="mail" size="18" /></span>
+        <span class="link-text">의견 관리</span>
+    </a>
+    <a
+        href="/admin/glossary"
+        class={pathname.startsWith('/admin/glossary') ? 'active' : ''}
+        aria-label="Glossary Management"
+    >
+        <span class="icon"><Icon name="book" size="18" /></span>
+        <span class="link-text">용어 관리</span>
+    </a>
+</div>
+
+<style>
+    /* Add notification dot style here locally if not global */
+    .notification-dot {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 8px;
+        height: 8px;
+        background-color: #ef4444;
+        border-radius: 50%;
+        border: 1px solid #1c1c1c;
+        display: none; /* Initially hidden, shown by DashboardLayout checkNotifications */
+    }
+</style>
+
+<div class="sidebar-footer">
+    <span class="version">v0.1.0 (Beta)</span>
+</div>
 
 <style>
     .sidebar {
