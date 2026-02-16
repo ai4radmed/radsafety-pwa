@@ -1,8 +1,8 @@
 ---
 export const prerender = false;
 
-import DashboardLayout from "../layouts/DashboardLayout.astro";
-import Icon from "../components/Icon.astro";
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Icon from '../components/Icon.astro';
 ---
 
 <DashboardLayout title="내 의견함">
@@ -269,9 +269,7 @@ import Icon from "../components/Icon.astro";
                 <h1 class="page-title">
                     <Icon name="mail" size="32" /> 내 의견함
                 </h1>
-                <p class="page-subtitle">
-                    제출한 의견의 처리 상태를 확인할 수 있습니다.
-                </p>
+                <p class="page-subtitle">제출한 의견의 처리 상태를 확인할 수 있습니다.</p>
             </div>
             <div class="action-buttons">
                 <a href="/feedback" class="btn btn-primary">
@@ -281,9 +279,7 @@ import Icon from "../components/Icon.astro";
         </div>
 
         <div id="feedbackList" class="feedback-list">
-            <div class="empty-state">
-                로딩 중...
-            </div>
+            <div class="empty-state">로딩 중...</div>
         </div>
     </div>
 
@@ -301,8 +297,8 @@ import Icon from "../components/Icon.astro";
     </div>
 
     <script>
-        import { supabase } from "../lib/supabase";
-        import { userProfile } from "../store/user";
+        import { supabase } from '../lib/supabase';
+        import { userProfile } from '../store/user';
 
         interface Feedback {
             id: string;
@@ -328,7 +324,6 @@ import Icon from "../components/Icon.astro";
         const closeModalBtn = document.getElementById('closeModal');
 
         let myFeedback: Feedback[] = [];
-        let selectedFeedback: Feedback | null = null;
 
         // Load user's feedback
         async function loadMyFeedback() {
@@ -403,20 +398,21 @@ import Icon from "../components/Icon.astro";
                 return;
             }
 
-            feedbackList.innerHTML = myFeedback.map(feedback => {
-                const date = new Date(feedback.created_at).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                const statusClass = `badge-${feedback.status}`;
-                const statusText = {
-                    pending: '대기중',
-                    processing: '처리중',
-                    resolved: '완료'
-                }[feedback.status];
+            feedbackList.innerHTML = myFeedback
+                .map((feedback) => {
+                    const date = new Date(feedback.created_at).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                    });
+                    const statusClass = `badge-${feedback.status}`;
+                    const statusText = {
+                        pending: '대기중',
+                        processing: '처리중',
+                        resolved: '완료',
+                    }[feedback.status];
 
-                return `
+                    return `
                     <div class="feedback-card" data-id="${feedback.id}">
                         <div class="card-header">
                             <div style="flex: 1;">
@@ -438,13 +434,14 @@ import Icon from "../components/Icon.astro";
                         </div>
                     </div>
                 `;
-            }).join('');
+                })
+                .join('');
 
             // Add click handlers
-            feedbackList.querySelectorAll('.feedback-card').forEach(card => {
+            feedbackList.querySelectorAll('.feedback-card').forEach((card) => {
                 card.addEventListener('click', () => {
                     const id = (card as HTMLElement).dataset.id;
-                    const feedback = myFeedback.find(f => f.id === id);
+                    const feedback = myFeedback.find((f) => f.id === id);
                     if (feedback) {
                         openModal(feedback);
                     }
@@ -454,18 +451,15 @@ import Icon from "../components/Icon.astro";
 
         // Open modal
         function openModal(feedback: Feedback) {
-            selectedFeedback = feedback;
             if (!modal || !modalBody) return;
 
             const date = new Date(feedback.created_at).toLocaleString('ko-KR');
-            const resolvedDate = feedback.resolved_at
-                ? new Date(feedback.resolved_at).toLocaleString('ko-KR')
-                : '-';
+            const resolvedDate = feedback.resolved_at ? new Date(feedback.resolved_at).toLocaleString('ko-KR') : '-';
 
             const statusText = {
                 pending: '대기중',
                 processing: '처리중',
-                resolved: '완료'
+                resolved: '완료',
             }[feedback.status];
 
             modalBody.innerHTML = `
@@ -483,23 +477,30 @@ import Icon from "../components/Icon.astro";
                         <span class="status-badge badge-${feedback.status}">${statusText}</span>
                     </div>
                 </div>
-                ${feedback.status === 'resolved' ? `
+                ${
+                    feedback.status === 'resolved'
+                        ? `
                 <div class="info-row">
                     <div class="info-label">처리 완료일</div>
                     <div class="info-value">${resolvedDate}</div>
                 </div>
-                ` : ''}
+                `
+                        : ''
+                }
                 <div class="info-row">
                     <div class="info-label">내용</div>
                     <div class="info-message">${feedback.message}</div>
                 </div>
-                ${feedback.attachments && feedback.attachments.length > 0 ? `
+                ${
+                    feedback.attachments && feedback.attachments.length > 0
+                        ? `
                 <div class="info-row">
                     <div class="info-label">첨부파일 (${feedback.attachments.length}개)</div>
                     <div class="attachments-list">
-                        ${feedback.attachments.map(att => {
-                            const sizeKB = (att.size / 1024).toFixed(1);
-                            return `
+                        ${feedback.attachments
+                            .map((att) => {
+                                const sizeKB = (att.size / 1024).toFixed(1);
+                                return `
                                 <div class="attachment-item">
                                     <div class="attachment-info">
                                         <span class="attachment-name">📎 ${att.filename}</span>
@@ -510,16 +511,23 @@ import Icon from "../components/Icon.astro";
                                     </button>
                                 </div>
                             `;
-                        }).join('')}
+                            })
+                            .join('')}
                     </div>
                 </div>
-                ` : ''}
-                ${feedback.admin_note ? `
+                `
+                        : ''
+                }
+                ${
+                    feedback.admin_note
+                        ? `
                 <div class="info-row">
                     <div class="info-label">관리자 메모</div>
                     <div class="info-message" style="background: #fef3c7; border-color: #fde047;">${feedback.admin_note}</div>
                 </div>
-                ` : ''}
+                `
+                        : ''
+                }
             `;
 
             modal.classList.add('active');
@@ -528,15 +536,12 @@ import Icon from "../components/Icon.astro";
         // Close modal
         function closeModal() {
             modal?.classList.remove('active');
-            selectedFeedback = null;
         }
 
         // Download attachment
-        (window as any).downloadAttachment = async function(storagePath: string, filename: string) {
+        (window as any).downloadAttachment = async function (storagePath: string, filename: string) {
             try {
-                const { data, error } = await supabase.storage
-                    .from('feedback-attachments')
-                    .download(storagePath);
+                const { data, error } = await supabase.storage.from('feedback-attachments').download(storagePath);
 
                 if (error) throw error;
 

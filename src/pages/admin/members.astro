@@ -1,26 +1,19 @@
 ---
-import DashboardLayout from "../../layouts/DashboardLayout.astro";
-import Icon from "../../components/Icon.astro";
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
 ---
 
 <DashboardLayout title="회원명부 등록">
     <div class="admin-container">
         <div class="header">
             <h1><Icon name="clipboard" size="32" /> 회원명부 등록 (Excel)</h1>
-            <p class="subtitle">
-                학회 회원명부 엑셀 파일을 업로드하여 허용 목록(Whitelist)에 등록합니다.
-            </p>
+            <p class="subtitle">학회 회원명부 엑셀 파일을 업로드하여 허용 목록(Whitelist)에 등록합니다.</p>
         </div>
 
         <!-- Society Selection -->
         <div class="society-selector">
             <label class="radio-label">
-                <input
-                    type="radio"
-                    name="society"
-                    value="nuclear_medicine"
-                    checked
-                />
+                <input type="radio" name="society" value="nuclear_medicine" checked />
                 <span>대한핵의학회</span>
             </label>
             <label class="radio-label">
@@ -32,9 +25,7 @@ import Icon from "../../components/Icon.astro";
         <!-- Drop Zone -->
         <div id="dropZone" class="drop-zone">
             <Icon name="download" size="48" class="upload-icon" />
-            <p class="drop-text">
-                엑셀 파일(.xlsx, .xls)을 이곳에 드래그하거나 클릭하세요.
-            </p>
+            <p class="drop-text">엑셀 파일(.xlsx, .xls)을 이곳에 드래그하거나 클릭하세요.</p>
             <input type="file" id="fileInput" accept=".xlsx, .xls" hidden />
         </div>
 
@@ -44,9 +35,7 @@ import Icon from "../../components/Icon.astro";
                 <h3>미리보기 (<span id="rowCount">0</span>명)</h3>
                 <div class="actions">
                     <button id="cancelBtn" class="btn-secondary">취소</button>
-                    <button id="uploadBtn" class="btn-primary"
-                        >DB에 저장하기</button
-                    >
+                    <button id="uploadBtn" class="btn-primary">DB에 저장하기</button>
                 </div>
             </div>
             <div class="table-wrapper">
@@ -72,23 +61,16 @@ import Icon from "../../components/Icon.astro";
             </button>
         </div>
         <!-- Current DB Members Section -->
-        <div
-            class="db-section"
-            style="margin-top: 3rem; border-top: 1px solid var(--border-color); padding-top: 2rem;"
-        >
+        <div class="db-section" style="margin-top: 3rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
             <h2>현재 등록된 회원명부 (<span id="dbCount">0</span>명)</h2>
-            <div
-                style="display:flex; justify-content:space-between; margin-bottom:1rem;"
-            >
+            <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
                 <input
                     type="text"
                     id="dbSearch"
                     placeholder="이름 또는 이메일 검색..."
                     style="padding:0.5rem; border:1px solid var(--border-color); border-radius:6px; width:300px;"
                 />
-                <button id="refreshDbBtn" class="btn-secondary"
-                    >🔄 새로고침</button
-                >
+                <button id="refreshDbBtn" class="btn-secondary">🔄 새로고침</button>
             </div>
             <div class="table-wrapper">
                 <table id="dbTable">
@@ -101,11 +83,7 @@ import Icon from "../../components/Icon.astro";
                         <th>부서</th>
                     </thead>
                     <tbody>
-                        <tr
-                            ><td colspan="6" style="text-align:center;"
-                                >데이터를 불러오는 중...</td
-                            ></tr
-                        >
+                        <tr><td colspan="6" style="text-align:center;">데이터를 불러오는 중...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -115,21 +93,24 @@ import Icon from "../../components/Icon.astro";
 
 <!-- Admin Guard Script -->
 <script>
-    import { userProfile } from "../../store/user";
-    import { supabase } from "../../lib/supabase";
-    import * as XLSX from "xlsx";
+    import { userProfile } from '../../store/user';
+    import { supabase } from '../../lib/supabase';
+    import * as XLSX from 'xlsx';
 
     // --- NEW: DB Member List Logic (Variables) ---
     // These need to be re-queried on page load
-    let dbTableBody, dbCountSpan, dbSearchInput, refreshDbBtn;
-    let allMembers = [];
-    let parsedMemberData = []; // Use local variable instead of window to avoid conflicts
+    let dbTableBody: Element | null,
+        dbCountSpan: HTMLElement | null,
+        dbSearchInput: HTMLElement | null,
+        refreshDbBtn: HTMLButtonElement | null;
+    let allMembers: any[] = [];
+    let parsedMemberData: any[] = []; // Use local variable instead of window to avoid conflicts
 
     // --- Page Load Handler ---
-    document.addEventListener("astro:page-load", () => {
+    document.addEventListener('astro:page-load', () => {
         // A. Guard Clause for Admin
-        const user = userProfile.get();
-        if (user.is_admin !== "true") {
+        const user = userProfile.get() as any;
+        if (user.is_admin !== 'true') {
             // alert("관리자 권한이 필요합니다."); // Optional: too annoying?
             // window.location.href = "/";
             // Check again inside specific actions if needed, or rely on RLS.
@@ -138,19 +119,19 @@ import Icon from "../../components/Icon.astro";
         }
 
         // B. Element Bindings
-        dbTableBody = document.querySelector("#dbTable tbody");
-        dbCountSpan = document.getElementById("dbCount");
-        dbSearchInput = document.getElementById("dbSearch");
-        refreshDbBtn = document.getElementById("refreshDbBtn");
+        dbTableBody = document.querySelector('#dbTable tbody');
+        dbCountSpan = document.getElementById('dbCount');
+        dbSearchInput = document.getElementById('dbSearch');
+        refreshDbBtn = document.getElementById('refreshDbBtn') as HTMLButtonElement | null;
 
-        const dropZone = document.getElementById("dropZone");
-        const fileInput = document.getElementById("fileInput");
-        const previewSection = document.getElementById("previewSection");
-        const tableBody = document.querySelector("#previewTable tbody");
-        const rowCountSpan = document.getElementById("rowCount");
-        const cancelBtn = document.getElementById("cancelBtn");
-        const resetBtn = document.getElementById("resetBtn");
-        const uploadBtn = document.getElementById("uploadBtn");
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const tableBody = document.querySelector('#previewTable tbody');
+        const rowCountSpan = document.getElementById('rowCount');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
 
         // If elements are missing (e.g. user navigated away), stop.
         if (!dropZone || !dbTableBody) return;
@@ -160,91 +141,91 @@ import Icon from "../../components/Icon.astro";
 
         // D. Prevent Default Drag Behaviors (Global)
         // We add this to document, but we should be careful about duplicates if we navigate back/forth.
-        // A simple way is to remove before add, or just add once. 
-        // But astro:page-load fires every time. 
+        // A simple way is to remove before add, or just add once.
+        // But astro:page-load fires every time.
         // To be safe, we can use a named function or just rely on the fact that these are cheap lightweight handlers.
-        // Better: Add to window/document only if not already added? 
+        // Better: Add to window/document only if not already added?
         // Or simpler: Just add them, but maybe clean up on 'astro:before-preparation'?
         // For now, let's keep it simple. Browsers handle multiple preventDefaults fine.
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
             document.addEventListener(eventName, preventDefaults, false);
         });
 
         // E. Event Listeners
 
         // 1. DB Search & Refresh
-        if(dbSearchInput) dbSearchInput.addEventListener("input", handleSearch);
-        if(refreshDbBtn) refreshDbBtn.addEventListener("click", fetchMembers);
+        if (dbSearchInput) dbSearchInput.addEventListener('input', handleSearch);
+        if (refreshDbBtn) refreshDbBtn.addEventListener('click', fetchMembers);
 
         // 2. Drop Zone Events
-        if(dropZone) {
-            dropZone.addEventListener("click", () => fileInput && fileInput.click());
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
+        if (dropZone) {
+            dropZone.addEventListener('click', () => fileInput && fileInput.click());
+
+            ['dragenter', 'dragover'].forEach((eventName) => {
                 dropZone.addEventListener(eventName, highlight, false);
             });
-            ['dragleave', 'drop'].forEach(eventName => {
+            ['dragleave', 'drop'].forEach((eventName) => {
                 dropZone.addEventListener(eventName, unhighlight, false);
             });
-            
-            dropZone.addEventListener("drop", handleDrop, false);
+
+            dropZone.addEventListener('drop', handleDrop, false);
         }
 
-        if(fileInput) fileInput.addEventListener("change", handleFileSelect);
-        if(cancelBtn) cancelBtn.addEventListener("click", handleCancel);
-        if(resetBtn) resetBtn.addEventListener("click", handleReset);
-        if(uploadBtn) uploadBtn.addEventListener("click", handleUpload);
+        if (fileInput) fileInput.addEventListener('change', handleFileSelect);
+        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+        if (resetBtn) resetBtn.addEventListener('click', handleReset);
+        if (uploadBtn) uploadBtn.addEventListener('click', handleUpload);
 
-        
         // --- Functions defined inside to capture closure variables (elements) ---
 
-        function preventDefaults(e) {
+        function preventDefaults(e: Event) {
             e.preventDefault();
             e.stopPropagation();
         }
 
-        function highlight(e) {
+        function highlight(e: Event) {
             preventDefaults(e); // Ensure default is prevented
-            dropZone.classList.add("drag-over");
+            dropZone!.classList.add('drag-over');
         }
 
-        function unhighlight(e) {
+        function unhighlight(e: Event) {
             preventDefaults(e);
-            dropZone.classList.remove("drag-over");
+            dropZone!.classList.remove('drag-over');
         }
 
-        function handleDrop(e) {
+        function handleDrop(e: DragEvent) {
             unhighlight(e); // Remove highlight
-            const dt = e.dataTransfer;
+            const dt = e.dataTransfer!;
             const files = dt.files;
-            if(files.length) handleFile(files[0]);
+            if (files.length) handleFile(files[0]);
         }
 
-        function handleFileSelect(e) {
-            if (e.target.files.length) handleFile(e.target.files[0]);
+        function handleFileSelect(e: Event) {
+            const input = e.target as HTMLInputElement;
+            if (input.files!.length) handleFile(input.files![0]);
         }
 
-        function handleFile(file) {
+        function handleFile(file: File) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: "array" });
+                    const data = new Uint8Array(e.target!.result as ArrayBuffer);
+                    const workbook = XLSX.read(data, { type: 'array' });
 
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
                     renderTable(jsonData);
                 } catch (err) {
-                    console.error("Excel Read Error:", err);
-                    alert("파일을 읽는 중 오류가 발생했습니다.\n" + err.message);
+                    console.error('Excel Read Error:', err);
+                    alert('파일을 읽는 중 오류가 발생했습니다.\n' + (err instanceof Error ? err.message : String(err)));
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function handleSearch(e) {
-            const keyword = e.target.value.toLowerCase();
+        function handleSearch(e: Event) {
+            const keyword = (e.target as HTMLInputElement).value.toLowerCase();
             const filtered = allMembers.filter(
                 (m) =>
                     (m.real_name && m.real_name.toLowerCase().includes(keyword)) ||
@@ -254,36 +235,37 @@ import Icon from "../../components/Icon.astro";
         }
 
         async function fetchMembers() {
-            if(refreshDbBtn) {
+            if (refreshDbBtn) {
                 refreshDbBtn.disabled = true;
-                refreshDbBtn.textContent = "로딩 중...";
+                refreshDbBtn.textContent = '로딩 중...';
             }
 
             const { data, error } = await supabase
-                .from("allowed_members")
-                .select("*")
-                .order("created_at", { ascending: false });
+                .from('allowed_members')
+                .select('*')
+                .order('created_at', { ascending: false });
 
             if (error) {
                 console.error(error);
-                alert("DB 목록을 불러오지 못했습니다: " + error.message);
-                if(dbTableBody) dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패</td></tr>`;
+                alert('DB 목록을 불러오지 못했습니다: ' + error.message);
+                if (dbTableBody)
+                    dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패</td></tr>`;
             } else {
                 allMembers = data || [];
                 renderDbTable(allMembers);
             }
 
-            if(refreshDbBtn) {
+            if (refreshDbBtn) {
                 refreshDbBtn.disabled = false;
-                refreshDbBtn.textContent = "🔄 새로고침";
+                refreshDbBtn.textContent = '🔄 새로고침';
             }
         }
 
-        function renderDbTable(list) {
-            if(!dbCountSpan || !dbTableBody) return;
-            
-            dbCountSpan.textContent = list.length;
-            dbTableBody.innerHTML = "";
+        function renderDbTable(list: any[]) {
+            if (!dbCountSpan || !dbTableBody) return;
+
+            dbCountSpan.textContent = String(list.length);
+            dbTableBody.innerHTML = '';
 
             if (list.length === 0) {
                 dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">등록된 회원이 없습니다.</td></tr>`;
@@ -291,68 +273,105 @@ import Icon from "../../components/Icon.astro";
             }
 
             list.slice(0, 100).forEach((row) => {
-                const tr = document.createElement("tr");
+                const tr = document.createElement('tr');
                 const societyName =
-                    row.society === "nuclear_medicine"
-                        ? "대한핵의학회"
-                        : row.society === "technology"
-                        ? "대한핵의학기술학회"
-                        : row.society || "-";
+                    row.society === 'nuclear_medicine'
+                        ? '대한핵의학회'
+                        : row.society === 'technology'
+                          ? '대한핵의학기술학회'
+                          : row.society || '-';
                 tr.innerHTML = `
                     <td>${societyName}</td>
-                    <td>${row.classification || "-"}</td>
-                    <td>${row.real_name || "-"}</td>
-                    <td>${row.society_email || "-"}</td>
-                    <td>${row.affiliation || "-"}</td>
-                    <td>${row.department || "-"}</td>
+                    <td>${row.classification || '-'}</td>
+                    <td>${row.real_name || '-'}</td>
+                    <td>${row.society_email || '-'}</td>
+                    <td>${row.affiliation || '-'}</td>
+                    <td>${row.department || '-'}</td>
                 `;
-                dbTableBody.appendChild(tr);
+                dbTableBody!.appendChild(tr);
             });
 
             if (list.length > 100) {
-                const tr = document.createElement("tr");
+                const tr = document.createElement('tr');
                 tr.innerHTML = `<td colspan="6" style="text-align:center; color:#888;">...외 ${list.length - 100}명 (검색하여 확인하세요)</td>`;
-                dbTableBody.appendChild(tr);
+                dbTableBody!.appendChild(tr);
             }
         }
 
-        function renderTable(data) {
-            console.log("Raw Excel Data:", data);
+        function renderTable(data: any[]) {
+            console.log('Raw Excel Data:', data);
 
             // Get default society selection
-            const selectedSocietyEl = document.querySelector('input[name="society"]:checked');
-            const selectedSociety = selectedSocietyEl ? selectedSocietyEl.value : "nuclear_medicine";
+            const selectedSocietyEl = document.querySelector(
+                'input[name="society"]:checked',
+            ) as HTMLInputElement | null;
+            const selectedSociety = selectedSocietyEl ? selectedSocietyEl.value : 'nuclear_medicine';
 
             const processedData = data.map((row) => {
-                 // Reuse existing findValue logic
-                 const name = (findValue(row, ["이름", "name", "성명", "membername", "user"]) || "-").toString().trim();
-                 const email = (findValue(row, ["이메일", "email", "e-mail", "mail", "전자우편", "계정"]) || "-").toString().trim();
-                 const affiliation = (findValue(row, ["근무기관명", "근무기관", "기관", "소속", "affiliation", "organization", "org", "company", "institution", "hospital", "workplace"]) || "-").toString().trim();
-                 const department = (findValue(row, ["소속 부서", "부서", "과", "department", "dept", "part"]) || "-").toString().trim();
-                 const classification = (findValue(row, ["직종", "구분", "classification", "role", "job", "position", "grade"]) || "-").toString().trim();
-                 
-                 const societyRaw = findValue(row, ["소속학회", "division", "society", "학회", "type"]) || "";
-                 let society = selectedSociety;
+                // Reuse existing findValue logic
+                const name = (findValue(row, ['이름', 'name', '성명', 'membername', 'user']) || '-').toString().trim();
+                const email = (findValue(row, ['이메일', 'email', 'e-mail', 'mail', '전자우편', '계정']) || '-')
+                    .toString()
+                    .trim();
+                const affiliation = (
+                    findValue(row, [
+                        '근무기관명',
+                        '근무기관',
+                        '기관',
+                        '소속',
+                        'affiliation',
+                        'organization',
+                        'org',
+                        'company',
+                        'institution',
+                        'hospital',
+                        'workplace',
+                    ]) || '-'
+                )
+                    .toString()
+                    .trim();
+                const department = (findValue(row, ['소속 부서', '부서', '과', 'department', 'dept', 'part']) || '-')
+                    .toString()
+                    .trim();
+                const classification = (
+                    findValue(row, ['직종', '구분', 'classification', 'role', 'job', 'position', 'grade']) || '-'
+                )
+                    .toString()
+                    .trim();
 
-                 if (societyRaw) {
-                    const normalizedParams = societyRaw.toString().trim().replace(/[\s|_]/g, "");
-                    if (["대한핵의학회", "핵의학회", "nuclear_medicine", "의사", "prof"].some((k) => normalizedParams.includes(k))) {
-                        society = "nuclear_medicine";
-                    } else if (["대한핵의학기술학회", "핵의학기술학회", "기술학회", "technology", "tech"].some((k) => normalizedParams.includes(k))) {
-                        society = "technology";
+                const societyRaw = findValue(row, ['소속학회', 'division', 'society', '학회', 'type']) || '';
+                let society = selectedSociety;
+
+                if (societyRaw) {
+                    const normalizedParams = societyRaw
+                        .toString()
+                        .trim()
+                        .replace(/[\s|_]/g, '');
+                    if (
+                        ['대한핵의학회', '핵의학회', 'nuclear_medicine', '의사', 'prof'].some((k) =>
+                            normalizedParams.includes(k),
+                        )
+                    ) {
+                        society = 'nuclear_medicine';
+                    } else if (
+                        ['대한핵의학기술학회', '핵의학기술학회', '기술학회', 'technology', 'tech'].some((k) =>
+                            normalizedParams.includes(k),
+                        )
+                    ) {
+                        society = 'technology';
                     }
                 }
-                
-                const societyDisplay = society === "nuclear_medicine" ? "대한핵의학회" : "대한핵의학기술학회";
+
+                const societyDisplay = society === 'nuclear_medicine' ? '대한핵의학회' : '대한핵의학기술학회';
                 return { name, email, affiliation, department, classification, society, societyDisplay };
             });
 
             parsedMemberData = processedData; // Update closure variable
 
-            if(tableBody) {
-                tableBody.innerHTML = "";
+            if (tableBody) {
+                tableBody.innerHTML = '';
                 processedData.forEach((row) => {
-                    const tr = document.createElement("tr");
+                    const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${row.societyDisplay}</td>
                         <td>${row.classification}</td>
@@ -365,26 +384,26 @@ import Icon from "../../components/Icon.astro";
                 });
             }
 
-            if(rowCountSpan) rowCountSpan.textContent = data.length;
-            if(previewSection) previewSection.style.display = "block";
-            if(dropZone) dropZone.style.display = "none";
+            if (rowCountSpan) rowCountSpan.textContent = String(data.length);
+            if (previewSection) previewSection.style.display = 'block';
+            if (dropZone) dropZone.style.display = 'none';
         }
 
         function handleCancel() {
-             if(previewSection) previewSection.style.display = "none";
-             if(dropZone) dropZone.style.display = "flex";
-             if(fileInput) fileInput.value = "";
-             if(tableBody) tableBody.innerHTML = "";
-             parsedMemberData = [];
+            if (previewSection) previewSection.style.display = 'none';
+            if (dropZone) dropZone.style.display = 'flex';
+            if (fileInput) (fileInput as HTMLInputElement).value = '';
+            if (tableBody) tableBody.innerHTML = '';
+            parsedMemberData = [];
         }
 
         async function handleReset() {
-             if (confirm("정말로 모든 명단 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
-                const { error } = await supabase.from("allowed_members").delete().neq("society_email", "");
+            if (confirm('정말로 모든 명단 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                const { error } = await supabase.from('allowed_members').delete().neq('society_email', '');
                 if (error) {
-                    alert("삭제 실패: " + error.message);
+                    alert('삭제 실패: ' + error.message);
                 } else {
-                    alert("모든 데이터가 초기화되었습니다.");
+                    alert('모든 데이터가 초기화되었습니다.');
                     fetchMembers(); // Reload instead of refresh to keep SPA feel
                 }
             }
@@ -392,23 +411,23 @@ import Icon from "../../components/Icon.astro";
 
         async function handleUpload() {
             if (!parsedMemberData || parsedMemberData.length === 0) {
-                alert("등록할 데이터가 없습니다.");
+                alert('등록할 데이터가 없습니다.');
                 return;
             }
 
             const dataToUpload = parsedMemberData
                 .map((row) => ({
-                    real_name: row.name !== "-" ? row.name : null,
-                    society_email: row.email !== "-" ? row.email : null,
-                    affiliation: row.affiliation !== "-" ? row.affiliation : null,
-                    department: row.department !== "-" ? row.department : null,
-                    classification: row.classification !== "-" ? row.classification : null,
+                    real_name: row.name !== '-' ? row.name : null,
+                    society_email: row.email !== '-' ? row.email : null,
+                    affiliation: row.affiliation !== '-' ? row.affiliation : null,
+                    department: row.department !== '-' ? row.department : null,
+                    classification: row.classification !== '-' ? row.classification : null,
                     society: row.society,
                 }))
-                .filter((r) => r.society_email && r.society_email.includes("@"));
+                .filter((r) => r.society_email && r.society_email.includes('@'));
 
             if (dataToUpload.length === 0) {
-                alert("유효한 이메일이 포함된 데이터가 없습니다.");
+                alert('유효한 이메일이 포함된 데이터가 없습니다.');
                 return;
             }
 
@@ -417,15 +436,15 @@ import Icon from "../../components/Icon.astro";
             );
 
             if (confirm(`${uniqueData.length}명의 회원을 DB에 등록하시겠습니까?\n(중복된 이메일은 업데이트됩니다)`)) {
-                const { data, error } = await supabase
-                    .from("allowed_members")
-                    .upsert(uniqueData, { onConflict: "society_email" });
+                const { error } = await supabase
+                    .from('allowed_members')
+                    .upsert(uniqueData, { onConflict: 'society_email' });
 
                 if (error) {
                     console.error(error);
-                    alert("업로드 실패:\n" + error.message);
+                    alert('업로드 실패:\n' + error.message);
                 } else {
-                    alert("✅ 성공적으로 등록되었습니다!");
+                    alert('✅ 성공적으로 등록되었습니다!');
                     // Clean up and refresh
                     handleCancel();
                     fetchMembers();
@@ -434,25 +453,27 @@ import Icon from "../../components/Icon.astro";
         }
 
         // Helper function (same as before)
-        function findValue(row, possibleKeys) {
+        function findValue(row: Record<string, any>, possibleKeys: string[]) {
             const rowKeys = Object.keys(row);
             for (const key of possibleKeys) {
                 if (row[key] !== undefined) return row[key];
             }
-            const normalizedKeys = rowKeys.reduce((acc, k) => {
-                const norm = k.toString().toLowerCase().replace(/[\s\-_.]/g, "");
+            const normalizedKeys = rowKeys.reduce((acc: Record<string, string>, k) => {
+                const norm = k
+                    .toString()
+                    .toLowerCase()
+                    .replace(/[\s\-_.]/g, '');
                 acc[norm] = k;
                 return acc;
             }, {});
             for (const key of possibleKeys) {
-                const normSearch = key.toLowerCase().replace(/[\s\-_.]/g, "");
+                const normSearch = key.toLowerCase().replace(/[\s\-_.]/g, '');
                 if (normalizedKeys[normSearch]) return row[normalizedKeys[normSearch]];
                 const partialMatch = Object.keys(normalizedKeys).find((nk) => nk.includes(normSearch));
                 if (partialMatch) return row[normalizedKeys[partialMatch]];
             }
             return null;
         }
-
     }); // End of astro:page-load
 </script>
 
@@ -487,7 +508,7 @@ import Icon from "../../components/Icon.astro";
         font-size: 1.1rem;
         font-weight: 500;
     }
-    .radio-label input[type="radio"] {
+    .radio-label input[type='radio'] {
         width: 1.2rem;
         height: 1.2rem;
         accent-color: var(--accent);
