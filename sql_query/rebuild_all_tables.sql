@@ -1,10 +1,11 @@
 -- ==============================================================================
 -- Master Database Schema: Safe Migration Script (데이터 보존)
 -- Description: 기존 데이터를 유지하면서 스키마 변경 적용
--- Version: 2.2 (멱등성 보장 + glossary_terms)
+-- Version: 2.3 (멱등성 보장 + glossary_terms + delete_own_account RPC)
 -- Usage: Supabase SQL Editor에서 실행 (반복 실행 가능)
 --
 -- 변경 이력:
+-- - 2026-02-16: delete_own_account() RPC 함수 추가 (회원 탈퇴)
 -- - 2026-02-16: 모든 CREATE POLICY를 IF NOT EXISTS로 래핑 (멱등성 보장)
 -- - 2026-02-16: glossary_terms 테이블 추가 (법령용어사전)
 -- - 2026-02-14: 인증 상태 세분화 (temp_verified 추가, admin → verified 마이그레이션)
@@ -680,3 +681,17 @@ BEGIN
             );
     END IF;
 END $$;
+
+-- ============================================================
+-- 10. RPC Functions
+-- ============================================================
+
+-- 회원 탈퇴: 인증된 사용자가 자신의 계정을 삭제
+-- SECURITY DEFINER로 auth.users 삭제 권한 부여
+-- profiles는 ON DELETE CASCADE로 자동 삭제됨
+CREATE OR REPLACE FUNCTION delete_own_account()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
