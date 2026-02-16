@@ -182,6 +182,18 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
     - `findings` 테이블: `ON DELETE SET NULL`로 인해 작성자 정보만 NULL로 변경되고 데이터는 보존됨
     - `archives` 테이블: `ON DELETE SET NULL`로 인해 작성자 정보만 NULL로 변경되고 데이터는 보존됨
 
+## SQL 스크립트
+
+`sql_query/` 폴더에는 단 하나의 스크립트만 존재합니다:
+
+| 파일                     | 용도                                                                |
+| ------------------------ | ------------------------------------------------------------------- |
+| `rebuild_all_tables.sql` | 전체 스키마 마이그레이션 (데이터 보존, 멱등성 보장, 반복 실행 가능) |
+
+- 신규 환경 세팅: SQL Editor에서 `rebuild_all_tables.sql` 실행
+- 기존 환경 업데이트: 동일 스크립트 재실행 (기존 데이터 자동 보존)
+- 전체 초기화: Supabase Dashboard에서 테이블 수동 삭제 후 재실행
+
 ## SQL 조회 쿼리 참고
 
 Supabase SQL Editor에서 아래 쿼리를 사용하여 직접 스키마를 조회할 수 있습니다:
