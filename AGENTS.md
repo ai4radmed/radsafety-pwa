@@ -49,6 +49,40 @@
 - 변경 이력은 파일 상단 주석에 버전과 함께 기록
 - 기존 데이터를 보존하는 Safe Migration 방식 사용
 
+## 배포 후 검증 절차
+
+`dev → PR → main` 머지 후 Vercel 자동 배포가 완료되면 아래 순서로 검증합니다.
+
+### 1단계: 운영 서버 헬스체크 (자동, 2분)
+
+```bash
+npm run check:production
+```
+
+HTTPS, www 리다이렉트, `/auth/confirm` CDN 308 캐시 버그, API 응답 등을 자동 점검합니다.
+
+### 2단계: 인증 후 기능 E2E (반자동, 3~5분)
+
+```bash
+# 세션이 유효한 경우
+npm run test:e2e:auth
+
+# 세션이 없거나 만료된 경우 — 브라우저에서 직접 로그인 필요
+npm run dev                      # 별도 터미널
+npm run test:e2e:save-session    # 브라우저 창에서 로그인 → /mypage 도달 시 자동 저장
+npm run test:e2e:auth
+```
+
+### 3단계: 수동 잔여 항목
+
+자동화가 불가능한 항목만 수동 확인합니다.
+
+- **카카오 로그인** → `/mypage` 도착 확인
+- **이메일 매직링크** → 수신 → 클릭 → `/mypage` 도착 (다운로드 아님)
+- **모바일** (릴리스 시): Chrome, Safari, 카카오 인앱 브라우저
+
+> 상세 체크리스트: [test_strategy.md](documents/test_strategy.md) 섹션 4 참조
+
 ## 검토 사항
 
 - PWA 오프라인 전략: @vite-pwa/astro 또는 직접 서비스워커 구현
