@@ -163,9 +163,6 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
                                 <button id="devLoginAdminBtn" class="dev-btn" style="background:#059669; color:white;">
                                     테스트 관리자 로그인
                                 </button>
-                                <button id="resetSessionBtn" class="dev-btn" style="background:#dc2626; color:white;">
-                                    세션 초기화(로그아웃)
-                                </button>
                             </div>
                         </div>
                     </>
@@ -175,7 +172,6 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
     </div>
 
     <script>
-        import { clearUser } from '../store/user';
         import { supabase } from '../lib/supabase-browser';
 
         // 개발자 모드: 테스트 계정 로그인 (signInWithPassword)
@@ -222,35 +218,6 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
                 .getElementById('devLoginAdminBtn')
                 ?.addEventListener('click', () => devLogin(adminEmail, adminPassword, 'admin'));
         }
-
-        // Session Reset Logic
-        document.getElementById('resetSessionBtn')?.addEventListener('click', async () => {
-            if (confirm('모든 로그인 정보와 캐시를 초기화하고 로그아웃 하시겠습니까?')) {
-                try {
-                    // 1. Clear Nano Stores (User Profile)
-                    clearUser();
-
-                    // 2. Supabase Logout
-                    await supabase.auth.signOut();
-
-                    // 3. Clear All Storage
-                    localStorage.clear();
-                    sessionStorage.clear();
-
-                    // 4. Clear Cookie (Optional but safe)
-                    document.cookie.split(';').forEach((c) => {
-                        document.cookie = c
-                            .replace(/^ +/, '')
-                            .replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
-                    });
-
-                    alert('세션이 성공적으로 초기화되었습니다.');
-                    window.location.reload();
-                } catch (err) {
-                    alert('초기화 중 오류 발생: ' + (err instanceof Error ? err.message : String(err)));
-                }
-            }
-        });
 
         // Email Login Logic (Magic Link)
         const emailForm = document.getElementById('emailLoginForm');
