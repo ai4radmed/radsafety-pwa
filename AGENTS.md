@@ -25,6 +25,13 @@
 
 ## 개발 규칙
 
+### 렌더링 방식 (SSR 전체 적용)
+
+- **모든 페이지는 서버 사이드 렌더링(SSR)으로 동작해야 합니다.**
+- 새 페이지 추가 시 `export const prerender = false;`를 반드시 선언할 것
+- 정적 프리렌더링(`prerender = true`)은 사용하지 않음 — 인증 쿠키, RLS, 서버 API 의존성 때문
+- 이 규칙의 자동 검증: `tests/unit/pages/prerender-check.test.ts`
+
 ### 데이터베이스 마이그레이션
 
 - **IMPORTANT**: 모든 DB 스키마 변경은 `sql_query/rebuild_all_tables.sql` 파일에 **통합**하여 관리

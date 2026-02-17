@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabaseAnon } from '../lib/supabase-server';
 
 export interface Term {
     id?: string;
@@ -78,7 +78,7 @@ const FALLBACK_TERMS: Term[] = [
 
 export async function fetchGlossaryTerms(): Promise<Term[]> {
     try {
-        const { data, error } = await supabase.from('glossary_terms').select('*').order('sort_order');
+        const { data, error } = await supabaseAnon.from('glossary_terms').select('*').order('sort_order');
         if (error || !data) return FALLBACK_TERMS;
         return data;
     } catch {

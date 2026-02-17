@@ -158,7 +158,7 @@ import LoginButton from '../components/auth/LoginButton.astro';
 
     <script>
         import { setUser, clearUser } from '../store/user';
-        import { supabase } from '../lib/supabase';
+        import { supabase } from '../lib/supabase-browser';
 
         // Mock Login Logic
         const mockLogin = (isApproved: boolean) => {
