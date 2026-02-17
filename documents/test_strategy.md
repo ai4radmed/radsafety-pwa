@@ -35,6 +35,7 @@
 | `unit/lib/supabase-server.test.ts`    | `createSupabaseServerClient()` 쿠키 파싱                     | 인증 핵심 경로                          |
 | `unit/middleware.test.ts`             | 미들웨어 세션 주입                                           | 인증 핵심 경로                          |
 | `unit/lib/runtime-separation.test.ts` | 브라우저/서버 클라이언트 분리 검증                           | 클라이언트 중복 생성 방지               |
+| `unit/pages/page-load-event.test.ts`  | 동적 데이터 로딩 페이지의 `astro:page-load` 리스너 존재 여부 | View Transitions 재방문 버그 재발 방지  |
 
 ---
 
@@ -44,19 +45,23 @@
 
 ### 현재 커버리지
 
-| 파일                     | 테스트 대상                      | 상태 |
-| ------------------------ | -------------------------------- | ---- |
-| `e2e/home.spec.ts`       | 홈페이지 렌더링, 네비게이션 링크 | 완료 |
-| `e2e/navigation.spec.ts` | 주요 페이지 HTTP 200 응답        | 완료 |
-| `e2e/pwa.spec.ts`        | PWA manifest 검증                | 완료 |
+| 파일                           | 테스트 대상                                                     | 상태 |
+| ------------------------------ | --------------------------------------------------------------- | ---- |
+| `e2e/home.spec.ts`             | 홈페이지 렌더링, 네비게이션 링크                                | 완료 |
+| `e2e/navigation.spec.ts`       | 주요 페이지 HTTP 200 응답                                       | 완료 |
+| `e2e/pwa.spec.ts`              | PWA manifest 검증                                               | 완료 |
+| `e2e/auth-guard.spec.ts`       | 비로그인 시 보호 페이지 15개 → /login 리다이렉트 자동 검증      | 완료 |
+| `e2e/public-pages.spec.ts`     | 홈/로그인 페이지 렌더링, 이메일 폼 UI 요소, 비로그인 리다이렉트 | 완료 |
+| `e2e/view-transitions.spec.ts` | View Transitions 재방문 시 콘텐츠 렌더링 유지 (비인증 페이지)   | 완료 |
 
 ### 추가 필요 (우선순위 순)
 
 | 파일                        | 테스트 대상                                                                     | 자동/수동 |
 | --------------------------- | ------------------------------------------------------------------------------- | --------- |
 | `e2e/auth-callback.spec.ts` | `/auth/confirm`, `/auth/callback` 엔드포인트 응답 검증 (redirect, content-type) | **자동**  |
-| `e2e/login-page.spec.ts`    | 로그인 페이지 UI 요소 존재 여부, 모의 로그인 → 마이페이지 이동                  | **자동**  |
-| `e2e/admin-guard.spec.ts`   | 비로그인 시 관리자 페이지 접근 차단                                             | **자동**  |
+
+> **인증이 필요한 기능의 E2E 자동화 한계**: 관리자 페이지(`/admin/*`) 데이터 로딩, 로그인 후 마이페이지 등은
+> 실제 Supabase 세션이 필요하므로 로컬 E2E 완전 자동화가 어렵습니다. 이 항목들은 수동 체크리스트(3-3, 3-4)로 검증합니다.
 
 ---
 
@@ -69,12 +74,10 @@
 
 ### 3-1. 비로그인 상태 (배포마다)
 
-- [ ] `/` 홈페이지 정상 렌더링
-- [ ] `/login` 로그인 페이지 표시, 카카오 버튼/이메일 폼 존재
-- [ ] `/guide` 사용 가이드 콘텐츠 표시
-- [ ] `/inspection-prep` 수검 준비 콘텐츠 표시
-- [ ] **인증 가드**: `/mypage` 접근 시 `/login`으로 리다이렉트
-- [ ] **인증 가드**: `/admin/members` 접근 시 `/login`으로 리다이렉트
+- [x] ~~`/` 홈페이지 정상 렌더링~~ → **자동화됨** (`e2e/public-pages.spec.ts`)
+- [x] ~~`/login` 로그인 페이지 표시, 카카오 버튼/이메일 폼 존재~~ → **자동화됨** (`e2e/public-pages.spec.ts`)
+- [x] ~~**인증 가드**: `/mypage`, `/admin/*` 등 접근 시 `/login`으로 리다이렉트~~ → **자동화됨** (`e2e/auth-guard.spec.ts`, 15개 페이지)
+- [ ] `/guide`, `/inspection-prep` 콘텐츠 표시 _(로그인 후 접근 가능 — 3-3에서 확인)_
 - [ ] **사이드바 초기 상태**: 사이트 데이터 전체 삭제 후 `/` 방문 → 사이드바가 로그아웃 상태 (깜빡임 없음)
 
 ### 3-2. 로그인/로그아웃 (배포마다)
@@ -137,9 +140,15 @@
 - [ ] **회원관리** (`/admin/members`): 목록 표시, 엑셀 업로드
 - [ ] **인증 요청** (`/admin/verification-requests`): 승인/반려 동작 → 사용자에게 알림 생성
 - [ ] **의견 관리** (`/admin/feedback`): 목록 표시, 상태 변경, 삭제
+    - [ ] **재방문 확인**: 다른 페이지(예: `/mypage`)로 이동 후 `/admin/feedback`으로 돌아왔을 때 데이터 표시 (로딩 중... 아님)
 - [ ] **용어 관리** (`/admin/glossary`): 추가/수정/삭제
+    - [ ] **재방문 확인**: 다른 페이지로 이동 후 `/admin/glossary`으로 돌아왔을 때 데이터 표시 (로딩 중... 아님)
 - [ ] **알림 발송** (`/admin/send-notification`): 발송 → 대상 사용자 알림함에 표시
 - [ ] **관리자 설정** (`/admin/settings`): 페이지 표시
+
+> **View Transitions 재방문 패턴**: 데이터를 동적으로 로딩하는 모든 페이지는 반드시 재방문 테스트를 수행합니다.
+> 초기 방문에서는 정상이더라도 View Transitions 이후 재방문 시 "로딩 중..." 상태로 멈출 수 있습니다.
+> ([codebase_guide.md 3-4 참조](codebase_guide.md#3-4-script-작성-규칙--view-transitions-대응))
 
 ### 3-5. 회원 탈퇴 (기능 변경 시)
 
@@ -187,15 +196,16 @@ Auth State Change: INITIAL_SESSION undefined
 
 **주의할 로그 패턴**
 
-| 로그                               | 의미                               | 조치                                                                                                       |
-| ---------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `Multiple GoTrueClient instances`  | Supabase 클라이언트 중복 생성 경고 | 브라우저/서버 클라이언트 분리 확인 ([환경 분리 원칙](codebase_guide.md#5-환경-분리-원칙-브라우저-vs-서버)) |
-| `❌ Notification Check Error`      | 알림 조회 실패                     | Supabase RLS 정책 확인                                                                                     |
-| `Supabase Profile Fetch Error`     | 프로필 조회 실패                   | profiles 테이블/RLS 확인                                                                                   |
-| `Self-healing successful`          | 프로필 행 누락 후 자동 복구됨      | DB 트리거 확인 필요                                                                                        |
-| `Self-healing failed`              | 프로필 자동 복구 실패              | profiles 테이블 구조 확인                                                                                  |
-| `Unauthorized access. Redirecting` | 비로그인 사용자 보호 페이지 접근   | 정상 동작 (인증 가드)                                                                                      |
-| 빨간색 `console.error`             | 예상치 못한 오류                   | 메시지 확인 후 디버깅                                                                                      |
+| 로그                               | 의미                                  | 조치                                                                                                                                          |
+| ---------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Multiple GoTrueClient instances`  | Supabase 클라이언트 중복 생성 경고    | 브라우저/서버 클라이언트 분리 확인 ([환경 분리 원칙](codebase_guide.md#5-환경-분리-원칙-브라우저-vs-서버))                                    |
+| `❌ Notification Check Error`      | 알림 조회 실패                        | Supabase RLS 정책 확인                                                                                                                        |
+| `Supabase Profile Fetch Error`     | 프로필 조회 실패                      | profiles 테이블/RLS 확인                                                                                                                      |
+| `Self-healing successful`          | 프로필 행 누락 후 자동 복구됨         | DB 트리거 확인 필요                                                                                                                           |
+| `Self-healing failed`              | 프로필 자동 복구 실패                 | profiles 테이블 구조 확인                                                                                                                     |
+| `Unauthorized access. Redirecting` | 비로그인 사용자 보호 페이지 접근      | 정상 동작 (인증 가드)                                                                                                                         |
+| 재방문 시 "로딩 중..." 고정        | View Transitions 후 스크립트 미재실행 | 해당 페이지 `<script>`에 `astro:page-load` 래퍼 누락 ([codebase_guide.md 3-4](codebase_guide.md#3-4-script-작성-규칙--view-transitions-대응)) |
+| 빨간색 `console.error`             | 예상치 못한 오류                      | 메시지 확인 후 디버깅                                                                                                                         |
 
 **콘솔에 에러가 없어야 하는 페이지들**
 
