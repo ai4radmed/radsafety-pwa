@@ -1,6 +1,6 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
-import { supabase, supabaseAdmin } from '../lib/supabase';
+import { supabaseAnon, supabaseAdmin } from '../lib/supabase-server';
 import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
 import { ADMIN_EMAILS } from '../config/auth';
 import { createLogger } from '../lib/logger';
@@ -25,7 +25,7 @@ export const server = {
 
             if (id && !id.startsWith('local-')) {
                 // Update existing record
-                const { data, error } = await supabase
+                const { data, error } = await supabaseAnon
                     .from('findings')
                     .update({
                         title,
@@ -44,7 +44,7 @@ export const server = {
                 return data;
             } else {
                 // Insert new record
-                const { data, error } = await supabase
+                const { data, error } = await supabaseAnon
                     .from('findings')
                     .insert({
                         title,
@@ -71,7 +71,7 @@ export const server = {
         handler: async ({ id }) => {
             if (id.startsWith('local-')) return { success: true };
 
-            const { error } = await supabase.from('findings').delete().eq('id', id);
+            const { error } = await supabaseAnon.from('findings').delete().eq('id', id);
 
             if (error) throw new Error(error.message);
             return { success: true };

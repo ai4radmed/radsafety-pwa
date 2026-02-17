@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
-import { supabase } from '../../../lib/supabase';
+import { supabaseAnon } from '../../../lib/supabase-server';
 import { createLogger } from '../../../lib/logger';
 
 const logger = createLogger('archives-api');
@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ params }) => {
     // Fetch archive by ID
     // Select necessary fields: content_html (for markdown view) and file_url (for download)
     // Also fetch author info from profiles
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAnon
         .from('archives')
         .select(
             `
@@ -41,7 +41,7 @@ export const GET: APIRoute = async ({ params }) => {
     // Construct public URL if file exists
     let publicFileUrl = null;
     if (data.file_url) {
-        const { data: publicUrlData } = supabase.storage.from('resources').getPublicUrl(data.file_url);
+        const { data: publicUrlData } = supabaseAnon.storage.from('resources').getPublicUrl(data.file_url);
         publicFileUrl = publicUrlData.publicUrl;
     }
 

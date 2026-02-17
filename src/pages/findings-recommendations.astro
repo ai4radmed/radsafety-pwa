@@ -1,11 +1,9 @@
 ---
-import DashboardLayout from "../layouts/DashboardLayout.astro";
-import Icon from "../components/Icon.astro";
-import { getCollection } from "astro:content";
-import { actions } from "astro:actions";
-import { supabase } from "../lib/supabase";
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Icon from '../components/Icon.astro';
+import { getCollection } from 'astro:content';
 
-const staticFindings = await getCollection("findings_recommendations");
+const staticFindings = await getCollection('findings_recommendations');
 
 // Normalize Data: Ensure tags exist
 const normalizedFindings = await Promise.all(
@@ -35,20 +33,20 @@ const normalizedFindings = await Promise.all(
 
 // Tags List (Standardized)
 const AVAILABLE_TAGS = [
-    "교육훈련",
-    "건강진단",
-    "기록비치",
-    "안전관리규정",
-    "선량오염측정",
-    "기술기준",
-    "변경허가",
-    "자체처분",
-    "시설검사",
-    "변경신고",
-    "장비인력",
-    "피폭관리",
-    "보고",
-    "기타미분류",
+    '교육훈련',
+    '건강진단',
+    '기록비치',
+    '안전관리규정',
+    '선량오염측정',
+    '기술기준',
+    '변경허가',
+    '자체처분',
+    '시설검사',
+    '변경신고',
+    '장비인력',
+    '피폭관리',
+    '보고',
+    '기타미분류',
 ];
 ---
 
@@ -161,9 +159,9 @@ const AVAILABLE_TAGS = [
         /* Filter Dropdown Styles */
         .controls-header {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 50px; 
+            grid-template-columns: 1fr 1fr 1fr 50px;
             gap: 1rem;
-            padding: 0.2rem 1rem; 
+            padding: 0.2rem 1rem;
             border-bottom: 2px solid var(--border-color);
             margin-bottom: 0.5rem;
             align-items: center;
@@ -174,32 +172,31 @@ const AVAILABLE_TAGS = [
             font-weight: 600; /* Match Resources header weight */
             color: var(--text-muted);
         }
-        
-        
+
         .filter-dropdown {
             position: relative;
-            overflow: visible; 
-            z-index: 101; 
+            overflow: visible;
+            z-index: 101;
             width: 100%;
             margin: 0;
             padding: 0;
         }
-        
+
         .dropdown-btn {
             list-style: none; /* Remove default marker */
-            width: fit-content; 
+            width: fit-content;
             min-width: 100px;
-            padding: 0.4rem 0.6rem; 
+            padding: 0.4rem 0.6rem;
             margin-left: -0.6rem; /* Pull back to align text with card content */
-            background: var(--bg-card); 
-            border: 1px solid var(--border-color); 
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             text-align: left;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem; 
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-muted);
             box-sizing: border-box;
@@ -209,12 +206,12 @@ const AVAILABLE_TAGS = [
             display: none; /* Remove marker in WebKit */
         }
         .dropdown-btn:hover {
-            border-color: var(--accent); 
+            border-color: var(--accent);
             color: var(--text-main);
         }
         .dropdown-btn span {
-             /* Ensure text is flush left? It is inside the button */
-        }    
+            /* Ensure text is flush left? It is inside the button */
+        }
 
         /* Dropdown Content */
         .dropdown-content {
@@ -222,16 +219,16 @@ const AVAILABLE_TAGS = [
             position: absolute;
             top: 100%;
             left: 0;
-            width: 240px; 
+            width: 240px;
             max-height: 300px;
             overflow-y: auto;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25); 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
             padding: 0.5rem;
             margin-top: 5px;
-            z-index: 200; 
+            z-index: 200;
         }
         /* No .show class needed */
         .checkbox-item {
@@ -294,10 +291,10 @@ const AVAILABLE_TAGS = [
             opacity: 1;
             transform: rotate(180deg);
         }
-        .sort-btn[data-order="asc"] .sort-icon {
+        .sort-btn[data-order='asc'] .sort-icon {
             transform: rotate(0deg);
         }
-        
+
         /* List Layout */
         .list-header {
             display: none;
@@ -313,7 +310,7 @@ const AVAILABLE_TAGS = [
         .finding-item {
             display: grid;
             /* Perfectly even distribution: 1fr 1fr 1fr */
-            grid-template-columns: 1fr 1fr 1fr 50px; 
+            grid-template-columns: 1fr 1fr 1fr 50px;
             gap: 1rem;
             padding: 0.25rem 1rem; /* Ultra compact layout */
             background: var(--bg-card);
@@ -330,7 +327,7 @@ const AVAILABLE_TAGS = [
         }
 
         .col-tags {
-            display: block; 
+            display: block;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -383,13 +380,15 @@ const AVAILABLE_TAGS = [
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s, color 0.2s;
+            transition:
+                background-color 0.2s,
+                color 0.2s;
         }
         .menu-btn:hover {
             color: var(--text-main);
             background-color: var(--bg-body);
         }
-        
+
         .dropdown-menu {
             display: none;
             position: absolute;
@@ -399,7 +398,7 @@ const AVAILABLE_TAGS = [
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             z-index: 50;
             padding: 0.5rem;
             flex-direction: column;
@@ -408,7 +407,7 @@ const AVAILABLE_TAGS = [
         .dropdown-menu.active {
             display: flex;
         }
-        
+
         .dropdown-item {
             background: none;
             border: none;
@@ -453,11 +452,11 @@ const AVAILABLE_TAGS = [
                 justify-content: flex-end; /* Align right on mobile */
                 overflow: visible !important; /* Ensure menu not clipped */
             }
-             .col-menu {
+            .col-menu {
                 justify-content: flex-end;
             }
             .dropdown-menu {
-                right: 0; 
+                right: 0;
                 width: 120px; /* Smaller width on mobile */
             }
         }
@@ -474,15 +473,15 @@ const AVAILABLE_TAGS = [
                 padding: 0.75rem 0.5rem;
                 align-items: center;
             }
-            
+
             .col-tags {
                 width: 100%;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                display: block; 
+                display: block;
             }
-            
+
             .col-title {
                 font-size: 0.9rem;
             }
@@ -499,11 +498,11 @@ const AVAILABLE_TAGS = [
             }
             /* 1. Header: Use Grid to match Item exactly */
             .controls-header {
-                display: grid !important; 
+                display: grid !important;
                 grid-template-columns: 95px 1fr 75px 30px; /* Adjusted: 95px Type, 75px Year */
                 gap: 0.5rem;
-                padding: 0.5rem 0.5rem; 
-                overflow-x: visible; 
+                padding: 0.5rem 0.5rem;
+                overflow-x: visible;
             }
 
             /* 2. Items: Match Header Grid */
@@ -514,17 +513,17 @@ const AVAILABLE_TAGS = [
                 padding: 0.4rem 0.5rem;
                 align-items: center;
             }
-            
+
             /* Elements inside grid */
             .filter-dropdown {
-                width: 100%; 
-                max-width: none; 
+                width: 100%;
+                max-width: none;
             }
-            
+
             .dropdown-btn {
                 padding: 0.4rem 0.2rem; /* Reduce padding to fit text in 95px */
                 white-space: nowrap;
-                overflow: hidden; 
+                overflow: hidden;
                 text-overflow: ellipsis;
                 font-size: 0.8rem; /* Slightly smaller text for fit */
             }
@@ -532,21 +531,21 @@ const AVAILABLE_TAGS = [
             /* Sort Buttons Alignment */
             .sort-btn {
                 width: 100%;
-                background: none; 
+                background: none;
                 border: none;
                 padding: 0;
                 white-space: nowrap; /* Prevent wrapping */
                 font-size: 0.85rem;
-            } 
-            
+            }
+
             /* Title Sort: Left Align */
-            .sort-btn[data-sort="title"] {
+            .sort-btn[data-sort='title'] {
                 justify-content: flex-start;
             }
-            
+
             /* Year Sort: Center Align */
-            .sort-btn[data-sort="year"] {
-                justify-content: center; 
+            .sort-btn[data-sort='year'] {
+                justify-content: center;
             }
 
             .col-tags {
@@ -554,9 +553,9 @@ const AVAILABLE_TAGS = [
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                display: block; 
+                display: block;
             }
-            
+
             .col-title {
                 font-size: 0.9rem;
             }
@@ -658,13 +657,13 @@ const AVAILABLE_TAGS = [
             resize: vertical;
             min-height: 100px;
         }
-        
+
         .radio-group {
             display: flex;
             gap: 1.5rem;
             padding: 0.5rem;
         }
-        
+
         .radio-label {
             display: flex;
             align-items: center;
@@ -672,11 +671,11 @@ const AVAILABLE_TAGS = [
             font-size: 0.95rem;
             cursor: pointer;
         }
-        
-        .radio-label input[type="radio"] {
+
+        .radio-label input[type='radio'] {
             cursor: pointer;
         }
-        
+
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
@@ -693,7 +692,7 @@ const AVAILABLE_TAGS = [
             font-size: 0.9rem;
             cursor: pointer;
         }
-        
+
         /* Finding Type Badge */
         .finding-type-badge {
             display: inline-block;
@@ -703,12 +702,12 @@ const AVAILABLE_TAGS = [
             font-weight: 600;
             margin-right: 0.35rem;
         }
-        
+
         .finding-type-badge.type-finding {
             background: #3b82f6;
             color: white;
         }
-        
+
         .finding-type-badge.type-recommendation {
             background: #10b981;
             color: white;
@@ -788,17 +787,14 @@ const AVAILABLE_TAGS = [
         <div class="page-title">
             <Icon name="alert-circle" size="18" /> 지적권고사례
         </div>
-        <button id="registerBtn" class="action-btn" style="display:none;"><Icon name="pencil" size="16" />사례 등록</button>
+        <button id="registerBtn" class="action-btn" style="display:none;"
+            ><Icon name="pencil" size="16" />사례 등록</button
+        >
     </div>
 
     <!-- Search Bar -->
     <div class="search-container">
-        <input
-            type="text"
-            id="findingSearch"
-            placeholder="사례 검색 (제목, 내용)"
-            aria-label="사례 검색"
-        />
+        <input type="text" id="findingSearch" placeholder="사례 검색 (제목, 내용)" aria-label="사례 검색" />
         <span class="search-icon"><Icon name="search" size="18" /></span>
     </div>
 
@@ -811,7 +807,10 @@ const AVAILABLE_TAGS = [
                 <Icon name="chevron-down" size="14" />
             </summary>
             <div class="dropdown-content" id="tagDropdownContent">
-                <label class="checkbox-item" style="border-bottom:1px solid var(--border-color); margin-bottom:0.5rem; font-weight:bold;">
+                <label
+                    class="checkbox-item"
+                    style="border-bottom:1px solid var(--border-color); margin-bottom:0.5rem; font-weight:bold;"
+                >
                     <input type="checkbox" id="selectAllTags" /> 전체 선택
                 </label>
                 {
@@ -834,7 +833,7 @@ const AVAILABLE_TAGS = [
 
         <!-- Col 3: Year Sort -->
         <div>
-             <button class="sort-btn" data-sort="year" data-order="none">
+            <button class="sort-btn" data-sort="year" data-order="none">
                 년도 <Icon name="chevron-down" size="14" class="sort-icon" />
             </button>
         </div>
@@ -843,15 +842,14 @@ const AVAILABLE_TAGS = [
         <div style="text-align:center; color:var(--text-muted); font-size:0.9rem;"></div>
     </div>
 
-
     <div class="list-container" id="findingsGrid">
         {/* Server Rendered Items */}
         {
             normalizedFindings.map((item) => {
                 const searchText =
-                    `${item.data.title} ${item.data.description} ${item.data.violationClause || ""} ${item.data.solution || ""}`.toLowerCase();
+                    `${item.data.title} ${item.data.description} ${item.data.violationClause || ''} ${item.data.solution || ''}`.toLowerCase();
                 const tags = item.normalized.tags;
-                const year = item.normalized.year || "-";
+                const year = item.normalized.year || '-';
 
                 return (
                     <div
@@ -859,8 +857,8 @@ const AVAILABLE_TAGS = [
                         data-tags={JSON.stringify(tags)}
                         data-search={searchText}
                         data-id={item.id}
-                        data-title={item.data.title}  /* Added for Sort */
-                        data-year={year}              /* Added for Sort */
+                        data-title={item.data.title}
+                        data-year={year}
                         data-content={JSON.stringify({
                             title: item.data.title,
                             tags: tags,
@@ -879,9 +877,7 @@ const AVAILABLE_TAGS = [
                             {item.data.title}
                         </div>
                         <div class="col-year">{year}</div>
-                        <div class="col-action">
-                             {/* Static items are read-only */}
-                        </div>
+                        <div class="col-action">{/* Static items are read-only */}</div>
                     </div>
                 );
             })
@@ -926,19 +922,12 @@ const AVAILABLE_TAGS = [
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label"
-                            >지적권고유형 (중복 선택 가능)</label
-                        >
+                        <label class="form-label">지적권고유형 (중복 선택 가능)</label>
                         <div class="checkbox-group">
                             {
                                 AVAILABLE_TAGS.map((tag) => (
                                     <label class="checkbox-label">
-                                        <input
-                                            type="checkbox"
-                                            name="tags"
-                                            value={tag}
-                                        />{" "}
-                                        {tag}
+                                        <input type="checkbox" name="tags" value={tag} /> {tag}
                                     </label>
                                 ))
                             }
@@ -998,23 +987,12 @@ const AVAILABLE_TAGS = [
             </div>
             <div class="modal-body">
                 <div class="detail-meta">
-                    <span style="color:var(--text-muted);"
-                        >년도: <strong id="detailYear">-</strong></span
-                    >
-                    <div
-                        id="detailTags"
-                        style="display:flex; gap:0.5rem; flex-wrap:wrap;"
-                    >
-                    </div>
+                    <span style="color:var(--text-muted);">년도: <strong id="detailYear">-</strong></span>
+                    <div id="detailTags" style="display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
                 </div>
                 <div class="detail-section">
                     <h3>💡 지적 내용</h3>
-                    <p
-                        id="detailDesc"
-                        style="line-height: 1.6; color: var(--text-main);"
-                    >
-                        Description
-                    </p>
+                    <p id="detailDesc" style="line-height: 1.6; color: var(--text-main);">Description</p>
                 </div>
                 <div class="detail-section" id="detailClauseSection">
                     <h3>⚖️ 관련 법령</h3>
@@ -1032,10 +1010,10 @@ const AVAILABLE_TAGS = [
     </div>
 
     <script>
-        import { supabase } from "../lib/supabase";
-        import { userProfile } from "../store/user";
+        import { supabase } from '../lib/supabase-browser';
+        import { userProfile } from '../store/user';
 
-        document.addEventListener("astro:page-load", () => {
+        document.addEventListener('astro:page-load', () => {
             initApp();
         });
 
@@ -1044,35 +1022,34 @@ const AVAILABLE_TAGS = [
             const currentUser = userProfile.get();
             const canUpload =
                 currentUser &&
-                (currentUser.is_admin === "true" ||
-                 ['list', 'temp_verified', 'verified'].includes(currentUser.verification_status));
+                (currentUser.is_admin === 'true' ||
+                    ['list', 'temp_verified', 'verified'].includes(currentUser.verification_status));
 
             if (canUpload) {
-                const regBtn = document.getElementById("registerBtn");
-                if (regBtn) regBtn.style.display = "flex";
+                const regBtn = document.getElementById('registerBtn');
+                if (regBtn) regBtn.style.display = 'flex';
             }
-            const grid = document.getElementById("findingsGrid");
-            const searchInput = document.getElementById("findingSearch");
-            const selectAllCheckbox = document.getElementById("selectAllTags");
-            const dropdownDetails = document.getElementById("tagDropdown");
-            const applyBtn = document.getElementById("applyTagFilter");
+            const grid = document.getElementById('findingsGrid');
+            const searchInput = document.getElementById('findingSearch');
+            const selectAllCheckbox = document.getElementById('selectAllTags');
+            const dropdownDetails = document.getElementById('tagDropdown');
+            const applyBtn = document.getElementById('applyTagFilter');
 
             // Early return if critical elements are missing
             if (!grid || !searchInput || !selectAllCheckbox || !dropdownDetails || !applyBtn) {
-                console.warn("Findings page: Required DOM elements not found, skipping initialization");
+                console.warn('Findings page: Required DOM elements not found, skipping initialization');
                 return;
             }
 
-            let cards = Array.from(document.querySelectorAll(".finding-item"));
+            let cards: HTMLElement[] = Array.from(document.querySelectorAll<HTMLElement>('.finding-item'));
 
             // Dropdown Elements
-            const dropdownBtn = document.getElementById("tagDropdownBtn");
-            const dropdownContent = document.getElementById("tagDropdownContent");
-            const tagCheckboxes = document.querySelectorAll('input[name="filterTag"]');
+            const dropdownBtn = document.getElementById('tagDropdownBtn');
+            const tagCheckboxes = document.querySelectorAll<HTMLInputElement>('input[name="filterTag"]');
 
             // Sort Elements
-            const sortBtns = document.querySelectorAll(".sort-btn");
-            let currentSort = { field: null, order: 'none' };
+            const sortBtns = document.querySelectorAll<HTMLElement>('.sort-btn');
+            let currentSort: { field: string | null; order: string } = { field: null, order: 'none' };
 
             // 0. Load shared items from Supabase
             async function loadSharedItems() {
@@ -1082,25 +1059,25 @@ const AVAILABLE_TAGS = [
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    console.error("Error fetching shared findings:", error);
+                    console.error('Error fetching shared findings:', error);
                     return;
                 }
 
-                sharedItems.forEach((item) => {
+                sharedItems!.forEach((item: any) => {
                     // Normalize DB keys to UI keys
                     const normalizedItem = {
                         ...item,
                         findingType: item.finding_type,
                         violationClause: item.violation_clause,
-                        solution: item.solution
+                        solution: item.solution,
                     };
                     const card = createCardElement(normalizedItem);
-                    grid.appendChild(card);
+                    grid!.appendChild(card);
                     setupMenu(card); // Ensure menu is setup for shared items
                 });
-                
+
                 // Refresh the cards list for filtering/sorting
-                cards = Array.from(document.querySelectorAll(".finding-item"));
+                cards = Array.from(document.querySelectorAll<HTMLElement>('.finding-item'));
             }
 
             loadSharedItems();
@@ -1111,112 +1088,103 @@ const AVAILABLE_TAGS = [
             // We just need to handle "Close on click outside".
 
             // Close on click outside
-            document.addEventListener("click", (e) => {
+            document.addEventListener('click', (e) => {
                 const target = e.target as Node;
                 if (dropdownDetails && target && !dropdownDetails.contains(target)) {
-                    dropdownDetails.removeAttribute("open");
+                    dropdownDetails.removeAttribute('open');
                 }
             });
 
             function getSelectedTags() {
                 return Array.from(tagCheckboxes)
-                    .filter(cb => cb.checked)
-                    .map(cb => cb.value);
+                    .filter((cb) => (cb as HTMLInputElement).checked)
+                    .map((cb) => (cb as HTMLInputElement).value);
             }
 
             function updateDropdownLabel() {
                 const selected = getSelectedTags();
                 if (selected.length === 0) {
-                    dropdownBtn.querySelector("span").textContent = "지적권고유형";
-                    selectAllCheckbox.checked = false;
+                    dropdownBtn!.querySelector('span')!.textContent = '지적권고유형';
+                    (selectAllCheckbox as HTMLInputElement).checked = false;
                 } else if (selected.length === tagCheckboxes.length) {
-                    dropdownBtn.querySelector("span").textContent = "지적권고유형";
-                    selectAllCheckbox.checked = true;
+                    dropdownBtn!.querySelector('span')!.textContent = '지적권고유형';
+                    (selectAllCheckbox as HTMLInputElement).checked = true;
                 } else {
-                    dropdownBtn.querySelector("span").textContent = `지적권고유형 (${selected.length})`;
-                    selectAllCheckbox.checked = false;
+                    dropdownBtn!.querySelector('span')!.textContent = `지적권고유형 (${selected.length})`;
+                    (selectAllCheckbox as HTMLInputElement).checked = false;
                 }
             }
 
             function applyFilter() {
-                const searchTerm = searchInput.value.toLowerCase();
+                const searchTerm = (searchInput as HTMLInputElement).value.toLowerCase();
                 const selectedTags = new Set(getSelectedTags());
-                
+
                 cards.forEach((card) => {
-                    const itemTags = JSON.parse(card.dataset.tags || "[]");
-                    const itemSearchData = card.dataset.search || "";
-                    
-                    const matchesTag = selectedTags.size === 0 || itemTags.some(t => selectedTags.has(t));
+                    const itemTags: string[] = JSON.parse(card.dataset.tags || '[]');
+                    const itemSearchData = card.dataset.search || '';
+
+                    const matchesTag = selectedTags.size === 0 || itemTags.some((t: string) => selectedTags.has(t));
                     const matchesSearch = itemSearchData.includes(searchTerm);
 
                     if (matchesTag && matchesSearch) {
-                        card.style.display = "";
+                        card.style.display = '';
                     } else {
-                        card.style.display = "none";
+                        card.style.display = 'none';
                     }
                 });
             }
 
             // Checkbox Events
-            tagCheckboxes.forEach(cb => {
-                cb.addEventListener("change", () => {
+            tagCheckboxes.forEach((cb) => {
+                cb.addEventListener('change', () => {
                     updateDropdownLabel();
                     applyFilter();
                 });
             });
 
-            selectAllCheckbox.addEventListener("change", (e) => {
-                const checked = e.target.checked;
-                tagCheckboxes.forEach(cb => {
-                    cb.checked = checked;
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const checked = (e.target as HTMLInputElement).checked;
+                tagCheckboxes.forEach((cb) => {
+                    (cb as HTMLInputElement).checked = checked;
                 });
                 updateDropdownLabel();
                 applyFilter();
             });
 
             // Close dropdown on Apply button
-            applyBtn.addEventListener("click", () => {
-                dropdownDetails.removeAttribute("open");
+            applyBtn.addEventListener('click', () => {
+                dropdownDetails.removeAttribute('open');
             });
 
             // Search Event
-            searchInput.addEventListener("input", () => {
+            searchInput.addEventListener('input', () => {
                 applyFilter();
             });
 
-
             // --- 2. Sorting Logic ---
-            sortBtns.forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const field = btn.dataset.sort;
-                    let order = btn.dataset.order;
+            sortBtns.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const field = (btn as HTMLElement).dataset.sort!;
+                    let order = (btn as HTMLElement).dataset.order!;
 
                     // Cycle: none -> desc -> asc -> none
                     if (order === 'none') order = 'desc';
                     else if (order === 'desc') order = 'asc';
                     else order = 'none';
 
-                    // Verify consistency with Resources... Resources was desc->asc->none?
-                    // User said "Like resources". checking resources code... 
-                    // Resources code: desc -> asc -> none. Yes. 
-                    
                     // Reset others
-                    sortBtns.forEach(b => {
-                        b.dataset.order = 'none';
+                    sortBtns.forEach((b) => {
+                        (b as HTMLElement).dataset.order = 'none';
                         b.classList.remove('active');
-                        b.classList.remove('asc'); // Ensure asc class is removed
+                        b.classList.remove('asc');
                     });
-                    
+
                     // Set current
                     if (order !== 'none') {
-                        btn.dataset.order = order;
+                        (btn as HTMLElement).dataset.order = order;
                         btn.classList.add('active');
-                        // Update Icon direction? handled by CSS based on data-order check?
-                        // CSS used .active and .asc class. 
-                        // I added data-order and CSS rule for rotate.
-                        // I need to update classList for Asc
                         if (order === 'asc') btn.classList.add('asc');
-                         else btn.classList.remove('asc');
+                        else btn.classList.remove('asc');
                     }
 
                     currentSort = { field, order };
@@ -1226,67 +1194,61 @@ const AVAILABLE_TAGS = [
 
             function sortCards() {
                 if (currentSort.order === 'none') {
-                    // Default sort? ID desc
+                    // Default sort by ID desc
                     cards.sort((a, b) => {
-                         // Fallback to DOM order or ID
-                         return 0; // Or reload default? 
-                         // Actually, just sorting by ID or Date Desc is standard.
-                         // Let's assume ID is somewhat chronological.
-                         return b.dataset.id.localeCompare(a.dataset.id);
+                        return (b.dataset.id || '').localeCompare(a.dataset.id || '');
                     });
                 } else {
                     cards.sort((a, b) => {
-                        let valA = a.dataset[currentSort.field];
-                        let valB = b.dataset[currentSort.field];
-                        
+                        const valA = a.dataset[currentSort.field!] || '';
+                        const valB = b.dataset[currentSort.field!] || '';
+
                         if (currentSort.field === 'year') {
-                             // Year is number-like string
-                         const numA = parseInt(valA) || 0;
-                         const numB = parseInt(valB) || 0;
-                         return currentSort.order === 'asc' 
-                            ? numA - numB 
-                            : numB - numA;
+                            // Year is number-like string
+                            const numA = parseInt(valA) || 0;
+                            const numB = parseInt(valB) || 0;
+                            return currentSort.order === 'asc' ? numA - numB : numB - numA;
                         } else {
-                             // Title string
-                             return currentSort.order === 'asc'
+                            // Title string
+                            return currentSort.order === 'asc'
                                 ? valA.localeCompare(valB, 'ko')
                                 : valB.localeCompare(valA, 'ko');
                         }
                     });
                 }
-                
-                cards.forEach(c => grid.appendChild(c));
+
+                cards.forEach((c) => grid!.appendChild(c));
             }
 
             // 2. Registration Modal Logic
-            const regModal = document.getElementById("regModal");
-            const registerBtn = document.getElementById("registerBtn");
-            const closeRegBtns = regModal.querySelectorAll(".close-btn, .btn-cancel");
-            const submitReg = document.getElementById("submitReg");
-            const regForm = document.getElementById("regForm");
+            const regModal = document.getElementById('regModal');
+            const registerBtn = document.getElementById('registerBtn');
+            const closeRegBtns = regModal!.querySelectorAll('.close-btn, .btn-cancel');
+            const submitReg = document.getElementById('submitReg') as HTMLButtonElement;
+            const regForm = document.getElementById('regForm') as HTMLFormElement;
 
-            registerBtn.addEventListener("click", () => {
+            registerBtn!.addEventListener('click', () => {
                 regForm.reset();
-                document.getElementById('regItemId').value = ""; 
-                regModal.querySelector('.modal-header h2').textContent = "새로운 사례 등록";
-                regModal.classList.add("open");
+                (document.getElementById('regItemId') as HTMLInputElement).value = '';
+                regModal!.querySelector('.modal-header h2')!.textContent = '새로운 사례 등록';
+                regModal!.classList.add('open');
             });
 
             closeRegBtns.forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    regModal.classList.remove("open");
+                btn.addEventListener('click', () => {
+                    regModal!.classList.remove('open');
                 });
             });
 
-            submitReg.addEventListener("click", async () => {
+            submitReg!.addEventListener('click', async () => {
                 if (!regForm.checkValidity()) {
                     regForm.reportValidity();
                     return;
                 }
 
                 try {
-                    submitReg.disabled = true;
-                    submitReg.textContent = "저장 중...";
+                    submitReg!.disabled = true;
+                    submitReg!.textContent = '저장 중...';
 
                     const formData = new FormData(regForm);
                     const title = formData.get('title') as string;
@@ -1298,7 +1260,7 @@ const AVAILABLE_TAGS = [
                     const tags = Array.from(formData.getAll('tags')) as string[];
 
                     const updateIdInput = document.getElementById('regItemId') as HTMLInputElement;
-                    const updateId = updateIdInput ? updateIdInput.value : "";
+                    const updateId = updateIdInput ? updateIdInput.value : '';
 
                     const payload: any = {
                         title,
@@ -1307,7 +1269,7 @@ const AVAILABLE_TAGS = [
                         year: yearInput,
                         description,
                         violation_clause: violationClause,
-                        solution
+                        solution,
                     };
 
                     let result = null;
@@ -1320,25 +1282,23 @@ const AVAILABLE_TAGS = [
                             .single();
                         if (error) throw error;
                         result = data;
-                        alert("사례가 수정되었습니다.");
+                        alert('사례가 수정되었습니다.');
                     } else {
                         // Get current user for owner assignment
-                        const { data: { user } } = await supabase.auth.getUser();
+                        const {
+                            data: { user },
+                        } = await supabase.auth.getUser();
                         if (user) {
                             payload.user_id = user.id;
                         }
-                        
-                        const { data, error } = await supabase
-                            .from('findings')
-                            .insert(payload)
-                            .select()
-                            .single();
+
+                        const { data, error } = await supabase.from('findings').insert(payload).select().single();
                         if (error) throw error;
                         result = data;
-                        alert("사례가 등록되었습니다.");
+                        alert('사례가 등록되었습니다.');
                     }
 
-                    if (!result) throw new Error("결과 데이터가 없습니다.");
+                    if (!result) throw new Error('결과 데이터가 없습니다.');
 
                     // Normalize result for UI
                     const newItem = {
@@ -1347,9 +1307,9 @@ const AVAILABLE_TAGS = [
                         violationClause: result.violation_clause,
                         solution: result.solution,
                         year: result.year,
-                        tags: result.tags || []
+                        tags: result.tags || [],
                     };
-                    
+
                     if (updateId) {
                         // Update DOM Card
                         const card = grid.querySelector(`.finding-item[data-id="${updateId}"]`) as HTMLElement;
@@ -1357,14 +1317,17 @@ const AVAILABLE_TAGS = [
                             card.dataset.tags = JSON.stringify(newItem.tags);
                             card.dataset.title = newItem.title;
                             card.dataset.year = newItem.year;
-                            card.dataset.search = `${newItem.title} ${newItem.description} ${newItem.violationClause||""} ${newItem.solution||""}`.toLowerCase();
+                            card.dataset.search =
+                                `${newItem.title} ${newItem.description} ${newItem.violationClause || ''} ${newItem.solution || ''}`.toLowerCase();
                             card.dataset.content = JSON.stringify(newItem);
-                            
-                            const tagsHtml = newItem.tags.map(t => `<span class="tag-badge">${t}</span>`).join("");
-                            card.querySelector('.col-tags').innerHTML = tagsHtml;
-                            card.querySelector('.col-title').textContent = newItem.title;
-                            card.querySelector('.col-title').title = newItem.description;
-                            card.querySelector('.col-year').textContent = newItem.year;
+
+                            const tagsHtml = newItem.tags
+                                .map((t: string) => `<span class="tag-badge">${t}</span>`)
+                                .join('');
+                            card.querySelector('.col-tags')!.innerHTML = tagsHtml;
+                            card.querySelector('.col-title')!.textContent = newItem.title;
+                            (card.querySelector('.col-title') as HTMLElement).title = newItem.description;
+                            card.querySelector('.col-year')!.textContent = newItem.year;
                         }
                     } else {
                         const card = createCardElement(newItem);
@@ -1373,21 +1336,21 @@ const AVAILABLE_TAGS = [
                         cards.push(card);
                     }
 
-                    regModal.classList.remove("open");
+                    regModal!.classList.remove('open');
                     regForm.reset();
                 } catch (err) {
-                    console.error("Submission Crash:", err);
-                    alert("시스템 오류가 발생했습니다: " + err.message);
+                    console.error('Submission Crash:', err);
+                    alert('시스템 오류가 발생했습니다: ' + (err as Error).message);
                 } finally {
-                    submitReg.disabled = false;
-                    submitReg.textContent = "등록하기";
+                    submitReg!.disabled = false;
+                    submitReg!.textContent = '등록하기';
                 }
             });
-            
+
             // --- Action Menu Logic ---
-            function setupMenu(card) {
-                if(card.dataset.menuInitialized === "true") return;
-                card.dataset.menuInitialized = "true";
+            function setupMenu(card: HTMLElement) {
+                if (card.dataset.menuInitialized === 'true') return;
+                card.dataset.menuInitialized = 'true';
 
                 const menuBtn = card.querySelector('.menu-btn');
                 const dropdown = card.querySelector('.dropdown-menu');
@@ -1398,178 +1361,171 @@ const AVAILABLE_TAGS = [
                     menuBtn.addEventListener('click', (e) => {
                         e.stopPropagation(); // Stop propagation
                         // Close others
-                        document.querySelectorAll('.dropdown-menu.active').forEach(m => {
+                        document.querySelectorAll('.dropdown-menu.active').forEach((m) => {
                             if (m !== dropdown) {
                                 m.classList.remove('active');
                                 m.closest('.finding-item')?.classList.remove('menu-active');
                             }
                         });
-                        
+
                         const isActive = dropdown.classList.toggle('active');
-                        if(isActive) card.classList.add('menu-active');
-                         else card.classList.remove('menu-active');
+                        if (isActive) card.classList.add('menu-active');
+                        else card.classList.remove('menu-active');
                     });
                 }
-                
+
                 if (editBtn) {
-                     editBtn.addEventListener('click', (e) => {
-                         e.stopPropagation();
-                         const content = JSON.parse(card.dataset.content);
-                         const id = card.dataset.id;
-                         
-                         // Populate Form
-                         document.getElementById('regItemId').value = id;
-                         regForm.querySelector('[name="title"]').value = content.title;
-                         regForm.querySelector('[name="year"]').value = content.year;
-                         regForm.querySelector('[name="description"]').value = content.description;
-                         
-                         const clauseInput = regForm.querySelector('[name="violationClause"]');
-                         if(clauseInput) clauseInput.value = content.violationClause || "";
-                         
-                         const solInput = regForm.querySelector('[name="solution"]');
-                         if(solInput) solInput.value = content.solution || "";
-                         
-                         // Set finding type radio button
-                         const findingTypeRadios = regForm.querySelectorAll('input[name="findingType"]');
-                         findingTypeRadios.forEach(radio => {
-                             radio.checked = radio.value === (content.findingType || '지적');
-                         });
-                         
-                         // Check tags
-                         regForm.querySelectorAll('input[name="tags"]').forEach(cb => {
-                             cb.checked = content.tags.includes(cb.value);
-                         });
-                         
-                         // Change Title & Open
-                         regModal.querySelector('.modal-header h2').textContent = "사례 수정";
-                         regModal.classList.add("open");
-                         
-                         dropdown.classList.remove('active');
-                         card.classList.remove('menu-active');
-                     });
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const content = JSON.parse(card.dataset.content || '{}');
+                        const id = card.dataset.id || '';
+
+                        // Populate Form
+                        (document.getElementById('regItemId') as HTMLInputElement).value = id;
+                        (regForm.querySelector('[name="title"]') as HTMLInputElement).value = content.title;
+                        (regForm.querySelector('[name="year"]') as HTMLInputElement).value = content.year;
+                        (regForm.querySelector('[name="description"]') as HTMLTextAreaElement).value =
+                            content.description;
+
+                        const clauseInput = regForm.querySelector(
+                            '[name="violationClause"]',
+                        ) as HTMLInputElement | null;
+                        if (clauseInput) clauseInput.value = content.violationClause || '';
+
+                        const solInput = regForm.querySelector('[name="solution"]') as HTMLTextAreaElement | null;
+                        if (solInput) solInput.value = content.solution || '';
+
+                        // Set finding type radio button
+                        const findingTypeRadios = regForm.querySelectorAll('input[name="findingType"]');
+                        findingTypeRadios.forEach((radio) => {
+                            (radio as HTMLInputElement).checked =
+                                (radio as HTMLInputElement).value === (content.findingType || '지적');
+                        });
+
+                        // Check tags
+                        regForm.querySelectorAll('input[name="tags"]').forEach((cb) => {
+                            (cb as HTMLInputElement).checked = content.tags.includes((cb as HTMLInputElement).value);
+                        });
+
+                        // Change Title & Open
+                        regModal!.querySelector('.modal-header h2')!.textContent = '사례 수정';
+                        regModal!.classList.add('open');
+
+                        dropdown!.classList.remove('active');
+                        card.classList.remove('menu-active');
+                    });
                 }
 
                 if (deleteBtn) {
                     deleteBtn.addEventListener('click', async (e) => {
                         e.stopPropagation();
-                        if(confirm('정말 삭제하시겠습니까?')) {
-                             const id = card.dataset.id;
-                             
-                             const { error } = await supabase
-                                .from('findings')
-                                .delete()
-                                .eq('id', id);
-                             
-                             if (error) {
-                                  alert("삭제 중 오류가 발생했습니다: " + error.message);
-                                  return;
-                             }
+                        if (confirm('정말 삭제하시겠습니까?')) {
+                            const id = card.dataset.id;
 
-                             card.remove();
-                             
-                             // Remove from memory array
-                             const idx = cards.indexOf(card);
-                             if (idx > -1) cards.splice(idx, 1);
-                             
-                             alert("사례가 삭제되었습니다.");
+                            const { error } = await supabase.from('findings').delete().eq('id', id);
+
+                            if (error) {
+                                alert('삭제 중 오류가 발생했습니다: ' + error.message);
+                                return;
+                            }
+
+                            card.remove();
+
+                            // Remove from memory array
+                            const idx = cards.indexOf(card);
+                            if (idx > -1) cards.splice(idx, 1);
+
+                            alert('사례가 삭제되었습니다.');
                         }
-                        dropdown.classList.remove('active');
+                        dropdown!.classList.remove('active');
                     });
                 }
             }
 
             // Initialize Menu for existing cards
-            document.querySelectorAll('.finding-item').forEach(card => setupMenu(card));
-            
+            document.querySelectorAll<HTMLElement>('.finding-item').forEach((card) => setupMenu(card));
+
             // Global click to close menus
             document.addEventListener('click', (e) => {
-                 if (!e.target.closest('.col-menu')) {
-                     document.querySelectorAll('.dropdown-menu.active').forEach(m => {
-                         m.classList.remove('active');
-                         m.closest('.finding-item')?.classList.remove('menu-active');
-                     });
-                 }
+                if (!(e.target as Element).closest('.col-menu')) {
+                    document.querySelectorAll('.dropdown-menu.active').forEach((m) => {
+                        m.classList.remove('active');
+                        m.closest('.finding-item')?.classList.remove('menu-active');
+                    });
+                }
             });
 
             // 3. Detail Modal Logic
-            const detailModal = document.getElementById("detailModal");
-            const closeDetailBtns = detailModal.querySelectorAll(
-                ".close-btn, .close-btn-footer",
-            );
+            const detailModal = document.getElementById('detailModal');
+            const closeDetailBtns = detailModal!.querySelectorAll('.close-btn, .close-btn-footer');
 
             closeDetailBtns.forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    detailModal.classList.remove("open");
+                btn.addEventListener('click', () => {
+                    detailModal!.classList.remove('open');
                 });
             });
 
-            grid.addEventListener("click", (e) => {
+            grid.addEventListener('click', (e) => {
                 // Ignore clicks from action menu or dropdown
-                if (e.target.closest('.col-menu') || e.target.closest('.dropdown-menu')) return;
-                
-                const card = e.target.closest(".finding-item");
-                if (card) {
-                    const data = JSON.parse(card.dataset.content);
+                if ((e.target as Element).closest('.col-menu') || (e.target as Element).closest('.dropdown-menu'))
+                    return;
 
-                    document.getElementById("detailTitle").textContent =
-                        data.title;
-                    document.getElementById("detailYear").textContent =
-                        data.year;
+                const card = (e.target as Element).closest('.finding-item') as HTMLElement | null;
+                if (card) {
+                    const data = JSON.parse(card.dataset.content || '{}');
+
+                    document.getElementById('detailTitle')!.textContent = data.title;
+                    document.getElementById('detailYear')!.textContent = data.year;
 
                     // Render Tags
-                    const tagsContainer = document.getElementById("detailTags");
-                    tagsContainer.innerHTML = "";
+                    const tagsContainer = document.getElementById('detailTags')!;
+                    tagsContainer.innerHTML = '';
                     const tags = data.tags || [];
-                    tags.forEach((t) => {
-                        const span = document.createElement("span");
-                        span.className = "tag-badge";
+                    tags.forEach((t: string) => {
+                        const span = document.createElement('span');
+                        span.className = 'tag-badge';
                         span.textContent = t;
                         tagsContainer.appendChild(span);
                     });
 
-                    document.getElementById("detailDesc").textContent =
-                        data.description;
+                    document.getElementById('detailDesc')!.textContent = data.description;
 
-                    const clauseEl = document.getElementById("detailClause");
-                    const clauseSection = document.getElementById(
-                        "detailClauseSection",
-                    );
+                    const clauseEl = document.getElementById('detailClause')!;
+                    const clauseSection = document.getElementById('detailClauseSection') as HTMLElement;
                     if (data.violationClause) {
                         clauseEl.textContent = data.violationClause;
-                        clauseSection.style.display = "block";
+                        clauseSection.style.display = 'block';
                     } else {
-                        clauseSection.style.display = "none";
+                        clauseSection.style.display = 'none';
                     }
 
-                    const solEl = document.getElementById("detailSolution");
-                    const solSection = document.getElementById(
-                        "detailSolutionSection",
-                    );
+                    const solEl = document.getElementById('detailSolution')!;
+                    const solSection = document.getElementById('detailSolutionSection') as HTMLElement;
                     if (data.solution) {
                         solEl.textContent = data.solution;
-                        solSection.style.display = "block";
+                        solSection.style.display = 'block';
                     } else {
-                        solSection.style.display = "none";
+                        solSection.style.display = 'none';
                     }
 
-                    detailModal.classList.add("open");
+                    detailModal!.classList.add('open');
                 }
             });
         }
 
-        function createCardElement(item) {
-            const div = document.createElement("div");
-            div.className = "finding-item";
+        function createCardElement(item: any): HTMLElement {
+            const div = document.createElement('div');
+            div.className = 'finding-item';
             const tags = item.tags || [];
             div.dataset.tags = JSON.stringify(tags);
             div.dataset.id = item.id;
 
             // Search & Sort Data
-            const description = item.description || "";
-            const title = item.title || "제목 없음";
-            const violationClause = item.violationClause || "";
-            const solution = item.solution || "";
-            const year = item.year || "-";
+            const description = item.description || '';
+            const title = item.title || '제목 없음';
+            const violationClause = item.violationClause || '';
+            const solution = item.solution || '';
+            const year = item.year || '-';
 
             const searchText = `${title} ${description} ${violationClause} ${solution}`.toLowerCase();
             div.dataset.search = searchText;
@@ -1581,19 +1537,18 @@ const AVAILABLE_TAGS = [
                 tags,
                 title,
                 description,
-                year
+                year,
             });
 
-            const tagsHtml = tags
-                .map((t) => `<span class="tag-badge">${t}</span>`)
-                .join("");
+            const tagsHtml = tags.map((t: string) => `<span class="tag-badge">${t}</span>`).join('');
 
             // Permission check for edit/delete menu
             const currentUser = userProfile.get();
-            const isAdmin = currentUser && currentUser.is_admin === "true";
+            const isAdmin = currentUser && currentUser.is_admin === 'true';
             const canManage = isAdmin || (currentUser && item.user_id === currentUser.id);
 
-            const menuHtml = canManage ? `
+            const menuHtml = canManage
+                ? `
                     <div class="col-menu">
                         <button class="menu-btn" aria-label="메뉴 열기">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
@@ -1608,13 +1563,14 @@ const AVAILABLE_TAGS = [
                                 삭제
                             </button>
                         </div>
-                    </div>` : '';
+                    </div>`
+                : '';
 
             div.innerHTML = `
                 <div class="col-tags">
                      ${tagsHtml}
                 </div>
-                <div class="col-title" title="${description.replace(/"/g, "&quot;")}">
+                <div class="col-title" title="${description.replace(/"/g, '&quot;')}">
                     ${title}
                 </div>
                 <div class="col-year">${year}</div>

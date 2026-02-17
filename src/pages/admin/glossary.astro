@@ -314,7 +314,7 @@ import Icon from '../../components/Icon.astro';
     </div>
 
     <script>
-        import { supabaseAdmin } from '../../lib/supabase';
+        import { supabase } from '../../lib/supabase-browser';
         import { userProfile } from '../../store/user';
 
         // Guard: Admin only
@@ -354,7 +354,7 @@ import Icon from '../../components/Icon.astro';
         // Load terms from database
         async function loadTerms() {
             try {
-                const { data, error } = await supabaseAdmin.from('glossary_terms').select('*').order('sort_order');
+                const { data, error } = await supabase.from('glossary_terms').select('*').order('sort_order');
 
                 if (error) throw error;
 
@@ -483,7 +483,7 @@ import Icon from '../../components/Icon.astro';
             try {
                 if (editingId) {
                     // Update
-                    const { error } = await supabaseAdmin
+                    const { error } = await supabase
                         .from('glossary_terms')
                         .update({ term, definition, category, sort_order, updated_at: new Date().toISOString() })
                         .eq('id', editingId);
@@ -492,7 +492,7 @@ import Icon from '../../components/Icon.astro';
                     alert('용어가 수정되었습니다.');
                 } else {
                     // Insert
-                    const { error } = await supabaseAdmin
+                    const { error } = await supabase
                         .from('glossary_terms')
                         .insert({ term, definition, category, sort_order });
 
@@ -518,7 +518,7 @@ import Icon from '../../components/Icon.astro';
             }
 
             try {
-                const { error } = await supabaseAdmin.from('glossary_terms').delete().eq('id', id);
+                const { error } = await supabase.from('glossary_terms').delete().eq('id', id);
 
                 if (error) throw error;
 
