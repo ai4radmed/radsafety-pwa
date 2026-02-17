@@ -267,7 +267,46 @@ View Transitions 적용 시
 
 `/admin/feedback`, `/admin/glossary` 페이지에서 다른 페이지 방문 후 재방문 시 데이터가 "로딩 중..." 상태로 멈추는 문제 발생. `astro:page-load` 누락이 원인.
 
-### 3-3. PWA 설정 변경하기
+### 3-3. 배포 후 검증 절차
+
+배포 완료 후 아래 순서로 검증합니다. 전체 소요시간 약 5~10분.
+
+#### 1단계: 운영 서버 HTTP 헬스체크 (2분, 자동)
+
+```bash
+npm run check:production
+```
+
+HTTPS, www 리다이렉트, 공개 페이지, `/auth/confirm` CDN 캐시 버그, API 응답 등을 자동 점검합니다.
+실패 항목이 있으면 빨간색으로 출력됩니다.
+
+#### 2단계: 인증 후 기능 E2E 테스트 (3~5분, 반자동)
+
+세션이 있는 경우 (Supabase 세션 유효 시간 내):
+
+```bash
+npm run test:e2e:auth
+```
+
+세션이 없거나 만료된 경우:
+
+```bash
+# dev 서버가 실행 중이어야 함
+npm run dev  # (별도 터미널)
+
+# 브라우저 창이 열립니다 — 실제 로그인 후 /mypage 도달 시 자동 저장
+npm run test:e2e:save-session
+```
+
+이후 `npm run test:e2e:auth` 실행.
+
+#### 3단계: 수동 잔여 항목 확인 (이메일 매직링크, 카카오 로그인, 모바일)
+
+상세 체크리스트는 [test_strategy.md](test_strategy.md)의 섹션 4-2, 4-3 일부, 4-6 참조.
+
+---
+
+### 3-5. PWA 설정 변경하기
 
 - `astro.config.mjs`의 `vite-pwa` 설정을 수정합니다.
 - 아이콘이나 앱 이름은 `public/` 폴더의 매니페스트 관련 파일을 확인하세요.
