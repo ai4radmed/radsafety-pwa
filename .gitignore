@@ -20,6 +20,11 @@ pnpm-debug.log*
 # test output
 test-results/
 
+# 로컬 E2E 세션 파일 (npm run test:e2e:save-session 으로 생성)
+# 실제 사용자 세션이 포함되므로 절대 커밋하지 않음
+tests/fixtures/session-user.json
+tests/fixtures/session-admin.json
+
 # macOS-specific files
 .DS_Store
 
