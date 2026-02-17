@@ -134,14 +134,14 @@ https://radsafety.kr/**
 
 #### 2-1. Domains
 
-| 도메인             | 역할                                  |
-| ------------------ | ------------------------------------- |
-| `radsafety.kr`     | Primary domain                        |
-| `www.radsafety.kr` | Redirect to `radsafety.kr` (308) 권장 |
+| 도메인             | 역할                                        |
+| ------------------ | ------------------------------------------- |
+| `radsafety.kr`     | **Primary domain** (Production에 직접 연결) |
+| `www.radsafety.kr` | `radsafety.kr`로 308 리다이렉트             |
 
-> **주의**: 현재 `radsafety.kr` → `www.radsafety.kr`로 리다이렉트되고 있음.
-> 이로 인해 `window.location.origin`이 `https://www.radsafety.kr`가 되어 인증 흐름에 영향.
-> www → non-www 리다이렉트로 변경을 권장합니다.
+> **Vercel 308 동작**: Vercel은 도메인 리다이렉트에 308(Permanent Redirect)을 기본값으로 사용합니다.
+> `www → apex` 리다이렉트의 308은 정상 동작이며, CDN 캐시 장애의 308과는 다릅니다.
+> 헬스체크 스크립트(`check:production`)도 www → apex 308을 정상으로 허용합니다.
 
 > 관련 검증: [Part 2-3. 도메인/SSL](#2-3-도메인ssl)
 
