@@ -345,95 +345,96 @@ import Icon from '../../components/Icon.astro';
         import { supabase } from '../../lib/supabase-browser';
         import { userProfile } from '../../store/user';
 
-        // Guard: Admin only
-        const user = userProfile.get() as any;
-        if (user.is_admin !== 'true') {
-            alert('관리자 권한이 필요합니다.');
-            window.location.href = '/';
-        }
+        document.addEventListener('astro:page-load', () => {
+            // Guard: Admin only
+            const user = userProfile.get() as any;
+            if (user.is_admin !== 'true') {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/';
+            }
 
-        interface Feedback {
-            id: string;
-            user_name: string;
-            user_email: string;
-            title: string;
-            message: string;
-            attachments: Array<{
-                filename: string;
-                storage_path: string;
-                size: number;
-            }>;
-            status: 'pending' | 'processing' | 'resolved';
-            admin_note: string | null;
-            created_at: string;
-            resolved_at: string | null;
-        }
+            interface Feedback {
+                id: string;
+                user_name: string;
+                user_email: string;
+                title: string;
+                message: string;
+                attachments: Array<{
+                    filename: string;
+                    storage_path: string;
+                    size: number;
+                }>;
+                status: 'pending' | 'processing' | 'resolved';
+                admin_note: string | null;
+                created_at: string;
+                resolved_at: string | null;
+            }
 
-        let allFeedback: Feedback[] = [];
-        let currentStatus = 'all';
-        let selectedFeedback: Feedback | null = null;
+            let allFeedback: Feedback[] = [];
+            let currentStatus = 'all';
+            let selectedFeedback: Feedback | null = null;
 
-        const tableBody = document.getElementById('feedbackTableBody');
-        const modal = document.getElementById('feedbackModal');
-        const modalBody = document.getElementById('modalBody');
-        const modalFooter = document.getElementById('modalFooter');
-        const closeModalBtn = document.getElementById('closeModal');
+            const tableBody = document.getElementById('feedbackTableBody');
+            const modal = document.getElementById('feedbackModal');
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+            const closeModalBtn = document.getElementById('closeModal');
 
-        // Load feedback from database
-        async function loadFeedback() {
-            try {
-                const { data, error } = await supabase
-                    .from('feedback')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+            // Load feedback from database
+            async function loadFeedback() {
+                try {
+                    const { data, error } = await supabase
+                        .from('feedback')
+                        .select('*')
+                        .order('created_at', { ascending: false });
 
-                if (error) throw error;
+                    if (error) throw error;
 
-                allFeedback = data || [];
-                renderTable();
-            } catch (error) {
-                console.error('Failed to load feedback:', error);
-                if (tableBody) {
-                    tableBody.innerHTML = `
+                    allFeedback = data || [];
+                    renderTable();
+                } catch (error) {
+                    console.error('Failed to load feedback:', error);
+                    if (tableBody) {
+                        tableBody.innerHTML = `
                         <tr>
                             <td colspan="5" class="empty-state">
                                 데이터를 불러오는데 실패했습니다.
                             </td>
                         </tr>
                     `;
+                    }
                 }
             }
-        }
 
-        // Render table
-        function renderTable() {
-            if (!tableBody) return;
+            // Render table
+            function renderTable() {
+                if (!tableBody) return;
 
-            const filtered =
-                currentStatus === 'all' ? allFeedback : allFeedback.filter((f) => f.status === currentStatus);
+                const filtered =
+                    currentStatus === 'all' ? allFeedback : allFeedback.filter((f) => f.status === currentStatus);
 
-            if (filtered.length === 0) {
-                tableBody.innerHTML = `
+                if (filtered.length === 0) {
+                    tableBody.innerHTML = `
                     <tr>
                         <td colspan="5" class="empty-state">
                             의견이 없습니다.
                         </td>
                     </tr>
                 `;
-                return;
-            }
+                    return;
+                }
 
-            tableBody.innerHTML = filtered
-                .map((feedback) => {
-                    const date = new Date(feedback.created_at).toLocaleDateString('ko-KR');
-                    const statusClass = `badge-${feedback.status}`;
-                    const statusText = {
-                        pending: '대기중',
-                        processing: '처리중',
-                        resolved: '완료',
-                    }[feedback.status];
+                tableBody.innerHTML = filtered
+                    .map((feedback) => {
+                        const date = new Date(feedback.created_at).toLocaleDateString('ko-KR');
+                        const statusClass = `badge-${feedback.status}`;
+                        const statusText = {
+                            pending: '대기중',
+                            processing: '처리중',
+                            resolved: '완료',
+                        }[feedback.status];
 
-                    return `
+                        return `
                     <tr data-id="${feedback.id}">
                         <td>
                             <div style="font-weight: 600;">${feedback.title}</div>
@@ -451,34 +452,34 @@ import Icon from '../../components/Icon.astro';
                         <td>${date}</td>
                     </tr>
                 `;
-                })
-                .join('');
+                    })
+                    .join('');
 
-            // Add click handlers
-            tableBody.querySelectorAll('tr[data-id]').forEach((row) => {
-                row.addEventListener('click', () => {
-                    const id = (row as HTMLElement).dataset.id;
-                    const feedback = allFeedback.find((f) => f.id === id);
-                    if (feedback) {
-                        openModal(feedback);
-                    }
+                // Add click handlers
+                tableBody.querySelectorAll('tr[data-id]').forEach((row) => {
+                    row.addEventListener('click', () => {
+                        const id = (row as HTMLElement).dataset.id;
+                        const feedback = allFeedback.find((f) => f.id === id);
+                        if (feedback) {
+                            openModal(feedback);
+                        }
+                    });
                 });
-            });
-        }
+            }
 
-        // Open modal
-        function openModal(feedback: Feedback) {
-            selectedFeedback = feedback;
-            if (!modal || !modalBody || !modalFooter) return;
+            // Open modal
+            function openModal(feedback: Feedback) {
+                selectedFeedback = feedback;
+                if (!modal || !modalBody || !modalFooter) return;
 
-            const date = new Date(feedback.created_at).toLocaleString('ko-KR');
-            const statusText = {
-                pending: '대기중',
-                processing: '처리중',
-                resolved: '완료',
-            }[feedback.status];
+                const date = new Date(feedback.created_at).toLocaleString('ko-KR');
+                const statusText = {
+                    pending: '대기중',
+                    processing: '처리중',
+                    resolved: '완료',
+                }[feedback.status];
 
-            modalBody.innerHTML = `
+                modalBody.innerHTML = `
                 <div class="info-row">
                     <div class="info-label">제목</div>
                     <div class="info-value" style="font-weight: 700; font-size: 1.1rem;">${feedback.title}</div>
@@ -534,141 +535,144 @@ import Icon from '../../components/Icon.astro';
                 </div>
             `;
 
-            // Render footer based on status
-            if (feedback.status === 'pending') {
-                modalFooter.innerHTML = `
+                // Render footer based on status
+                if (feedback.status === 'pending') {
+                    modalFooter.innerHTML = `
                     <button class="btn btn-secondary" id="closeModalBtn">닫기</button>
                     <button class="btn btn-primary" id="startProcessingBtn">처리 시작</button>
                 `;
-            } else if (feedback.status === 'processing') {
-                modalFooter.innerHTML = `
+                } else if (feedback.status === 'processing') {
+                    modalFooter.innerHTML = `
                     <button class="btn btn-secondary" id="closeModalBtn">닫기</button>
                     <button class="btn btn-success" id="resolveBtn">완료 처리</button>
                 `;
-            } else {
-                modalFooter.innerHTML = `
+                } else {
+                    modalFooter.innerHTML = `
                     <button class="btn btn-secondary" id="closeModalBtn">닫기</button>
                     <button class="btn btn-danger" id="deleteBtn">삭제</button>
                 `;
-            }
-
-            // Attach handlers
-            document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
-            document.getElementById('startProcessingBtn')?.addEventListener('click', () => updateStatus('processing'));
-            document.getElementById('resolveBtn')?.addEventListener('click', () => updateStatus('resolved'));
-            document.getElementById('deleteBtn')?.addEventListener('click', deleteFeedback);
-
-            modal.classList.add('active');
-        }
-
-        // Close modal
-        function closeModal() {
-            modal?.classList.remove('active');
-            selectedFeedback = null;
-        }
-
-        // Update status
-        async function updateStatus(newStatus: 'processing' | 'resolved') {
-            if (!selectedFeedback) return;
-
-            const adminNote = (document.getElementById('adminNote') as HTMLTextAreaElement)?.value || null;
-
-            try {
-                const updateData: any = {
-                    status: newStatus,
-                    admin_note: adminNote,
-                };
-
-                if (newStatus === 'resolved') {
-                    updateData.resolved_at = new Date().toISOString();
-                    updateData.resolved_by = user.id;
                 }
 
-                const { error } = await supabase.from('feedback').update(updateData).eq('id', selectedFeedback.id);
+                // Attach handlers
+                document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
+                document
+                    .getElementById('startProcessingBtn')
+                    ?.addEventListener('click', () => updateStatus('processing'));
+                document.getElementById('resolveBtn')?.addEventListener('click', () => updateStatus('resolved'));
+                document.getElementById('deleteBtn')?.addEventListener('click', deleteFeedback);
 
-                if (error) throw error;
-
-                alert('상태가 업데이트되었습니다.');
-                closeModal();
-                loadFeedback();
-            } catch (error) {
-                console.error('Failed to update status:', error);
-                alert('상태 업데이트에 실패했습니다.');
-            }
-        }
-
-        // Delete feedback
-        async function deleteFeedback() {
-            if (!selectedFeedback) return;
-
-            if (!confirm('이 의견을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                return;
+                modal.classList.add('active');
             }
 
-            try {
-                // Delete attachments from storage
-                if (selectedFeedback.attachments && selectedFeedback.attachments.length > 0) {
-                    const paths = selectedFeedback.attachments.map((att) => att.storage_path);
-                    await supabase.storage.from('feedback-attachments').remove(paths);
+            // Close modal
+            function closeModal() {
+                modal?.classList.remove('active');
+                selectedFeedback = null;
+            }
+
+            // Update status
+            async function updateStatus(newStatus: 'processing' | 'resolved') {
+                if (!selectedFeedback) return;
+
+                const adminNote = (document.getElementById('adminNote') as HTMLTextAreaElement)?.value || null;
+
+                try {
+                    const updateData: any = {
+                        status: newStatus,
+                        admin_note: adminNote,
+                    };
+
+                    if (newStatus === 'resolved') {
+                        updateData.resolved_at = new Date().toISOString();
+                        updateData.resolved_by = user.id;
+                    }
+
+                    const { error } = await supabase.from('feedback').update(updateData).eq('id', selectedFeedback.id);
+
+                    if (error) throw error;
+
+                    alert('상태가 업데이트되었습니다.');
+                    closeModal();
+                    loadFeedback();
+                } catch (error) {
+                    console.error('Failed to update status:', error);
+                    alert('상태 업데이트에 실패했습니다.');
+                }
+            }
+
+            // Delete feedback
+            async function deleteFeedback() {
+                if (!selectedFeedback) return;
+
+                if (!confirm('이 의견을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    return;
                 }
 
-                // Delete feedback record
-                const { error } = await supabase.from('feedback').delete().eq('id', selectedFeedback.id);
+                try {
+                    // Delete attachments from storage
+                    if (selectedFeedback.attachments && selectedFeedback.attachments.length > 0) {
+                        const paths = selectedFeedback.attachments.map((att) => att.storage_path);
+                        await supabase.storage.from('feedback-attachments').remove(paths);
+                    }
 
-                if (error) throw error;
+                    // Delete feedback record
+                    const { error } = await supabase.from('feedback').delete().eq('id', selectedFeedback.id);
 
-                alert('의견이 삭제되었습니다.');
-                closeModal();
-                loadFeedback();
-            } catch (error) {
-                console.error('Failed to delete feedback:', error);
-                alert('삭제에 실패했습니다.');
+                    if (error) throw error;
+
+                    alert('의견이 삭제되었습니다.');
+                    closeModal();
+                    loadFeedback();
+                } catch (error) {
+                    console.error('Failed to delete feedback:', error);
+                    alert('삭제에 실패했습니다.');
+                }
             }
-        }
 
-        // Download attachment
-        (window as any).downloadAttachment = async function (storagePath: string, filename: string) {
-            try {
-                const { data, error } = await supabase.storage.from('feedback-attachments').download(storagePath);
+            // Download attachment
+            (window as any).downloadAttachment = async function (storagePath: string, filename: string) {
+                try {
+                    const { data, error } = await supabase.storage.from('feedback-attachments').download(storagePath);
 
-                if (error) throw error;
+                    if (error) throw error;
 
-                const url = URL.createObjectURL(data);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Failed to download file:', error);
-                alert('파일 다운로드에 실패했습니다.');
-            }
-        };
+                    const url = URL.createObjectURL(data);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('Failed to download file:', error);
+                    alert('파일 다운로드에 실패했습니다.');
+                }
+            };
 
-        // Tab switching
-        document.querySelectorAll('.status-tab').forEach((tab) => {
-            tab.addEventListener('click', (e) => {
-                const target = e.target as HTMLElement;
-                const status = target.dataset.status || 'all';
+            // Tab switching
+            document.querySelectorAll('.status-tab').forEach((tab) => {
+                tab.addEventListener('click', (e) => {
+                    const target = e.target as HTMLElement;
+                    const status = target.dataset.status || 'all';
 
-                document.querySelectorAll('.status-tab').forEach((t) => t.classList.remove('active'));
-                target.classList.add('active');
+                    document.querySelectorAll('.status-tab').forEach((t) => t.classList.remove('active'));
+                    target.classList.add('active');
 
-                currentStatus = status;
-                renderTable();
+                    currentStatus = status;
+                    renderTable();
+                });
             });
-        });
 
-        // Close modal on backdrop click
-        modal?.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
-        });
+            // Close modal on backdrop click
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
 
-        closeModalBtn?.addEventListener('click', closeModal);
+            closeModalBtn?.addEventListener('click', closeModal);
 
-        // Initial load
-        loadFeedback();
+            // Initial load
+            loadFeedback();
+        }); // End of astro:page-load
     </script>
 </DashboardLayout>
