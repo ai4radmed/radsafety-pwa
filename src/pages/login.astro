@@ -182,6 +182,14 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
         const devPanel = document.getElementById('devLoginPanel');
         if (devPanel) {
             const devLogin = async (email: string, password: string, label: string) => {
+                // 환경변수 미설정 시 빈 문자열로 Supabase 호출하는 것을 사전 차단
+                if (!email || !password) {
+                    alert(
+                        `[개발자 모드] ${label === 'user' ? 'DEV_TEST_USER' : 'DEV_TEST_ADMIN'}_EMAIL/PASSWORD 환경변수가 설정되지 않았습니다.\n.env 파일을 확인하세요.`,
+                    );
+                    return;
+                }
+
                 const btn = document.getElementById(
                     label === 'user' ? 'devLoginUserBtn' : 'devLoginAdminBtn',
                 ) as HTMLButtonElement | null;
