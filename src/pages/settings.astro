@@ -1,14 +1,12 @@
 ---
-import DashboardLayout from "../layouts/DashboardLayout.astro";
-import Icon from "../components/Icon.astro";
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Icon from '../components/Icon.astro';
 ---
 
 <DashboardLayout title="설정">
     <div class="settings-container">
         <h1><Icon name="settings" size="32" class="title-icon" /> 설정</h1>
-        <p class="subtitle">
-            앱의 화면 및 기능을 사용자 환경에 맞게 조정합니다.
-        </p>
+        <p class="subtitle">앱의 화면 및 기능을 사용자 환경에 맞게 조정합니다.</p>
 
         <div class="setting-card">
             <div class="setting-header">
@@ -18,39 +16,21 @@ import Icon from "../components/Icon.astro";
 
             <div class="control-group">
                 <div class="label">글자 크기 (Font Size)</div>
-                <div class="font-preview" id="fontPreview">
-                    가가가 (미리보기)
-                </div>
+                <div class="font-preview" id="fontPreview">가가가 (미리보기)</div>
                 <div class="font-control-options">
-                    <button
-                        class="font-btn small"
-                        data-size="small"
-                        aria-label="글자 작게"
-                    >
+                    <button class="font-btn small" data-size="small" aria-label="글자 작게">
                         <span style="font-size: 0.8rem;">가</span>
                         <span class="btn-label">작게</span>
                     </button>
-                    <button
-                        class="font-btn medium active"
-                        data-size="medium"
-                        aria-label="글자 보통"
-                    >
+                    <button class="font-btn medium active" data-size="medium" aria-label="글자 보통">
                         <span style="font-size: 1rem;">가</span>
                         <span class="btn-label">보통</span>
                     </button>
-                    <button
-                        class="font-btn large"
-                        data-size="large"
-                        aria-label="글자 크게"
-                    >
+                    <button class="font-btn large" data-size="large" aria-label="글자 크게">
                         <span style="font-size: 1.2rem;">가</span>
                         <span class="btn-label">크게</span>
                     </button>
-                    <button
-                        class="font-btn xlarge"
-                        data-size="xlarge"
-                        aria-label="글자 아주 크게"
-                    >
+                    <button class="font-btn xlarge" data-size="xlarge" aria-label="글자 아주 크게">
                         <span style="font-size: 1.5rem;">가</span>
                         <span class="btn-label">아주 크게</span>
                     </button>
@@ -179,7 +159,7 @@ import Icon from "../components/Icon.astro";
             position: relative;
         }
         .toggle-switch.disabled::after {
-            content: "";
+            content: '';
             position: absolute;
             left: 2px;
             top: 2px;
@@ -197,32 +177,28 @@ import Icon from "../components/Icon.astro";
     </style>
 
     <script>
-        document.addEventListener("astro:page-load", () => {
-            const fontBtns = document.querySelectorAll(".font-btn");
-            const preview = document.getElementById("fontPreview");
-            const currentSize = localStorage.getItem("fontSize") || "medium";
+        document.addEventListener('astro:page-load', () => {
+            const fontBtns = document.querySelectorAll('.font-btn');
+            const currentSize = localStorage.getItem('fontSize') || 'medium';
 
             // Initial Active State
             fontBtns.forEach((btn) => {
-                if (btn.dataset.size === currentSize) {
-                    btn.classList.add("active");
+                if ((btn as HTMLElement).dataset.size === currentSize) {
+                    btn.classList.add('active');
                 } else {
-                    btn.classList.remove("active");
+                    btn.classList.remove('active');
                 }
 
-                btn.addEventListener("click", () => {
-                    const newSize = btn.dataset.size;
+                btn.addEventListener('click', () => {
+                    const newSize = (btn as HTMLElement).dataset.size!;
 
                     // 1. Update Global Font Size
-                    document.documentElement.setAttribute(
-                        "data-font-size",
-                        newSize,
-                    );
-                    localStorage.setItem("fontSize", newSize);
+                    document.documentElement.setAttribute('data-font-size', newSize);
+                    localStorage.setItem('fontSize', newSize);
 
                     // 2. Update UI
-                    fontBtns.forEach((b) => b.classList.remove("active"));
-                    btn.classList.add("active");
+                    fontBtns.forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
 
                     // 3. Update Preview Text Size (Optional, as global changes handle it)
                     // But explicitly setting it for clarity if needed

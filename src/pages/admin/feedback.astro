@@ -342,11 +342,11 @@ import Icon from '../../components/Icon.astro';
     </div>
 
     <script>
-        import { supabaseAdmin } from '../../lib/supabase';
+        import { supabase } from '../../lib/supabase-browser';
         import { userProfile } from '../../store/user';
 
         // Guard: Admin only
-        const user = userProfile.get();
+        const user = userProfile.get() as any;
         if (user.is_admin !== 'true') {
             alert('관리자 권한이 필요합니다.');
             window.location.href = '/';
@@ -382,7 +382,7 @@ import Icon from '../../components/Icon.astro';
         // Load feedback from database
         async function loadFeedback() {
             try {
-                const { data, error } = await supabaseAdmin
+                const { data, error } = await supabase
                     .from('feedback')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -457,7 +457,7 @@ import Icon from '../../components/Icon.astro';
             // Add click handlers
             tableBody.querySelectorAll('tr[data-id]').forEach((row) => {
                 row.addEventListener('click', () => {
-                    const id = row.dataset.id;
+                    const id = (row as HTMLElement).dataset.id;
                     const feedback = allFeedback.find((f) => f.id === id);
                     if (feedback) {
                         openModal(feedback);
@@ -472,8 +472,6 @@ import Icon from '../../components/Icon.astro';
             if (!modal || !modalBody || !modalFooter) return;
 
             const date = new Date(feedback.created_at).toLocaleString('ko-KR');
-            const resolvedDate = feedback.resolved_at ? new Date(feedback.resolved_at).toLocaleString('ko-KR') : '-';
-
             const statusText = {
                 pending: '대기중',
                 processing: '처리중',
@@ -586,7 +584,7 @@ import Icon from '../../components/Icon.astro';
                     updateData.resolved_by = user.id;
                 }
 
-                const { error } = await supabaseAdmin.from('feedback').update(updateData).eq('id', selectedFeedback.id);
+                const { error } = await supabase.from('feedback').update(updateData).eq('id', selectedFeedback.id);
 
                 if (error) throw error;
 
@@ -611,11 +609,11 @@ import Icon from '../../components/Icon.astro';
                 // Delete attachments from storage
                 if (selectedFeedback.attachments && selectedFeedback.attachments.length > 0) {
                     const paths = selectedFeedback.attachments.map((att) => att.storage_path);
-                    await supabaseAdmin.storage.from('feedback-attachments').remove(paths);
+                    await supabase.storage.from('feedback-attachments').remove(paths);
                 }
 
                 // Delete feedback record
-                const { error } = await supabaseAdmin.from('feedback').delete().eq('id', selectedFeedback.id);
+                const { error } = await supabase.from('feedback').delete().eq('id', selectedFeedback.id);
 
                 if (error) throw error;
 
@@ -631,7 +629,7 @@ import Icon from '../../components/Icon.astro';
         // Download attachment
         (window as any).downloadAttachment = async function (storagePath: string, filename: string) {
             try {
-                const { data, error } = await supabaseAdmin.storage.from('feedback-attachments').download(storagePath);
+                const { data, error } = await supabase.storage.from('feedback-attachments').download(storagePath);
 
                 if (error) throw error;
 
