@@ -439,7 +439,7 @@ import Icon from '../../components/Icon.astro';
 </DashboardLayout>
 
 <script>
-    import { supabase } from '../../lib/supabase';
+    import { supabase } from '../../lib/supabase-browser';
     import { userProfile } from '../../store/user';
 
     document.addEventListener('astro:page-load', async () => {

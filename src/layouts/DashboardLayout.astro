@@ -212,7 +212,7 @@ const { title, description, scale } = Astro.props;
             document.addEventListener('astro:after-swap', initMobileMenu);
         </script>
         <script>
-            import { supabase } from '../lib/supabase';
+            import { supabase } from '../lib/supabase-browser';
             import { setUser, clearUser } from '../store/user';
             import { isAdmin } from '../config/auth';
 

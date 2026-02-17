@@ -22,13 +22,20 @@
 **Redirect URLs 목록:**
 
 ```
-https://radsafety.kr/auth/callback
-http://localhost:4321/auth/callback
 https://radsafety.kr/**
-https://www.radsafety.kr/**
-http://localhost:4321/**
-http://localhost:4322/**
 ```
+
+> **정책**: Site URL이 `https://radsafety.kr`로 고정이므로 운영 도메인 하나만 필요합니다.
+> 로컬 개발 환경에서는 매직링크 테스트가 불가능하며, 배포 후 운영에서 테스트합니다.
+> (상세: [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크))
+>
+> **삭제된 항목 및 이유:**
+>
+> - `http://localhost:4321/auth/callback` — `https://radsafety.kr/**`으로 커버되지 않지만, 로컬 매직링크 테스트 자체가 불가하여 불필요
+> - `https://www.radsafety.kr/**` — www는 radsafety.kr로 리다이렉트되므로 불필요
+> - `http://localhost:4321/**` — 로컬 매직링크 테스트 불가
+> - `http://localhost:4322/**` — 용도 불명확, 불필요
+> - `https://radsafety.kr/auth/callback` — `/**` 와일드카드로 커버됨
 
 > 관련 검증: [Part 2-1. 카카오 로그인](#2-1-카카오-로그인), [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크)
 
@@ -245,6 +252,13 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 
 **관련 설정**: Supabase(1-1, 1-2), Vercel(2-1, 2-2)
 
+> **⚠️ 테스트 제약 조건**: 매직링크는 반드시 **배포(push) 후 운영 서버**에서 테스트해야 합니다.
+>
+> 이유: Supabase Site URL이 `https://radsafety.kr`로 고정되어 있어, 로컬에서 로그인을 시도해도
+> 매직링크는 항상 `radsafety.kr/auth/confirm`으로 전송됩니다. 로컬 서버는 이 흐름에 관여하지 않습니다.
+>
+> **테스트 순서**: 코드 수정 → `git push` → Vercel 배포 완료 확인 → `radsafety.kr`에서 테스트
+
 | #   | 절차                                 | 예상 결과                                                              |
 | --- | ------------------------------------ | ---------------------------------------------------------------------- |
 | 1   | 로그인 페이지에서 이메일 입력 → 전송 | "이메일로 로그인 링크를 보냈습니다" 알림                               |
@@ -255,7 +269,10 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 
 1. 이메일 링크가 `supabase.co/auth/v1/verify`로 시작하면 → 이메일 템플릿이 잘못됨 (1-2 참조)
 2. 링크 클릭 시 다운로드되면 → `/auth/confirm`에 `prerender = false` 확인
-3. `/login`으로 리다이렉트되면 → 토큰 만료 또는 Supabase URL/Key 설정 확인
+3. `/login`으로 리다이렉트되면 → Vercel 로그에서 `[confirm]` 로그 확인 후 아래 진단
+    - 로그 없음: CDN 캐시 문제 → 빈 커밋 push로 캐시 무효화
+    - `verifyOtp error`: 토큰 만료(1시간) 또는 이미 사용된 링크 → 새 매직링크 재발송
+    - `파라미터 누락`: 이메일 템플릿 확인 (1-2 참조)
 
 ### 2-3. 도메인/SSL
 

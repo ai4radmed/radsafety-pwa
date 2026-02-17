@@ -654,7 +654,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
 
     <script>
         import { userProfile } from '../store/user';
-        import { supabase } from '../lib/supabase';
+        import { supabase } from '../lib/supabase-browser';
 
         console.log('Mypage script loaded');
         document.addEventListener('astro:page-load', async () => {

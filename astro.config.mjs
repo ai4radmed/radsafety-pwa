@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm';
 export default defineConfig({
     site: 'https://ai4radmed.com',
     base: '/',
+    output: 'server',
     markdown: {
         remarkPlugins: [remarkGfm],
     },

@@ -4,7 +4,7 @@
  * 다양한 타입의 알림을 자동으로 생성합니다.
  */
 
-import { supabaseAdmin } from './supabase';
+import { supabaseAdmin } from './supabase-server';
 import { createLogger } from './logger';
 
 const logger = createLogger('notification');
