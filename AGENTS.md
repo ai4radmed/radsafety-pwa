@@ -112,6 +112,65 @@ npm run test:e2e:auth
 > 구현 제약: Supabase API 응답, SSR 페이지는 오프라인 캐싱 불가.
 > 온라인 복귀 시 자동 동기화는 별도 구현 없이 페이지 재접속으로 해결.
 
+## 개발용 테스트 계정
+
+Preview 및 로컬 개발 시 매번 카카오/이메일 로그인을 반복하지 않도록 실제 Supabase 계정을 사용합니다.
+
+### 계정 정보
+
+| 역할     | 이메일                    | verification_status | is_admin |
+| -------- | ------------------------- | ------------------- | -------- |
+| 일반유저 | `test-user@radsafety.kr`  | `verified`          | false    |
+| 관리자   | `test-admin@radsafety.kr` | `verified`          | true     |
+
+### 환경변수 (Vercel Preview 및 로컬 `.env.local`)
+
+```
+PUBLIC_DEV_MODE=true
+DEV_TEST_USER_EMAIL=test-user@radsafety.kr
+DEV_TEST_USER_PASSWORD=<Supabase에서 설정한 비밀번호>
+DEV_TEST_ADMIN_EMAIL=test-admin@radsafety.kr
+DEV_TEST_ADMIN_PASSWORD=<Supabase에서 설정한 비밀번호>
+```
+
+> `PUBLIC_DEV_MODE=true`일 때만 `/login` 페이지의 [개발자 모드] 버튼이 표시됩니다.
+> **Production(`radsafety.kr`)에는 이 환경변수를 설정하지 않습니다.**
+
+### profiles 테이블 초기 설정 SQL
+
+테스트 계정 생성 후 Supabase SQL Editor에서 실행:
+
+```sql
+-- 일반 테스트 사용자
+UPDATE profiles
+SET verification_status = 'verified',
+    nickname = '테스트유저',
+    email_verified = true,
+    verification_method = 'login_email'
+WHERE login_email = 'test-user@radsafety.kr';
+
+-- 관리자 테스트 계정
+UPDATE profiles
+SET verification_status = 'verified',
+    nickname = '테스트관리자',
+    is_admin = true,
+    email_verified = true,
+    verification_method = 'login_email'
+WHERE login_email = 'test-admin@radsafety.kr';
+```
+
+> 테스트 계정으로 한 번 로그인해 profiles 행이 생성된 후 위 SQL을 실행하세요.
+
+### 개발자 모드 버튼 (`src/pages/login.astro`)
+
+`PUBLIC_DEV_MODE=true` 환경에서 로그인 페이지 하단에 표시됩니다:
+
+- **[테스트 사용자 로그인]** — `signInWithPassword()`로 실제 Supabase 세션 생성
+- **[테스트 관리자 로그인]** — 관리자 권한 세션 생성
+- **[세션 초기화(로그아웃)]** — localStorage, 쿠키, Supabase 세션 전체 초기화
+
+> 기존 `mockLogin()`(setUser만 호출, 가짜 세션)과 달리, 실제 Supabase 세션을 생성하므로 보호 페이지에 정상 접근 가능합니다.
+
 ## 검토 사항
 
 - Cloudflare 프록시 + Vercel 충돌 주의 (캐시 규칙, \_vercel 경로)

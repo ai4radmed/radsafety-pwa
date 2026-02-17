@@ -24,7 +24,7 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `id`                        | `uuid` (PK) | `auth.users.id` 참조 (외래키)                                                                   |          |
 | `nickname`                  | `text`      | 카카오 닉네임 (표시용)                                                                          |          |
 | `login_email`               | `text`      | 로그인 이메일 (auth.users.email 복사본)                                                         |          |
-| `provider`                  | `text`      | 로그인 제공자 (`kakao`, `email` 등)                                                             |          |
+| ~~`provider`~~              | ~~`text`~~  | ~~로그인 제공자 (`kakao`, `email` 등)~~ **실제 DB에 존재하지 않음 (문서 오류)**                 |          |
 | `created_at`                | `timestamp` | 프로필 생성 일시 (앱 가입일)                                                                    | `now()`  |
 | `is_admin`                  | `boolean`   | 관리자 여부                                                                                     | `false`  |
 | `verification_status`       | `text`      | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료) | `'none'` |

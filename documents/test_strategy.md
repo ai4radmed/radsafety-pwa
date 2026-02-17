@@ -37,10 +37,11 @@
 # 1. dev 서버 실행
 npm run dev
 
-# 2. 세션 저장 (브라우저 창이 열립니다 — 실제 로그인 필요)
+# 2. 세션 저장 (브라우저 창이 열립니다)
 npm run test:e2e:save-session
-# → 일반 사용자 로그인 후 /mypage 도달 시 자동 저장
-# → 이어서 관리자 로그인 후 /mypage 도달 시 자동 저장
+# → Preview/로컬: [개발자 모드] 테스트 계정 버튼으로 빠르게 로그인
+# → Production: 카카오 또는 이메일 매직링크로 직접 로그인
+# → /mypage 도달 시 세션 자동 저장 (일반→관리자 순서로 2회)
 
 # 3. 이후 반복 실행 (세션 유효한 동안)
 npm run test:e2e:auth
@@ -48,6 +49,21 @@ npm run test:e2e:auth
 
 > **세션 유효기간**: Supabase 기본값 1시간. 만료 시 `test:e2e:save-session` 재실행.
 > 세션 파일(`tests/fixtures/session-*.json`)은 `.gitignore`에 포함 — 절대 커밋하지 않음.
+
+### 개발용 테스트 계정 (빠른 로그인)
+
+Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발자 모드] 버튼으로 즉시 로그인할 수 있습니다.
+
+| 버튼                 | 계정                      | 역할   |
+| -------------------- | ------------------------- | ------ |
+| 테스트 사용자 로그인 | `test-user@radsafety.kr`  | 일반   |
+| 테스트 관리자 로그인 | `test-admin@radsafety.kr` | 관리자 |
+
+- `signInWithPassword()`를 사용하므로 **실제 Supabase 세션**이 생성됩니다.
+- 보호 페이지(`/mypage`, `/admin/*`) 접근이 정상 동작합니다.
+- Production에는 `PUBLIC_DEV_MODE` 미설정 → 버튼 미표시.
+
+> 계정 생성·환경변수 설정·profiles SQL은 [AGENTS.md 개발용 테스트 계정](../AGENTS.md#개발용-테스트-계정) 참조.
 
 ---
 
