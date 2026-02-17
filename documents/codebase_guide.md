@@ -208,14 +208,64 @@
 2. **파일 상단에 `export const prerender = false;`를 반드시 추가합니다.** (프로젝트 방침: 모든 페이지 SSR)
 3. `DashboardLayout`을 import하여 기본 구조를 잡습니다.
 4. 스타일과 스크립트는 해당 파일 내 `<style>` 및 `<script>` 태그에 작성합니다.
-5. `tests/unit/pages/prerender-check.test.ts`에 새 페이지를 추가하여 SSR 설정을 자동 검증합니다.
+5. **`<script>` 내 초기화 코드는 반드시 `astro:page-load` 이벤트로 감싸야 합니다.** (아래 3-4 참조)
+6. `tests/unit/pages/prerender-check.test.ts`에 새 페이지를 추가하여 SSR 설정을 자동 검증합니다.
 
 ### 3-2. 새로운 DB 테이블 연동하기
 
 1. `sql_query/rebuild_all_tables.sql`에 테이블 정의를 추가합니다.
 2. Supabase SQL Editor에서 실행합니다.
-3. `src/lib/supabase.ts`의 클라이언트를 사용하여 접근합니다.
+3. `src/lib/supabase-server.ts` 또는 `src/lib/supabase-browser.ts`의 클라이언트를 사용하여 접근합니다.
 4. 복잡한 쓰기 로직은 `src/actions/index.ts`에 새 Action을 정의합니다.
+
+### 3-4. `<script>` 작성 규칙 — View Transitions 대응
+
+이 프로젝트는 Astro의 **View Transitions**가 적용되어 있습니다. 페이지 전환 시 전체 페이지를 새로 로드하지 않고 DOM만 교체하기 때문에, **스크립트 최상위에서 초기화하면 재방문 시 실행되지 않습니다.**
+
+#### 잘못된 패턴 (재발 원인)
+
+```typescript
+// ❌ 최상위 실행 — 첫 방문에만 동작, 재방문 시 "로딩 중..." 상태로 멈춤
+<script>
+  import { supabase } from '../lib/supabase-browser';
+
+  const tableBody = document.getElementById('tableBody');
+  loadData();  // ← 재방문 시 실행 안 됨
+
+  async function loadData() { ... }
+</script>
+```
+
+#### 올바른 패턴
+
+```typescript
+// ✅ astro:page-load로 감싸기 — 첫 방문 및 재방문 모두 동작
+<script>
+  import { supabase } from '../lib/supabase-browser';
+
+  document.addEventListener('astro:page-load', () => {
+    const tableBody = document.getElementById('tableBody');
+    loadData();  // ← 매번 실행됨
+
+    async function loadData() { ... }
+  });
+</script>
+```
+
+#### 왜 이렇게 동작하는가?
+
+```
+일반 페이지 전환 (View Transitions 없음)
+  페이지 이동 → 전체 HTML 새로 로드 → <script> 재실행 ✅
+
+View Transitions 적용 시
+  페이지 이동 → DOM만 교체 → <script> 재실행 안 됨 ❌
+  astro:page-load 이벤트 → DOM 교체 완료 시 매번 발생 ✅
+```
+
+#### 실패 사례 (2026-02-17)
+
+`/admin/feedback`, `/admin/glossary` 페이지에서 다른 페이지 방문 후 재방문 시 데이터가 "로딩 중..." 상태로 멈추는 문제 발생. `astro:page-load` 누락이 원인.
 
 ### 3-3. PWA 설정 변경하기
 
