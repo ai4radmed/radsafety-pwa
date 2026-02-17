@@ -39,9 +39,11 @@ npm run dev
 
 # 2. 세션 저장 (브라우저 창이 열립니다)
 npm run test:e2e:save-session
-# → Preview/로컬: [개발자 모드] 테스트 계정 버튼으로 빠르게 로그인
-# → Production: 카카오 또는 이메일 매직링크로 직접 로그인
-# → /mypage 도달 시 세션 자동 저장 (일반→관리자 순서로 2회)
+# → 로컬/Preview (PUBLIC_DEV_MODE=true + DEV_TEST_*_EMAIL/PASSWORD 설정):
+#     [개발자 모드] 버튼을 자동으로 클릭하여 로그인 → 완전 자동화
+# → Production 또는 환경변수 미설정:
+#     카카오 또는 이메일 매직링크로 직접 로그인 → /mypage 도달 시 자동 저장
+# → 일반 사용자·관리자 순서로 2회 실행
 
 # 3. 이후 반복 실행 (세션 유효한 동안)
 npm run test:e2e:auth
@@ -62,6 +64,10 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 - `signInWithPassword()`를 사용하므로 **실제 Supabase 세션**이 생성됩니다.
 - 보호 페이지(`/mypage`, `/admin/*`) 접근이 정상 동작합니다.
 - Production에는 `PUBLIC_DEV_MODE` 미설정 → 버튼 미표시.
+
+> **⚠️ 보안 주의**: 비밀번호는 SSR에서 HTML `data-*` 속성으로 클라이언트에 전달됩니다.
+> `isDevMode` 가드로 Production 노출은 차단되지만, **Preview 배포 URL을 외부에 공유하면
+> 비밀번호가 HTML 소스에서 노출됩니다.** Preview URL은 팀 내부에서만 공유하세요.
 
 > 계정 생성·환경변수 설정·profiles SQL은 [AGENTS.md 개발용 테스트 계정](../AGENTS.md#개발용-테스트-계정) 참조.
 
