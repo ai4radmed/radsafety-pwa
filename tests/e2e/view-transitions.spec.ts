@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /**
  * View Transitions 재방문 E2E 테스트
@@ -16,6 +17,21 @@ import { test, expect } from '@playwright/test';
  * - publicPaths = ['/', '/login'] — 다른 페이지는 로그인 필요
  */
 
+/**
+ * 사이드바 홈 네비게이션 링크 클릭 헬퍼
+ *
+ * a[href="/"] 링크는 두 개 존재:
+ *   1. .logo-area > a.logo  — .logo-area div에 가려져 클릭 불가
+ *   2. aside nav a[aria-label="Home"]  — 네비게이션 메뉴, 클릭 가능
+ *
+ * aria-label="Home" 링크를 명시적으로 사용합니다.
+ */
+async function clickHomeLink(page: Page) {
+    const homeNavLink = page.locator('a[aria-label="Home"]');
+    await expect(homeNavLink).toBeVisible();
+    await homeNavLink.click();
+}
+
 test.describe('View Transitions — 페이지 재방문 렌더링', () => {
     test('홈(/) → 로그인 → 홈 재방문 시 콘텐츠 유지', async ({ page }) => {
         // 1. 홈 방문 (홈은 h3 카드 구조)
@@ -32,10 +48,8 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
         await page.waitForLoadState('networkidle');
         await expect(page.locator('#emailLoginForm')).toBeVisible();
 
-        // 3. 홈으로 다시 이동 (사이드바/로고 링크)
-        const homeLink = page.locator('a[href="/"]');
-        await expect(homeLink.first()).toBeVisible();
-        await homeLink.first().click();
+        // 3. 홈으로 다시 이동 (네비게이션 홈 링크)
+        await clickHomeLink(page);
         await page.waitForURL(/\/$/);
         await page.waitForLoadState('networkidle');
 
@@ -51,9 +65,8 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
         await expect(page.locator('#emailLoginForm')).toBeVisible();
         await expect(page.locator('#emailInput')).toBeVisible();
 
-        // 2. 홈으로 이동 (로고 링크는 .logo-area에 덮여 있으므로 force 클릭)
-        const homeLink = page.locator('a[href="/"]').first();
-        await homeLink.click({ force: true });
+        // 2. 홈으로 이동 (네비게이션 홈 링크)
+        await clickHomeLink(page);
         await page.waitForURL(/\/$/);
         await page.waitForLoadState('networkidle');
         await expect(page.locator('h3').first()).toBeVisible();
@@ -85,10 +98,8 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
             await page.waitForLoadState('networkidle');
             await expect(page.locator('#emailLoginForm')).toBeVisible();
 
-            // 홈으로 복귀
-            const homeLink = page.locator('a[href="/"]');
-            await expect(homeLink.first()).toBeVisible();
-            await homeLink.first().click();
+            // 홈으로 복귀 (네비게이션 홈 링크)
+            await clickHomeLink(page);
             await page.waitForURL(/\/$/);
             await page.waitForLoadState('networkidle');
             await expect(page.locator('h3').first()).toBeVisible();
@@ -111,8 +122,7 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
         await page.waitForURL('**/login');
         await page.waitForLoadState('networkidle');
 
-        const homeLink = page.locator('a[href="/"]');
-        await homeLink.first().click();
+        await clickHomeLink(page);
         await page.waitForURL(/\/$/);
         await page.waitForLoadState('networkidle');
 
