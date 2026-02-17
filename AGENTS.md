@@ -25,6 +25,16 @@
 
 ## 개발 규칙
 
+### 브랜치 전략
+
+- **작업 브랜치**: `dev` — 모든 개발은 `dev`에서 시작
+- **배포 브랜치**: `origin/main` — Vercel이 이 브랜치를 자동 배포
+- **머지 방법**: `dev` → PR → `origin/main` (로컬 `main` 브랜치는 사용하지 않음)
+- **로컬 `main` 브랜치는 만들지 않는다** — 실수로 `main`에 직접 커밋하는 것을 방지하기 위함
+    - 새 환경에서 클론 시: `git checkout dev` 후 `git branch -d main`으로 로컬 main 삭제
+- AI 에이전트는 **항상 `dev` 브랜치에서 작업**하고 `dev`로 푸시할 것
+- `main`으로의 직접 푸시 금지
+
 ### 렌더링 방식 (SSR 전체 적용)
 
 - **모든 페이지는 서버 사이드 렌더링(SSR)으로 동작해야 합니다.**
@@ -38,6 +48,40 @@
 - 별도의 마이그레이션 SQL 파일을 생성하지 말 것
 - 변경 이력은 파일 상단 주석에 버전과 함께 기록
 - 기존 데이터를 보존하는 Safe Migration 방식 사용
+
+## 배포 후 검증 절차
+
+`dev → PR → main` 머지 후 Vercel 자동 배포가 완료되면 아래 순서로 검증합니다.
+
+### 1단계: 운영 서버 헬스체크 (자동, 2분)
+
+```bash
+npm run check:production
+```
+
+HTTPS, www 리다이렉트, `/auth/confirm` CDN 308 캐시 버그, API 응답 등을 자동 점검합니다.
+
+### 2단계: 인증 후 기능 E2E (반자동, 3~5분)
+
+```bash
+# 세션이 유효한 경우
+npm run test:e2e:auth
+
+# 세션이 없거나 만료된 경우 — 브라우저에서 직접 로그인 필요
+npm run dev                      # 별도 터미널
+npm run test:e2e:save-session    # 브라우저 창에서 로그인 → /mypage 도달 시 자동 저장
+npm run test:e2e:auth
+```
+
+### 3단계: 수동 잔여 항목
+
+자동화가 불가능한 항목만 수동 확인합니다.
+
+- **카카오 로그인** → `/mypage` 도착 확인
+- **이메일 매직링크** → 수신 → 클릭 → `/mypage` 도착 (다운로드 아님)
+- **모바일** (릴리스 시): Chrome, Safari, 카카오 인앱 브라우저
+
+> 상세 체크리스트: [test_strategy.md](documents/test_strategy.md) 섹션 4 참조
 
 ## 검토 사항
 
