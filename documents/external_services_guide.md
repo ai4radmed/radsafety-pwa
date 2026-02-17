@@ -149,17 +149,28 @@ https://radsafety.kr/**
 
 Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 
-| 변수명                      | Scope                            | 비고                   |
-| --------------------------- | -------------------------------- | ---------------------- |
-| `PUBLIC_SUPABASE_URL`       | Production, Preview, Development |                        |
-| `PUBLIC_SUPABASE_ANON_KEY`  | Production, Preview, Development |                        |
-| `SUPABASE_SERVICE_ROLE_KEY` | Production, Preview, Development | 서버 전용              |
-| `RESEND_API_KEY`            | Production, Preview, Development | 서버 전용              |
-| `RESEND_FROM_EMAIL`         | Production, Preview, Development | `noreply@radsafety.kr` |
-| `PUBLIC_ADMIN_EMAILS`       | Production, Preview, Development | 쉼표 구분              |
-| `PUBLIC_LOG_LEVEL`          | Production                       | `info`                 |
+| 변수명                      | Scope                            | 비고                                                 |
+| --------------------------- | -------------------------------- | ---------------------------------------------------- |
+| `PUBLIC_SUPABASE_URL`       | Production, Preview, Development | Supabase Dashboard > Settings > API                  |
+| `PUBLIC_SUPABASE_ANON_KEY`  | Production, Preview, Development | Supabase Dashboard > Settings > API                  |
+| `SUPABASE_SERVICE_ROLE_KEY` | Production, Preview, Development | Supabase Dashboard > Settings > API (서버 전용)      |
+| `RESEND_API_KEY`            | Production, Preview, Development | Resend Dashboard > API Keys (서버 전용)              |
+| `RESEND_FROM_EMAIL`         | Production, Preview, Development | `noreply@radsafety.kr`                               |
+| `PUBLIC_ADMIN_EMAILS`       | Production, Preview, Development | 쉼표 구분 이메일 목록                                |
+| `PUBLIC_LOG_LEVEL`          | Production                       | `info`                                               |
+| `PUBLIC_VAPID_KEY`          | Production, Preview, Development | 웹 푸시 공개키 — `.env`에 있는 값 그대로             |
+| `VAPID_PRIVATE_KEY`         | Production, Preview, Development | 웹 푸시 비밀키 — `.env`에 있는 값 그대로 (서버 전용) |
+| `VAPID_EMAIL`               | Production, Preview, Development | `mailto:noreply@radsafety.kr`                        |
 
-> 관련 검증: [Part 2-4. 이메일 발송](#2-4-이메일-발송)
+> **VAPID 키 재생성이 필요한 경우** (키 분실, 보안 사고 등):
+>
+> ```bash
+> node -e "const wp=require('web-push'); const k=wp.generateVAPIDKeys(); console.log(k);"
+> ```
+>
+> 재생성 시 기존 구독자는 모두 재구독이 필요합니다 (`push_subscriptions` 테이블 초기화 권장).
+
+> 관련 검증: [Part 2-4. 이메일 발송](#2-4-이메일-발송), [Part 2-7. 웹 푸시 알림](#2-7-웹-푸시-알림)
 
 #### 2-3. 빌드 설정
 
@@ -359,6 +370,26 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 1. `delete_own_account()` RPC 함수가 Supabase에 존재하는지 (SQL Editor에서 확인)
 2. `rebuild_all_tables.sql`을 다시 실행
 
+### 2-7. 웹 푸시 알림
+
+**관련 설정**: Vercel(2-2 VAPID 키), Supabase(`push_subscriptions` 테이블)
+
+| #   | 절차                                   | 예상 결과                                    |
+| --- | -------------------------------------- | -------------------------------------------- |
+| 1   | 로그인 후 2~3초 대기                   | 하단에 "알림을 받으시겠어요?" 배너 표시      |
+| 2   | "허용" 클릭                            | 브라우저 권한 허용 팝업 표시                 |
+| 3   | 권한 허용                              | 배너 사라짐, 콘솔에 "✅ 푸시 알림 구독 완료" |
+| 4   | 관리자가 알림 발송 또는 인증 승인/거부 | 기기 상단에 푸시 알림 팝업 표시              |
+| 5   | 알림 탭                                | 앱 열림 + 해당 페이지로 이동                 |
+
+**실패 시 확인 순서**:
+
+1. Vercel 환경 변수에 `PUBLIC_VAPID_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` 설정 여부 확인
+2. Supabase에 `push_subscriptions` 테이블 존재 여부 확인 → `rebuild_all_tables.sql` 재실행
+3. 브라우저 설정 > 알림에서 해당 사이트의 알림이 "허용"인지 확인
+4. iOS Safari의 경우 홈 화면에 PWA로 설치되어 있어야 함 (Safari 직접 접속 시 푸시 미지원)
+5. Vercel 함수 로그에서 `push` 모듈의 에러 확인
+
 ### 2-6. 의견 보내기
 
 **관련 설정**: Supabase(1-6 Storage), Resend(5-3)
@@ -392,3 +423,6 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 | 코드: `pages/auth/*`              | 2-1, 2-2         |
 | 코드: `lib/email.ts`              | 2-4, 2-6         |
 | 코드: `rebuild_all_tables.sql`    | 2-5, 2-6         |
+| Vercel VAPID 환경 변수            | 2-7              |
+| 코드: `lib/push.ts`               | 2-7              |
+| 코드: `public/sw-push.js`         | 2-7              |

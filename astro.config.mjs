@@ -77,6 +77,9 @@ export default defineConfig({
                 // - /api/*: API 응답을 offline 페이지로 대체하면 안 됨
                 // - /auth/*: 인증 콜백은 서버가 반드시 처리해야 함
                 navigateFallbackDenylist: [/^\/offline$/, /^\/api\//, /^\/auth\//],
+
+                // 웹 푸시 핸들러 포함 (push 이벤트, notificationclick 이벤트)
+                importScripts: ['/sw-push.js'],
             },
             devOptions: {
                 enabled: true,

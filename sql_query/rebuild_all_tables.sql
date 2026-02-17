@@ -1,10 +1,12 @@
 -- ==============================================================================
 -- Master Database Schema: Safe Migration Script (데이터 보존)
 -- Description: 기존 데이터를 유지하면서 스키마 변경 적용
--- Version: 2.3 (멱등성 보장 + glossary_terms + delete_own_account RPC)
+-- Version: 2.4 (push_subscriptions 테이블 추가 + 테스트 계정 초기 설정 통합)
 -- Usage: Supabase SQL Editor에서 실행 (반복 실행 가능)
 --
 -- 변경 이력:
+-- - 2026-02-18: push_subscriptions 테이블 추가 (웹 푸시 알림 구독 정보)
+-- - 2026-02-18: 테스트 계정 초기 profiles 설정 SQL 통합 (11번 섹션)
 -- - 2026-02-16: delete_own_account() RPC 함수 추가 (회원 탈퇴)
 -- - 2026-02-16: 모든 CREATE POLICY를 IF NOT EXISTS로 래핑 (멱등성 보장)
 -- - 2026-02-16: glossary_terms 테이블 추가 (법령용어사전)
@@ -695,3 +697,123 @@ BEGIN
   DELETE FROM auth.users WHERE id = auth.uid();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- 11. push_subscriptions (웹 푸시 알림 구독 정보)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- 같은 기기(endpoint)에 중복 구독 방지
+    CONSTRAINT unique_push_endpoint UNIQUE (endpoint)
+);
+
+-- updated_at 자동 갱신 트리거
+CREATE OR REPLACE FUNCTION update_push_subscriptions_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'push_subscriptions_updated_at'
+    ) THEN
+        CREATE TRIGGER push_subscriptions_updated_at
+            BEFORE UPDATE ON public.push_subscriptions
+            FOR EACH ROW EXECUTE FUNCTION update_push_subscriptions_updated_at();
+    END IF;
+END $$;
+
+-- RLS 활성화
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- 본인 구독만 삽입/조회/삭제 허용
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'push_subscriptions' AND policyname = 'users can manage own subscriptions'
+    ) THEN
+        CREATE POLICY "users can manage own subscriptions"
+        ON public.push_subscriptions
+        FOR ALL
+        TO authenticated
+        USING (auth.uid() = user_id)
+        WITH CHECK (auth.uid() = user_id);
+    END IF;
+
+    -- service_role(서버)은 모든 구독 조회 가능 (푸시 발송 시 필요)
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'push_subscriptions' AND policyname = 'service role can read all subscriptions'
+    ) THEN
+        CREATE POLICY "service role can read all subscriptions"
+        ON public.push_subscriptions
+        FOR SELECT
+        TO service_role
+        USING (true);
+    END IF;
+END $$;
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON public.push_subscriptions(user_id);
+
+-- 코멘트
+COMMENT ON TABLE public.push_subscriptions IS '웹 푸시 알림 구독 정보 (endpoint, VAPID 키)';
+COMMENT ON COLUMN public.push_subscriptions.endpoint IS '브라우저 푸시 서비스 URL (기기별 고유)';
+COMMENT ON COLUMN public.push_subscriptions.p256dh IS '공개키 (암호화용)';
+COMMENT ON COLUMN public.push_subscriptions.auth IS '인증 시크릿';
+COMMENT ON COLUMN public.push_subscriptions.user_agent IS '구독한 기기 UA (디버깅용)';
+
+-- ============================================================
+-- 12. 개발용 테스트 계정 초기 profiles 설정
+-- ============================================================
+-- 목적: 테스트 계정(test-user@radsafety.kr, test-admin@radsafety.kr)의
+--       profiles 행을 올바른 상태로 설정합니다.
+--
+-- 실행 조건: 테스트 계정으로 최소 1회 로그인 후 profiles 행이 생성된 상태에서 실행
+-- 환경: 로컬/Preview 전용 (Production에는 해당 계정이 존재하지 않으므로 영향 없음)
+-- ============================================================
+
+DO $$
+DECLARE
+    user_count int;
+    admin_count int;
+BEGIN
+    -- 일반 테스트 사용자 설정
+    UPDATE public.profiles
+    SET verification_status = 'verified',
+        nickname = '테스트유저',
+        email_verified = true,
+        verification_method = 'login_email'
+    WHERE login_email = 'test-user@radsafety.kr';
+    GET DIAGNOSTICS user_count = ROW_COUNT;
+
+    -- 관리자 테스트 계정 설정
+    UPDATE public.profiles
+    SET verification_status = 'verified',
+        nickname = '테스트관리자',
+        is_admin = true,
+        email_verified = true,
+        verification_method = 'login_email'
+    WHERE login_email = 'test-admin@radsafety.kr';
+    GET DIAGNOSTICS admin_count = ROW_COUNT;
+
+    IF user_count > 0 OR admin_count > 0 THEN
+        RAISE NOTICE '✓ 테스트 계정 profiles 설정 완료 (user: %, admin: %)', user_count, admin_count;
+    ELSE
+        RAISE NOTICE '- 테스트 계정 profiles 없음 (로그인 전이거나 Production 환경)';
+    END IF;
+END $$;
