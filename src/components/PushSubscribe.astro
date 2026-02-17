@@ -1,0 +1,185 @@
+---
+/**
+ * 웹 푸시 알림 구독 버튼 컴포넌트
+ * DashboardLayout에 포함되어 로그인 사용자에게 알림 허용 요청
+ */
+const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
+---
+
+<!-- 알림 구독 배너 (기본 숨김, JS에서 필요시 표시) -->
+<div id="push-subscribe-banner" style="display:none;">
+    <style>
+        #push-subscribe-banner {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 2rem);
+            max-width: 420px;
+            background: #1c1c1c;
+            color: white;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 200;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        #push-subscribe-banner .banner-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        #push-subscribe-banner .banner-text {
+            flex: 1;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        #push-subscribe-banner .banner-text strong {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+        #push-subscribe-banner .banner-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        #push-subscribe-banner .btn-allow {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        #push-subscribe-banner .btn-deny {
+            background: transparent;
+            color: #aaa;
+            border: none;
+            border-radius: 6px;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+    </style>
+    <div class="banner-icon">🔔</div>
+    <div class="banner-text">
+        <strong>알림을 받으시겠어요?</strong>
+        인증 결과, 공지사항 등을 즉시 받아보세요.
+    </div>
+    <div class="banner-actions">
+        <button class="btn-allow" id="push-allow-btn">허용</button>
+        <button class="btn-deny" id="push-deny-btn">나중에</button>
+    </div>
+</div>
+
+<script define:vars={{ vapidPublicKey }}>
+    // base64url → Uint8Array 변환 (VAPID 공개키)
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = atob(base64);
+        return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+    }
+
+    const DISMISS_KEY = 'push_banner_dismissed';
+    const SUBSCRIBED_KEY = 'push_subscribed';
+
+    async function initPushSubscription() {
+        // 이미 구독 중이거나 거부했으면 배너 표시 안 함
+        if (localStorage.getItem(SUBSCRIBED_KEY) === 'true') return;
+        if (localStorage.getItem(DISMISS_KEY) === 'true') return;
+
+        // 브라우저 지원 확인
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+        // 이미 알림 권한 거부된 경우
+        if (Notification.permission === 'denied') return;
+
+        // 이미 알림 허용된 경우 → 바로 구독 시도 (배너 없이)
+        if (Notification.permission === 'granted') {
+            await subscribe(false);
+            return;
+        }
+
+        // 배너 표시
+        const banner = document.getElementById('push-subscribe-banner');
+        if (banner) banner.style.display = 'flex';
+
+        document.getElementById('push-allow-btn')?.addEventListener('click', async () => {
+            const banner = document.getElementById('push-subscribe-banner');
+            if (banner) banner.style.display = 'none';
+            await subscribe(true);
+        });
+
+        document.getElementById('push-deny-btn')?.addEventListener('click', () => {
+            const banner = document.getElementById('push-subscribe-banner');
+            if (banner) banner.style.display = 'none';
+            localStorage.setItem(DISMISS_KEY, 'true');
+        });
+    }
+
+    async function subscribe(requestPermission) {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+
+            if (requestPermission) {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') return;
+            }
+
+            // 기존 구독 확인
+            let subscription = await registration.pushManager.getSubscription();
+
+            // 없으면 새로 구독
+            if (!subscription) {
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+                });
+            }
+
+            // 서버에 구독 정보 저장
+            const response = await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    endpoint: subscription.endpoint,
+                    p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+                    auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+                    userAgent: navigator.userAgent,
+                }),
+            });
+
+            if (response.ok) {
+                localStorage.setItem(SUBSCRIBED_KEY, 'true');
+                console.log('✅ 푸시 알림 구독 완료');
+            } else {
+                console.error('❌ 구독 저장 실패:', await response.text());
+            }
+        } catch (err) {
+            console.error('❌ 푸시 구독 오류:', err);
+        }
+    }
+
+    // 페이지 로드마다 실행 (View Transitions 대응)
+    document.addEventListener('astro:page-load', initPushSubscription);
+    if (document.readyState !== 'loading') {
+        // 약간 지연 후 실행 (SW 등록 완료 대기)
+        setTimeout(initPushSubscription, 2000);
+    }
+</script>

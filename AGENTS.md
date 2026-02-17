@@ -138,28 +138,11 @@ DEV_TEST_ADMIN_PASSWORD=<Supabase에서 설정한 비밀번호>
 
 ### profiles 테이블 초기 설정 SQL
 
-테스트 계정 생성 후 Supabase SQL Editor에서 실행:
+테스트 계정 생성 후 `sql_query/rebuild_all_tables.sql` 전체를 Supabase SQL Editor에서 실행하면 됩니다.
+스크립트 **섹션 12**에 테스트 계정 profiles 초기화 로직이 포함되어 있습니다.
 
-```sql
--- 일반 테스트 사용자
-UPDATE profiles
-SET verification_status = 'verified',
-    nickname = '테스트유저',
-    email_verified = true,
-    verification_method = 'login_email'
-WHERE login_email = 'test-user@radsafety.kr';
-
--- 관리자 테스트 계정
-UPDATE profiles
-SET verification_status = 'verified',
-    nickname = '테스트관리자',
-    is_admin = true,
-    email_verified = true,
-    verification_method = 'login_email'
-WHERE login_email = 'test-admin@radsafety.kr';
-```
-
-> 테스트 계정으로 한 번 로그인해 profiles 행이 생성된 후 위 SQL을 실행하세요.
+> 테스트 계정으로 한 번 로그인해 profiles 행이 생성된 후 `rebuild_all_tables.sql`을 실행하세요.
+> (스크립트는 멱등성이 보장되므로 반복 실행해도 기존 데이터가 보존됩니다.)
 
 ### 개발자 모드 버튼 (`src/pages/login.astro`)
 

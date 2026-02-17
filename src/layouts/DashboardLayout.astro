@@ -7,6 +7,7 @@ import PWAInstall from '../components/PWAInstall.astro';
 import LoginGuide from '../components/LoginGuide.astro';
 import { ViewTransitions } from 'astro:transitions';
 import GlossaryModal from '../components/GlossaryModal.astro';
+import PushSubscribe from '../components/PushSubscribe.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 const { title, description, scale } = Astro.props;
@@ -161,6 +162,7 @@ const { title, description, scale } = Astro.props;
         <MobileBottomNav />
         <PWAInstall />
         <LoginGuide />
+        <PushSubscribe />
 
         <script is:inline>
             // Mobile Menu Toggle
