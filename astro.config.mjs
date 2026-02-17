@@ -44,6 +44,7 @@ export default defineConfig({
                 theme_color: '#ffffff',
                 background_color: '#ffffff',
                 display: 'standalone',
+                lang: 'ko',
                 icons: [
                     {
                         src: '/icon-192.png',
@@ -64,7 +65,18 @@ export default defineConfig({
                 ],
             },
             workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+                // 빌드 산출물 전체 precache (JS/CSS/HTML/이미지)
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+
+                // 오프라인 fallback: 네트워크 실패 시 /offline 반환
+                // 수검준비, 지적권고사례는 precache에 포함되어 오프라인 정상 동작
+                navigateFallback: '/offline',
+
+                // /offline 자체와 API/auth 경로는 fallback 제외
+                // - /offline: 무한 루프 방지
+                // - /api/*: API 응답을 offline 페이지로 대체하면 안 됨
+                // - /auth/*: 인증 콜백은 서버가 반드시 처리해야 함
+                navigateFallbackDenylist: [/^\/offline$/, /^\/api\//, /^\/auth\//],
             },
             devOptions: {
                 enabled: true,

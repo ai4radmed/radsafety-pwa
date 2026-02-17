@@ -83,9 +83,37 @@ npm run test:e2e:auth
 
 > 상세 체크리스트: [test_strategy.md](documents/test_strategy.md) 섹션 4 참조
 
+## PWA 오프라인 전략
+
+**정책: 읽기 전용 오프라인 지원 (B안)**
+
+오프라인 상태에서는 마지막으로 캐시된 콘텐츠를 읽기 전용으로 표시합니다.
+쓰기 작업(로그인, 데이터 변경)은 오프라인에서 시도하지 않습니다.
+
+### 오프라인 지원 범위
+
+| 페이지                                    | 오프라인 동작                 | 이유                               |
+| ----------------------------------------- | ----------------------------- | ---------------------------------- |
+| 홈(`/`)                                   | 정상 표시                     | 정적 UI, precache                  |
+| 수검준비(`/inspection-prep`)              | 정상 표시                     | Astro Content Collection, precache |
+| 지적권고사례(`/findings-recommendations`) | 정상 표시                     | Astro Content Collection, precache |
+| 그 외 모든 페이지                         | `/offline` 안내 페이지로 이동 | 네트워크 필요                      |
+
+### Service Worker 캐싱 전략
+
+- **정적 에셋** (JS/CSS/이미지): `precacheAndRoute` — 빌드 시 전체 캐시
+- **오프라인 fallback**: `/offline` — 네트워크 실패 시 표시
+- **Workbox 설정**: `astro.config.mjs`의 `vitePwa.workbox` 섹션
+
+### 오프라인 fallback 페이지
+
+`src/pages/offline.astro` — 오프라인 안내 및 캐시된 페이지(수검준비, 지적권고사례) 링크 제공
+
+> 구현 제약: Supabase API 응답, SSR 페이지는 오프라인 캐싱 불가.
+> 온라인 복귀 시 자동 동기화는 별도 구현 없이 페이지 재접속으로 해결.
+
 ## 검토 사항
 
-- PWA 오프라인 전략: @vite-pwa/astro 또는 직접 서비스워커 구현
 - Cloudflare 프록시 + Vercel 충돌 주의 (캐시 규칙, \_vercel 경로)
 - 카카오 로그인: Supabase 커스텀 OAuth 프로바이더 설정
 

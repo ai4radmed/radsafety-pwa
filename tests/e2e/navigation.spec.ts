@@ -15,4 +15,9 @@ test.describe('페이지 접근', () => {
         const response = await page.goto('/resources');
         expect(response?.status()).toBe(200);
     });
+
+    test('오프라인 페이지 접근 가능 (/offline)', async ({ page }) => {
+        const response = await page.goto('/offline');
+        expect(response?.status()).toBe(200);
+    });
 });
