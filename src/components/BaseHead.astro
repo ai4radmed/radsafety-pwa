@@ -1,16 +1,16 @@
 ---
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
-import "../styles/global.css";
-import type { ImageMetadata } from "astro";
-import FallbackImage from "../assets/blog-placeholder-1.jpg";
-import { SITE_TITLE } from "../consts";
+import '../styles/global.css';
+import type { ImageMetadata } from 'astro';
+import FallbackImage from '../assets/blog-placeholder-1.jpg';
+import { SITE_TITLE } from '../consts';
 
 interface Props {
-	title: string;
-	description: string;
-	image?: ImageMetadata;
-	scale?: number;
+    title: string;
+    description: string;
+    image?: ImageMetadata;
+    scale?: number;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -24,29 +24,12 @@ const { title, description, image = FallbackImage, scale = 1 } = Astro.props;
 <link rel="icon" href="/favicon.ico" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="sitemap" href="/sitemap-index.xml" />
-<link
-	rel="alternate"
-	type="application/rss+xml"
-	title={SITE_TITLE}
-	href={new URL("rss.xml", Astro.site)}
-/>
+<link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={new URL('rss.xml', Astro.site)} />
 <meta name="generator" content={Astro.generator} />
 
 <!-- Font preloads -->
-<link
-	rel="preload"
-	href="/fonts/atkinson-regular.woff"
-	as="font"
-	type="font/woff"
-	crossorigin
-/>
-<link
-	rel="preload"
-	href="/fonts/atkinson-bold.woff"
-	as="font"
-	type="font/woff"
-	crossorigin
-/>
+<link rel="preload" href="/fonts/atkinson-regular.woff" as="font" type="font/woff" crossorigin />
+<link rel="preload" href="/fonts/atkinson-bold.woff" as="font" type="font/woff" crossorigin />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
@@ -69,3 +52,6 @@ const { title, description, image = FallbackImage, scale = 1 } = Astro.props;
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={new URL(image.src, Astro.url)} />
+
+<!-- PWA: Service Worker 등록 (vite-pwa가 SSR 모드에서 자동 주입하지 않으므로 수동 추가) -->
+<script is:inline src="/registerSW.js"></script>

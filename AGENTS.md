@@ -83,9 +83,79 @@ npm run test:e2e:auth
 
 > 상세 체크리스트: [test_strategy.md](documents/test_strategy.md) 섹션 4 참조
 
+## PWA 오프라인 전략
+
+**정책: 읽기 전용 오프라인 지원 (B안)**
+
+오프라인 상태에서는 마지막으로 캐시된 콘텐츠를 읽기 전용으로 표시합니다.
+쓰기 작업(로그인, 데이터 변경)은 오프라인에서 시도하지 않습니다.
+
+### 오프라인 지원 범위
+
+| 페이지                                    | 오프라인 동작                 | 이유                               |
+| ----------------------------------------- | ----------------------------- | ---------------------------------- |
+| 홈(`/`)                                   | 정상 표시                     | 정적 UI, precache                  |
+| 수검준비(`/inspection-prep`)              | 정상 표시                     | Astro Content Collection, precache |
+| 지적권고사례(`/findings-recommendations`) | 정상 표시                     | Astro Content Collection, precache |
+| 그 외 모든 페이지                         | `/offline` 안내 페이지로 이동 | 네트워크 필요                      |
+
+### Service Worker 캐싱 전략
+
+- **정적 에셋** (JS/CSS/이미지): `precacheAndRoute` — 빌드 시 전체 캐시
+- **오프라인 fallback**: `/offline` — 네트워크 실패 시 표시
+- **Workbox 설정**: `astro.config.mjs`의 `vitePwa.workbox` 섹션
+
+### 오프라인 fallback 페이지
+
+`src/pages/offline.astro` — 오프라인 안내 및 캐시된 페이지(수검준비, 지적권고사례) 링크 제공
+
+> 구현 제약: Supabase API 응답, SSR 페이지는 오프라인 캐싱 불가.
+> 온라인 복귀 시 자동 동기화는 별도 구현 없이 페이지 재접속으로 해결.
+
+## 개발용 테스트 계정
+
+Preview 및 로컬 개발 시 매번 카카오/이메일 로그인을 반복하지 않도록 실제 Supabase 계정을 사용합니다.
+
+### 계정 정보
+
+| 역할     | 이메일                    | verification_status | is_admin |
+| -------- | ------------------------- | ------------------- | -------- |
+| 일반유저 | `test-user@radsafety.kr`  | `verified`          | false    |
+| 관리자   | `test-admin@radsafety.kr` | `verified`          | true     |
+
+### 환경변수 (Vercel Preview 및 로컬 `.env.local`)
+
+```
+PUBLIC_DEV_MODE=true
+DEV_TEST_USER_EMAIL=test-user@radsafety.kr
+DEV_TEST_USER_PASSWORD=<Supabase에서 설정한 비밀번호>
+DEV_TEST_ADMIN_EMAIL=test-admin@radsafety.kr
+DEV_TEST_ADMIN_PASSWORD=<Supabase에서 설정한 비밀번호>
+```
+
+> `PUBLIC_DEV_MODE=true`일 때만 `/login` 페이지의 [개발자 모드] 버튼이 표시됩니다.
+> **Production(`radsafety.kr`)에는 이 환경변수를 설정하지 않습니다.**
+
+### profiles 테이블 초기 설정 SQL
+
+테스트 계정 생성 후 `sql_query/rebuild_all_tables.sql` 전체를 Supabase SQL Editor에서 실행하면 됩니다.
+스크립트 **섹션 12**에 테스트 계정 profiles 초기화 로직이 포함되어 있습니다.
+
+> 테스트 계정으로 한 번 로그인해 profiles 행이 생성된 후 `rebuild_all_tables.sql`을 실행하세요.
+> (스크립트는 멱등성이 보장되므로 반복 실행해도 기존 데이터가 보존됩니다.)
+
+### 개발자 모드 버튼 (`src/pages/login.astro`)
+
+`PUBLIC_DEV_MODE=true` 환경에서 로그인 페이지 하단에 표시됩니다:
+
+- **[테스트 사용자 로그인]** — `signInWithPassword()`로 실제 Supabase 세션 생성
+- **[테스트 관리자 로그인]** — 관리자 권한 세션 생성
+- **[세션 초기화(로그아웃)]** — localStorage, 쿠키, Supabase 세션 전체 초기화
+
+> 기존 `mockLogin()`(setUser만 호출, 가짜 세션)과 달리, 실제 Supabase 세션을 생성하므로 보호 페이지에 정상 접근 가능합니다.
+
 ## 검토 사항
 
-- PWA 오프라인 전략: @vite-pwa/astro 또는 직접 서비스워커 구현
 - Cloudflare 프록시 + Vercel 충돌 주의 (캐시 규칙, \_vercel 경로)
 - 카카오 로그인: Supabase 커스텀 OAuth 프로바이더 설정
 

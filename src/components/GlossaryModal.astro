@@ -26,7 +26,6 @@ const glossaryTerms = await fetchGlossaryTerms();
                     <div class="term-item" data-term={term.term} data-def={term.definition}>
                         <div class="term-header">
                             <span class="term-name">{term.term}</span>
-                            {term.category && <span class="term-badge">{term.category}</span>}
                         </div>
                         <p class="term-def">{term.definition}</p>
                     </div>
@@ -171,15 +170,6 @@ const glossaryTerms = await fetchGlossaryTerms();
         font-weight: 700;
         color: var(--text-main);
         font-size: 1rem;
-    }
-
-    .term-badge {
-        font-size: 0.75rem;
-        background: var(--bg-sidebar);
-        color: var(--text-muted);
-        padding: 2px 8px;
-        border-radius: 99px;
-        border: 1px solid var(--border-color);
     }
 
     .term-def {

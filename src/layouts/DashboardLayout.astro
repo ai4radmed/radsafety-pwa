@@ -211,6 +211,16 @@ const { title, description, scale } = Astro.props;
             // Run on ViewTransitions navigation
             document.addEventListener('astro:after-swap', initMobileMenu);
         </script>
+        <script is:inline define:vars={{ vapidPublicKey: import.meta.env.PUBLIC_VAPID_KEY }}>
+            // 푸시 알림 유틸리티를 window에 노출 (mypage 토글에서 사용)
+            window.urlBase64ToUint8Array = function (base64String) {
+                const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                const rawData = atob(base64);
+                return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+            };
+            window.vapidPublicKey = vapidPublicKey;
+        </script>
         <script>
             import { supabase } from '../lib/supabase-browser';
             import { setUser, clearUser } from '../store/user';
@@ -285,6 +295,7 @@ const { title, description, scale } = Astro.props;
                                 licenses: profile.licenses || [],
                             });
                             checkNotifications(session.user.id);
+                            document.dispatchEvent(new CustomEvent('user:loggedin'));
                         } else {
                             // Valid response but no profile row found (Critical issue)
                             console.warn(
@@ -318,6 +329,7 @@ const { title, description, scale } = Astro.props;
                                 });
                             }
                             checkNotifications(session.user.id);
+                            document.dispatchEvent(new CustomEvent('user:loggedin'));
                         }
                     } catch (err) {
                         console.error('Unexpected error fetching profile:', err);

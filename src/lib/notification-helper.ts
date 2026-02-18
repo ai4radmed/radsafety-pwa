@@ -6,6 +6,7 @@
 
 import { supabaseAdmin } from './supabase-server';
 import { createLogger } from './logger';
+import { sendPushToUser, sendPushToUsers } from './push';
 
 const logger = createLogger('notification');
 
@@ -67,6 +68,15 @@ export async function createNotification(data: NotificationData) {
     }
 
     logger.info('알림 생성 완료', { id: result.id, type, userId });
+
+    // 웹 푸시 발송 (실패해도 알림 생성은 완료된 것으로 처리)
+    sendPushToUser(userId, {
+        title,
+        body: message,
+        url: link || '/notifications',
+        tag: type,
+    }).catch((err) => logger.error('웹 푸시 발송 오류', { err }));
+
     return result;
 }
 
@@ -146,6 +156,15 @@ export async function createBulkNotifications(userIds: string[], data: Omit<Noti
     }
 
     logger.info('대량 알림 생성 완료', { count: result.length });
+
+    // 웹 푸시 발송 (실패해도 알림 생성은 완료된 것으로 처리)
+    sendPushToUsers(userIds, {
+        title: data.title,
+        body: data.message,
+        url: data.link || '/notifications',
+        tag: data.type,
+    }).catch((err) => logger.error('대량 웹 푸시 발송 오류', { err }));
+
     return result;
 }
 

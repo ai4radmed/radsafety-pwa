@@ -44,6 +44,7 @@ export default defineConfig({
                 theme_color: '#ffffff',
                 background_color: '#ffffff',
                 display: 'standalone',
+                lang: 'ko',
                 icons: [
                     {
                         src: '/icon-192.png',
@@ -64,7 +65,38 @@ export default defineConfig({
                 ],
             },
             workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+                // 빌드 산출물 precache (JS/CSS/HTML/이미지)
+                // archive/ 폴더는 다운로드용 정적 파일이므로 제외
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+                globIgnores: ['archive/**'],
+
+                // SSR 앱에서는 navigateFallback 사용 불가
+                // (precache에 없는 모든 navigation을 가로채므로)
+                // false로 명시하여 기본 NavigationRoute 생성 방지
+                navigateFallback: null,
+                // 대신 runtimeCaching으로 NetworkFirst → offline fallback 처리
+                runtimeCaching: [
+                    {
+                        // SSR 페이지: 네트워크 우선, 실패 시 /offline 표시
+                        urlPattern: ({ request }) => request.mode === 'navigate',
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'pages',
+                            networkTimeoutSeconds: 5,
+                            plugins: [
+                                {
+                                    // 네트워크 실패 시 오프라인 fallback
+                                    handlerDidError: async () => {
+                                        return caches.match('/offline') || Response.error();
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+
+                // 웹 푸시 핸들러 포함 (push 이벤트, notificationclick 이벤트)
+                importScripts: ['/sw-push.js'],
             },
             devOptions: {
                 enabled: true,
