@@ -198,7 +198,24 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         await expect(page).toHaveTitle(/설정|RadSafety/);
     });
 
-    test('설정 — 푸시 알림 상태 텍스트가 표시된다 (자동 구독 방식)', async ({ page }) => {
+    test('설정 — 푸시 알림 토글 스위치가 표시된다', async ({ page }) => {
+        await page.goto('/settings');
+        await page.waitForLoadState('networkidle');
+
+        // 토글 체크박스 존재
+        const pushToggle = page.locator('#pushToggle');
+        await expect(pushToggle).toBeAttached();
+
+        // 슬라이드 스위치 UI (label.switch > input + span.slider)
+        const switchLabel = page.locator('label.switch');
+        await expect(switchLabel).toBeVisible();
+        const slider = page.locator('label.switch .slider');
+        await expect(slider).toBeVisible();
+
+        console.log('  ✓ 푸시 알림 토글 스위치 UI 확인');
+    });
+
+    test('설정 — 푸시 알림 상태 텍스트가 초기화된다', async ({ page }) => {
         await page.goto('/settings');
         await page.waitForLoadState('networkidle');
 
@@ -206,17 +223,31 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         const statusText = page.locator('#pushStatusText');
         await expect(statusText).not.toHaveText('확인 중...', { timeout: 5000 });
 
-        // 최종 상태는 아래 중 하나여야 함 (버튼 없음, 상태 표시만)
+        // 토글 기반 유효 상태
         const text = await statusText.textContent();
-        const validStates = [
-            '활성화됨',
-            '로그인 시 자동 활성화',
-            '앱 설치 후 자동 활성화',
-            '차단됨',
-            '지원하지 않는 브라우저',
-        ];
+        const validStates = ['활성화됨', '알림을 받으려면 켜세요', '차단됨', '지원하지 않는 브라우저'];
         expect(validStates.some((s) => text?.includes(s))).toBe(true);
         console.log('  ✓ 푸시 알림 상태:', text);
+    });
+
+    test('설정 — 푸시 알림 토글과 상태 텍스트가 동기화되어 있다', async ({ page }) => {
+        await page.goto('/settings');
+        await page.waitForLoadState('networkidle');
+
+        const pushToggle = page.locator('#pushToggle');
+        const statusText = page.locator('#pushStatusText');
+        await expect(statusText).not.toHaveText('확인 중...', { timeout: 5000 });
+
+        const isChecked = await pushToggle.isChecked();
+        const text = await statusText.textContent();
+
+        if (isChecked) {
+            expect(text).toContain('활성화됨');
+        } else {
+            // 비활성 상태: "알림을 받으려면 켜세요" 또는 "차단됨" 또는 "지원하지 않는 브라우저"
+            expect(text).not.toContain('활성화됨');
+        }
+        console.log(`  ✓ 토글=${isChecked}, 상태="${text}" — 동기화 확인`);
     });
 
     // ── 로그아웃 ─────────────────────────────────────────────
@@ -256,6 +287,21 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
             console.log('  ✓ 웹 푸시 구독 API 인증 통과 및 유효성 검사 동작 확인');
         } else {
             // 세션 주입이 API request에 전달되지 않는 경우 (Playwright request vs page context 차이)
+            console.warn('  ⚠ 401 반환 — 세션이 API 요청에 전달되지 않은 경우 (정상 동작일 수 있음)');
+        }
+    });
+
+    test('웹 푸시 — 로그인 상태에서 /api/push/unsubscribe 가 400 반환 (endpoint 누락)', async ({ request }) => {
+        const response = await request.delete('/api/push/unsubscribe', {
+            data: {},
+        });
+        expect([400, 401]).toContain(response.status());
+
+        if (response.status() === 400) {
+            const body = await response.json();
+            expect(body.error).toBeDefined();
+            console.log('  ✓ 웹 푸시 구독 해제 API 유효성 검사 동작 확인');
+        } else {
             console.warn('  ⚠ 401 반환 — 세션이 API 요청에 전달되지 않은 경우 (정상 동작일 수 있음)');
         }
     });
