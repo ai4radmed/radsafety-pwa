@@ -284,19 +284,48 @@ const { title, description, scale } = Astro.props;
                         })),
                     );
 
+                    let reg;
                     if (regs.length === 0) {
-                        console.log('[Push Debug] SW 0개 → ready 대기 시작 (15초 타임아웃)');
-                        // SW가 없으면 ready 대기 (최대 15초)
-                        const reg = await Promise.race([
-                            navigator.serviceWorker.ready,
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('SW not found')), 15000)),
-                        ]);
-                        if (!reg) return;
-                        await doSubscribe(reg);
+                        console.log('[Push Debug] SW 0개 → 직접 register 시도');
+                        // registerSW.js가 아직 실행 안 됐을 수 있으므로 직접 등록
+                        reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                        console.log(
+                            '[Push Debug] SW register 완료, installing:',
+                            !!reg.installing,
+                            'active:',
+                            !!reg.active,
+                        );
+                        // installing 상태면 activated 될 때까지 대기
+                        if (!reg.active) {
+                            const sw = reg.installing || reg.waiting;
+                            if (sw) {
+                                await new Promise((resolve, reject) => {
+                                    const timeout = setTimeout(() => reject(new Error('SW activation timeout')), 30000);
+                                    sw.addEventListener('statechange', () => {
+                                        console.log('[Push Debug] SW state:', sw.state);
+                                        if (sw.state === 'activated') {
+                                            clearTimeout(timeout);
+                                            resolve();
+                                        }
+                                    });
+                                    // 이미 activated 된 경우
+                                    if (sw.state === 'activated') {
+                                        clearTimeout(timeout);
+                                        resolve();
+                                    }
+                                });
+                            }
+                        }
                     } else {
+                        reg = regs[0];
                         console.log('[Push Debug] SW 발견 → doSubscribe 호출');
-                        await doSubscribe(regs[0]);
+                        // active 상태가 아니면 ready 대기
+                        if (!reg.active) {
+                            console.log('[Push Debug] SW active 아님 → ready 대기');
+                            reg = await navigator.serviceWorker.ready;
+                        }
                     }
+                    await doSubscribe(reg);
                 } catch (err) {
                     // 자동 구독 실패는 사용자에게 노출하지 않음 (로그만 기록)
                     console.warn('자동 푸시 구독 실패 (무시됨):', err);
