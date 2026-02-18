@@ -272,12 +272,15 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                 return;
             }
 
-            // serviceWorker.ready에 타임아웃 래퍼
-            function swReadyWithTimeout(ms = 5000) {
-                return Promise.race([
-                    navigator.serviceWorker.ready,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), ms)),
-                ]);
+            // 등록된 SW에서 pushManager 가져오기 (ready hang 방지)
+            // getRegistration()은 이미 등록된 SW를 즉시 반환하며 hang하지 않음
+            async function getPushManager() {
+                // 이미 등록된 SW 조회
+                const registration = await navigator.serviceWorker.getRegistration('/');
+                if (registration) return registration;
+
+                // 등록된 SW가 없으면 null 반환 (구독 불가)
+                return null;
             }
 
             // 현재 구독 상태 확인
@@ -292,18 +295,17 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                     return;
                 }
 
-                try {
-                    const registration = await swReadyWithTimeout(5000);
-                    const subscription = await registration.pushManager.getSubscription();
-                    const isSubscribed = !!subscription && localStorage.getItem(SUBSCRIBED_KEY) === 'true';
-
-                    toggle.setAttribute('aria-checked', String(isSubscribed));
-                    statusText.textContent = isSubscribed ? '알림 켜짐' : '알림 꺼짐';
-                } catch (err) {
-                    console.warn('서비스 워커 준비 실패:', err);
+                const registration = await getPushManager();
+                if (!registration) {
                     statusText.textContent = '알림 꺼짐';
                     toggle.setAttribute('aria-checked', 'false');
+                    return;
                 }
+
+                const subscription = await registration.pushManager.getSubscription();
+                const isSubscribed = !!subscription && localStorage.getItem(SUBSCRIBED_KEY) === 'true';
+                toggle.setAttribute('aria-checked', String(isSubscribed));
+                statusText.textContent = isSubscribed ? '알림 켜짐' : '알림 꺼짐';
             }
 
             await checkSubscriptionState();
@@ -320,18 +322,17 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                         toggle.disabled = true;
                         statusText.textContent = '처리 중...';
 
-                        const registration = await swReadyWithTimeout(5000);
-                        const subscription = await registration.pushManager.getSubscription();
-
-                        if (subscription) {
-                            // 서버에서 삭제
-                            await fetch('/api/push/unsubscribe', {
-                                method: 'DELETE',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ endpoint: subscription.endpoint }),
-                            });
-                            // 브라우저 구독 해제
-                            await subscription.unsubscribe();
+                        const registration = await getPushManager();
+                        if (registration) {
+                            const subscription = await registration.pushManager.getSubscription();
+                            if (subscription) {
+                                await fetch('/api/push/unsubscribe', {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ endpoint: subscription.endpoint }),
+                                });
+                                await subscription.unsubscribe();
+                            }
                         }
 
                         localStorage.removeItem(SUBSCRIBED_KEY);
@@ -351,10 +352,10 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
 
                         // 권한 요청 (필요한 경우)
                         if (Notification.permission !== 'granted') {
-                            const permission = await Notification.requestPermission();
-                            if (permission !== 'granted') {
+                            const perm = await Notification.requestPermission();
+                            if (perm !== 'granted') {
                                 statusText.textContent = '알림 권한이 거부됨';
-                                if (permission === 'denied') {
+                                if (perm === 'denied') {
                                     toggle.setAttribute('aria-checked', 'false');
                                     deniedMsg.style.display = 'block';
                                 }
@@ -362,9 +363,13 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                             }
                         }
 
-                        const registration = await swReadyWithTimeout(5000);
-                        let subscription = await registration.pushManager.getSubscription();
+                        // SW가 없으면 ready로 대기 (최초 구독 시도)
+                        let registration = await getPushManager();
+                        if (!registration) {
+                            registration = await navigator.serviceWorker.ready;
+                        }
 
+                        let subscription = await registration.pushManager.getSubscription();
                         if (!subscription) {
                             subscription = await registration.pushManager.subscribe({
                                 userVisibleOnly: true,
