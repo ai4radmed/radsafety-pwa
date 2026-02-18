@@ -68,6 +68,21 @@ test.describe('웹 푸시 인프라 검증 (비로그인)', () => {
         expect(body.error).toBeDefined();
     });
 
+    test('/api/push/subscribe 빈 body → 401 (인증 우선 검사)', async ({ request }) => {
+        const response = await request.post('/api/push/subscribe', {
+            data: {},
+        });
+        // 비로그인이므로 유효성 검사(400) 이전에 인증 검사(401)가 먼저 실행됨
+        expect(response.status()).toBe(401);
+    });
+
+    test('/api/push/unsubscribe 빈 body → 401 (인증 우선 검사)', async ({ request }) => {
+        const response = await request.delete('/api/push/unsubscribe', {
+            data: {},
+        });
+        expect(response.status()).toBe(401);
+    });
+
     test('manifest에 배지용 아이콘(128px 이상)이 포함된다', async ({ page }) => {
         const response = await page.goto('/manifest.webmanifest');
         const manifest = await response?.json();
