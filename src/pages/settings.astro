@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Icon from '../components/Icon.astro';
+const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
 ---
 
 <DashboardLayout title="설정">
@@ -38,14 +39,29 @@ import Icon from '../components/Icon.astro';
             </div>
         </div>
 
-        <div class="setting-card" style="margin-top: 1.5rem; opacity: 0.7;">
+        <div class="setting-card" style="margin-top: 1.5rem;">
             <div class="setting-header">
-                <h2>알림 설정 (준비 중)</h2>
+                <h2>알림 설정</h2>
+                <p>새로운 알림을 즉시 받아볼 수 있습니다.</p>
             </div>
             <div class="control-group">
                 <div class="toggle-row">
-                    <span>푸시 알림 받기</span>
-                    <div class="toggle-switch disabled"></div>
+                    <div>
+                        <div class="toggle-label">푸시 알림 받기</div>
+                        <div class="toggle-desc" id="pushStatusText">상태 확인 중...</div>
+                    </div>
+                    <button
+                        id="pushToggle"
+                        class="toggle-switch"
+                        role="switch"
+                        aria-checked="false"
+                        aria-label="푸시 알림 토글"></button>
+                </div>
+                <div id="pushDeniedMsg" class="denied-msg" style="display:none;">
+                    브라우저에서 알림이 차단되어 있습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.
+                </div>
+                <div id="pushUnsupportedMsg" class="denied-msg" style="display:none;">
+                    이 브라우저는 푸시 알림을 지원하지 않습니다.
                 </div>
             </div>
         </div>
@@ -145,28 +161,64 @@ import Icon from '../components/Icon.astro';
             opacity: 0.8;
         }
 
-        /* Toggle Switch Mock */
+        /* Toggle Row */
         .toggle-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+        .toggle-label {
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+        }
+        .toggle-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Toggle Switch */
         .toggle-switch {
-            width: 40px;
-            height: 24px;
+            width: 48px;
+            height: 28px;
             background: #4b5563;
             border-radius: 99px;
             position: relative;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
         }
-        .toggle-switch.disabled::after {
+        .toggle-switch::after {
             content: '';
             position: absolute;
-            left: 2px;
-            top: 2px;
-            width: 20px;
-            height: 20px;
-            background: #9ca3af;
+            left: 3px;
+            top: 3px;
+            width: 22px;
+            height: 22px;
+            background: white;
             border-radius: 50%;
+            transition: left 0.2s;
+        }
+        .toggle-switch[aria-checked='true'] {
+            background: var(--accent, #2563eb);
+        }
+        .toggle-switch[aria-checked='true']::after {
+            left: 23px;
+        }
+        .toggle-switch:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .denied-msg {
+            margin-top: 0.75rem;
+            padding: 0.6rem 0.8rem;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #ef4444;
         }
 
         @media (max-width: 600px) {
@@ -176,34 +228,161 @@ import Icon from '../components/Icon.astro';
         }
     </style>
 
-    <script>
-        document.addEventListener('astro:page-load', () => {
+    <script define:vars={{ vapidPublicKey }}>
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+        }
+
+        const SUBSCRIBED_KEY = 'push_subscribed';
+
+        document.addEventListener('astro:page-load', async () => {
+            // ── 글자 크기 ──────────────────────────────────────────
             const fontBtns = document.querySelectorAll('.font-btn');
             const currentSize = localStorage.getItem('fontSize') || 'medium';
 
-            // Initial Active State
             fontBtns.forEach((btn) => {
-                if ((btn as HTMLElement).dataset.size === currentSize) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
+                if (btn.dataset.size === currentSize) btn.classList.add('active');
+                else btn.classList.remove('active');
 
                 btn.addEventListener('click', () => {
-                    const newSize = (btn as HTMLElement).dataset.size!;
-
-                    // 1. Update Global Font Size
+                    const newSize = btn.dataset.size;
                     document.documentElement.setAttribute('data-font-size', newSize);
                     localStorage.setItem('fontSize', newSize);
-
-                    // 2. Update UI
                     fontBtns.forEach((b) => b.classList.remove('active'));
                     btn.classList.add('active');
-
-                    // 3. Update Preview Text Size (Optional, as global changes handle it)
-                    // But explicitly setting it for clarity if needed
-                    // preview.style.fontSize = getComputedStyle(document.body).fontSize;
                 });
+            });
+
+            // ── 푸시 알림 토글 ──────────────────────────────────────
+            const toggle = document.getElementById('pushToggle');
+            const statusText = document.getElementById('pushStatusText');
+            const deniedMsg = document.getElementById('pushDeniedMsg');
+            const unsupportedMsg = document.getElementById('pushUnsupportedMsg');
+
+            if (!toggle || !statusText) return;
+
+            // 브라우저 지원 확인
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                toggle.disabled = true;
+                statusText.textContent = '지원하지 않는 브라우저';
+                unsupportedMsg.style.display = 'block';
+                return;
+            }
+
+            // 현재 구독 상태 확인
+            async function checkSubscriptionState() {
+                const permission = Notification.permission;
+
+                if (permission === 'denied') {
+                    toggle.disabled = true;
+                    toggle.setAttribute('aria-checked', 'false');
+                    statusText.textContent = '알림 권한이 차단됨';
+                    deniedMsg.style.display = 'block';
+                    return;
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                const isSubscribed = !!subscription && localStorage.getItem(SUBSCRIBED_KEY) === 'true';
+
+                toggle.setAttribute('aria-checked', String(isSubscribed));
+                statusText.textContent = isSubscribed ? '알림 켜짐' : '알림 꺼짐';
+            }
+
+            await checkSubscriptionState();
+
+            // 토글 클릭 핸들러
+            toggle.addEventListener('click', async () => {
+                if (toggle.disabled) return;
+
+                const isOn = toggle.getAttribute('aria-checked') === 'true';
+
+                if (isOn) {
+                    // ── 구독 해제 ──────────────────────────────────
+                    try {
+                        toggle.disabled = true;
+                        statusText.textContent = '처리 중...';
+
+                        const registration = await navigator.serviceWorker.ready;
+                        const subscription = await registration.pushManager.getSubscription();
+
+                        if (subscription) {
+                            // 서버에서 삭제
+                            await fetch('/api/push/unsubscribe', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ endpoint: subscription.endpoint }),
+                            });
+                            // 브라우저 구독 해제
+                            await subscription.unsubscribe();
+                        }
+
+                        localStorage.removeItem(SUBSCRIBED_KEY);
+                        toggle.setAttribute('aria-checked', 'false');
+                        statusText.textContent = '알림 꺼짐';
+                    } catch (err) {
+                        console.error('구독 해제 오류:', err);
+                        statusText.textContent = '오류가 발생했습니다.';
+                    } finally {
+                        toggle.disabled = false;
+                    }
+                } else {
+                    // ── 구독 요청 ──────────────────────────────────
+                    try {
+                        toggle.disabled = true;
+                        statusText.textContent = '처리 중...';
+
+                        // 권한 요청 (필요한 경우)
+                        if (Notification.permission !== 'granted') {
+                            const permission = await Notification.requestPermission();
+                            if (permission !== 'granted') {
+                                statusText.textContent = '알림 권한이 거부됨';
+                                if (permission === 'denied') {
+                                    toggle.setAttribute('aria-checked', 'false');
+                                    deniedMsg.style.display = 'block';
+                                }
+                                return;
+                            }
+                        }
+
+                        const registration = await navigator.serviceWorker.ready;
+                        let subscription = await registration.pushManager.getSubscription();
+
+                        if (!subscription) {
+                            subscription = await registration.pushManager.subscribe({
+                                userVisibleOnly: true,
+                                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+                            });
+                        }
+
+                        const response = await fetch('/api/push/subscribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                endpoint: subscription.endpoint,
+                                p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+                                auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+                                userAgent: navigator.userAgent,
+                            }),
+                        });
+
+                        if (response.ok) {
+                            localStorage.setItem(SUBSCRIBED_KEY, 'true');
+                            toggle.setAttribute('aria-checked', 'true');
+                            statusText.textContent = '알림 켜짐';
+                        } else {
+                            statusText.textContent = '구독 저장 실패';
+                        }
+                    } catch (err) {
+                        console.error('구독 오류:', err);
+                        statusText.textContent = '오류가 발생했습니다.';
+                    } finally {
+                        toggle.disabled = false;
+                    }
+                }
             });
         });
     </script>
