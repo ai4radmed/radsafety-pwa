@@ -211,6 +211,95 @@ const { title, description, scale } = Astro.props;
             // Run on ViewTransitions navigation
             document.addEventListener('astro:after-swap', initMobileMenu);
         </script>
+        <script is:inline define:vars={{ vapidPublicKey: import.meta.env.PUBLIC_VAPID_KEY }}>
+            // urlBase64ToUint8Array은 is:inline 스크립트가 아니므로 여기에 직접 정의
+            function urlBase64ToUint8Array(base64String) {
+                const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                const rawData = atob(base64);
+                return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+            }
+
+            /**
+             * 로그인 후 자동으로 푸시 알림 구독을 시도합니다.
+             * - 이미 구독된 경우 건너뜀
+             * - 브라우저 권한이 'denied'이면 조용히 종료
+             * - VAPID 키 없으면 조용히 종료 (개발 환경)
+             * - SW 없으면 조용히 종료 (localhost 개발 서버)
+             */
+            async function autoSubscribePush() {
+                try {
+                    // VAPID 키 없으면 스킵 (개발 환경)
+                    if (!vapidPublicKey) return;
+
+                    // 브라우저 지원 확인
+                    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+                    // 이미 권한 차단됨 → 조용히 스킵
+                    if (Notification.permission === 'denied') return;
+
+                    // 이미 구독 완료 상태 → 스킵 (매번 재구독 방지)
+                    if (localStorage.getItem('push_subscribed') === 'true' && Notification.permission === 'granted')
+                        return;
+
+                    // 권한 요청 (아직 'default' 상태인 경우)
+                    if (Notification.permission !== 'granted') {
+                        const perm = await Notification.requestPermission();
+                        if (perm !== 'granted') return; // 거부 또는 무시
+                    }
+
+                    // SW registration 조회
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    if (regs.length === 0) {
+                        // SW가 없으면 ready 대기 (최대 15초)
+                        const reg = await Promise.race([
+                            navigator.serviceWorker.ready,
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('SW not found')), 15000)),
+                        ]);
+                        if (!reg) return;
+                        await doSubscribe(reg);
+                    } else {
+                        await doSubscribe(regs[0]);
+                    }
+                } catch (err) {
+                    // 자동 구독 실패는 사용자에게 노출하지 않음 (로그만 기록)
+                    console.warn('자동 푸시 구독 실패 (무시됨):', err);
+                }
+            }
+
+            async function doSubscribe(registration) {
+                let subscription = await registration.pushManager.getSubscription();
+                if (!subscription) {
+                    subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+                    });
+                }
+
+                const res = await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        endpoint: subscription.endpoint,
+                        p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+                        auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+                        userAgent: navigator.userAgent,
+                    }),
+                });
+
+                if (res.ok) {
+                    localStorage.setItem('push_subscribed', 'true');
+                    console.log('✅ 푸시 알림 자동 구독 완료');
+                } else {
+                    console.warn('자동 푸시 구독 서버 저장 실패:', res.status);
+                }
+            }
+
+            // 로그인 이벤트 수신 → 자동 구독 실행
+            document.addEventListener('user:loggedin', () => {
+                autoSubscribePush();
+            });
+        </script>
         <script>
             import { supabase } from '../lib/supabase-browser';
             import { setUser, clearUser } from '../store/user';
@@ -285,6 +374,7 @@ const { title, description, scale } = Astro.props;
                                 licenses: profile.licenses || [],
                             });
                             checkNotifications(session.user.id);
+                            document.dispatchEvent(new CustomEvent('user:loggedin'));
                         } else {
                             // Valid response but no profile row found (Critical issue)
                             console.warn(
@@ -318,6 +408,7 @@ const { title, description, scale } = Astro.props;
                                 });
                             }
                             checkNotifications(session.user.id);
+                            document.dispatchEvent(new CustomEvent('user:loggedin'));
                         }
                     } catch (err) {
                         console.error('Unexpected error fetching profile:', err);

@@ -1,7 +1,6 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Icon from '../components/Icon.astro';
-const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
 ---
 
 <DashboardLayout title="설정">
@@ -42,19 +41,18 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
         <div class="setting-card" style="margin-top: 1.5rem;">
             <div class="setting-header">
                 <h2>알림 설정</h2>
-                <p>새로운 알림을 즉시 받아볼 수 있습니다.</p>
+                <p>로그인 시 자동으로 푸시 알림이 활성화됩니다.</p>
             </div>
             <div class="control-group">
                 <div class="push-row">
                     <div class="push-info">
-                        <div class="push-label">푸시 알림 받기</div>
+                        <div class="push-label">푸시 알림</div>
                         <div class="push-status" id="pushStatusText">확인 중...</div>
                     </div>
-                    <button id="pushBtn" class="push-btn" style="display:none;">알림 켜기</button>
-                    <button id="pushOffBtn" class="push-btn push-btn--off" style="display:none;">알림 끄기</button>
                 </div>
                 <div id="pushDeniedMsg" class="push-msg push-msg--error" style="display:none;">
-                    브라우저에서 알림이 차단되어 있습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.
+                    브라우저에서 알림이 차단되어 있습니다. 브라우저 설정에서 알림 권한을 허용한 후 페이지를 새로 고침해
+                    주세요.
                 </div>
                 <div id="pushUnsupportedMsg" class="push-msg push-msg--error" style="display:none;">
                     이 브라우저는 푸시 알림을 지원하지 않습니다.
@@ -160,7 +158,6 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
         /* Push 알림 */
         .push-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             gap: 1rem;
         }
@@ -173,27 +170,9 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
             font-size: 0.85rem;
             color: var(--text-muted);
         }
-        .push-btn {
-            padding: 0.4rem 1rem;
-            font-size: 0.85rem;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
+        .push-status--on {
+            color: #16a34a;
             font-weight: 600;
-            white-space: nowrap;
-            flex-shrink: 0;
-            background: var(--accent, #2563eb);
-            color: #fff;
-            transition: opacity 0.2s;
-        }
-        .push-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .push-btn--off {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
         }
         .push-msg {
             margin-top: 0.75rem;
@@ -214,22 +193,13 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
         }
     </style>
 
-    <script define:vars={{ vapidPublicKey }}>
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = atob(base64);
-            return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-        }
-
-        const SUBSCRIBED_KEY = 'push_subscribed';
-
-        document.addEventListener('astro:page-load', async () => {
+    <script>
+        document.addEventListener('astro:page-load', () => {
             // ── 글자 크기 ──────────────────────────────────────────
             const fontBtns = document.querySelectorAll('.font-btn');
             const currentSize = localStorage.getItem('fontSize') || 'medium';
 
-            fontBtns.forEach((btn) => {
+            fontBtns.forEach((btn: any) => {
                 if (btn.dataset.size === currentSize) btn.classList.add('active');
                 else btn.classList.remove('active');
 
@@ -242,156 +212,31 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                 });
             });
 
-            // ── 푸시 알림 ──────────────────────────────────────────
+            // ── 푸시 알림 상태 표시 (읽기 전용) ──────────────────
             const statusText = document.getElementById('pushStatusText');
-            const pushBtn = document.getElementById('pushBtn');
-            const pushOffBtn = document.getElementById('pushOffBtn');
             const deniedMsg = document.getElementById('pushDeniedMsg');
             const unsupportedMsg = document.getElementById('pushUnsupportedMsg');
 
-            if (!statusText || !pushBtn || !pushOffBtn) return;
+            if (!statusText) return;
 
-            // 브라우저 지원 확인
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 statusText.textContent = '지원하지 않는 브라우저';
-                unsupportedMsg.style.display = 'block';
+                if (unsupportedMsg) unsupportedMsg.style.display = 'block';
                 return;
             }
 
-            // UI 상태 설정 헬퍼
-            function setSubscribed(on) {
-                pushBtn.style.display = on ? 'none' : 'inline-block';
-                pushOffBtn.style.display = on ? 'inline-block' : 'none';
-                statusText.textContent = on ? '알림 켜짐' : '알림 꺼짐';
-            }
-
-            function setLoading(msg) {
-                pushBtn.style.display = 'none';
-                pushOffBtn.style.display = 'none';
-                statusText.textContent = msg;
-            }
-
-            // localhost(개발 서버)에서는 SW가 작동하지 않으므로 버튼 비활성화
-            const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-            if (isLocalhost) {
-                statusText.textContent = '앱 설치 후 사용 가능';
-                return;
-            }
-
-            // 초기 상태 확인 — localStorage만 참조 (SW 대기 없음, UX 지연 없음)
-            const cachedOn = localStorage.getItem(SUBSCRIBED_KEY) === 'true' && Notification.permission === 'granted';
-
-            if (Notification.permission === 'denied') {
-                statusText.textContent = '알림 권한이 차단됨';
-                deniedMsg.style.display = 'block';
+            const perm = Notification.permission;
+            if (perm === 'denied') {
+                statusText.textContent = '차단됨 — 브라우저 설정에서 허용 필요';
+                if (deniedMsg) deniedMsg.style.display = 'block';
+            } else if (perm === 'granted' && localStorage.getItem('push_subscribed') === 'true') {
+                statusText.textContent = '활성화됨';
+                statusText.classList.add('push-status--on');
+            } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                statusText.textContent = '앱 설치 후 자동 활성화';
             } else {
-                setSubscribed(cachedOn);
+                statusText.textContent = '로그인 시 자동 활성화';
             }
-
-            // ── 알림 켜기 버튼 ──────────────────────────────────
-            pushBtn.addEventListener('click', async () => {
-                setLoading('처리 중...');
-                pushBtn.disabled = true;
-                try {
-                    // 권한 요청
-                    if (Notification.permission !== 'granted') {
-                        const perm = await Notification.requestPermission();
-                        if (perm === 'denied') {
-                            statusText.textContent = '알림 권한이 차단됨';
-                            deniedMsg.style.display = 'block';
-                            throw new Error('perm_denied');
-                        }
-                        if (perm !== 'granted') {
-                            setSubscribed(false);
-                            throw new Error('perm_dismissed');
-                        }
-                    }
-
-                    // SW registration 확보
-                    // getRegistrations()로 모든 SW를 조회하여 첫 번째 유효한 것을 사용.
-                    // serviceWorker.ready는 active 상태만 기다려 waiting SW가 있으면 영원히 block됨.
-                    // pushManager는 registration 객체에 붙어 있으므로 active 여부와 무관하게 사용 가능.
-                    async function getRegistration() {
-                        // 이미 등록된 SW 조회 (즉시 반환)
-                        const regs = await navigator.serviceWorker.getRegistrations();
-                        if (regs.length > 0) return regs[0];
-
-                        // 등록된 SW가 없으면 최대 10초 대기
-                        return Promise.race([
-                            navigator.serviceWorker.ready,
-                            new Promise((_, reject) =>
-                                setTimeout(() => reject(new Error('SW를 찾을 수 없습니다.')), 10000),
-                            ),
-                        ]);
-                    }
-
-                    const registration = await getRegistration();
-                    if (!registration) throw new Error('SW를 찾을 수 없습니다.');
-
-                    let subscription = await registration.pushManager.getSubscription();
-                    if (!subscription) {
-                        subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-                        });
-                    }
-
-                    const res = await fetch('/api/push/subscribe', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            endpoint: subscription.endpoint,
-                            p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
-                            auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
-                            userAgent: navigator.userAgent,
-                        }),
-                    });
-
-                    if (res.ok) {
-                        localStorage.setItem(SUBSCRIBED_KEY, 'true');
-                        setSubscribed(true);
-                    } else {
-                        statusText.textContent = '구독 저장 실패. 다시 시도해 주세요.';
-                        pushBtn.style.display = 'inline-block';
-                    }
-                } catch (err) {
-                    if (!['perm_denied', 'perm_dismissed'].includes(err.message)) {
-                        console.error('구독 오류:', err);
-                        statusText.textContent = '오류가 발생했습니다. 다시 시도해 주세요.';
-                        pushBtn.style.display = 'inline-block';
-                    }
-                } finally {
-                    pushBtn.disabled = false;
-                }
-            });
-
-            // ── 알림 끄기 버튼 ──────────────────────────────────
-            pushOffBtn.addEventListener('click', async () => {
-                setLoading('처리 중...');
-                pushOffBtn.disabled = true;
-                try {
-                    const reg = await navigator.serviceWorker.getRegistration('/');
-                    if (reg) {
-                        const subscription = await reg.pushManager.getSubscription();
-                        if (subscription) {
-                            await fetch('/api/push/unsubscribe', {
-                                method: 'DELETE',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ endpoint: subscription.endpoint }),
-                            });
-                            await subscription.unsubscribe();
-                        }
-                    }
-                    localStorage.removeItem(SUBSCRIBED_KEY);
-                    setSubscribed(false);
-                } catch (err) {
-                    console.error('구독 해제 오류:', err);
-                    statusText.textContent = '오류가 발생했습니다. 다시 시도해 주세요.';
-                    pushOffBtn.style.display = 'inline-block';
-                } finally {
-                    pushOffBtn.disabled = false;
-                }
-            });
         });
     </script>
 </DashboardLayout>

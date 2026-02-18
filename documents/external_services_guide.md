@@ -374,27 +374,28 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 
 **관련 설정**: Vercel(2-2 VAPID 키), Supabase(`push_subscriptions` 테이블)
 
-> **참고**: 푸시 알림 구독 관리는 `/settings` 페이지의 "알림 설정" 토글에서 합니다.
-> 개발 서버(`astro dev`)에서는 SW가 미등록 상태로 "앱 설치 후 사용 가능"이 표시되며 정상입니다.
+> **참고**: 푸시 알림은 로그인 시 `DashboardLayout.astro`에서 자동으로 구독을 시도합니다.
+> 사용자에게는 최초 1회 브라우저 권한 팝업이 표시되며, 허용하면 이후 자동으로 구독됩니다.
+> 구독 상태는 `/settings` 페이지의 "알림 설정" 카드에서 확인할 수 있습니다.
+> 개발 서버(`astro dev`)에서는 SW가 미등록 상태로 "앱 설치 후 자동 활성화"가 표시되며 정상입니다.
 > 반드시 배포(Vercel Preview 또는 Production)에서 테스트하세요.
 
-| #   | 절차                                   | 예상 결과                                    |
-| --- | -------------------------------------- | -------------------------------------------- |
-| 1   | 로그인 후 `/settings` 접속             | 알림 설정 카드에 토글 표시, "알림 꺼짐" 상태 |
-| 2   | 토글 클릭                              | 브라우저 권한 허용 팝업 표시                 |
-| 3   | 권한 허용                              | 토글 ON(파란색), 상태 "알림 켜짐"            |
-| 4   | 토글 다시 클릭                         | 토글 OFF(회색), 상태 "알림 꺼짐"             |
-| 5   | 관리자가 알림 발송 또는 인증 승인/거부 | 기기 상단에 푸시 알림 팝업 표시              |
-| 6   | 알림 탭                                | 앱 열림 + 해당 페이지로 이동                 |
+| #   | 절차                                   | 예상 결과                                         |
+| --- | -------------------------------------- | ------------------------------------------------- |
+| 1   | 배포 환경에서 로그인                   | 브라우저 알림 권한 팝업 자동 표시                 |
+| 2   | 권한 허용                              | `/settings` → 알림 설정에 "활성화됨" 표시         |
+| 3   | 관리자가 알림 발송 또는 인증 승인/거부 | 기기 상단에 푸시 알림 팝업 표시                   |
+| 4   | 알림 탭                                | 앱 열림 + 해당 페이지로 이동                      |
+| 5   | (선택) 권한 차단 후 재방문             | `/settings` 알림 설정에 "차단됨" + 허용 안내 표시 |
 
 **실패 시 확인 순서**:
 
 1. Vercel 환경 변수에 `PUBLIC_VAPID_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` 설정 여부 확인
 2. Supabase에 `push_subscriptions` 테이블 존재 여부 확인 → `rebuild_all_tables.sql` 재실행
 3. 브라우저 설정 > 알림에서 해당 사이트의 알림이 "허용"인지 확인
-4. 토글 클릭 후 "오류가 발생했습니다" 표시 시 → 브라우저 콘솔 및 Vercel 로그 확인
+4. 브라우저 콘솔에서 `자동 푸시 구독 실패` 경고 메시지 확인 → 원인 파악
 5. iOS Safari의 경우 홈 화면에 PWA로 설치되어 있어야 함 (Safari 직접 접속 시 푸시 미지원)
-6. Vercel 함수 로그에서 `push-subscribe`, `push-unsubscribe` 모듈의 에러 확인
+6. Vercel 함수 로그에서 `push-subscribe` 모듈의 에러 확인
 
 ### 2-6. 의견 보내기
 
@@ -414,24 +415,25 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 
 어떤 서비스 설정을 변경하면 어떤 검증이 필요한지 빠르게 찾기 위한 참조표입니다.
 
-| 변경한 설정                              | 재검증 필요 항목 |
-| ---------------------------------------- | ---------------- |
-| Supabase Site URL / Redirect URLs        | 2-1, 2-2         |
-| Supabase Email Template                  | 2-2              |
-| Supabase Kakao Provider                  | 2-1              |
-| Supabase SQL (RPC, RLS)                  | 2-5, 2-6         |
-| Vercel Domain                            | 2-1, 2-2, 2-3    |
-| Vercel 환경 변수                         | 2-1, 2-2, 2-4    |
-| Cloudflare DNS                           | 2-3, 2-4         |
-| Cloudflare SSL                           | 2-3              |
-| 카카오 앱 설정                           | 2-1              |
-| Resend API Key / Domain                  | 2-4              |
-| 코드: `pages/auth/*`                     | 2-1, 2-2         |
-| 코드: `lib/email.ts`                     | 2-4, 2-6         |
-| 코드: `rebuild_all_tables.sql`           | 2-5, 2-6         |
-| Vercel VAPID 환경 변수                   | 2-7              |
-| 코드: `lib/push.ts`                      | 2-7              |
-| 코드: `public/sw-push.js`                | 2-7              |
-| 코드: `pages/api/push/subscribe.ts`      | 2-7              |
-| 코드: `pages/api/push/unsubscribe.ts`    | 2-7              |
-| 코드: `pages/settings.astro` (알림 토글) | 2-7              |
+| 변경한 설정                                       | 재검증 필요 항목 |
+| ------------------------------------------------- | ---------------- |
+| Supabase Site URL / Redirect URLs                 | 2-1, 2-2         |
+| Supabase Email Template                           | 2-2              |
+| Supabase Kakao Provider                           | 2-1              |
+| Supabase SQL (RPC, RLS)                           | 2-5, 2-6         |
+| Vercel Domain                                     | 2-1, 2-2, 2-3    |
+| Vercel 환경 변수                                  | 2-1, 2-2, 2-4    |
+| Cloudflare DNS                                    | 2-3, 2-4         |
+| Cloudflare SSL                                    | 2-3              |
+| 카카오 앱 설정                                    | 2-1              |
+| Resend API Key / Domain                           | 2-4              |
+| 코드: `pages/auth/*`                              | 2-1, 2-2         |
+| 코드: `lib/email.ts`                              | 2-4, 2-6         |
+| 코드: `rebuild_all_tables.sql`                    | 2-5, 2-6         |
+| Vercel VAPID 환경 변수                            | 2-7              |
+| 코드: `lib/push.ts`                               | 2-7              |
+| 코드: `public/sw-push.js`                         | 2-7              |
+| 코드: `pages/api/push/subscribe.ts`               | 2-7              |
+| 코드: `pages/api/push/unsubscribe.ts`             | 2-7              |
+| 코드: `layouts/DashboardLayout.astro` (자동 구독) | 2-7              |
+| 코드: `pages/settings.astro` (알림 상태 표시)     | 2-7              |
