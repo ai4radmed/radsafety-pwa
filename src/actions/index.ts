@@ -4,6 +4,7 @@ import { supabaseAnon, supabaseAdmin } from '../lib/supabase-server';
 import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
 import { ADMIN_EMAILS } from '../config/auth';
 import { createLogger } from '../lib/logger';
+import { sendPushToUsers } from '../lib/push';
 
 const logger = createLogger('actions');
 
@@ -258,6 +259,15 @@ export const server = {
                 const { error: insertError } = await supabaseAdmin.from('notifications').insert(notifications);
 
                 if (insertError) throw insertError;
+
+                // 웹 푸시 발송 (실패해도 알림 생성은 완료된 것으로 처리)
+                const userIds = users.map((u) => u.id);
+                sendPushToUsers(userIds, {
+                    title: input.title,
+                    body: input.message,
+                    url: input.link || '/notifications',
+                    tag: 'admin_message',
+                }).catch((err) => logger.error('관리자 웹 푸시 발송 오류', { err }));
 
                 return {
                     success: true,

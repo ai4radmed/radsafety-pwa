@@ -24,7 +24,7 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `id`                        | `uuid` (PK) | `auth.users.id` 참조 (외래키)                                                                   |          |
 | `nickname`                  | `text`      | 카카오 닉네임 (표시용)                                                                          |          |
 | `login_email`               | `text`      | 로그인 이메일 (auth.users.email 복사본)                                                         |          |
-| `provider`                  | `text`      | 로그인 제공자 (`kakao`, `email` 등)                                                             |          |
+| ~~`provider`~~              | ~~`text`~~  | ~~로그인 제공자 (`kakao`, `email` 등)~~ **실제 DB에 존재하지 않음 (문서 오류)**                 |          |
 | `created_at`                | `timestamp` | 프로필 생성 일시 (앱 가입일)                                                                    | `now()`  |
 | `is_admin`                  | `boolean`   | 관리자 여부                                                                                     | `false`  |
 | `verification_status`       | `text`      | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료) | `'none'` |
@@ -153,7 +153,24 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 > **Note**: 학회 이메일 인증 시 사용되며, 10분 후 자동 만료됩니다.
 
-### 8. `glossary_terms`
+### 8. `push_subscriptions`
+
+웹 푸시 알림 구독 정보를 저장합니다.
+
+| 필드명       | 타입          | 설명                                    | 기본값              |
+| :----------- | :------------ | :-------------------------------------- | :------------------ |
+| `id`         | `uuid` (PK)   | 고유 식별자                             | `gen_random_uuid()` |
+| `user_id`    | `uuid` (FK)   | 사용자 ID (`profiles.id` 참조, CASCADE) |                     |
+| `endpoint`   | `text` (UQ)   | 브라우저 푸시 서비스 URL (기기별 고유)  |                     |
+| `p256dh`     | `text`        | 공개키 (암호화용)                       |                     |
+| `auth`       | `text`        | 인증 시크릿                             |                     |
+| `user_agent` | `text`        | 구독한 기기 UA (디버깅용, 선택적)       |                     |
+| `created_at` | `timestamptz` | 생성 일시                               | `now()`             |
+| `updated_at` | `timestamptz` | 갱신 일시 (트리거 자동 갱신)            | `now()`             |
+
+> **Note**: 같은 `endpoint`(기기)로 중복 구독 시 `upsert`로 처리합니다. 사용자 탈퇴 시 `CASCADE`로 자동 삭제됩니다.
+
+### 10. `glossary_terms`
 
 법령용어사전의 용어 데이터를 저장합니다.
 
@@ -193,6 +210,25 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 - 신규 환경 세팅: SQL Editor에서 `rebuild_all_tables.sql` 실행
 - 기존 환경 업데이트: 동일 스크립트 재실행 (기존 데이터 자동 보존)
 - 전체 초기화: Supabase Dashboard에서 테이블 수동 삭제 후 재실행
+
+### 스크립트 구성 (섹션별)
+
+| 섹션          | 내용                                                       |
+| ------------- | ---------------------------------------------------------- |
+| 1             | `profiles` 컬럼 추가 (email_verified, verification_method) |
+| 2             | `email_verification_codes` 테이블                          |
+| 3             | 인증 상태 마이그레이션 (admin → verified)                  |
+| 4             | 기존 데이터 업데이트                                       |
+| 5             | 코멘트                                                     |
+| 6             | 검증 요약 출력                                             |
+| 7             | `verification_requests` 컬럼 추가                          |
+| 8             | `notifications` 컬럼 추가                                  |
+| 9             | `notifications` 인덱스/코멘트                              |
+| 10            | `glossary_terms` 테이블                                    |
+| 11 (구 7)     | `feedback` 테이블 + Storage 버킷                           |
+| 12 (구 10)    | RPC Functions (`delete_own_account`)                       |
+| **13 (신규)** | **`push_subscriptions` 테이블 (웹 푸시)**                  |
+| **14 (신규)** | **테스트 계정 초기 profiles 설정**                         |
 
 ## SQL 조회 쿼리 참고
 

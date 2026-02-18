@@ -1,10 +1,12 @@
 -- ==============================================================================
 -- Master Database Schema: Safe Migration Script (데이터 보존)
 -- Description: 기존 데이터를 유지하면서 스키마 변경 적용
--- Version: 2.3 (멱등성 보장 + glossary_terms + delete_own_account RPC)
+-- Version: 2.4 (push_subscriptions 테이블 추가 + 테스트 계정 초기 설정 통합)
 -- Usage: Supabase SQL Editor에서 실행 (반복 실행 가능)
 --
 -- 변경 이력:
+-- - 2026-02-18: push_subscriptions 테이블 추가 (웹 푸시 알림 구독 정보)
+-- - 2026-02-18: 테스트 계정 초기 profiles 설정 SQL 통합 (11번 섹션)
 -- - 2026-02-16: delete_own_account() RPC 함수 추가 (회원 탈퇴)
 -- - 2026-02-16: 모든 CREATE POLICY를 IF NOT EXISTS로 래핑 (멱등성 보장)
 -- - 2026-02-16: glossary_terms 테이블 추가 (법령용어사전)
@@ -447,7 +449,6 @@ CREATE TABLE IF NOT EXISTS public.glossary_terms (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     term text NOT NULL,
     definition text NOT NULL,
-    category text,
     sort_order integer DEFAULT 0,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
@@ -486,31 +487,27 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_glossary_terms_sort_order
     ON public.glossary_terms(sort_order);
 
-CREATE INDEX IF NOT EXISTS idx_glossary_terms_category
-    ON public.glossary_terms(category);
-
 -- Seed data (기존 정적 데이터 이관, 중복 삽입 방지)
-INSERT INTO public.glossary_terms (term, definition, category, sort_order)
+INSERT INTO public.glossary_terms (term, definition, sort_order)
 SELECT * FROM (VALUES
-    ('허가사용자', '원자력안전법 제53조에 따라 허가를 받고 방사성동위원소 또는 방사선발생장치를 생산, 판매, 사용 또는 이동사용하는 자를 말합니다.', '인물/자격', 1),
-    ('신고사용자', '밀봉된 방사성동위원소 또는 방사선발생장치로서 방사선량이 적은 것을 사용하기 위해 법 제53조제2항에 따라 신고를 한 자를 말합니다.', '인물/자격', 2),
-    ('방사선안전관리자', '방사선 안전관리에 관한 기술적인 사항을 관리·감독하고, 방사선재해 방지를 위해 선임된 사람으로 원자력 관계 면허를 소지한 자입니다.', '인물/자격', 3),
-    ('수시출입자', '방사선관리구역에 청소, 시설관리 등의 업무상 출입하는 사람(방사선작업종사자 제외)으로서 안전관리자의 안내에 따르는 사람을 말합니다.', '인물/자격', 4),
-    ('방사선작업종사자', '방사선관리구역에서 방사선 이용 시설의 운전, 조작, 점검, 보수 등 방사선 피폭 우려가 있는 업무에 종사하는 사람입니다.', '인물/자격', 5),
-    ('방사선관리구역', '외부방사선량률, 공기중 방사성물질의 농도 또는 방사성물질로 오염된 표면의 오염도가 원자력안전위원회규칙으로 정하는 값을 초과할 우려가 있는 곳으로, 방사선 방호를 위해 사람의 출입이 관리되는 구역입니다.', '장소/시설', 6),
-    ('자체처분', '방사성폐기물 중 방사능 농도가 법적 허용기준 미만인 경우, 원자력안전위원회의 규정에 따라 일반 폐기물로 소각, 매립, 재활용하여 처분하는 절차입니다.', '폐기물', 7),
-    ('표면오염도', '물체 또는 인체의 표면에 묻어 있는 방사성물질의 양을 면적당 방사능(Bq/cm²)으로 나타낸 값입니다.', '측정', 8),
-    ('공간선량률', '특정 공간에서의 방사선의 세기를 나타내는 단위로, 보통 시간당 마이크로시버트(μSv/h)를 사용합니다.', '측정', 9),
-    ('선임', '방사선안전관리자 등 법적 자격 요건을 갖춘 자를 해당 직무 수행자로 지정하여 원자력안전위원회(또는 한국원자력안전기술원)에 보고하는 행위입니다.', '행정', 10),
-    ('정기검사', '허가사용자가 허가받은 사항대로 시설을 운영하고 있는지, 안전관리 규정을 준수하고 있는지 매년(또는 주기적으로) 확인하는 법정 검사입니다.', '행정', 11)
-) AS v(term, definition, category, sort_order)
+    ('허가사용자', '원자력안전법 제53조에 따라 허가를 받고 방사성동위원소 또는 방사선발생장치를 생산, 판매, 사용 또는 이동사용하는 자를 말합니다.', 1),
+    ('신고사용자', '밀봉된 방사성동위원소 또는 방사선발생장치로서 방사선량이 적은 것을 사용하기 위해 법 제53조제2항에 따라 신고를 한 자를 말합니다.', 2),
+    ('방사선안전관리자', '방사선 안전관리에 관한 기술적인 사항을 관리·감독하고, 방사선재해 방지를 위해 선임된 사람으로 원자력 관계 면허를 소지한 자입니다.', 3),
+    ('수시출입자', '방사선관리구역에 청소, 시설관리 등의 업무상 출입하는 사람(방사선작업종사자 제외)으로서 안전관리자의 안내에 따르는 사람을 말합니다.', 4),
+    ('방사선작업종사자', '방사선관리구역에서 방사선 이용 시설의 운전, 조작, 점검, 보수 등 방사선 피폭 우려가 있는 업무에 종사하는 사람입니다.', 5),
+    ('방사선관리구역', '외부방사선량률, 공기중 방사성물질의 농도 또는 방사성물질로 오염된 표면의 오염도가 원자력안전위원회규칙으로 정하는 값을 초과할 우려가 있는 곳으로, 방사선 방호를 위해 사람의 출입이 관리되는 구역입니다.', 6),
+    ('자체처분', '방사성폐기물 중 방사능 농도가 법적 허용기준 미만인 경우, 원자력안전위원회의 규정에 따라 일반 폐기물로 소각, 매립, 재활용하여 처분하는 절차입니다.', 7),
+    ('표면오염도', '물체 또는 인체의 표면에 묻어 있는 방사성물질의 양을 면적당 방사능(Bq/cm²)으로 나타낸 값입니다.', 8),
+    ('공간선량률', '특정 공간에서의 방사선의 세기를 나타내는 단위로, 보통 시간당 마이크로시버트(μSv/h)를 사용합니다.', 9),
+    ('선임', '방사선안전관리자 등 법적 자격 요건을 갖춘 자를 해당 직무 수행자로 지정하여 원자력안전위원회(또는 한국원자력안전기술원)에 보고하는 행위입니다.', 10),
+    ('정기검사', '허가사용자가 허가받은 사항대로 시설을 운영하고 있는지, 안전관리 규정을 준수하고 있는지 매년(또는 주기적으로) 확인하는 법정 검사입니다.', 11)
+) AS v(term, definition, sort_order)
 WHERE NOT EXISTS (SELECT 1 FROM public.glossary_terms LIMIT 1);
 
 -- Comments
 COMMENT ON TABLE public.glossary_terms IS '법령용어사전 용어 저장';
 COMMENT ON COLUMN public.glossary_terms.term IS '용어명';
 COMMENT ON COLUMN public.glossary_terms.definition IS '용어 정의';
-COMMENT ON COLUMN public.glossary_terms.category IS '용어 분류 (인물/자격, 장소/시설, 측정 등)';
 COMMENT ON COLUMN public.glossary_terms.sort_order IS '표시 순서';
 
 -- ============================================================
@@ -695,3 +692,123 @@ BEGIN
   DELETE FROM auth.users WHERE id = auth.uid();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- 11. push_subscriptions (웹 푸시 알림 구독 정보)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- 같은 기기(endpoint)에 중복 구독 방지
+    CONSTRAINT unique_push_endpoint UNIQUE (endpoint)
+);
+
+-- updated_at 자동 갱신 트리거
+CREATE OR REPLACE FUNCTION update_push_subscriptions_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'push_subscriptions_updated_at'
+    ) THEN
+        CREATE TRIGGER push_subscriptions_updated_at
+            BEFORE UPDATE ON public.push_subscriptions
+            FOR EACH ROW EXECUTE FUNCTION update_push_subscriptions_updated_at();
+    END IF;
+END $$;
+
+-- RLS 활성화
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- 본인 구독만 삽입/조회/삭제 허용
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'push_subscriptions' AND policyname = 'users can manage own subscriptions'
+    ) THEN
+        CREATE POLICY "users can manage own subscriptions"
+        ON public.push_subscriptions
+        FOR ALL
+        TO authenticated
+        USING (auth.uid() = user_id)
+        WITH CHECK (auth.uid() = user_id);
+    END IF;
+
+    -- service_role(서버)은 모든 구독 조회 가능 (푸시 발송 시 필요)
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'push_subscriptions' AND policyname = 'service role can read all subscriptions'
+    ) THEN
+        CREATE POLICY "service role can read all subscriptions"
+        ON public.push_subscriptions
+        FOR SELECT
+        TO service_role
+        USING (true);
+    END IF;
+END $$;
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON public.push_subscriptions(user_id);
+
+-- 코멘트
+COMMENT ON TABLE public.push_subscriptions IS '웹 푸시 알림 구독 정보 (endpoint, VAPID 키)';
+COMMENT ON COLUMN public.push_subscriptions.endpoint IS '브라우저 푸시 서비스 URL (기기별 고유)';
+COMMENT ON COLUMN public.push_subscriptions.p256dh IS '공개키 (암호화용)';
+COMMENT ON COLUMN public.push_subscriptions.auth IS '인증 시크릿';
+COMMENT ON COLUMN public.push_subscriptions.user_agent IS '구독한 기기 UA (디버깅용)';
+
+-- ============================================================
+-- 12. 개발용 테스트 계정 초기 profiles 설정
+-- ============================================================
+-- 목적: 테스트 계정(test-user@radsafety.kr, test-admin@radsafety.kr)의
+--       profiles 행을 올바른 상태로 설정합니다.
+--
+-- 실행 조건: 테스트 계정으로 최소 1회 로그인 후 profiles 행이 생성된 상태에서 실행
+-- 환경: 로컬/Preview 전용 (Production에는 해당 계정이 존재하지 않으므로 영향 없음)
+-- ============================================================
+
+DO $$
+DECLARE
+    user_count int;
+    admin_count int;
+BEGIN
+    -- 일반 테스트 사용자 설정
+    UPDATE public.profiles
+    SET verification_status = 'verified',
+        nickname = '테스트유저',
+        email_verified = true,
+        verification_method = 'login_email'
+    WHERE login_email = 'test-user@radsafety.kr';
+    GET DIAGNOSTICS user_count = ROW_COUNT;
+
+    -- 관리자 테스트 계정 설정
+    UPDATE public.profiles
+    SET verification_status = 'verified',
+        nickname = '테스트관리자',
+        is_admin = true,
+        email_verified = true,
+        verification_method = 'login_email'
+    WHERE login_email = 'test-admin@radsafety.kr';
+    GET DIAGNOSTICS admin_count = ROW_COUNT;
+
+    IF user_count > 0 OR admin_count > 0 THEN
+        RAISE NOTICE '✓ 테스트 계정 profiles 설정 완료 (user: %, admin: %)', user_count, admin_count;
+    ELSE
+        RAISE NOTICE '- 테스트 계정 profiles 없음 (로그인 전이거나 Production 환경)';
+    END IF;
+END $$;

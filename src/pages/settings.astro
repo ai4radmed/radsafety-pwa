@@ -38,14 +38,31 @@ import Icon from '../components/Icon.astro';
             </div>
         </div>
 
-        <div class="setting-card" style="margin-top: 1.5rem; opacity: 0.7;">
+        <div class="setting-card" style="margin-top: 1.5rem;">
             <div class="setting-header">
-                <h2>알림 설정 (준비 중)</h2>
+                <h2>알림 설정</h2>
+                <p>
+                    켜면 새 알림이 있을 때 스마트폰 상단에 알림이 표시되고, 홈 화면 앱 아이콘에 읽지 않은 알림 수가
+                    표시됩니다.
+                </p>
             </div>
             <div class="control-group">
-                <div class="toggle-row">
-                    <span>푸시 알림 받기</span>
-                    <div class="toggle-switch disabled"></div>
+                <div class="push-row">
+                    <div class="push-info">
+                        <div class="push-label">푸시 알림</div>
+                        <div class="push-status" id="pushStatusText">확인 중...</div>
+                    </div>
+                    <label class="switch" for="pushToggle">
+                        <input type="checkbox" id="pushToggle" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="pushDeniedMsg" class="push-msg push-msg--error" style="display:none;">
+                    브라우저에서 알림이 차단되어 있습니다. 브라우저 설정에서 알림 권한을 허용한 후 페이지를 새로 고침해
+                    주세요.
+                </div>
+                <div id="pushUnsupportedMsg" class="push-msg push-msg--error" style="display:none;">
+                    이 브라우저는 푸시 알림을 지원하지 않습니다.
                 </div>
             </div>
         </div>
@@ -145,28 +162,83 @@ import Icon from '../components/Icon.astro';
             opacity: 0.8;
         }
 
-        /* Toggle Switch Mock */
-        .toggle-row {
+        /* Push 알림 */
+        .push-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
         }
-        .toggle-switch {
-            width: 40px;
-            height: 24px;
-            background: #4b5563;
-            border-radius: 99px;
+        .switch {
             position: relative;
+            display: inline-block;
+            width: 3rem;
+            height: 1.625rem;
+            flex-shrink: 0;
         }
-        .toggle-switch.disabled::after {
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #ccc;
+            border-radius: 999px;
+            transition:
+                background 0.25s,
+                box-shadow 0.25s;
+        }
+        .slider::before {
             content: '';
             position: absolute;
-            left: 2px;
-            top: 2px;
-            width: 20px;
-            height: 20px;
-            background: #9ca3af;
+            left: 3px;
+            bottom: 3px;
+            width: 1.125rem;
+            height: 1.125rem;
+            background: #fff;
             border-radius: 50%;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .switch input:checked + .slider {
+            background: var(--accent);
+        }
+        .switch input:checked + .slider::before {
+            transform: translateX(1.375rem);
+        }
+        .switch input:focus-visible + .slider {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+        }
+        .switch input:disabled + .slider {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .push-label {
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+        }
+        .push-status {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .push-status--on {
+            color: #16a34a;
+            font-weight: 600;
+        }
+        .push-msg {
+            margin-top: 0.75rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .push-msg--error {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
         }
 
         @media (max-width: 600px) {
@@ -178,32 +250,161 @@ import Icon from '../components/Icon.astro';
 
     <script>
         document.addEventListener('astro:page-load', () => {
+            // ── 글자 크기 ──────────────────────────────────────────
             const fontBtns = document.querySelectorAll('.font-btn');
             const currentSize = localStorage.getItem('fontSize') || 'medium';
 
-            // Initial Active State
-            fontBtns.forEach((btn) => {
-                if ((btn as HTMLElement).dataset.size === currentSize) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
+            fontBtns.forEach((btn: any) => {
+                if (btn.dataset.size === currentSize) btn.classList.add('active');
+                else btn.classList.remove('active');
 
                 btn.addEventListener('click', () => {
-                    const newSize = (btn as HTMLElement).dataset.size!;
-
-                    // 1. Update Global Font Size
+                    const newSize = btn.dataset.size;
                     document.documentElement.setAttribute('data-font-size', newSize);
                     localStorage.setItem('fontSize', newSize);
-
-                    // 2. Update UI
                     fontBtns.forEach((b) => b.classList.remove('active'));
                     btn.classList.add('active');
-
-                    // 3. Update Preview Text Size (Optional, as global changes handle it)
-                    // But explicitly setting it for clarity if needed
-                    // preview.style.fontSize = getComputedStyle(document.body).fontSize;
                 });
+            });
+
+            // ── 푸시 알림 토글 ──────────────────────────────────
+            const pushToggle = document.getElementById('pushToggle') as HTMLInputElement | null;
+            const statusText = document.getElementById('pushStatusText');
+            const deniedMsg = document.getElementById('pushDeniedMsg');
+            const unsupportedMsg = document.getElementById('pushUnsupportedMsg');
+
+            if (!pushToggle || !statusText) return;
+
+            // 초기 상태 설정
+            if (!('serviceWorker' in navigator) || !('PushManager' in window) || !(window as any).vapidPublicKey) {
+                pushToggle.disabled = true;
+                statusText.textContent = '지원하지 않는 브라우저';
+                if (unsupportedMsg) unsupportedMsg.style.display = 'block';
+                return;
+            }
+            if (Notification.permission === 'denied') {
+                pushToggle.disabled = true;
+                statusText.textContent = '차단됨 — 브라우저 설정에서 허용 필요';
+                if (deniedMsg) deniedMsg.style.display = 'block';
+                return;
+            }
+            if (Notification.permission === 'granted' && localStorage.getItem('push_subscribed') === 'true') {
+                pushToggle.checked = true;
+                statusText.textContent = '활성화됨';
+                statusText.classList.add('push-status--on');
+            } else {
+                statusText.textContent = '알림을 받으려면 켜세요';
+            }
+
+            // 구독
+            async function subscribePush() {
+                if (!pushToggle || !statusText) return;
+                try {
+                    const perm = await Notification.requestPermission();
+                    if (perm !== 'granted') {
+                        pushToggle.checked = false;
+                        if (perm === 'denied') {
+                            pushToggle.disabled = true;
+                            statusText.textContent = '차단됨 — 브라우저 설정에서 허용 필요';
+                            statusText.classList.remove('push-status--on');
+                            if (deniedMsg) deniedMsg.style.display = 'block';
+                        } else {
+                            statusText.textContent = '알림을 받으려면 켜세요';
+                            statusText.classList.remove('push-status--on');
+                        }
+                        return;
+                    }
+
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    let reg =
+                        regs.length > 0 ? regs[0] : await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    if (!reg.active) {
+                        const sw = reg.installing || reg.waiting;
+                        if (sw) {
+                            await new Promise<void>((resolve, reject) => {
+                                const timeout = setTimeout(() => reject(new Error('SW activation timeout')), 30000);
+                                sw.addEventListener('statechange', () => {
+                                    if (sw.state === 'activated') {
+                                        clearTimeout(timeout);
+                                        resolve();
+                                    }
+                                });
+                                if (sw.state === 'activated') {
+                                    clearTimeout(timeout);
+                                    resolve();
+                                }
+                            });
+                        } else {
+                            reg = await navigator.serviceWorker.ready;
+                        }
+                    }
+
+                    let subscription = await reg.pushManager.getSubscription();
+                    if (!subscription) {
+                        subscription = await reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: (window as any).urlBase64ToUint8Array((window as any).vapidPublicKey),
+                        });
+                    }
+
+                    const res = await fetch('/api/push/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint,
+                            p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+                            auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))),
+                            userAgent: navigator.userAgent,
+                        }),
+                    });
+
+                    if (res.ok) {
+                        localStorage.setItem('push_subscribed', 'true');
+                        statusText.textContent = '활성화됨';
+                        statusText.classList.add('push-status--on');
+                    } else {
+                        pushToggle.checked = false;
+                        statusText.textContent = '구독 실패. 다시 시도해주세요';
+                        statusText.classList.remove('push-status--on');
+                    }
+                } catch (err) {
+                    console.error('푸시 구독 실패:', err);
+                    pushToggle.checked = false;
+                    statusText.textContent = '구독 실패. 다시 시도해주세요';
+                    statusText.classList.remove('push-status--on');
+                }
+            }
+
+            // 해제
+            async function unsubscribePush() {
+                if (!pushToggle || !statusText) return;
+                try {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    const reg = regs[0];
+                    if (reg) {
+                        const subscription = await reg.pushManager.getSubscription();
+                        if (subscription) {
+                            await fetch('/api/push/unsubscribe', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ endpoint: subscription.endpoint }),
+                            });
+                            await subscription.unsubscribe();
+                        }
+                    }
+                    localStorage.removeItem('push_subscribed');
+                    statusText.textContent = '알림을 받으려면 켜세요';
+                    statusText.classList.remove('push-status--on');
+                } catch (err) {
+                    console.error('푸시 구독 해제 실패:', err);
+                    pushToggle.checked = true;
+                    statusText.textContent = '해제 실패. 다시 시도해주세요';
+                }
+            }
+
+            pushToggle.addEventListener('change', () => {
+                if (pushToggle.checked) subscribePush();
+                else unsubscribePush();
             });
         });
     </script>

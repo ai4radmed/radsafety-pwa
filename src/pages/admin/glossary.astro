@@ -20,8 +20,8 @@ import Icon from '../../components/Icon.astro';
             gap: 1rem;
         }
         .page-title {
-            font-size: 1.8rem;
-            font-weight: 800;
+            font-size: 1rem;
+            font-weight: 700;
             color: var(--text-main);
             margin-bottom: 0.5rem;
             display: flex;
@@ -34,11 +34,11 @@ import Icon from '../../components/Icon.astro';
         }
 
         .btn {
-            padding: 0.65rem 1.25rem;
+            padding: 0.4rem 1rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
             display: inline-flex;
@@ -112,16 +112,6 @@ import Icon from '../../components/Icon.astro';
         }
         .term-name {
             font-weight: 700;
-        }
-        .term-category {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 99px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--bg-sidebar);
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
         }
         .term-def-preview {
             max-width: 400px;
@@ -265,14 +255,13 @@ import Icon from '../../components/Icon.astro';
                     <tr>
                         <th>순서</th>
                         <th>용어명</th>
-                        <th>카테고리</th>
                         <th>정의</th>
                         <th>관리</th>
                     </tr>
                 </thead>
                 <tbody id="glossaryTableBody">
                     <tr>
-                        <td colspan="5" class="empty-state">로딩 중...</td>
+                        <td colspan="4" class="empty-state">로딩 중...</td>
                     </tr>
                 </tbody>
             </table>
@@ -296,10 +285,6 @@ import Icon from '../../components/Icon.astro';
                     <label class="form-label" for="termDefinition">정의 *</label>
                     <textarea class="form-textarea" id="termDefinition" placeholder="용어의 정의를 입력하세요"
                     ></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="termCategory">카테고리</label>
-                    <input type="text" class="form-input" id="termCategory" placeholder="예: 인물/자격, 측정, 행정" />
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="termSortOrder">정렬 순서</label>
@@ -329,7 +314,6 @@ import Icon from '../../components/Icon.astro';
                 id: string;
                 term: string;
                 definition: string;
-                category: string | null;
                 sort_order: number;
                 created_at: string;
                 updated_at: string;
@@ -349,7 +333,6 @@ import Icon from '../../components/Icon.astro';
             const termIdInput = document.getElementById('termId') as HTMLInputElement;
             const termNameInput = document.getElementById('termName') as HTMLInputElement;
             const termDefinitionInput = document.getElementById('termDefinition') as HTMLTextAreaElement;
-            const termCategoryInput = document.getElementById('termCategory') as HTMLInputElement;
             const termSortOrderInput = document.getElementById('termSortOrder') as HTMLInputElement;
 
             // Load terms from database
@@ -366,7 +349,7 @@ import Icon from '../../components/Icon.astro';
                     if (tableBody) {
                         tableBody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="empty-state">
+                            <td colspan="4" class="empty-state">
                                 데이터를 불러오는데 실패했습니다.
                             </td>
                         </tr>
@@ -382,7 +365,7 @@ import Icon from '../../components/Icon.astro';
                 if (allTerms.length === 0) {
                     tableBody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="4" class="empty-state">
                             등록된 용어가 없습니다. "용어 추가" 버튼을 클릭하여 추가하세요.
                         </td>
                     </tr>
@@ -396,7 +379,6 @@ import Icon from '../../components/Icon.astro';
                 <tr data-id="${term.id}">
                     <td>${term.sort_order}</td>
                     <td><span class="term-name">${escapeHtml(term.term)}</span></td>
-                    <td>${term.category ? `<span class="term-category">${escapeHtml(term.category)}</span>` : '-'}</td>
                     <td><div class="term-def-preview">${escapeHtml(term.definition)}</div></td>
                     <td>
                         <div class="action-btns">
@@ -442,7 +424,6 @@ import Icon from '../../components/Icon.astro';
                 termIdInput.value = '';
                 termNameInput.value = '';
                 termDefinitionInput.value = '';
-                termCategoryInput.value = '';
                 // Set next sort_order
                 const maxOrder = allTerms.reduce((max, t) => Math.max(max, t.sort_order || 0), 0);
                 termSortOrderInput.value = String(maxOrder + 1);
@@ -457,7 +438,6 @@ import Icon from '../../components/Icon.astro';
                 termIdInput.value = term.id;
                 termNameInput.value = term.term;
                 termDefinitionInput.value = term.definition;
-                termCategoryInput.value = term.category || '';
                 termSortOrderInput.value = String(term.sort_order || 0);
                 modal?.classList.add('active');
                 termNameInput.focus();
@@ -473,7 +453,6 @@ import Icon from '../../components/Icon.astro';
             async function saveTerm() {
                 const term = termNameInput.value.trim();
                 const definition = termDefinitionInput.value.trim();
-                const category = termCategoryInput.value.trim() || null;
                 const sort_order = parseInt(termSortOrderInput.value) || 0;
 
                 if (!term || !definition) {
@@ -486,7 +465,7 @@ import Icon from '../../components/Icon.astro';
                         // Update
                         const { error } = await supabase
                             .from('glossary_terms')
-                            .update({ term, definition, category, sort_order, updated_at: new Date().toISOString() })
+                            .update({ term, definition, sort_order, updated_at: new Date().toISOString() })
                             .eq('id', editingId);
 
                         if (error) throw error;
@@ -495,7 +474,7 @@ import Icon from '../../components/Icon.astro';
                         // Insert
                         const { error } = await supabase
                             .from('glossary_terms')
-                            .insert({ term, definition, category, sort_order });
+                            .insert({ term, definition, sort_order });
 
                         if (error) throw error;
                         alert('용어가 추가되었습니다.');
