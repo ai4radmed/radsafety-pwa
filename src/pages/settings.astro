@@ -272,14 +272,14 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                 return;
             }
 
-            // 등록된 SW에서 pushManager 가져오기 (ready hang 방지)
-            // getRegistration()은 이미 등록된 SW를 즉시 반환하며 hang하지 않음
+            // 등록된 SW 조회 (최대 3초, 500ms 간격으로 재시도)
+            // registerSW.js가 window load 이후 등록하므로 약간의 대기가 필요할 수 있음
             async function getPushManager() {
-                // 이미 등록된 SW 조회
-                const registration = await navigator.serviceWorker.getRegistration('/');
-                if (registration) return registration;
-
-                // 등록된 SW가 없으면 null 반환 (구독 불가)
+                for (let i = 0; i < 6; i++) {
+                    const registration = await navigator.serviceWorker.getRegistration('/');
+                    if (registration?.active) return registration;
+                    await new Promise((r) => setTimeout(r, 500));
+                }
                 return null;
             }
 
@@ -297,8 +297,10 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
 
                 const registration = await getPushManager();
                 if (!registration) {
-                    statusText.textContent = '알림 꺼짐';
+                    // SW 미등록 = 개발 서버 또는 비PWA 환경
+                    toggle.disabled = true;
                     toggle.setAttribute('aria-checked', 'false');
+                    statusText.textContent = '앱 설치 후 사용 가능';
                     return;
                 }
 
@@ -359,14 +361,20 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                                     toggle.setAttribute('aria-checked', 'false');
                                     deniedMsg.style.display = 'block';
                                 }
-                                return;
+                                // return 대신 throw로 finally 블록 실행 보장
+                                throw new Error('permission_denied');
                             }
                         }
 
-                        // SW가 없으면 ready로 대기 (최초 구독 시도)
+                        // SW 조회 (최대 8초 대기)
                         let registration = await getPushManager();
                         if (!registration) {
-                            registration = await navigator.serviceWorker.ready;
+                            registration = await Promise.race([
+                                navigator.serviceWorker.ready,
+                                new Promise((_, reject) =>
+                                    setTimeout(() => reject(new Error('SW 등록 대기 시간 초과')), 8000),
+                                ),
+                            ]);
                         }
 
                         let subscription = await registration.pushManager.getSubscription();
@@ -396,8 +404,10 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                             statusText.textContent = '구독 저장 실패';
                         }
                     } catch (err) {
-                        console.error('구독 오류:', err);
-                        statusText.textContent = '오류가 발생했습니다.';
+                        if (err.message !== 'permission_denied') {
+                            console.error('구독 오류:', err);
+                            statusText.textContent = '오류가 발생했습니다.';
+                        }
                     } finally {
                         toggle.disabled = false;
                     }

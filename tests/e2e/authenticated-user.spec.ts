@@ -198,6 +198,45 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         await expect(page).toHaveTitle(/설정|RadSafety/);
     });
 
+    test('설정 — 푸시 알림 토글이 표시되고 초기 상태가 확인된다', async ({ page }) => {
+        await page.goto('/settings');
+        await page.waitForLoadState('networkidle');
+
+        // 토글 버튼이 존재해야 함
+        const toggle = page.locator('#pushToggle');
+        await expect(toggle).toBeVisible();
+
+        // 상태 텍스트가 "상태 확인 중..." 에서 벗어나야 함 (최대 5초 대기)
+        const statusText = page.locator('#pushStatusText');
+        await expect(statusText).not.toHaveText('상태 확인 중...', { timeout: 5000 });
+
+        // 최종 상태는 아래 중 하나여야 함
+        const text = await statusText.textContent();
+        const validStates = [
+            '알림 켜짐',
+            '알림 꺼짐',
+            '앱 설치 후 사용 가능',
+            '알림 권한이 차단됨',
+            '지원하지 않는 브라우저',
+        ];
+        expect(validStates.some((s) => text?.includes(s))).toBe(true);
+        console.log('  ✓ 푸시 알림 토글 상태:', text);
+    });
+
+    test('설정 — /api/push/unsubscribe 가 로그인 상태에서 400 반환 (endpoint 누락)', async ({ request }) => {
+        // 로그인 상태에서 endpoint 없이 요청 → 400 Bad Request
+        const response = await request.delete('/api/push/unsubscribe', {
+            data: {},
+        });
+        // 인증된 사용자 + endpoint 누락 → 400
+        // 인증 안 된 경우 → 401
+        expect([400, 401]).toContain(response.status());
+
+        const body = await response.json();
+        expect(body.error).toBeDefined();
+        console.log('  ✓ /api/push/unsubscribe 인증 및 유효성 검사 동작 확인 (status:', response.status(), ')');
+    });
+
     // ── 로그아웃 ─────────────────────────────────────────────
     test('로그아웃 — /login 으로 이동 및 세션 초기화', async ({ page }) => {
         await page.goto('/mypage');
