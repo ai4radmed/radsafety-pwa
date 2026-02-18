@@ -226,13 +226,23 @@ const { title, description, scale } = Astro.props;
             import { setUser, clearUser } from '../store/user';
             import { isAdmin } from '../config/auth';
 
-            // 세션 전환 감지 전용 리스너
-            // INITIAL_SESSION은 astro:page-load에서 getSession()으로 이미 처리하므로 건너뜀.
-            // 전환 이벤트(SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)만 처리하여 중복 실행 방지.
-            supabase.auth.onAuthStateChange(async (event, session) => {
+            // 로그아웃 감지 전용 리스너
+            // 세션 로드/프로필/알림은 astro:page-load → updateUserStore 단일 경로로만 처리.
+            // SIGNED_OUT만 여기서 처리하여 어떤 상황에서도 중복 실행 방지.
+            supabase.auth.onAuthStateChange((event, session) => {
                 console.log('Auth State Change:', event, session?.user?.email);
-                if (event === 'INITIAL_SESSION') return;
-                updateUserStore(session);
+                if (event === 'SIGNED_OUT') {
+                    clearUser();
+                    const currentPath = window.location.pathname;
+                    const publicPaths = ['/', '/login'];
+                    const isPublic = publicPaths.some(
+                        (path) => currentPath === path || (path !== '/' && currentPath.startsWith(path)),
+                    );
+                    if (!isPublic) {
+                        console.log('Unauthorized access. Redirecting to /login...');
+                        window.location.href = '/login';
+                    }
+                }
             });
 
             // Auth Check & Store Sync on every page load (supports View Transitions)
