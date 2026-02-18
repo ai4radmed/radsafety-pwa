@@ -70,15 +70,28 @@ export default defineConfig({
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
                 globIgnores: ['archive/**'],
 
-                // 오프라인 fallback: 네트워크 실패 시 /offline 반환
-                // 수검준비, 지적권고사례는 precache에 포함되어 오프라인 정상 동작
-                navigateFallback: '/offline',
-
-                // /offline 자체와 API/auth 경로는 fallback 제외
-                // - /offline: 무한 루프 방지
-                // - /api/*: API 응답을 offline 페이지로 대체하면 안 됨
-                // - /auth/*: 인증 콜백은 서버가 반드시 처리해야 함
-                navigateFallbackDenylist: [/^\/offline$/, /^\/api\//, /^\/auth\//],
+                // SSR 앱에서는 navigateFallback 사용 불가
+                // (precache에 없는 모든 navigation을 가로채므로)
+                // 대신 runtimeCaching으로 NetworkFirst → offline fallback 처리
+                runtimeCaching: [
+                    {
+                        // SSR 페이지: 네트워크 우선, 실패 시 /offline 표시
+                        urlPattern: ({ request }) => request.mode === 'navigate',
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'pages',
+                            networkTimeoutSeconds: 5,
+                            plugins: [
+                                {
+                                    // 네트워크 실패 시 오프라인 fallback
+                                    handlerDidError: async () => {
+                                        return caches.match('/offline') || Response.error();
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
 
                 // 웹 푸시 핸들러 포함 (push 이벤트, notificationclick 이벤트)
                 importScripts: ['/sw-push.js'],
