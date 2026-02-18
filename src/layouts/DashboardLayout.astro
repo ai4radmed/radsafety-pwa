@@ -229,28 +229,63 @@ const { title, description, scale } = Astro.props;
              */
             async function autoSubscribePush() {
                 try {
+                    console.log('[Push Debug] autoSubscribePush 시작');
+                    console.log(
+                        '[Push Debug] vapidPublicKey:',
+                        vapidPublicKey ? '설정됨 (' + vapidPublicKey.substring(0, 10) + '...)' : '없음',
+                    );
+                    console.log('[Push Debug] serviceWorker 지원:', 'serviceWorker' in navigator);
+                    console.log('[Push Debug] PushManager 지원:', 'PushManager' in window);
+                    console.log('[Push Debug] Notification.permission:', Notification.permission);
+                    console.log('[Push Debug] push_subscribed localStorage:', localStorage.getItem('push_subscribed'));
+
                     // VAPID 키 없으면 스킵 (개발 환경)
-                    if (!vapidPublicKey) return;
+                    if (!vapidPublicKey) {
+                        console.log('[Push Debug] VAPID 키 없음 → 스킵');
+                        return;
+                    }
 
                     // 브라우저 지원 확인
-                    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                        console.log('[Push Debug] 브라우저 미지원 → 스킵');
+                        return;
+                    }
 
                     // 이미 권한 차단됨 → 조용히 스킵
-                    if (Notification.permission === 'denied') return;
+                    if (Notification.permission === 'denied') {
+                        console.log('[Push Debug] 권한 denied → 스킵');
+                        return;
+                    }
 
                     // 이미 구독 완료 상태 → 스킵 (매번 재구독 방지)
-                    if (localStorage.getItem('push_subscribed') === 'true' && Notification.permission === 'granted')
+                    if (localStorage.getItem('push_subscribed') === 'true' && Notification.permission === 'granted') {
+                        console.log('[Push Debug] 이미 구독됨 → 스킵');
                         return;
+                    }
 
                     // 권한 요청 (아직 'default' 상태인 경우)
                     if (Notification.permission !== 'granted') {
+                        console.log('[Push Debug] 권한 요청 중...');
                         const perm = await Notification.requestPermission();
+                        console.log('[Push Debug] 권한 요청 결과:', perm);
                         if (perm !== 'granted') return; // 거부 또는 무시
                     }
 
                     // SW registration 조회
                     const regs = await navigator.serviceWorker.getRegistrations();
+                    console.log(
+                        '[Push Debug] SW registrations:',
+                        regs.length,
+                        regs.map((r) => ({
+                            scope: r.scope,
+                            active: !!r.active,
+                            installing: !!r.installing,
+                            waiting: !!r.waiting,
+                        })),
+                    );
+
                     if (regs.length === 0) {
+                        console.log('[Push Debug] SW 0개 → ready 대기 시작 (15초 타임아웃)');
                         // SW가 없으면 ready 대기 (최대 15초)
                         const reg = await Promise.race([
                             navigator.serviceWorker.ready,
@@ -259,6 +294,7 @@ const { title, description, scale } = Astro.props;
                         if (!reg) return;
                         await doSubscribe(reg);
                     } else {
+                        console.log('[Push Debug] SW 발견 → doSubscribe 호출');
                         await doSubscribe(regs[0]);
                     }
                 } catch (err) {
