@@ -72,6 +72,8 @@ export default defineConfig({
 
                 // SSR 앱에서는 navigateFallback 사용 불가
                 // (precache에 없는 모든 navigation을 가로채므로)
+                // false로 명시하여 기본 NavigationRoute 생성 방지
+                navigateFallback: null,
                 // 대신 runtimeCaching으로 NetworkFirst → offline fallback 처리
                 runtimeCaching: [
                     {
