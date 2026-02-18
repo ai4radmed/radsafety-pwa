@@ -49,7 +49,10 @@ import Icon from '../components/Icon.astro';
                         <div class="push-label">푸시 알림</div>
                         <div class="push-status" id="pushStatusText">확인 중...</div>
                     </div>
-                    <input type="checkbox" id="pushToggle" class="push-toggle" />
+                    <label class="switch" for="pushToggle">
+                        <input type="checkbox" id="pushToggle" />
+                        <span class="slider"></span>
+                    </label>
                 </div>
                 <div id="pushDeniedMsg" class="push-msg push-msg--error" style="display:none;">
                     브라우저에서 알림이 차단되어 있습니다. 브라우저 설정에서 알림 권한을 허용한 후 페이지를 새로 고침해
@@ -163,11 +166,52 @@ import Icon from '../components/Icon.astro';
             justify-content: space-between;
             gap: 1rem;
         }
-        .push-toggle {
-            width: 2.8rem;
-            height: 1.5rem;
-            accent-color: var(--accent);
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 3rem;
+            height: 1.625rem;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
             cursor: pointer;
+            inset: 0;
+            background: #ccc;
+            border-radius: 999px;
+            transition:
+                background 0.25s,
+                box-shadow 0.25s;
+        }
+        .slider::before {
+            content: '';
+            position: absolute;
+            left: 3px;
+            bottom: 3px;
+            width: 1.125rem;
+            height: 1.125rem;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .switch input:checked + .slider {
+            background: var(--accent);
+        }
+        .switch input:checked + .slider::before {
+            transform: translateX(1.375rem);
+        }
+        .switch input:focus-visible + .slider {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+        }
+        .switch input:disabled + .slider {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
         .push-label {
             font-weight: 600;
