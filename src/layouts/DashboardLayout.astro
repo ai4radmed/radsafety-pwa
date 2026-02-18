@@ -226,9 +226,12 @@ const { title, description, scale } = Astro.props;
             import { setUser, clearUser } from '../store/user';
             import { isAdmin } from '../config/auth';
 
-            // Global Auth Listener (Needs to be set once)
+            // 세션 전환 감지 전용 리스너
+            // INITIAL_SESSION은 astro:page-load에서 getSession()으로 이미 처리하므로 건너뜀.
+            // 전환 이벤트(SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)만 처리하여 중복 실행 방지.
             supabase.auth.onAuthStateChange(async (event, session) => {
                 console.log('Auth State Change:', event, session?.user?.email);
+                if (event === 'INITIAL_SESSION') return;
                 updateUserStore(session);
             });
 
