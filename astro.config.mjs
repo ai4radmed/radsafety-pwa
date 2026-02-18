@@ -65,8 +65,10 @@ export default defineConfig({
                 ],
             },
             workbox: {
-                // 빌드 산출물 전체 precache (JS/CSS/HTML/이미지)
+                // 빌드 산출물 precache (JS/CSS/HTML/이미지)
+                // archive/ 폴더는 다운로드용 정적 파일이므로 제외
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+                globIgnores: ['archive/**'],
 
                 // 오프라인 fallback: 네트워크 실패 시 /offline 반환
                 // 수검준비, 지적권고사례는 precache에 포함되어 오프라인 정상 동작
