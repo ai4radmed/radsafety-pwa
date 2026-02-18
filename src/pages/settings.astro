@@ -41,7 +41,7 @@ import Icon from '../components/Icon.astro';
         <div class="setting-card" style="margin-top: 1.5rem;">
             <div class="setting-header">
                 <h2>알림 설정</h2>
-                <p>로그인 시 자동으로 푸시 알림이 활성화됩니다.</p>
+                <p>푸시 알림을 켜면 새로운 소식을 받아볼 수 있습니다.</p>
             </div>
             <div class="control-group">
                 <div class="push-row">
@@ -49,6 +49,7 @@ import Icon from '../components/Icon.astro';
                         <div class="push-label">푸시 알림</div>
                         <div class="push-status" id="pushStatusText">확인 중...</div>
                     </div>
+                    <input type="checkbox" id="pushToggle" class="push-toggle" />
                 </div>
                 <div id="pushDeniedMsg" class="push-msg push-msg--error" style="display:none;">
                     브라우저에서 알림이 차단되어 있습니다. 브라우저 설정에서 알림 권한을 허용한 후 페이지를 새로 고침해
@@ -159,7 +160,14 @@ import Icon from '../components/Icon.astro';
         .push-row {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 1rem;
+        }
+        .push-toggle {
+            width: 2.8rem;
+            height: 1.5rem;
+            accent-color: var(--accent);
+            cursor: pointer;
         }
         .push-label {
             font-weight: 600;
@@ -212,31 +220,145 @@ import Icon from '../components/Icon.astro';
                 });
             });
 
-            // ── 푸시 알림 상태 표시 (읽기 전용) ──────────────────
+            // ── 푸시 알림 토글 ──────────────────────────────────
+            const pushToggle = document.getElementById('pushToggle') as HTMLInputElement | null;
             const statusText = document.getElementById('pushStatusText');
             const deniedMsg = document.getElementById('pushDeniedMsg');
             const unsupportedMsg = document.getElementById('pushUnsupportedMsg');
 
-            if (!statusText) return;
+            if (!pushToggle || !statusText) return;
 
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            // 초기 상태 설정
+            if (!('serviceWorker' in navigator) || !('PushManager' in window) || !(window as any).vapidPublicKey) {
+                pushToggle.disabled = true;
                 statusText.textContent = '지원하지 않는 브라우저';
                 if (unsupportedMsg) unsupportedMsg.style.display = 'block';
                 return;
             }
-
-            const perm = Notification.permission;
-            if (perm === 'denied') {
+            if (Notification.permission === 'denied') {
+                pushToggle.disabled = true;
                 statusText.textContent = '차단됨 — 브라우저 설정에서 허용 필요';
                 if (deniedMsg) deniedMsg.style.display = 'block';
-            } else if (perm === 'granted' && localStorage.getItem('push_subscribed') === 'true') {
+                return;
+            }
+            if (Notification.permission === 'granted' && localStorage.getItem('push_subscribed') === 'true') {
+                pushToggle.checked = true;
                 statusText.textContent = '활성화됨';
                 statusText.classList.add('push-status--on');
-            } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-                statusText.textContent = '앱 설치 후 자동 활성화';
             } else {
-                statusText.textContent = '로그인 시 자동 활성화';
+                statusText.textContent = '알림을 받으려면 켜세요';
             }
+
+            // 구독
+            async function subscribePush() {
+                if (!pushToggle || !statusText) return;
+                try {
+                    const perm = await Notification.requestPermission();
+                    if (perm !== 'granted') {
+                        pushToggle.checked = false;
+                        if (perm === 'denied') {
+                            pushToggle.disabled = true;
+                            statusText.textContent = '차단됨 — 브라우저 설정에서 허용 필요';
+                            statusText.classList.remove('push-status--on');
+                            if (deniedMsg) deniedMsg.style.display = 'block';
+                        } else {
+                            statusText.textContent = '알림을 받으려면 켜세요';
+                            statusText.classList.remove('push-status--on');
+                        }
+                        return;
+                    }
+
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    let reg =
+                        regs.length > 0 ? regs[0] : await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    if (!reg.active) {
+                        const sw = reg.installing || reg.waiting;
+                        if (sw) {
+                            await new Promise<void>((resolve, reject) => {
+                                const timeout = setTimeout(() => reject(new Error('SW activation timeout')), 30000);
+                                sw.addEventListener('statechange', () => {
+                                    if (sw.state === 'activated') {
+                                        clearTimeout(timeout);
+                                        resolve();
+                                    }
+                                });
+                                if (sw.state === 'activated') {
+                                    clearTimeout(timeout);
+                                    resolve();
+                                }
+                            });
+                        } else {
+                            reg = await navigator.serviceWorker.ready;
+                        }
+                    }
+
+                    let subscription = await reg.pushManager.getSubscription();
+                    if (!subscription) {
+                        subscription = await reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: (window as any).urlBase64ToUint8Array((window as any).vapidPublicKey),
+                        });
+                    }
+
+                    const res = await fetch('/api/push/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint,
+                            p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+                            auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))),
+                            userAgent: navigator.userAgent,
+                        }),
+                    });
+
+                    if (res.ok) {
+                        localStorage.setItem('push_subscribed', 'true');
+                        statusText.textContent = '활성화됨';
+                        statusText.classList.add('push-status--on');
+                    } else {
+                        pushToggle.checked = false;
+                        statusText.textContent = '구독 실패. 다시 시도해주세요';
+                        statusText.classList.remove('push-status--on');
+                    }
+                } catch (err) {
+                    console.error('푸시 구독 실패:', err);
+                    pushToggle.checked = false;
+                    statusText.textContent = '구독 실패. 다시 시도해주세요';
+                    statusText.classList.remove('push-status--on');
+                }
+            }
+
+            // 해제
+            async function unsubscribePush() {
+                if (!pushToggle || !statusText) return;
+                try {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    const reg = regs[0];
+                    if (reg) {
+                        const subscription = await reg.pushManager.getSubscription();
+                        if (subscription) {
+                            await fetch('/api/push/unsubscribe', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ endpoint: subscription.endpoint }),
+                            });
+                            await subscription.unsubscribe();
+                        }
+                    }
+                    localStorage.removeItem('push_subscribed');
+                    statusText.textContent = '알림을 받으려면 켜세요';
+                    statusText.classList.remove('push-status--on');
+                } catch (err) {
+                    console.error('푸시 구독 해제 실패:', err);
+                    pushToggle.checked = true;
+                    statusText.textContent = '해제 실패. 다시 시도해주세요';
+                }
+            }
+
+            pushToggle.addEventListener('change', () => {
+                if (pushToggle.checked) subscribePush();
+                else unsubscribePush();
+            });
         });
     </script>
 </DashboardLayout>
