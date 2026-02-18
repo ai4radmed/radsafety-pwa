@@ -802,7 +802,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                 const tabBtns = document.querySelectorAll('.tab-btn');
                 const tabContents = document.querySelectorAll('.tab-content');
 
-                modal!.classList.add('active');
+                modal?.classList.add('active');
 
                 // Filter Tabs based on Mode
                 tabBtns.forEach((btn) => {
@@ -893,7 +893,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
             // Close Buttons
             closeBtns.forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    modal!.classList.remove('active');
+                    modal?.classList.remove('active');
                     // Reset forms if needed?
                 });
             });
@@ -919,7 +919,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
             // Close on click outside
             window.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    modal!.classList.remove('active');
+                    modal?.classList.remove('active');
                 }
             });
 
@@ -974,7 +974,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                     });
 
                     alert('✅ 인증되었습니다!');
-                    document.getElementById('verifyModal')!.classList.remove('active');
+                    document.getElementById('verifyModal')?.classList.remove('active');
                     // window.location.reload(); // Not needed needed if store reactive? But safe.
                 } catch (err) {
                     if ((err as Error).message.includes('명단에서 찾을 수 없습니다')) {
@@ -1069,7 +1069,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                                 '✅ 이메일 검증이 완료되어 임시 인증되었습니다.\n권한이 부여되었지만, 관리자 승인 시 정식 인증으로 전환됩니다.',
                             );
                             form.reset();
-                            document.getElementById('verifyModal')!.classList.remove('active');
+                            document.getElementById('verifyModal')?.classList.remove('active');
                         } catch (err) {
                             console.error(err);
                             alert('신청 실패: ' + (err as Error).message);

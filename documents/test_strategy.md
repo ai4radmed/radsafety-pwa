@@ -92,13 +92,14 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 
 ### 추가 필요 (우선순위 순)
 
-| 파일                                  | 테스트 대상                                                  | 이유                                    |
-| ------------------------------------- | ------------------------------------------------------------ | --------------------------------------- |
-| `unit/pages/auth.test.ts`             | `/auth/callback`, `/auth/confirm`의 `prerender = false` 검증 | 프리렌더링 누락 → 로그인 장애 재발 방지 |
-| `unit/lib/supabase-server.test.ts`    | `createSupabaseServerClient()` 쿠키 파싱                     | 인증 핵심 경로                          |
-| `unit/middleware.test.ts`             | 미들웨어 세션 주입                                           | 인증 핵심 경로                          |
-| `unit/lib/runtime-separation.test.ts` | 브라우저/서버 클라이언트 분리 검증                           | 클라이언트 중복 생성 방지               |
-| `unit/pages/page-load-event.test.ts`  | 동적 데이터 로딩 페이지의 `astro:page-load` 리스너 존재 여부 | View Transitions 재방문 버그 재발 방지  |
+| 파일                                       | 테스트 대상                                                             | 이유                                          |
+| ------------------------------------------ | ----------------------------------------------------------------------- | --------------------------------------------- |
+| `unit/pages/auth.test.ts`                  | `/auth/callback`, `/auth/confirm`의 `prerender = false` 검증            | 프리렌더링 누락 → 로그인 장애 재발 방지       |
+| `unit/lib/supabase-server.test.ts`         | `createSupabaseServerClient()` 쿠키 파싱                                | 인증 핵심 경로                                |
+| `unit/middleware.test.ts`                  | 미들웨어 세션 주입                                                      | 인증 핵심 경로                                |
+| `unit/lib/runtime-separation.test.ts`      | 브라우저/서버 클라이언트 분리 검증                                      | 클라이언트 중복 생성 방지                     |
+| `unit/pages/page-load-event.test.ts`       | 동적 데이터 로딩 페이지의 `astro:page-load` 리스너 존재 여부            | View Transitions 재방문 버그 재발 방지        |
+| `e2e/view-transitions-null-safety.spec.ts` | View Transitions 재방문 시 `console.error` 없음 검증 (비인증·인증 모두) | 조건부 DOM 요소 null 접근 TypeError 재발 방지 |
 
 ---
 
@@ -349,20 +350,21 @@ Auth State Change: INITIAL_SESSION undefined
 
 **주의할 로그 패턴**
 
-| 로그                               | 의미                                  | 조치                                                                                                                                          |
-| ---------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Multiple GoTrueClient instances`  | Supabase 클라이언트 중복 생성 경고    | 브라우저/서버 클라이언트 분리 확인 ([환경 분리 원칙](codebase_guide.md#5-환경-분리-원칙-브라우저-vs-서버))                                    |
-| `❌ Notification Check Error`      | 알림 조회 실패                        | Supabase RLS 정책 확인                                                                                                                        |
-| `Supabase Profile Fetch Error`     | 프로필 조회 실패                      | profiles 테이블/RLS 확인                                                                                                                      |
-| `Self-healing successful`          | 프로필 행 누락 후 자동 복구됨         | DB 트리거 확인 필요                                                                                                                           |
-| `Self-healing failed`              | 프로필 자동 복구 실패                 | profiles 테이블 구조 확인                                                                                                                     |
-| `Unauthorized access. Redirecting` | 비로그인 사용자 보호 페이지 접근      | 정상 동작 (인증 가드)                                                                                                                         |
-| 재방문 시 "로딩 중..." 고정        | View Transitions 후 스크립트 미재실행 | 해당 페이지 `<script>`에 `astro:page-load` 래퍼 누락 ([codebase_guide.md 3-4](codebase_guide.md#3-4-script-작성-규칙--view-transitions-대응)) |
-| 빨간색 `console.error`             | 예상치 못한 오류                      | 메시지 확인 후 디버깅                                                                                                                         |
+| 로그                                        | 의미                                                       | 조치                                                                                                                                          |
+| ------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Multiple GoTrueClient instances`           | Supabase 클라이언트 중복 생성 경고                         | 브라우저/서버 클라이언트 분리 확인 ([환경 분리 원칙](codebase_guide.md#5-환경-분리-원칙-브라우저-vs-서버))                                    |
+| `❌ Notification Check Error`               | 알림 조회 실패                                             | Supabase RLS 정책 확인                                                                                                                        |
+| `Supabase Profile Fetch Error`              | 프로필 조회 실패                                           | profiles 테이블/RLS 확인                                                                                                                      |
+| `Self-healing successful`                   | 프로필 행 누락 후 자동 복구됨                              | DB 트리거 확인 필요                                                                                                                           |
+| `Self-healing failed`                       | 프로필 자동 복구 실패                                      | profiles 테이블 구조 확인                                                                                                                     |
+| `Unauthorized access. Redirecting`          | 비로그인 사용자 보호 페이지 접근                           | 정상 동작 (인증 가드)                                                                                                                         |
+| 재방문 시 "로딩 중..." 고정                 | View Transitions 후 스크립트 미재실행                      | 해당 페이지 `<script>`에 `astro:page-load` 래퍼 누락 ([codebase_guide.md 3-4](codebase_guide.md#3-4-script-작성-규칙--view-transitions-대응)) |
+| `TypeError: Cannot read properties of null` | View Transitions 재방문 시 조건부 DOM 요소에 `!` 강제 접근 | `if (element)` 가드 추가 ([codebase_guide.md 3-5](codebase_guide.md#3-5-dom-접근-규칙--null-safety-view-transitions-대응))                    |
+| 빨간색 `console.error`                      | 예상치 못한 오류                                           | 메시지 확인 후 디버깅                                                                                                                         |
 
 **콘솔에 에러가 없어야 하는 페이지들**
 
-- 홈(`/`), 로그인(`/login`), 마이페이지(`/mypage`), 자료실(`/resources`)
+- 홈(`/`), 로그인(`/login`), 마이페이지(`/mypage`), 자료실(`/resources`), 지적권고사례(`/findings-recommendations`)
 - `console.warn`은 허용, `console.error`는 0건이어야 정상
 
 ### 브라우저 개발자 도구 (Network 탭)
