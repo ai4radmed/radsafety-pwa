@@ -57,6 +57,17 @@ test.describe('웹 푸시 인프라 검증 (비로그인)', () => {
         expect(body.error).toBeDefined();
     });
 
+    test('/api/push/unsubscribe 엔드포인트가 존재한다 (비로그인 → 401)', async ({ request }) => {
+        const response = await request.delete('/api/push/unsubscribe', {
+            data: { endpoint: 'https://example.com/push/fake' },
+        });
+        // 비로그인 → 401 (엔드포인트가 존재하고 인증 검사가 동작함)
+        expect(response.status()).toBe(401);
+
+        const body = await response.json();
+        expect(body.error).toBeDefined();
+    });
+
     test('manifest에 배지용 아이콘(128px 이상)이 포함된다', async ({ page }) => {
         const response = await page.goto('/manifest.webmanifest');
         const manifest = await response?.json();

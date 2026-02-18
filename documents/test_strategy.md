@@ -79,15 +79,16 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 
 ### 현재 커버리지
 
-| 파일                          | 테스트 대상                                                           | 상태 |
-| ----------------------------- | --------------------------------------------------------------------- | ---- |
-| `unit/config/auth.test.ts`    | `getRole()`, `isAdmin()`, `getCertification()`                        | 완료 |
-| `unit/store/user.test.ts`     | `setUser()`, `clearUser()`, 타입 변환                                 | 완료 |
-| `unit/lib/logger.test.ts`     | `createLogger()` 구조화 로그                                          | 완료 |
-| `unit/lib/email.test.ts`      | `sendVerificationEmail()`, `sendFeedbackEmail()` dev-mode             | 완료 |
-| `unit/data/glossary.test.ts`  | 용어 데이터 무결성                                                    | 완료 |
-| `unit/data/resources.test.ts` | 자료실 데이터 무결성                                                  | 완료 |
-| `unit/lib/push.test.ts`       | `sendPushToUser()`, `sendPushToUsers()`, VAPID 키 미설정 시 조기 반환 | 완료 |
+| 파일                                 | 테스트 대상                                                           | 상태 |
+| ------------------------------------ | --------------------------------------------------------------------- | ---- |
+| `unit/config/auth.test.ts`           | `getRole()`, `isAdmin()`, `getCertification()`                        | 완료 |
+| `unit/store/user.test.ts`            | `setUser()`, `clearUser()`, 타입 변환                                 | 완료 |
+| `unit/lib/logger.test.ts`            | `createLogger()` 구조화 로그                                          | 완료 |
+| `unit/lib/email.test.ts`             | `sendVerificationEmail()`, `sendFeedbackEmail()` dev-mode             | 완료 |
+| `unit/data/glossary.test.ts`         | 용어 데이터 무결성                                                    | 완료 |
+| `unit/data/resources.test.ts`        | 자료실 데이터 무결성                                                  | 완료 |
+| `unit/lib/push.test.ts`              | `sendPushToUser()`, `sendPushToUsers()`, VAPID 키 미설정 시 조기 반환 | 완료 |
+| `unit/pages/prerender-check.test.ts` | 모든 페이지 `prerender = false` 검증 (`/api/push/unsubscribe` 포함)   | 완료 |
 
 ### 추가 필요 (우선순위 순)
 
@@ -107,26 +108,26 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 
 ### 2-1. 기본 E2E — CI 포함 (비로그인, 세션 불필요)
 
-| 파일                           | 테스트 대상                                                          | 상태 |
-| ------------------------------ | -------------------------------------------------------------------- | ---- |
-| `e2e/home.spec.ts`             | 홈페이지 렌더링, 네비게이션 링크                                     | 완료 |
-| `e2e/navigation.spec.ts`       | 주요 페이지 HTTP 200 응답                                            | 완료 |
-| `e2e/pwa.spec.ts`              | PWA manifest 검증, `sw-push.js` 서빙, `/api/push/subscribe` 401 확인 | 완료 |
-| `e2e/auth-guard.spec.ts`       | 비로그인 시 보호 페이지 15개 → /login 리다이렉트 자동 검증           | 완료 |
-| `e2e/public-pages.spec.ts`     | 홈/로그인 페이지 렌더링, 이메일 폼 UI 요소, 비로그인 리다이렉트      | 완료 |
-| `e2e/view-transitions.spec.ts` | View Transitions 재방문 시 콘텐츠 렌더링 유지 (비인증 페이지)        | 완료 |
-| `e2e/sidebar-flash.spec.ts`    | 사이드바 초기 상태 깜빡임 없음, 스테일 데이터 초기화 확인            | 완료 |
-| `e2e/auth-callback.spec.ts`    | `/auth/confirm`, `/auth/callback` SSR 동작, CDN 308 캐시 감지        | 완료 |
-| `e2e/offline.spec.ts`          | `/offline` 페이지 렌더링, 링크, 오프라인 시뮬레이션 SW fallback      | 완료 |
+| 파일                           | 테스트 대상                                                                                              | 상태 |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------- | ---- |
+| `e2e/home.spec.ts`             | 홈페이지 렌더링, 네비게이션 링크                                                                         | 완료 |
+| `e2e/navigation.spec.ts`       | 주요 페이지 HTTP 200 응답                                                                                | 완료 |
+| `e2e/pwa.spec.ts`              | PWA manifest 검증, `sw-push.js` 서빙, `/api/push/subscribe` 및 `/api/push/unsubscribe` 비로그인 401 확인 | 완료 |
+| `e2e/auth-guard.spec.ts`       | 비로그인 시 보호 페이지 15개 → /login 리다이렉트 자동 검증                                               | 완료 |
+| `e2e/public-pages.spec.ts`     | 홈/로그인 페이지 렌더링, 이메일 폼 UI 요소, 비로그인 리다이렉트                                          | 완료 |
+| `e2e/view-transitions.spec.ts` | View Transitions 재방문 시 콘텐츠 렌더링 유지 (비인증 페이지)                                            | 완료 |
+| `e2e/sidebar-flash.spec.ts`    | 사이드바 초기 상태 깜빡임 없음, 스테일 데이터 초기화 확인                                                | 완료 |
+| `e2e/auth-callback.spec.ts`    | `/auth/confirm`, `/auth/callback` SSR 동작, CDN 308 캐시 감지                                            | 완료 |
+| `e2e/offline.spec.ts`          | `/offline` 페이지 렌더링, 링크, 오프라인 시뮬레이션 SW fallback                                          | 완료 |
 
 ### 2-2. 인증 후 E2E — 로컬 전용 (`npm run test:e2e:auth`)
 
 > 세션 파일(`tests/fixtures/session-*.json`) 필요. CI에서는 실행되지 않음.
 
-| 파일                              | 테스트 대상                                                                                        | 상태 |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- | ---- |
-| `e2e/authenticated-user.spec.ts`  | 3-3 일반 사용자 기능: 마이페이지, 네비게이션, 자료실, 알림, 의견, 설정, 웹 푸시 구독 API 인증 검사 | 완료 |
-| `e2e/authenticated-admin.spec.ts` | 3-4 관리자 기능: 회원관리, 인증요청, 의견/용어 관리, 알림발송, View Transitions 재방문             | 완료 |
+| 파일                              | 테스트 대상                                                                                                                                                 | 상태 |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `e2e/authenticated-user.spec.ts`  | 3-3 일반 사용자 기능: 마이페이지, 네비게이션, 자료실, 알림, 의견, 설정 페이지 푸시 토글 UI 확인, `/api/push/subscribe` 및 `/api/push/unsubscribe` 인증 검사 | 완료 |
+| `e2e/authenticated-admin.spec.ts` | 3-4 관리자 기능: 회원관리, 인증요청, 의견/용어 관리, 알림발송, View Transitions 재방문                                                                      | 완료 |
 
 ### 2-3. 세션 저장 (`npm run test:e2e:save-session`)
 
@@ -198,7 +199,8 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 - [ ] **파일 다운로드**: 자료실 → 파일 다운로드 정상 (`/api/archives/[id]`) _(실제 파일 확인 필요)_
 - [ ] **지적권고사례 CRUD**: 사례 등록 → 목록 반영, 수정, 삭제 _(DB 쓰기 작업)_
 - [ ] **의견 보내기**: 제목/내용 작성 → 전송 → 성공 메시지 _(실제 이메일 발송 확인)_
-- [ ] **웹 푸시 알림 구독**: 로그인 후 배너 표시 → "허용" 클릭 → 브라우저 권한 팝업 허용 → 구독 완료 _(브라우저 UI 조작 필요)_
+- [ ] **웹 푸시 알림 구독**: `/settings` → 알림 설정 토글 클릭 → 브라우저 권한 팝업 허용 → "알림 켜짐" 표시 _(배포 환경에서만 가능, 개발 서버는 "앱 설치 후 사용 가능")_
+- [ ] **웹 푸시 알림 구독 해제**: 토글 다시 클릭 → "알림 꺼짐" 표시 확인
 - [ ] **웹 푸시 알림 수신**: 관리자 알림 발송 또는 인증 처리 후 기기 상단에 알림 팝업 표시 확인 _(실제 기기 확인 필요)_
 - [ ] **모바일**: 하단 네비게이션 바 표시 및 동작
 

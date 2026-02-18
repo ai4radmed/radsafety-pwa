@@ -74,10 +74,11 @@
 
 ##### `src/pages/api/` — API 엔드포인트
 
-| 폴더        | URL                   | 역할                          |
-| :---------- | :-------------------- | :---------------------------- |
-| `archives/` | `/api/archives/...`   | 자료 아카이브 관련 API        |
-| `push/`     | `/api/push/subscribe` | 웹 푸시 구독 정보 저장 (POST) |
+| 폴더        | URL                     | 역할                          |
+| :---------- | :---------------------- | :---------------------------- |
+| `archives/` | `/api/archives/...`     | 자료 아카이브 관련 API        |
+| `push/`     | `/api/push/subscribe`   | 웹 푸시 구독 정보 저장 (POST) |
+| `push/`     | `/api/push/unsubscribe` | 웹 푸시 구독 해제 (DELETE)    |
 
 ---
 
@@ -93,7 +94,6 @@
 | `Lightbox.astro`         | 이미지 확대 보기(라이트박스)       |
 | `GlossaryModal.astro`    | 용어 사전 팝업                     |
 | `PWAInstall.astro`       | PWA 설치 안내                      |
-| `PushSubscribe.astro`    | 웹 푸시 알림 구독 배너             |
 | `LoginGuide.astro`       | 로그인 안내 UI                     |
 | `FormattedDate.astro`    | 날짜 포맷팅                        |
 | `auth/LoginButton.astro` | 로그인 버튼                        |
