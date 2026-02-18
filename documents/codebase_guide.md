@@ -270,6 +270,65 @@ View Transitions 적용 시
 
 `/admin/feedback`, `/admin/glossary` 페이지에서 다른 페이지 방문 후 재방문 시 데이터가 "로딩 중..." 상태로 멈추는 문제 발생. `astro:page-load` 누락이 원인.
 
+### 3-5. DOM 접근 규칙 — null-safety (View Transitions 대응)
+
+Astro View Transitions 환경에서는 페이지 전환 시 `astro:page-load` 이벤트로 스크립트가 재실행됩니다.
+이때 **DOM 요소가 현재 페이지에 존재하지 않을 수 있으므로**, `!` (non-null assertion)로 강제 접근하면 `TypeError`가 발생합니다.
+
+#### 원인
+
+- 권한에 따라 조건부로 렌더링되는 요소 (예: 관리자 전용 모달)
+- 재방문 시 DOM 교체 전에 스크립트가 실행되는 타이밍 문제
+- TypeScript의 `!` assertion은 컴파일 타임에 에러를 숨기므로 런타임까지 감지 불가
+
+#### 실패 사례 (2026-02-18)
+
+`/findings-recommendations` 페이지에서 View Transitions로 재방문 시:
+
+```
+Uncaught TypeError: Cannot read properties of null (reading 'querySelector')
+    at HTMLDocument.r (<anonymous>)
+    at j (ClientRouter...)
+```
+
+`regModal`이 비인증 사용자에게는 DOM에 없는데 `regModal!.querySelectorAll(...)`로 강제 접근.
+
+#### 올바른 패턴 — Optional Guard
+
+```typescript
+// ❌ 잘못된 패턴: null assertion으로 강제 접근
+const regModal = document.getElementById('regModal');
+const closeRegBtns = regModal!.querySelectorAll('.close-btn'); // null이면 크래시
+
+// ✅ 올바른 패턴: 존재 여부 확인 후 진행
+const regModal = document.getElementById('regModal');
+const registerBtn = document.getElementById('registerBtn');
+
+if (regModal && registerBtn) {
+    const closeRegBtns = regModal.querySelectorAll('.close-btn, .btn-cancel');
+    registerBtn.addEventListener('click', () => {
+        regModal.classList.add('open');
+    });
+    // ... 모달 관련 나머지 코드
+}
+```
+
+#### 권한별 조건부 요소 처리 원칙
+
+- **권한에 따라 렌더링 여부가 달라지는 요소**는 반드시 존재 여부를 확인한 후 이벤트 리스너를 등록합니다.
+- `if (element)` 또는 `element?.addEventListener(...)` 패턴을 사용합니다.
+- `!` non-null assertion은 **렌더링이 항상 보장되는 요소에만** 제한적으로 사용합니다.
+
+#### 리뷰 체크리스트
+
+새 `<script>` 블록을 작성하거나 기존 코드를 수정할 때 확인:
+
+- [ ] `document.getElementById()` 결과에 `!`를 사용하는 코드가 없는가?
+- [ ] 권한/조건에 따라 렌더링이 달라지는 요소는 `if (element)` 가드로 감싸는가?
+- [ ] 모달, 관리자 전용 버튼 등 조건부 UI는 null 체크 후 이벤트 리스너를 등록하는가?
+
+---
+
 ### 3-3. 배포 후 검증 절차
 
 배포 완료 후 아래 순서로 검증합니다. 전체 소요시간 약 5~10분.
