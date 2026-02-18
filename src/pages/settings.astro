@@ -45,22 +45,18 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                 <p>새로운 알림을 즉시 받아볼 수 있습니다.</p>
             </div>
             <div class="control-group">
-                <div class="toggle-row">
-                    <div>
-                        <div class="toggle-label">푸시 알림 받기</div>
-                        <div class="toggle-desc" id="pushStatusText">상태 확인 중...</div>
+                <div class="push-row">
+                    <div class="push-info">
+                        <div class="push-label">푸시 알림 받기</div>
+                        <div class="push-status" id="pushStatusText">확인 중...</div>
                     </div>
-                    <button
-                        id="pushToggle"
-                        class="toggle-switch"
-                        role="switch"
-                        aria-checked="false"
-                        aria-label="푸시 알림 토글"></button>
+                    <button id="pushBtn" class="push-btn" style="display:none;">알림 켜기</button>
+                    <button id="pushOffBtn" class="push-btn push-btn--off" style="display:none;">알림 끄기</button>
                 </div>
-                <div id="pushDeniedMsg" class="denied-msg" style="display:none;">
+                <div id="pushDeniedMsg" class="push-msg push-msg--error" style="display:none;">
                     브라우저에서 알림이 차단되어 있습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.
                 </div>
-                <div id="pushUnsupportedMsg" class="denied-msg" style="display:none;">
+                <div id="pushUnsupportedMsg" class="push-msg push-msg--error" style="display:none;">
                     이 브라우저는 푸시 알림을 지원하지 않습니다.
                 </div>
             </div>
@@ -161,63 +157,53 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
             opacity: 0.8;
         }
 
-        /* Toggle Row */
-        .toggle-row {
+        /* Push 알림 */
+        .push-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 1rem;
         }
-        .toggle-label {
+        .push-label {
             font-weight: 600;
             color: var(--text-main);
             margin-bottom: 0.2rem;
         }
-        .toggle-desc {
+        .push-status {
             font-size: 0.85rem;
             color: var(--text-muted);
         }
-
-        /* Toggle Switch */
-        .toggle-switch {
-            width: 48px;
-            height: 28px;
-            background: #4b5563;
-            border-radius: 99px;
-            position: relative;
+        .push-btn {
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
             border: none;
             cursor: pointer;
-            transition: background 0.2s;
+            font-weight: 600;
+            white-space: nowrap;
             flex-shrink: 0;
-        }
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            left: 3px;
-            top: 3px;
-            width: 22px;
-            height: 22px;
-            background: white;
-            border-radius: 50%;
-            transition: left 0.2s;
-        }
-        .toggle-switch[aria-checked='true'] {
             background: var(--accent, #2563eb);
+            color: #fff;
+            transition: opacity 0.2s;
         }
-        .toggle-switch[aria-checked='true']::after {
-            left: 23px;
-        }
-        .toggle-switch:disabled {
-            opacity: 0.4;
+        .push-btn:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
         }
-
-        .denied-msg {
+        .push-btn--off {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+        .push-msg {
             margin-top: 0.75rem;
             padding: 0.6rem 0.8rem;
-            background: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.2);
             border-radius: 6px;
             font-size: 0.85rem;
+        }
+        .push-msg--error {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
             color: #ef4444;
         }
 
@@ -256,176 +242,139 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                 });
             });
 
-            // ── 푸시 알림 토글 ──────────────────────────────────────
-            const toggle = document.getElementById('pushToggle');
+            // ── 푸시 알림 ──────────────────────────────────────────
             const statusText = document.getElementById('pushStatusText');
+            const pushBtn = document.getElementById('pushBtn');
+            const pushOffBtn = document.getElementById('pushOffBtn');
             const deniedMsg = document.getElementById('pushDeniedMsg');
             const unsupportedMsg = document.getElementById('pushUnsupportedMsg');
 
-            if (!toggle || !statusText) return;
+            if (!statusText || !pushBtn || !pushOffBtn) return;
 
             // 브라우저 지원 확인
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                toggle.disabled = true;
                 statusText.textContent = '지원하지 않는 브라우저';
                 unsupportedMsg.style.display = 'block';
                 return;
             }
 
-            // 등록된 SW 조회
-            // registerSW.js가 window load 이후 SW를 등록하므로 astro:page-load보다 늦을 수 있음.
-            // - localhost: 개발 서버는 SW가 불안정하므로 즉시 null 반환 (무한 대기 방지)
-            // - 배포 환경: active SW가 없으면 serviceWorker.ready로 최대 10초 대기
+            // UI 상태 설정 헬퍼
+            function setSubscribed(on) {
+                pushBtn.style.display = on ? 'none' : 'inline-block';
+                pushOffBtn.style.display = on ? 'inline-block' : 'none';
+                statusText.textContent = on ? '알림 켜짐' : '알림 꺼짐';
+            }
+
+            function setLoading(msg) {
+                pushBtn.style.display = 'none';
+                pushOffBtn.style.display = 'none';
+                statusText.textContent = msg;
+            }
+
+            // localhost(개발 서버)에서는 SW가 작동하지 않으므로 버튼 비활성화
             const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            if (isLocalhost) {
+                statusText.textContent = '앱 설치 후 사용 가능';
+                return;
+            }
 
-            async function getPushManager() {
-                // 이미 active SW가 있으면 즉시 반환
-                const existing = await navigator.serviceWorker.getRegistration('/');
-                if (existing?.active) return existing;
+            // 초기 상태 확인 — localStorage만 참조 (SW 대기 없음, UX 지연 없음)
+            const cachedOn = localStorage.getItem(SUBSCRIBED_KEY) === 'true' && Notification.permission === 'granted';
 
-                // 로컬 개발 서버 → 즉시 null 반환 (SW 불안정)
-                if (isLocalhost) return null;
+            if (Notification.permission === 'denied') {
+                statusText.textContent = '알림 권한이 차단됨';
+                deniedMsg.style.display = 'block';
+            } else {
+                setSubscribed(cachedOn);
+            }
 
-                // 배포 환경에서 SW 등록 중인 경우 → ready로 최대 10초 대기
+            // ── 알림 켜기 버튼 ──────────────────────────────────
+            pushBtn.addEventListener('click', async () => {
+                setLoading('처리 중...');
+                pushBtn.disabled = true;
                 try {
+                    // 권한 요청
+                    if (Notification.permission !== 'granted') {
+                        const perm = await Notification.requestPermission();
+                        if (perm === 'denied') {
+                            statusText.textContent = '알림 권한이 차단됨';
+                            deniedMsg.style.display = 'block';
+                            throw new Error('perm_denied');
+                        }
+                        if (perm !== 'granted') {
+                            setSubscribed(false);
+                            throw new Error('perm_dismissed');
+                        }
+                    }
+
+                    // SW 준비 대기 (최대 15초)
                     const registration = await Promise.race([
                         navigator.serviceWorker.ready,
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 10000)),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 15000)),
                     ]);
-                    return registration;
-                } catch {
-                    return null;
-                }
-            }
 
-            // 현재 구독 상태 확인
-            async function checkSubscriptionState() {
-                const permission = Notification.permission;
-
-                if (permission === 'denied') {
-                    toggle.disabled = true;
-                    toggle.setAttribute('aria-checked', 'false');
-                    statusText.textContent = '알림 권한이 차단됨';
-                    deniedMsg.style.display = 'block';
-                    return;
-                }
-
-                const registration = await getPushManager();
-                if (!registration) {
-                    // SW 미등록 = 개발 서버 또는 비PWA 환경
-                    toggle.disabled = true;
-                    toggle.setAttribute('aria-checked', 'false');
-                    statusText.textContent = '앱 설치 후 사용 가능';
-                    return;
-                }
-
-                const subscription = await registration.pushManager.getSubscription();
-                const isSubscribed = !!subscription && localStorage.getItem(SUBSCRIBED_KEY) === 'true';
-                toggle.setAttribute('aria-checked', String(isSubscribed));
-                statusText.textContent = isSubscribed ? '알림 켜짐' : '알림 꺼짐';
-            }
-
-            await checkSubscriptionState();
-
-            // 토글 클릭 핸들러
-            toggle.addEventListener('click', async () => {
-                if (toggle.disabled) return;
-
-                const isOn = toggle.getAttribute('aria-checked') === 'true';
-
-                if (isOn) {
-                    // ── 구독 해제 ──────────────────────────────────
-                    try {
-                        toggle.disabled = true;
-                        statusText.textContent = '처리 중...';
-
-                        const registration = await getPushManager();
-                        if (registration) {
-                            const subscription = await registration.pushManager.getSubscription();
-                            if (subscription) {
-                                await fetch('/api/push/unsubscribe', {
-                                    method: 'DELETE',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ endpoint: subscription.endpoint }),
-                                });
-                                await subscription.unsubscribe();
-                            }
-                        }
-
-                        localStorage.removeItem(SUBSCRIBED_KEY);
-                        toggle.setAttribute('aria-checked', 'false');
-                        statusText.textContent = '알림 꺼짐';
-                    } catch (err) {
-                        console.error('구독 해제 오류:', err);
-                        statusText.textContent = '오류가 발생했습니다.';
-                    } finally {
-                        toggle.disabled = false;
-                    }
-                } else {
-                    // ── 구독 요청 ──────────────────────────────────
-                    try {
-                        toggle.disabled = true;
-                        statusText.textContent = '처리 중...';
-
-                        // 권한 요청 (필요한 경우)
-                        if (Notification.permission !== 'granted') {
-                            const perm = await Notification.requestPermission();
-                            if (perm !== 'granted') {
-                                statusText.textContent = '알림 권한이 거부됨';
-                                if (perm === 'denied') {
-                                    toggle.setAttribute('aria-checked', 'false');
-                                    deniedMsg.style.display = 'block';
-                                }
-                                // return 대신 throw로 finally 블록 실행 보장
-                                throw new Error('permission_denied');
-                            }
-                        }
-
-                        // SW 조회 (최대 8초 대기)
-                        let registration = await getPushManager();
-                        if (!registration) {
-                            registration = await Promise.race([
-                                navigator.serviceWorker.ready,
-                                new Promise((_, reject) =>
-                                    setTimeout(() => reject(new Error('SW 등록 대기 시간 초과')), 8000),
-                                ),
-                            ]);
-                        }
-
-                        let subscription = await registration.pushManager.getSubscription();
-                        if (!subscription) {
-                            subscription = await registration.pushManager.subscribe({
-                                userVisibleOnly: true,
-                                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-                            });
-                        }
-
-                        const response = await fetch('/api/push/subscribe', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                endpoint: subscription.endpoint,
-                                p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
-                                auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
-                                userAgent: navigator.userAgent,
-                            }),
+                    let subscription = await registration.pushManager.getSubscription();
+                    if (!subscription) {
+                        subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
                         });
-
-                        if (response.ok) {
-                            localStorage.setItem(SUBSCRIBED_KEY, 'true');
-                            toggle.setAttribute('aria-checked', 'true');
-                            statusText.textContent = '알림 켜짐';
-                        } else {
-                            statusText.textContent = '구독 저장 실패';
-                        }
-                    } catch (err) {
-                        if (err.message !== 'permission_denied') {
-                            console.error('구독 오류:', err);
-                            statusText.textContent = '오류가 발생했습니다.';
-                        }
-                    } finally {
-                        toggle.disabled = false;
                     }
+
+                    const res = await fetch('/api/push/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint,
+                            p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+                            auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+                            userAgent: navigator.userAgent,
+                        }),
+                    });
+
+                    if (res.ok) {
+                        localStorage.setItem(SUBSCRIBED_KEY, 'true');
+                        setSubscribed(true);
+                    } else {
+                        statusText.textContent = '구독 저장 실패. 다시 시도해 주세요.';
+                        pushBtn.style.display = 'inline-block';
+                    }
+                } catch (err) {
+                    if (!['perm_denied', 'perm_dismissed'].includes(err.message)) {
+                        console.error('구독 오류:', err);
+                        statusText.textContent = '오류가 발생했습니다. 다시 시도해 주세요.';
+                        pushBtn.style.display = 'inline-block';
+                    }
+                } finally {
+                    pushBtn.disabled = false;
+                }
+            });
+
+            // ── 알림 끄기 버튼 ──────────────────────────────────
+            pushOffBtn.addEventListener('click', async () => {
+                setLoading('처리 중...');
+                pushOffBtn.disabled = true;
+                try {
+                    const reg = await navigator.serviceWorker.getRegistration('/');
+                    if (reg) {
+                        const subscription = await reg.pushManager.getSubscription();
+                        if (subscription) {
+                            await fetch('/api/push/unsubscribe', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ endpoint: subscription.endpoint }),
+                            });
+                            await subscription.unsubscribe();
+                        }
+                    }
+                    localStorage.removeItem(SUBSCRIBED_KEY);
+                    setSubscribed(false);
+                } catch (err) {
+                    console.error('구독 해제 오류:', err);
+                    statusText.textContent = '오류가 발생했습니다. 다시 시도해 주세요.';
+                    pushOffBtn.style.display = 'inline-block';
+                } finally {
+                    pushOffBtn.disabled = false;
                 }
             });
         });
