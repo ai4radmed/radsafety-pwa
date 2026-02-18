@@ -272,15 +272,30 @@ const vapidPublicKey = import.meta.env.PUBLIC_VAPID_KEY;
                 return;
             }
 
-            // 등록된 SW 조회 (최대 3초, 500ms 간격으로 재시도)
-            // registerSW.js가 window load 이후 등록하므로 약간의 대기가 필요할 수 있음
+            // 등록된 SW 조회
+            // registerSW.js가 window load 이후 SW를 등록하므로 astro:page-load보다 늦을 수 있음.
+            // - localhost: 개발 서버는 SW가 불안정하므로 즉시 null 반환 (무한 대기 방지)
+            // - 배포 환경: active SW가 없으면 serviceWorker.ready로 최대 10초 대기
+            const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
             async function getPushManager() {
-                for (let i = 0; i < 6; i++) {
-                    const registration = await navigator.serviceWorker.getRegistration('/');
-                    if (registration?.active) return registration;
-                    await new Promise((r) => setTimeout(r, 500));
+                // 이미 active SW가 있으면 즉시 반환
+                const existing = await navigator.serviceWorker.getRegistration('/');
+                if (existing?.active) return existing;
+
+                // 로컬 개발 서버 → 즉시 null 반환 (SW 불안정)
+                if (isLocalhost) return null;
+
+                // 배포 환경에서 SW 등록 중인 경우 → ready로 최대 10초 대기
+                try {
+                    const registration = await Promise.race([
+                        navigator.serviceWorker.ready,
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 10000)),
+                    ]);
+                    return registration;
+                } catch {
+                    return null;
                 }
-                return null;
             }
 
             // 현재 구독 상태 확인
