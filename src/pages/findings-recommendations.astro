@@ -1221,131 +1221,135 @@ const AVAILABLE_TAGS = [
             }
 
             // 2. Registration Modal Logic
+            // regModal / registerBtn은 권한 있는 사용자에게만 렌더링되므로 존재 여부를 확인
             const regModal = document.getElementById('regModal');
             const registerBtn = document.getElementById('registerBtn');
-            const closeRegBtns = regModal!.querySelectorAll('.close-btn, .btn-cancel');
-            const submitReg = document.getElementById('submitReg') as HTMLButtonElement;
-            const regForm = document.getElementById('regForm') as HTMLFormElement;
+            const submitReg = document.getElementById('submitReg') as HTMLButtonElement | null;
+            const regForm = document.getElementById('regForm') as HTMLFormElement | null;
 
-            registerBtn!.addEventListener('click', () => {
-                regForm.reset();
-                (document.getElementById('regItemId') as HTMLInputElement).value = '';
-                regModal!.querySelector('.modal-header h2')!.textContent = '새로운 사례 등록';
-                regModal!.classList.add('open');
-            });
+            if (regModal && registerBtn && submitReg && regForm) {
+                const closeRegBtns = regModal.querySelectorAll('.close-btn, .btn-cancel');
 
-            closeRegBtns.forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    regModal!.classList.remove('open');
-                });
-            });
-
-            submitReg!.addEventListener('click', async () => {
-                if (!regForm.checkValidity()) {
-                    regForm.reportValidity();
-                    return;
-                }
-
-                try {
-                    submitReg!.disabled = true;
-                    submitReg!.textContent = '저장 중...';
-
-                    const formData = new FormData(regForm);
-                    const title = formData.get('title') as string;
-                    const findingType = formData.get('findingType') as string;
-                    const yearInput = formData.get('year') as string;
-                    const description = formData.get('description') as string;
-                    const violationClause = formData.get('violationClause') as string;
-                    const solution = formData.get('solution') as string;
-                    const tags = Array.from(formData.getAll('tags')) as string[];
-
-                    const updateIdInput = document.getElementById('regItemId') as HTMLInputElement;
-                    const updateId = updateIdInput ? updateIdInput.value : '';
-
-                    const payload: any = {
-                        title,
-                        finding_type: findingType,
-                        tags,
-                        year: yearInput,
-                        description,
-                        violation_clause: violationClause,
-                        solution,
-                    };
-
-                    let result = null;
-                    if (updateId && !updateId.startsWith('local-')) {
-                        const { data, error } = await supabase
-                            .from('findings')
-                            .update(payload)
-                            .eq('id', updateId)
-                            .select()
-                            .single();
-                        if (error) throw error;
-                        result = data;
-                        alert('사례가 수정되었습니다.');
-                    } else {
-                        // Get current user for owner assignment
-                        const {
-                            data: { user },
-                        } = await supabase.auth.getUser();
-                        if (user) {
-                            payload.user_id = user.id;
-                        }
-
-                        const { data, error } = await supabase.from('findings').insert(payload).select().single();
-                        if (error) throw error;
-                        result = data;
-                        alert('사례가 등록되었습니다.');
-                    }
-
-                    if (!result) throw new Error('결과 데이터가 없습니다.');
-
-                    // Normalize result for UI
-                    const newItem = {
-                        ...result,
-                        findingType: result.finding_type,
-                        violationClause: result.violation_clause,
-                        solution: result.solution,
-                        year: result.year,
-                        tags: result.tags || [],
-                    };
-
-                    if (updateId) {
-                        // Update DOM Card
-                        const card = grid.querySelector(`.finding-item[data-id="${updateId}"]`) as HTMLElement;
-                        if (card) {
-                            card.dataset.tags = JSON.stringify(newItem.tags);
-                            card.dataset.title = newItem.title;
-                            card.dataset.year = newItem.year;
-                            card.dataset.search =
-                                `${newItem.title} ${newItem.description} ${newItem.violationClause || ''} ${newItem.solution || ''}`.toLowerCase();
-                            card.dataset.content = JSON.stringify(newItem);
-
-                            const tagsHtml = newItem.tags
-                                .map((t: string) => `<span class="tag-badge">${t}</span>`)
-                                .join('');
-                            card.querySelector('.col-tags')!.innerHTML = tagsHtml;
-                            card.querySelector('.col-title')!.textContent = newItem.title;
-                            (card.querySelector('.col-title') as HTMLElement).title = newItem.description;
-                            card.querySelector('.col-year')!.textContent = newItem.year;
-                        }
-                    } else {
-                        const card = createCardElement(newItem);
-                        grid.appendChild(card);
-                        setupMenu(card);
-                        cards.push(card);
-                    }
-
-                    regModal!.classList.remove('open');
+                registerBtn.addEventListener('click', () => {
                     regForm.reset();
-                } catch (err) {
-                    console.error('Submission Crash:', err);
-                    alert('시스템 오류가 발생했습니다: ' + (err as Error).message);
-                } finally {
-                    submitReg!.disabled = false;
-                    submitReg!.textContent = '등록하기';
-                }
-            });
+                    (document.getElementById('regItemId') as HTMLInputElement).value = '';
+                    regModal.querySelector('.modal-header h2')!.textContent = '새로운 사례 등록';
+                    regModal.classList.add('open');
+                });
+
+                closeRegBtns.forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        regModal.classList.remove('open');
+                    });
+                });
+
+                submitReg.addEventListener('click', async () => {
+                    if (!regForm.checkValidity()) {
+                        regForm.reportValidity();
+                        return;
+                    }
+
+                    try {
+                        submitReg.disabled = true;
+                        submitReg.textContent = '저장 중...';
+
+                        const formData = new FormData(regForm);
+                        const title = formData.get('title') as string;
+                        const findingType = formData.get('findingType') as string;
+                        const yearInput = formData.get('year') as string;
+                        const description = formData.get('description') as string;
+                        const violationClause = formData.get('violationClause') as string;
+                        const solution = formData.get('solution') as string;
+                        const tags = Array.from(formData.getAll('tags')) as string[];
+
+                        const updateIdInput = document.getElementById('regItemId') as HTMLInputElement;
+                        const updateId = updateIdInput ? updateIdInput.value : '';
+
+                        const payload: any = {
+                            title,
+                            finding_type: findingType,
+                            tags,
+                            year: yearInput,
+                            description,
+                            violation_clause: violationClause,
+                            solution,
+                        };
+
+                        let result = null;
+                        if (updateId && !updateId.startsWith('local-')) {
+                            const { data, error } = await supabase
+                                .from('findings')
+                                .update(payload)
+                                .eq('id', updateId)
+                                .select()
+                                .single();
+                            if (error) throw error;
+                            result = data;
+                            alert('사례가 수정되었습니다.');
+                        } else {
+                            // Get current user for owner assignment
+                            const {
+                                data: { user },
+                            } = await supabase.auth.getUser();
+                            if (user) {
+                                payload.user_id = user.id;
+                            }
+
+                            const { data, error } = await supabase.from('findings').insert(payload).select().single();
+                            if (error) throw error;
+                            result = data;
+                            alert('사례가 등록되었습니다.');
+                        }
+
+                        if (!result) throw new Error('결과 데이터가 없습니다.');
+
+                        // Normalize result for UI
+                        const newItem = {
+                            ...result,
+                            findingType: result.finding_type,
+                            violationClause: result.violation_clause,
+                            solution: result.solution,
+                            year: result.year,
+                            tags: result.tags || [],
+                        };
+
+                        if (updateId) {
+                            // Update DOM Card
+                            const card = grid.querySelector(`.finding-item[data-id="${updateId}"]`) as HTMLElement;
+                            if (card) {
+                                card.dataset.tags = JSON.stringify(newItem.tags);
+                                card.dataset.title = newItem.title;
+                                card.dataset.year = newItem.year;
+                                card.dataset.search =
+                                    `${newItem.title} ${newItem.description} ${newItem.violationClause || ''} ${newItem.solution || ''}`.toLowerCase();
+                                card.dataset.content = JSON.stringify(newItem);
+
+                                const tagsHtml = newItem.tags
+                                    .map((t: string) => `<span class="tag-badge">${t}</span>`)
+                                    .join('');
+                                card.querySelector('.col-tags')!.innerHTML = tagsHtml;
+                                card.querySelector('.col-title')!.textContent = newItem.title;
+                                (card.querySelector('.col-title') as HTMLElement).title = newItem.description;
+                                card.querySelector('.col-year')!.textContent = newItem.year;
+                            }
+                        } else {
+                            const card = createCardElement(newItem);
+                            grid.appendChild(card);
+                            setupMenu(card);
+                            cards.push(card);
+                        }
+
+                        regModal.classList.remove('open');
+                        regForm.reset();
+                    } catch (err) {
+                        console.error('Submission Crash:', err);
+                        alert('시스템 오류가 발생했습니다: ' + (err as Error).message);
+                    } finally {
+                        submitReg.disabled = false;
+                        submitReg.textContent = '등록하기';
+                    }
+                });
+            } // end if (regModal && registerBtn && submitReg && regForm)
 
             // --- Action Menu Logic ---
             function setupMenu(card: HTMLElement) {
@@ -1377,39 +1381,44 @@ const AVAILABLE_TAGS = [
                 if (editBtn) {
                     editBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
+                        // regModal / regForm은 권한 있는 사용자에게만 존재
+                        const editModal = document.getElementById('regModal');
+                        const editForm = document.getElementById('regForm') as HTMLFormElement | null;
+                        if (!editModal || !editForm) return;
+
                         const content = JSON.parse(card.dataset.content || '{}');
                         const id = card.dataset.id || '';
 
                         // Populate Form
                         (document.getElementById('regItemId') as HTMLInputElement).value = id;
-                        (regForm.querySelector('[name="title"]') as HTMLInputElement).value = content.title;
-                        (regForm.querySelector('[name="year"]') as HTMLInputElement).value = content.year;
-                        (regForm.querySelector('[name="description"]') as HTMLTextAreaElement).value =
+                        (editForm.querySelector('[name="title"]') as HTMLInputElement).value = content.title;
+                        (editForm.querySelector('[name="year"]') as HTMLInputElement).value = content.year;
+                        (editForm.querySelector('[name="description"]') as HTMLTextAreaElement).value =
                             content.description;
 
-                        const clauseInput = regForm.querySelector(
+                        const clauseInput = editForm.querySelector(
                             '[name="violationClause"]',
                         ) as HTMLInputElement | null;
                         if (clauseInput) clauseInput.value = content.violationClause || '';
 
-                        const solInput = regForm.querySelector('[name="solution"]') as HTMLTextAreaElement | null;
+                        const solInput = editForm.querySelector('[name="solution"]') as HTMLTextAreaElement | null;
                         if (solInput) solInput.value = content.solution || '';
 
                         // Set finding type radio button
-                        const findingTypeRadios = regForm.querySelectorAll('input[name="findingType"]');
+                        const findingTypeRadios = editForm.querySelectorAll('input[name="findingType"]');
                         findingTypeRadios.forEach((radio) => {
                             (radio as HTMLInputElement).checked =
                                 (radio as HTMLInputElement).value === (content.findingType || '지적');
                         });
 
                         // Check tags
-                        regForm.querySelectorAll('input[name="tags"]').forEach((cb) => {
+                        editForm.querySelectorAll('input[name="tags"]').forEach((cb) => {
                             (cb as HTMLInputElement).checked = content.tags.includes((cb as HTMLInputElement).value);
                         });
 
                         // Change Title & Open
-                        regModal!.querySelector('.modal-header h2')!.textContent = '사례 수정';
-                        regModal!.classList.add('open');
+                        editModal.querySelector('.modal-header h2')!.textContent = '사례 수정';
+                        editModal.classList.add('open');
 
                         dropdown!.classList.remove('active');
                         card.classList.remove('menu-active');
@@ -1457,60 +1466,63 @@ const AVAILABLE_TAGS = [
 
             // 3. Detail Modal Logic
             const detailModal = document.getElementById('detailModal');
-            const closeDetailBtns = detailModal!.querySelectorAll('.close-btn, .close-btn-footer');
 
-            closeDetailBtns.forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    detailModal!.classList.remove('open');
-                });
-            });
+            if (detailModal) {
+                const closeDetailBtns = detailModal.querySelectorAll('.close-btn, .close-btn-footer');
 
-            grid.addEventListener('click', (e) => {
-                // Ignore clicks from action menu or dropdown
-                if ((e.target as Element).closest('.col-menu') || (e.target as Element).closest('.dropdown-menu'))
-                    return;
-
-                const card = (e.target as Element).closest('.finding-item') as HTMLElement | null;
-                if (card) {
-                    const data = JSON.parse(card.dataset.content || '{}');
-
-                    document.getElementById('detailTitle')!.textContent = data.title;
-                    document.getElementById('detailYear')!.textContent = data.year;
-
-                    // Render Tags
-                    const tagsContainer = document.getElementById('detailTags')!;
-                    tagsContainer.innerHTML = '';
-                    const tags = data.tags || [];
-                    tags.forEach((t: string) => {
-                        const span = document.createElement('span');
-                        span.className = 'tag-badge';
-                        span.textContent = t;
-                        tagsContainer.appendChild(span);
+                closeDetailBtns.forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        detailModal.classList.remove('open');
                     });
+                });
 
-                    document.getElementById('detailDesc')!.textContent = data.description;
+                grid.addEventListener('click', (e) => {
+                    // Ignore clicks from action menu or dropdown
+                    if ((e.target as Element).closest('.col-menu') || (e.target as Element).closest('.dropdown-menu'))
+                        return;
 
-                    const clauseEl = document.getElementById('detailClause')!;
-                    const clauseSection = document.getElementById('detailClauseSection') as HTMLElement;
-                    if (data.violationClause) {
-                        clauseEl.textContent = data.violationClause;
-                        clauseSection.style.display = 'block';
-                    } else {
-                        clauseSection.style.display = 'none';
+                    const card = (e.target as Element).closest('.finding-item') as HTMLElement | null;
+                    if (card) {
+                        const data = JSON.parse(card.dataset.content || '{}');
+
+                        document.getElementById('detailTitle')!.textContent = data.title;
+                        document.getElementById('detailYear')!.textContent = data.year;
+
+                        // Render Tags
+                        const tagsContainer = document.getElementById('detailTags')!;
+                        tagsContainer.innerHTML = '';
+                        const tags = data.tags || [];
+                        tags.forEach((t: string) => {
+                            const span = document.createElement('span');
+                            span.className = 'tag-badge';
+                            span.textContent = t;
+                            tagsContainer.appendChild(span);
+                        });
+
+                        document.getElementById('detailDesc')!.textContent = data.description;
+
+                        const clauseEl = document.getElementById('detailClause')!;
+                        const clauseSection = document.getElementById('detailClauseSection') as HTMLElement;
+                        if (data.violationClause) {
+                            clauseEl.textContent = data.violationClause;
+                            clauseSection.style.display = 'block';
+                        } else {
+                            clauseSection.style.display = 'none';
+                        }
+
+                        const solEl = document.getElementById('detailSolution')!;
+                        const solSection = document.getElementById('detailSolutionSection') as HTMLElement;
+                        if (data.solution) {
+                            solEl.textContent = data.solution;
+                            solSection.style.display = 'block';
+                        } else {
+                            solSection.style.display = 'none';
+                        }
+
+                        detailModal.classList.add('open');
                     }
-
-                    const solEl = document.getElementById('detailSolution')!;
-                    const solSection = document.getElementById('detailSolutionSection') as HTMLElement;
-                    if (data.solution) {
-                        solEl.textContent = data.solution;
-                        solSection.style.display = 'block';
-                    } else {
-                        solSection.style.display = 'none';
-                    }
-
-                    detailModal!.classList.add('open');
-                }
-            });
+                });
+            } // end if (detailModal)
         }
 
         function createCardElement(item: any): HTMLElement {
