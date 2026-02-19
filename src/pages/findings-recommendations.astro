@@ -159,7 +159,7 @@ const AVAILABLE_TAGS = [
         /* Filter Dropdown Styles */
         .controls-header {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 50px;
+            grid-template-columns: 0.6fr 2.4fr 60px 50px;
             gap: 1rem;
             padding: 0.2rem 1rem;
             border-bottom: 2px solid var(--border-color);
@@ -309,8 +309,7 @@ const AVAILABLE_TAGS = [
 
         .finding-item {
             display: grid;
-            /* Perfectly even distribution: 1fr 1fr 1fr */
-            grid-template-columns: 1fr 1fr 1fr 50px;
+            grid-template-columns: 0.6fr 2.4fr 60px 50px;
             gap: 1rem;
             padding: 0.25rem 1rem; /* Ultra compact layout */
             background: var(--bg-card);
@@ -360,7 +359,7 @@ const AVAILABLE_TAGS = [
         .col-year {
             font-size: 0.85rem; /* Match Resources col-date size */
             color: var(--text-muted);
-            text-align: left; /* Standardize left alignment to match others */
+            text-align: right;
         }
 
         /* Action Menu Styles */
@@ -499,7 +498,7 @@ const AVAILABLE_TAGS = [
             /* 1. Header: Use Grid to match Item exactly */
             .controls-header {
                 display: grid !important;
-                grid-template-columns: 95px 1fr 75px 30px; /* Adjusted: 95px Type, 75px Year */
+                grid-template-columns: 70px 1fr 60px 30px;
                 gap: 0.5rem;
                 padding: 0.5rem 0.5rem;
                 overflow-x: visible;
@@ -508,7 +507,7 @@ const AVAILABLE_TAGS = [
             /* 2. Items: Match Header Grid */
             .finding-item {
                 display: grid;
-                grid-template-columns: 95px 1fr 75px 30px; /* Match header */
+                grid-template-columns: 70px 1fr 60px 30px;
                 gap: 0.5rem;
                 padding: 0.25rem 0.5rem;
                 align-items: center;
@@ -803,7 +802,7 @@ const AVAILABLE_TAGS = [
         <!-- Col 1: Tag Filter Dropdown (Native Details) -->
         <details class="filter-dropdown" id="tagDropdown">
             <summary class="dropdown-btn" id="tagDropdownBtn">
-                <span>지적권고유형</span>
+                <span>유형</span>
                 <Icon name="chevron-down" size="14" />
             </summary>
             <div class="dropdown-content" id="tagDropdownContent">
