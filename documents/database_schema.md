@@ -70,20 +70,32 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 자료실(Resources)의 게시물 및 파일 정보를 저장합니다.
 
-| 필드명         | 타입        | 설명                           | 기본값              |
-| :------------- | :---------- | :----------------------------- | :------------------ |
-| `id`           | `uuid` (PK) | 고유 식별자                    | `gen_random_uuid()` |
-| `title`        | `text`      | 자료 제목                      |                     |
-| `category`     | `text`      | 분류 (작성지침, 가이드북 등)   |                     |
-| `file_url`     | `text`      | Supabase Storage 파일 경로     |                     |
-| `file_name`    | `text`      | 원본 파일명                    |                     |
-| `author`       | `text`      | 표시용 작성자명 (보조/레거시)  |                     |
-| `user_id`      | `uuid` (FK) | 등록자 ID (`profiles.id` 참조) | `auth.uid()`        |
-| `view_count`   | `integer`   | 조회수                         | 0                   |
-| `content_html` | `text`      | HTML/Markdown 내용             |                     |
-| `created_at`   | `timestamp` | 생성 일시                      | `now()`             |
+| 필드명           | 타입            | 설명                           | 기본값              |
+| :--------------- | :-------------- | :----------------------------- | :------------------ |
+| `id`             | `uuid` (PK)     | 고유 식별자                    | `gen_random_uuid()` |
+| `title`          | `text`          | 자료 제목                      |                     |
+| `category`       | `text`          | 분류 (작성지침, 가이드북 등)   |                     |
+| `slug`           | `text` (UNIQUE) | URL 친화적 고유 식별자         |                     |
+| `year`           | `integer`       | 자료 저작년도 (제작년도)       |                     |
+| `file_url`       | `text`          | Supabase Storage 파일 경로     |                     |
+| `file_name`      | `text`          | 원본 파일명                    |                     |
+| `author`         | `text`          | 표시용 작성자명 (보조/레거시)  |                     |
+| `user_id`        | `uuid` (FK)     | 등록자 ID (`profiles.id` 참조) | `auth.uid()`        |
+| `view_count`     | `integer`       | 조회수                         | `0`                 |
+| `download_count` | `integer`       | 다운로드 횟수                  | `0`                 |
+| `content_html`   | `text`          | HTML/Markdown 내용             |                     |
+| `created_at`     | `timestamp`     | 생성 일시 (DB 등록 일시)       | `now()`             |
 
-> **Note**: `registrant_email` 필드는 제거되었으며, `user_id`를 통해 `profiles` 테이블의 정보(`real_name`, `login_email`)를 참조합니다.
+> **Note**:
+>
+> - **`slug`**: URL 친화적 고유 식별자 (예: `safety-regulations-guide`)
+>     - 체크리스트, 알림 등에서 자료를 안정적으로 참조하기 위해 사용
+>     - 한 번 설정하면 **절대 변경 금지** (링크 깨짐 방지)
+>     - 자료 삭제 후 재등록 시 동일한 slug 재사용 가능
+>     - 관리: `documents/resource_slugs.md` 참조
+> - **`year`**: 자료의 저작년도(제작년도)를 저장하며, `created_at`(DB 등록일시)과 구별됩니다.
+> - **`view_count`, `download_count`**: 자료의 조회수와 다운로드 횟수를 추적합니다.
+> - `registrant_email` 필드는 제거되었으며, `user_id`를 통해 `profiles` 테이블의 정보(`real_name`, `login_email`)를 참조합니다.
 
 ### 4. `allowed_members`
 
@@ -213,22 +225,23 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 ### 스크립트 구성 (섹션별)
 
-| 섹션          | 내용                                                       |
-| ------------- | ---------------------------------------------------------- |
-| 1             | `profiles` 컬럼 추가 (email_verified, verification_method) |
-| 2             | `email_verification_codes` 테이블                          |
-| 3             | 인증 상태 마이그레이션 (admin → verified)                  |
-| 4             | 기존 데이터 업데이트                                       |
-| 5             | 코멘트                                                     |
-| 6             | 검증 요약 출력                                             |
-| 7             | `verification_requests` 컬럼 추가                          |
-| 8             | `notifications` 컬럼 추가                                  |
-| 9             | `notifications` 인덱스/코멘트                              |
-| 10            | `glossary_terms` 테이블                                    |
-| 11 (구 7)     | `feedback` 테이블 + Storage 버킷                           |
-| 12 (구 10)    | RPC Functions (`delete_own_account`)                       |
-| **13 (신규)** | **`push_subscriptions` 테이블 (웹 푸시)**                  |
-| **14 (신규)** | **테스트 계정 초기 profiles 설정**                         |
+| 섹션       | 내용                                                       |
+| ---------- | ---------------------------------------------------------- |
+| 1          | `profiles` 컬럼 추가 (email_verified, verification_method) |
+| 2          | `email_verification_codes` 테이블                          |
+| 3          | 인증 상태 마이그레이션 (admin → verified)                  |
+| 4          | 기존 데이터 업데이트                                       |
+| 5          | 코멘트                                                     |
+| 6          | 검증 요약 출력                                             |
+| 7          | `verification_requests` 컬럼 추가                          |
+| 8          | `notifications` 컬럼 추가                                  |
+| 9          | `notifications` 인덱스/코멘트                              |
+| 10         | `glossary_terms` 테이블                                    |
+| 11 (구 7)  | `feedback` 테이블 + Storage 버킷                           |
+| 12 (구 10) | RPC Functions (`delete_own_account`)                       |
+| 13         | `push_subscriptions` 테이블 (웹 푸시)                      |
+| **14**     | **`archives` 테이블 year, download_count, slug 컬럼 추가** |
+| 15         | 테스트 계정 초기 profiles 설정                             |
 
 ## SQL 조회 쿼리 참고
 
