@@ -105,15 +105,15 @@ const { pathname } = Astro.url;
             <span class="icon"><Icon name="search" size="18" /></span>
             <span class="link-text">용어검색</span>
         </button>
+        <a href="/guide" class={pathname.startsWith('/guide') ? 'active' : ''} aria-label="Usage Guide">
+            <span class="icon"><Icon name="help" size="18" /></span>
+            <span class="link-text">이용안내</span>
+        </a>
+        <a href="/settings" class={pathname.startsWith('/settings') ? 'active' : ''} aria-label="Settings">
+            <span class="icon"><Icon name="settings" size="18" /></span>
+            <span class="link-text">설정</span>
+        </a>
     </div>
-    <a href="/guide" class={pathname.startsWith('/guide') ? 'active' : ''} aria-label="Usage Guide">
-        <span class="icon"><Icon name="help" size="18" /></span>
-        <span class="link-text">이용안내</span>
-    </a>
-    <a href="/settings" class={pathname.startsWith('/settings') ? 'active' : ''} aria-label="Settings">
-        <span class="icon"><Icon name="settings" size="18" /></span>
-        <span class="link-text">설정</span>
-    </a>
     <div class="nav-group">
         <span class="group-title">사용자</span>
         <a href="/mypage" class={pathname.startsWith('/mypage') ? 'active' : ''} aria-label="My Page">
