@@ -1,10 +1,12 @@
 -- ==============================================================================
 -- Master Database Schema: Safe Migration Script (데이터 보존)
 -- Description: 기존 데이터를 유지하면서 스키마 변경 적용
--- Version: 2.4 (push_subscriptions 테이블 추가 + 테스트 계정 초기 설정 통합)
+-- Version: 2.6 (archives 테이블 slug 컬럼 추가)
 -- Usage: Supabase SQL Editor에서 실행 (반복 실행 가능)
 --
 -- 변경 이력:
+-- - 2026-02-19: archives 테이블 slug 컬럼 추가 (URL 친화적 고유 식별자)
+-- - 2026-02-19: archives 테이블 year, download_count 컬럼 추가
 -- - 2026-02-18: push_subscriptions 테이블 추가 (웹 푸시 알림 구독 정보)
 -- - 2026-02-18: 테스트 계정 초기 profiles 설정 SQL 통합 (11번 섹션)
 -- - 2026-02-16: delete_own_account() RPC 함수 추가 (회원 탈퇴)
@@ -773,7 +775,88 @@ COMMENT ON COLUMN public.push_subscriptions.auth IS '인증 시크릿';
 COMMENT ON COLUMN public.push_subscriptions.user_agent IS '구독한 기기 UA (디버깅용)';
 
 -- ============================================================
--- 12. 개발용 테스트 계정 초기 profiles 설정
+-- 12. Add year and download_count columns to archives table
+-- ============================================================
+
+DO $$
+BEGIN
+    -- Add year column for production year
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'archives'
+        AND column_name = 'year'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD COLUMN year integer;
+
+        RAISE NOTICE 'Added year column to archives';
+    ELSE
+        RAISE NOTICE 'year column already exists';
+    END IF;
+
+    -- Add download_count column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'archives'
+        AND column_name = 'download_count'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD COLUMN download_count integer DEFAULT 0;
+
+        RAISE NOTICE 'Added download_count column to archives';
+    ELSE
+        RAISE NOTICE 'download_count column already exists';
+    END IF;
+
+    -- Add slug column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'archives'
+        AND column_name = 'slug'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD COLUMN slug text UNIQUE;
+
+        RAISE NOTICE 'Added slug column to archives';
+    ELSE
+        RAISE NOTICE 'slug column already exists';
+    END IF;
+END $$;
+
+COMMENT ON COLUMN public.archives.year IS '자료 저작년도 (제작년도)';
+COMMENT ON COLUMN public.archives.download_count IS '다운로드 횟수';
+COMMENT ON COLUMN public.archives.slug IS 'URL 친화적 고유 식별자 (예: safety-regulations-guide). 한번 설정하면 변경 금지';
+
+-- Create index for slug-based lookups
+CREATE INDEX IF NOT EXISTS idx_archives_slug ON public.archives(slug);
+
+-- RPC functions for incrementing counters
+CREATE OR REPLACE FUNCTION increment_view_count(archive_id UUID)
+RETURNS void AS $$
+BEGIN
+    UPDATE public.archives
+    SET view_count = COALESCE(view_count, 0) + 1
+    WHERE id = archive_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_download_count(archive_id UUID)
+RETURNS void AS $$
+BEGIN
+    UPDATE public.archives
+    SET download_count = COALESCE(download_count, 0) + 1
+    WHERE id = archive_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION increment_view_count(UUID) IS '자료 조회수 증가';
+COMMENT ON FUNCTION increment_download_count(UUID) IS '자료 다운로드 횟수 증가';
+
+-- ============================================================
+-- 13. 개발용 테스트 계정 초기 profiles 설정
 -- ============================================================
 -- 목적: 테스트 계정(test-user@radsafety.kr, test-admin@radsafety.kr)의
 --       profiles 행을 올바른 상태로 설정합니다.
