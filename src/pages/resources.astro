@@ -62,7 +62,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         /* Sort & Filter Header */
         .controls-header {
             display: grid;
-            grid-template-columns: 110px 1fr 120px 50px;
+            grid-template-columns: 1fr 1fr 1fr 50px;
             gap: 1rem;
             padding: 0.2rem 1rem;
             border-bottom: 2px solid var(--border-color);
@@ -73,6 +73,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-muted);
+            overflow: visible !important;
         }
 
         .cat-filter-dropdown {
@@ -88,7 +89,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
             width: fit-content;
             min-width: 100px;
             padding: 0.4rem 0.6rem;
-            margin-left: 0;
+            margin-left: -0.6rem;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -181,7 +182,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         }
         .resource-card {
             display: grid;
-            grid-template-columns: 110px 1fr 120px 50px;
+            grid-template-columns: 1fr 1fr 1fr 50px;
             gap: 1rem;
             align-items: center;
             padding: 0.25rem 1rem;
