@@ -62,7 +62,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         /* Sort & Filter Header */
         .controls-header {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 50px;
+            grid-template-columns: 0.6fr 2.4fr 60px 50px;
             gap: 1rem;
             padding: 0.2rem 1rem;
             border-bottom: 2px solid var(--border-color);
@@ -182,7 +182,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         }
         .resource-card {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 50px;
+            grid-template-columns: 0.6fr 2.4fr 60px 50px;
             gap: 1rem;
             align-items: center;
             padding: 0.25rem 1rem;
@@ -225,7 +225,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         .col-date {
             font-size: 0.85rem;
             color: var(--text-muted);
-            text-align: left;
+            text-align: right;
         }
 
         /* Menu Styles */
@@ -411,13 +411,13 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         /* Mobile */
         @media (max-width: 768px) {
             .controls-header {
-                grid-template-columns: 95px 1fr 75px 30px;
+                grid-template-columns: 70px 1fr 60px 30px;
                 gap: 0.5rem;
                 padding: 0.5rem 0.5rem;
             }
 
             .resource-card {
-                grid-template-columns: 95px 1fr 75px 30px;
+                grid-template-columns: 70px 1fr 60px 30px;
                 gap: 0.5rem;
                 padding: 0.25rem 0.5rem;
             }
