@@ -157,7 +157,7 @@ import Icon from './Icon.astro';
         background: none;
         border: none;
         text-align: left;
-        font-size: 1rem; /* Increased from 0.85rem */
+        font-size: 0.85rem;
         line-height: 1.3;
         flex-grow: 1;
         display: flex;
@@ -213,14 +213,14 @@ import Icon from './Icon.astro';
 
     /* Content Styling for Markdown */
     :global(.checklist-item .content) {
-        font-size: 1rem; /* Match header size */
+        font-size: 0.85rem;
     }
 
     /* Make headers inside content look like normal text but bold */
     :global(.checklist-item .content h3),
     :global(.checklist-item .content h4),
     :global(.checklist-item .content h5) {
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 700;
         margin: 1rem 0 0.5rem 0;
         color: var(--text-main);
@@ -238,7 +238,7 @@ import Icon from './Icon.astro';
 
     :global(.checklist-item .content p),
     :global(.checklist-item .content li) {
-        font-size: 1rem;
+        font-size: 0.85rem;
         line-height: 1.5;
         margin-bottom: 0.5rem;
     }
@@ -278,7 +278,7 @@ import Icon from './Icon.astro';
 
     /* Adjust checkbox label size if they are in markdown */
     :global(.checklist-item .content li label) {
-        font-size: 1rem;
+        font-size: 0.85rem;
         cursor: pointer;
     }
 

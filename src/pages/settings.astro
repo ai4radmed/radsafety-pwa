@@ -5,7 +5,7 @@ import Icon from '../components/Icon.astro';
 
 <DashboardLayout title="설정">
     <div class="settings-container">
-        <h1><Icon name="settings" size="32" class="title-icon" /> 설정</h1>
+        <h1><Icon name="settings" size="24" class="title-icon" /> 설정</h1>
         <p class="subtitle">앱의 화면 및 기능을 사용자 환경에 맞게 조정합니다.</p>
 
         <div class="setting-card">
@@ -74,9 +74,11 @@ import Icon from '../components/Icon.astro';
             margin: 0 auto;
         }
         h1 {
+            font-size: 1rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.5rem;
             margin-bottom: 0.5rem;
         }
         .subtitle {
