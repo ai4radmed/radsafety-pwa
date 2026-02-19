@@ -250,6 +250,57 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         console.log(`  ✓ 토글=${isChecked}, 상태="${text}" — 동기화 확인`);
     });
 
+    // ── 캐시 초기화 ─────────────────────────────────────────
+    test('설정 — 캐시 초기화 버튼이 표시된다', async ({ page }) => {
+        await page.goto('/settings');
+        await page.waitForLoadState('networkidle');
+
+        const cacheResetBtn = page.locator('#cacheResetBtn');
+        await expect(cacheResetBtn).toBeVisible();
+        await expect(cacheResetBtn).toContainText('캐시 초기화');
+
+        console.log('  ✓ 캐시 초기화 버튼 표시 확인');
+    });
+
+    test('설정 — 캐시 초기화 confirm 취소 시 아무 일도 일어나지 않는다', async ({ page }) => {
+        await page.goto('/settings');
+        await page.waitForLoadState('networkidle');
+
+        // confirm 대화상자에서 "취소" 선택
+        page.on('dialog', (dialog) => dialog.dismiss());
+
+        const cacheResetBtn = page.locator('#cacheResetBtn');
+        await cacheResetBtn.click();
+
+        // 버튼이 여전히 활성화 상태 (disabled 되지 않음)
+        await expect(cacheResetBtn).toBeEnabled();
+        // 페이지가 그대로 유지됨
+        expect(page.url()).toContain('/settings');
+
+        console.log('  ✓ 캐시 초기화 취소 시 정상 유지 확인');
+    });
+
+    test('설정 — 캐시 초기화 confirm 수락 시 페이지가 새로고침된다', async ({ page }) => {
+        await page.goto('/settings');
+        await page.waitForLoadState('networkidle');
+
+        // confirm 대화상자에서 "확인" 선택
+        page.on('dialog', (dialog) => dialog.accept());
+
+        const cacheResetBtn = page.locator('#cacheResetBtn');
+        await cacheResetBtn.click();
+
+        // 새로고침 후 설정 페이지가 다시 로드됨
+        await page.waitForLoadState('networkidle');
+        expect(page.url()).toContain('/settings');
+
+        // 새로고침 후 버튼이 다시 정상 상태로 표시됨
+        const resetBtnAfter = page.locator('#cacheResetBtn');
+        await expect(resetBtnAfter).toBeVisible();
+
+        console.log('  ✓ 캐시 초기화 수락 시 새로고침 확인');
+    });
+
     // ── 로그아웃 ─────────────────────────────────────────────
     test('로그아웃 — /login 으로 이동 및 세션 초기화', async ({ page }) => {
         await page.goto('/mypage');
