@@ -66,6 +66,23 @@ import Icon from '../components/Icon.astro';
                 </div>
             </div>
         </div>
+
+        <div class="setting-card" style="margin-top: 1.5rem;">
+            <div class="setting-header">
+                <h2>앱 데이터</h2>
+                <p>
+                    앱이 비정상적으로 동작할 때 캐시를 초기화하면 문제가 해결될 수 있습니다. 초기화 후 페이지가 자동으로
+                    새로고침됩니다.
+                </p>
+            </div>
+            <div class="control-group">
+                <button class="cache-reset-btn" id="cacheResetBtn" type="button">
+                    <Icon name="trash" size="18" />
+                    캐시 초기화
+                </button>
+                <div id="cacheResetStatus" class="cache-reset-status" style="display:none;"></div>
+            </div>
+        </div>
     </div>
 
     <style>
@@ -241,6 +258,45 @@ import Icon from '../components/Icon.astro';
             color: #ef4444;
         }
 
+        /* 캐시 초기화 */
+        .cache-reset-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.2rem;
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cache-reset-btn:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .cache-reset-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .cache-reset-status {
+            margin-top: 0.75rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .cache-reset-status--success {
+            background: rgba(22, 163, 74, 0.08);
+            border: 1px solid rgba(22, 163, 74, 0.2);
+            color: #16a34a;
+        }
+        .cache-reset-status--error {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
         @media (max-width: 600px) {
             .font-control-options {
                 grid-template-columns: repeat(2, 1fr);
@@ -406,6 +462,40 @@ import Icon from '../components/Icon.astro';
                 if (pushToggle.checked) subscribePush();
                 else unsubscribePush();
             });
+
+            // ── 캐시 초기화 ──────────────────────────────────────────
+            const cacheResetBtn = document.getElementById('cacheResetBtn') as HTMLButtonElement | null;
+            const cacheResetStatus = document.getElementById('cacheResetStatus');
+
+            if (cacheResetBtn && cacheResetStatus) {
+                cacheResetBtn.addEventListener('click', async () => {
+                    if (!confirm('캐시를 초기화하시겠습니까?\n앱이 새로고침되며, 다시 로그인이 필요할 수 있습니다.'))
+                        return;
+
+                    cacheResetBtn.disabled = true;
+                    cacheResetBtn.textContent = '초기화 중...';
+
+                    try {
+                        // 1. 모든 Cache Storage 삭제
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map((k) => caches.delete(k)));
+
+                        // 2. Service Worker 해제
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(registrations.map((r) => r.unregister()));
+
+                        // 3. 새로고침 (SW가 다시 등록됨)
+                        window.location.reload();
+                    } catch (err) {
+                        console.error('캐시 초기화 실패:', err);
+                        cacheResetStatus.textContent = '초기화에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.';
+                        cacheResetStatus.className = 'cache-reset-status cache-reset-status--error';
+                        cacheResetStatus.style.display = 'block';
+                        cacheResetBtn.disabled = false;
+                        cacheResetBtn.textContent = '캐시 초기화';
+                    }
+                });
+            }
         });
     </script>
 </DashboardLayout>

@@ -41,19 +41,19 @@
 > **Astro 핵심 개념**: `src/pages/` 안의 파일명이 곧 URL이 됩니다.
 > 예: `login.astro` → `https://사이트.com/login`
 
-| 파일                             | URL                         | 역할                              |
-| :------------------------------- | :-------------------------- | :-------------------------------- |
-| `index.astro`                    | `/`                         | 메인(홈) 페이지                   |
-| `login.astro`                    | `/login`                    | 로그인 페이지                     |
-| `mypage.astro`                   | `/mypage`                   | 마이페이지 (프로필, 면허 정보 등) |
-| `resources.astro`                | `/resources`                | 자료실 (방사선안전 관련 자료)     |
-| `findings-recommendations.astro` | `/findings-recommendations` | 지적사항 및 권고                  |
-| `inspection-prep.astro`          | `/inspection-prep`          | 수검 준비 자료                    |
-| `guide.astro`                    | `/guide`                    | 사용 가이드                       |
-| `feedback.astro`                 | `/feedback`                 | 피드백/의견 제출                  |
-| `my-feedback.astro`              | `/my-feedback`              | 내 피드백 조회                    |
-| `notifications.astro`            | `/notifications`            | 알림 페이지                       |
-| `settings.astro`                 | `/settings`                 | 설정 페이지                       |
+| 파일                             | URL                         | 역할                                            |
+| :------------------------------- | :-------------------------- | :---------------------------------------------- |
+| `index.astro`                    | `/`                         | 메인(홈) 페이지                                 |
+| `login.astro`                    | `/login`                    | 로그인 페이지                                   |
+| `mypage.astro`                   | `/mypage`                   | 마이페이지 (프로필, 면허 정보 등)               |
+| `resources.astro`                | `/resources`                | 자료실 (방사선안전 관련 자료)                   |
+| `findings-recommendations.astro` | `/findings-recommendations` | 지적사항 및 권고                                |
+| `inspection-prep.astro`          | `/inspection-prep`          | 수검 준비 자료                                  |
+| `guide.astro`                    | `/guide`                    | 사용 가이드                                     |
+| `feedback.astro`                 | `/feedback`                 | 피드백/의견 제출                                |
+| `my-feedback.astro`              | `/my-feedback`              | 내 피드백 조회                                  |
+| `notifications.astro`            | `/notifications`            | 알림 페이지                                     |
+| `settings.astro`                 | `/settings`                 | 설정 페이지 (글자 크기, 푸시 알림, 캐시 초기화) |
 
 ##### `src/pages/admin/` — 관리자 전용 페이지
 
@@ -368,10 +368,28 @@ npm run test:e2e:save-session
 
 ---
 
-### 3-5. PWA 설정 변경하기
+### 3-6. PWA 설정 변경하기
 
 - `astro.config.mjs`의 `vite-pwa` 설정을 수정합니다.
 - 아이콘이나 앱 이름은 `public/` 폴더의 매니페스트 관련 파일을 확인하세요.
+
+### 3-7. 캐시 초기화 기능 (`settings.astro`)
+
+설정 페이지(`/settings`)의 "앱 데이터" 섹션에 **캐시 초기화** 버튼이 있습니다. 사용자의 브라우저/PWA에서 캐시가 꼬였을 때 스스로 해결할 수 있도록 제공하는 기능입니다.
+
+#### 동작 흐름
+
+1. 사용자가 "캐시 초기화" 버튼 클릭
+2. `confirm()` 확인 대화상자 표시
+3. 모든 Cache Storage 삭제 (`caches.keys()` → `caches.delete()`)
+4. Service Worker 해제 (`navigator.serviceWorker.getRegistrations()` → `unregister()`)
+5. 페이지 자동 새로고침 → SW가 다시 등록되면서 최신 캐시 재구성
+
+#### 유지보수 참고
+
+- 캐시 초기화는 **localStorage를 삭제하지 않습니다** (글자 크기, 푸시 구독 상태 등 사용자 설정 보존)
+- SW 해제 후 새로고침 시 `registerSW.js`가 자동으로 SW를 재등록합니다
+- 실패 시 에러 메시지가 화면에 표시됩니다
 
 ---
 
