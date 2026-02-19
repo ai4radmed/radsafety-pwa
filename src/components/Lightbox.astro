@@ -151,8 +151,10 @@
 
 <script>
     function initLightbox() {
-        const lightbox = document.getElementById('image-lightbox')!;
-        const pagesContainer = document.getElementById('lightbox-pages')!;
+        const lightbox = document.getElementById('image-lightbox');
+        const pagesContainer = document.getElementById('lightbox-pages');
+        if (!lightbox || !pagesContainer) return;
+
         const closeBtn = lightbox.querySelector('.close') as HTMLElement;
         const viewToggleBtn = document.getElementById('view-toggle') as HTMLElement;
 
