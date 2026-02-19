@@ -79,17 +79,16 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 
 ### 현재 커버리지
 
-| 파일                                      | 테스트 대상                                                           | 상태 |
-| ----------------------------------------- | --------------------------------------------------------------------- | ---- |
-| `unit/config/auth.test.ts`                | `getRole()`, `isAdmin()`, `getCertification()`                        | 완료 |
-| `unit/store/user.test.ts`                 | `setUser()`, `clearUser()`, 타입 변환                                 | 완료 |
-| `unit/lib/logger.test.ts`                 | `createLogger()` 구조화 로그                                          | 완료 |
-| `unit/lib/email.test.ts`                  | `sendVerificationEmail()`, `sendFeedbackEmail()` dev-mode             | 완료 |
-| `unit/data/glossary.test.ts`              | 용어 데이터 무결성                                                    | 완료 |
-| `unit/data/resources.test.ts`             | 자료실 데이터 무결성                                                  | 완료 |
-| `unit/lib/push.test.ts`                   | `sendPushToUser()`, `sendPushToUsers()`, VAPID 키 미설정 시 조기 반환 | 완료 |
-| `unit/pages/prerender-check.test.ts`      | 모든 페이지 `prerender = false` 검증 (`/api/push/unsubscribe` 포함)   | 완료 |
-| `unit/pages/settings-cache-reset.test.ts` | 캐시 초기화 버튼 마크업, Cache/SW API 사용, confirm 확인, null-safety | 완료 |
+| 파일                                 | 테스트 대상                                                           | 상태 |
+| ------------------------------------ | --------------------------------------------------------------------- | ---- |
+| `unit/config/auth.test.ts`           | `getRole()`, `isAdmin()`, `getCertification()`                        | 완료 |
+| `unit/store/user.test.ts`            | `setUser()`, `clearUser()`, 타입 변환                                 | 완료 |
+| `unit/lib/logger.test.ts`            | `createLogger()` 구조화 로그                                          | 완료 |
+| `unit/lib/email.test.ts`             | `sendVerificationEmail()`, `sendFeedbackEmail()` dev-mode             | 완료 |
+| `unit/data/glossary.test.ts`         | 용어 데이터 무결성                                                    | 완료 |
+| `unit/data/resources.test.ts`        | 자료실 데이터 무결성                                                  | 완료 |
+| `unit/lib/push.test.ts`              | `sendPushToUser()`, `sendPushToUsers()`, VAPID 키 미설정 시 조기 반환 | 완료 |
+| `unit/pages/prerender-check.test.ts` | 모든 페이지 `prerender = false` 검증 (`/api/push/unsubscribe` 포함)   | 완료 |
 
 ### 추가 필요 (우선순위 순)
 
@@ -121,16 +120,15 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 | `e2e/sidebar-flash.spec.ts`    | 사이드바 초기 상태 깜빡임 없음, 스테일 데이터 초기화 확인                                                      | 완료 |
 | `e2e/auth-callback.spec.ts`    | `/auth/confirm`, `/auth/callback` SSR 동작, CDN 308 캐시 감지                                                  | 완료 |
 | `e2e/offline.spec.ts`          | `/offline` 페이지 렌더링, 링크, 오프라인 시뮬레이션 SW fallback                                                | 완료 |
-| `e2e/pwa.spec.ts`              | 캐시 초기화 버튼 마크업 존재 (비로그인 시 리다이렉트 허용)                                                     | 완료 |
 
 ### 2-2. 인증 후 E2E — 로컬 전용 (`npm run test:e2e:auth`)
 
 > 세션 파일(`tests/fixtures/session-*.json`) 필요. CI에서는 실행되지 않음.
 
-| 파일                              | 테스트 대상                                                                                                                                                              | 상태 |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
-| `e2e/authenticated-user.spec.ts`  | 3-3 일반 사용자 기능: 마이페이지, 네비게이션, 자료실, 알림, 의견, 설정 페이지 푸시 토글 UI/상태 동기화, 캐시 초기화 버튼 UI, `/api/push/subscribe·unsubscribe` 인증 검사 | 완료 |
-| `e2e/authenticated-admin.spec.ts` | 3-4 관리자 기능: 회원관리, 인증요청, 의견/용어 관리, 알림발송, View Transitions 재방문                                                                                   | 완료 |
+| 파일                              | 테스트 대상                                                                                                                                         | 상태 |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `e2e/authenticated-user.spec.ts`  | 3-3 일반 사용자 기능: 마이페이지, 네비게이션, 자료실, 알림, 의견, 설정 페이지 푸시 토글 UI/상태 동기화, `/api/push/subscribe·unsubscribe` 인증 검사 | 완료 |
+| `e2e/authenticated-admin.spec.ts` | 3-4 관리자 기능: 회원관리, 인증요청, 의견/용어 관리, 알림발송, View Transitions 재방문                                                              | 완료 |
 
 ### 2-3. 세션 저장 (`npm run test:e2e:save-session`)
 
@@ -203,14 +201,11 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 - [ ] **지적권고사례 CRUD**: 사례 등록 → 목록 반영, 수정, 삭제 _(DB 쓰기 작업)_
 - [ ] **의견 보내기**: 제목/내용 작성 → 전송 → 성공 메시지 _(실제 이메일 발송 확인)_
 - [x] ~~**설정 페이지 푸시 토글 UI**: 토글 스위치 표시, 상태 텍스트 초기화, 토글-상태 동기화~~ → **반자동화됨** (`authenticated-user.spec.ts`)
-- [x] ~~**설정 페이지 캐시 초기화 버튼 UI**: 버튼 표시, confirm 대화상자, 초기화 후 새로고침~~ → **반자동화됨** (`authenticated-user.spec.ts`)
 - [ ] **웹 푸시 토글 ON**: 설정 페이지 → 푸시 알림 토글 켜기 → 브라우저 권한 팝업 → 허용 → "활성화됨" 표시 + Supabase `push_subscriptions` 레코드 확인 _(HTTPS 배포 환경에서만 가능)_
 - [ ] **웹 푸시 토글 OFF**: 푸시 알림 토글 끄기 → "알림을 받으려면 켜세요" 표시 + Supabase 레코드 삭제 확인
 - [ ] **웹 푸시 새로고침 후 상태 유지**: 토글 ON 후 페이지 새로고침 → 토글 checked 유지
 - [ ] **웹 푸시 권한 거부 시**: 토글 켜기 → 브라우저 팝업 거부 → 토글 자동 해제 + disabled + "차단됨" 표시
 - [ ] **웹 푸시 알림 수신**: 관리자 알림 발송 또는 인증 처리 후 기기 상단에 알림 팝업 표시 확인 _(실제 기기 확인 필요)_
-- [ ] **캐시 초기화**: 설정 페이지 → "캐시 초기화" 클릭 → 확인 → 페이지 새로고침 → 정상 동작 확인 _(모바일 PWA에서도 확인 필요)_
-- [ ] **캐시 초기화 후 SW 재등록**: 캐시 초기화 후 DevTools → Application → Service Workers에서 SW가 다시 등록되어 있는지 확인
 - [ ] **모바일**: 하단 네비게이션 바 표시 및 동작
 
 ### 4-4. 관리자 기능 (기능 변경 시)

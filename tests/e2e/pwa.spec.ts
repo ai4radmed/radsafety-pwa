@@ -27,20 +27,6 @@ test.describe('PWA 기본 검증', () => {
     });
 });
 
-test.describe('캐시 초기화 UI 검증 (비로그인)', () => {
-    test('설정 페이지에 캐시 초기화 버튼 마크업이 존재한다', async ({ page }) => {
-        await page.goto('/settings');
-        // 비로그인 시 /login 리다이렉트 가능하므로, 설정 페이지 도달 여부 확인
-        if (page.url().includes('/settings')) {
-            const cacheResetBtn = page.locator('#cacheResetBtn');
-            await expect(cacheResetBtn).toBeAttached();
-        } else {
-            // 비로그인 → 리다이렉트됨 — 인증 후 테스트에서 검증
-            console.log('  ⚠ /settings → 로그인 리다이렉트 (비로그인 상태). 인증 후 E2E에서 검증.');
-        }
-    });
-});
-
 test.describe('웹 푸시 인프라 검증 (비로그인)', () => {
     test('sw-push.js 정적 파일이 서빙된다', async ({ page }) => {
         const response = await page.goto('/sw-push.js');
