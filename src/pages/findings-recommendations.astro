@@ -1018,6 +1018,11 @@ const AVAILABLE_TAGS = [
         });
 
         function initApp() {
+            // Early return if not on findings page (prevents View Transitions from running this on other pages)
+            if (!window.location.pathname.includes('/findings-recommendations')) {
+                return;
+            }
+
             // Permission check for register button
             const currentUser = userProfile.get();
             const canUpload =
@@ -1037,7 +1042,6 @@ const AVAILABLE_TAGS = [
 
             // Early return if critical elements are missing
             if (!grid || !searchInput || !selectAllCheckbox || !dropdownDetails || !applyBtn) {
-                console.warn('Findings page: Required DOM elements not found, skipping initialization');
                 return;
             }
 
