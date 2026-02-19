@@ -88,7 +88,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
             width: fit-content;
             min-width: 100px;
             padding: 0.4rem 0.6rem;
-            margin-left: -0.6rem;
+            margin-left: 0;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -410,20 +410,19 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         /* Mobile */
         @media (max-width: 768px) {
             .controls-header {
-                grid-template-columns: 80px 1fr 50px;
+                grid-template-columns: 95px 1fr 75px 30px;
                 gap: 0.5rem;
-            }
-            .controls-header .header-item:nth-child(3) {
-                display: none;
+                padding: 0.5rem 0.5rem;
             }
 
             .resource-card {
-                grid-template-columns: 80px 1fr 50px;
+                grid-template-columns: 95px 1fr 75px 30px;
                 gap: 0.5rem;
-                padding: 0.5rem;
+                padding: 0.25rem 0.5rem;
             }
             .col-date {
-                display: none;
+                font-size: 0.8rem;
+                text-align: right;
             }
             .cat-badge {
                 font-size: 0.7rem;
@@ -483,7 +482,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         </div>
         <div class="header-item">
             <button class="sort-btn active" data-sort="date" data-order="desc"
-                >날짜 <Icon name="chevron-down" size="14" class="sort-icon" /></button
+                >년도 <Icon name="chevron-down" size="14" class="sort-icon" /></button
             >
         </div>
         <div class="header-item"></div>
@@ -677,11 +676,9 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
             <div class="resource-card" data-id="${item.id}">
                 <div class="col-cat"><span class="cat-badge">${item.category}</span></div>
                 <div class="col-title">${item.title}</div>
-                <!-- Author & Date -->
+                <!-- Year -->
                 <div class="col-date">
-                    ${item.author || '관리자'}
-                    <span style="margin:0 4px; color:var(--text-muted);">·</span>
-                    ${new Date(item.created_at).toLocaleDateString()}
+                    ${new Date(item.created_at).getFullYear()}
                 </div>
                 ${
                     canManage
