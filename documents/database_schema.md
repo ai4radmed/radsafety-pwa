@@ -215,33 +215,49 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 `sql_query/` 폴더에는 단 하나의 스크립트만 존재합니다:
 
-| 파일                     | 용도                                                                |
-| ------------------------ | ------------------------------------------------------------------- |
-| `rebuild_all_tables.sql` | 전체 스키마 마이그레이션 (데이터 보존, 멱등성 보장, 반복 실행 가능) |
+| 파일                     | 용도                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `rebuild_all_tables.sql` | 완전한 단일 설치 스크립트 (신규 설치 + 마이그레이션, 데이터 보존, 멱등성 보장, 반복 실행 가능) |
 
-- 신규 환경 세팅: SQL Editor에서 `rebuild_all_tables.sql` 실행
-- 기존 환경 업데이트: 동일 스크립트 재실행 (기존 데이터 자동 보존)
-- 전체 초기화: Supabase Dashboard에서 테이블 수동 삭제 후 재실행
+**Version 3.0 (2026-02-20)**: 이제 신규 Supabase 환경에서 이 파일 하나만 실행하면 모든 필수 테이블이 생성됩니다.
+
+- **신규 환경 세팅**: SQL Editor에서 `rebuild_all_tables.sql` 실행 → 모든 테이블 + RLS 정책 + 인덱스 자동 생성
+- **기존 환경 업데이트**: 동일 스크립트 재실행 (기존 데이터 자동 보존, 누락된 컬럼만 추가)
+- **전체 초기화**: Supabase Dashboard에서 테이블 수동 삭제 후 재실행
+
+### 생성되는 테이블 목록
+
+섹션 0에서 핵심 테이블을 생성합니다:
+
+1. `profiles` - 사용자 프로필 (auth.users와 1:1 관계)
+2. `findings` - 지적 및 권고 사례
+3. `allowed_members` - 회원 가입 허용 목록
+4. `verification_requests` - 인증 요청 내역
+5. `notifications` - 사용자 알림
+6. `email_verification_codes` - 이메일 OTP 인증 (섹션 2)
+7. `glossary_terms` - 법령용어사전 (섹션 10)
+8. `feedback` - 사용자 의견/문의 (섹션 10)
+9. `push_subscriptions` - 웹 푸시 알림 구독 (섹션 11)
+10. `archives` - 자료실 게시물 (**섹션 12**, profiles 외래키 포함)
 
 ### 스크립트 구성 (섹션별)
 
-| 섹션       | 내용                                                       |
-| ---------- | ---------------------------------------------------------- |
-| 1          | `profiles` 컬럼 추가 (email_verified, verification_method) |
-| 2          | `email_verification_codes` 테이블                          |
-| 3          | 인증 상태 마이그레이션 (admin → verified)                  |
-| 4          | 기존 데이터 업데이트                                       |
-| 5          | 코멘트                                                     |
-| 6          | 검증 요약 출력                                             |
-| 7          | `verification_requests` 컬럼 추가                          |
-| 8          | `notifications` 컬럼 추가                                  |
-| 9          | `notifications` 인덱스/코멘트                              |
-| 10         | `glossary_terms` 테이블                                    |
-| 11 (구 7)  | `feedback` 테이블 + Storage 버킷                           |
-| 12 (구 10) | RPC Functions (`delete_own_account`)                       |
-| 13         | `push_subscriptions` 테이블 (웹 푸시)                      |
-| **14**     | **`archives` 테이블 year, download_count, slug 컬럼 추가** |
-| 15         | 테스트 계정 초기 profiles 설정                             |
+| 섹션   | 내용                                                                                                  |
+| ------ | ----------------------------------------------------------------------------------------------------- |
+| **0**  | **핵심 테이블 전체 생성 (profiles, findings, allowed_members, verification_requests, notifications)** |
+| 1      | `profiles` 컬럼 추가 (email_verified, verification_method) - 기존 환경 마이그레이션용                 |
+| 2      | `email_verification_codes` 테이블                                                                     |
+| 3      | 인증 상태 마이그레이션 (admin → verified)                                                             |
+| 4      | 기존 데이터 업데이트                                                                                  |
+| 5      | 코멘트                                                                                                |
+| 6      | 검증 요약 출력                                                                                        |
+| 7      | `verification_requests` 컬럼 추가                                                                     |
+| 8      | `notifications` 컬럼 추가                                                                             |
+| 9      | `notifications` 인덱스/코멘트                                                                         |
+| 10     | `glossary_terms` 테이블 + `feedback` 테이블 + Storage 버킷                                            |
+| 11     | `push_subscriptions` 테이블 (웹 푸시)                                                                 |
+| **12** | **`archives` 테이블 전체 생성 + RLS 정책 + 인덱스 + RPC 함수**                                        |
+| 13     | 테스트 계정 초기 profiles 설정                                                                        |
 
 ## SQL 조회 쿼리 참고
 
