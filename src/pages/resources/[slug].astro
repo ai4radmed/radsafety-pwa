@@ -1,0 +1,17 @@
+---
+/**
+ * Dynamic route for accessing resources by slug
+ * URL: /resources/safety-regulations-guide
+ */
+export const prerender = false;
+
+// Redirect to main resources page with slug parameter
+const { slug } = Astro.params;
+
+if (!slug) {
+    return Astro.redirect('/resources');
+}
+
+// Redirect to /resources?slug=xxx to maintain existing viewer logic
+return Astro.redirect(`/resources?slug=${encodeURIComponent(slug)}`);
+---

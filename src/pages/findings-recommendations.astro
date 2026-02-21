@@ -159,8 +159,8 @@ const AVAILABLE_TAGS = [
         /* Filter Dropdown Styles */
         .controls-header {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 50px;
-            gap: 1rem;
+            grid-template-columns: 0.6fr 2.4fr 45px 50px;
+            gap: 0.75rem;
             padding: 0.2rem 1rem;
             border-bottom: 2px solid var(--border-color);
             margin-bottom: 0.5rem;
@@ -185,7 +185,7 @@ const AVAILABLE_TAGS = [
         .dropdown-btn {
             list-style: none; /* Remove default marker */
             width: fit-content;
-            min-width: 100px;
+            min-width: 60px;
             padding: 0.4rem 0.6rem;
             margin-left: -0.6rem; /* Pull back to align text with card content */
             background: var(--bg-card);
@@ -196,6 +196,7 @@ const AVAILABLE_TAGS = [
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 0.3rem;
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-muted);
@@ -309,9 +310,8 @@ const AVAILABLE_TAGS = [
 
         .finding-item {
             display: grid;
-            /* Perfectly even distribution: 1fr 1fr 1fr */
-            grid-template-columns: 1fr 1fr 1fr 50px;
-            gap: 1rem;
+            grid-template-columns: 0.6fr 2.4fr 45px 50px;
+            gap: 0.75rem;
             padding: 0.25rem 1rem; /* Ultra compact layout */
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -336,7 +336,7 @@ const AVAILABLE_TAGS = [
         .tag-badge {
             display: inline-block;
             font-size: 0.75rem;
-            padding: 0.2rem 0.6rem; /* Standardized to match Resources */
+            padding: 0.15rem 0.5rem;
             border-radius: 4px;
             background: var(--bg-body);
             color: var(--text-muted);
@@ -360,7 +360,7 @@ const AVAILABLE_TAGS = [
         .col-year {
             font-size: 0.85rem; /* Match Resources col-date size */
             color: var(--text-muted);
-            text-align: left; /* Standardize left alignment to match others */
+            text-align: right;
         }
 
         /* Action Menu Styles */
@@ -499,8 +499,8 @@ const AVAILABLE_TAGS = [
             /* 1. Header: Use Grid to match Item exactly */
             .controls-header {
                 display: grid !important;
-                grid-template-columns: 95px 1fr 75px 30px; /* Adjusted: 95px Type, 75px Year */
-                gap: 0.5rem;
+                grid-template-columns: 70px 1fr 45px 30px;
+                gap: 0.4rem;
                 padding: 0.5rem 0.5rem;
                 overflow-x: visible;
             }
@@ -508,9 +508,9 @@ const AVAILABLE_TAGS = [
             /* 2. Items: Match Header Grid */
             .finding-item {
                 display: grid;
-                grid-template-columns: 95px 1fr 75px 30px; /* Match header */
-                gap: 0.5rem;
-                padding: 0.4rem 0.5rem;
+                grid-template-columns: 70px 1fr 45px 30px;
+                gap: 0.4rem;
+                padding: 0.25rem 0.5rem;
                 align-items: center;
             }
 
@@ -785,7 +785,7 @@ const AVAILABLE_TAGS = [
 
     <div class="page-header">
         <div class="page-title">
-            <Icon name="alert-circle" size="18" /> 지적권고사례
+            <Icon name="alert-circle" size="24" /> 지적권고사례
         </div>
         <button id="registerBtn" class="action-btn" style="display:none;"
             ><Icon name="pencil" size="16" />사례 등록</button
@@ -803,7 +803,7 @@ const AVAILABLE_TAGS = [
         <!-- Col 1: Tag Filter Dropdown (Native Details) -->
         <details class="filter-dropdown" id="tagDropdown">
             <summary class="dropdown-btn" id="tagDropdownBtn">
-                <span>지적권고유형</span>
+                <span>유형</span>
                 <Icon name="chevron-down" size="14" />
             </summary>
             <div class="dropdown-content" id="tagDropdownContent">
@@ -1018,6 +1018,11 @@ const AVAILABLE_TAGS = [
         });
 
         function initApp() {
+            // Early return if not on findings page (prevents View Transitions from running this on other pages)
+            if (!window.location.pathname.includes('/findings-recommendations')) {
+                return;
+            }
+
             // Permission check for register button
             const currentUser = userProfile.get();
             const canUpload =
@@ -1037,7 +1042,6 @@ const AVAILABLE_TAGS = [
 
             // Early return if critical elements are missing
             if (!grid || !searchInput || !selectAllCheckbox || !dropdownDetails || !applyBtn) {
-                console.warn('Findings page: Required DOM elements not found, skipping initialization');
                 return;
             }
 

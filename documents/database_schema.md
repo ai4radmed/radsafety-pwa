@@ -70,20 +70,32 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 자료실(Resources)의 게시물 및 파일 정보를 저장합니다.
 
-| 필드명         | 타입        | 설명                           | 기본값              |
-| :------------- | :---------- | :----------------------------- | :------------------ |
-| `id`           | `uuid` (PK) | 고유 식별자                    | `gen_random_uuid()` |
-| `title`        | `text`      | 자료 제목                      |                     |
-| `category`     | `text`      | 분류 (작성지침, 가이드북 등)   |                     |
-| `file_url`     | `text`      | Supabase Storage 파일 경로     |                     |
-| `file_name`    | `text`      | 원본 파일명                    |                     |
-| `author`       | `text`      | 표시용 작성자명 (보조/레거시)  |                     |
-| `user_id`      | `uuid` (FK) | 등록자 ID (`profiles.id` 참조) | `auth.uid()`        |
-| `view_count`   | `integer`   | 조회수                         | 0                   |
-| `content_html` | `text`      | HTML/Markdown 내용             |                     |
-| `created_at`   | `timestamp` | 생성 일시                      | `now()`             |
+| 필드명           | 타입            | 설명                           | 기본값              |
+| :--------------- | :-------------- | :----------------------------- | :------------------ |
+| `id`             | `uuid` (PK)     | 고유 식별자                    | `gen_random_uuid()` |
+| `title`          | `text`          | 자료 제목                      |                     |
+| `category`       | `text`          | 분류 (작성지침, 가이드북 등)   |                     |
+| `slug`           | `text` (UNIQUE) | URL 친화적 고유 식별자         |                     |
+| `year`           | `integer`       | 자료 저작년도 (제작년도)       |                     |
+| `file_url`       | `text`          | Supabase Storage 파일 경로     |                     |
+| `file_name`      | `text`          | 원본 파일명                    |                     |
+| `author`         | `text`          | 표시용 작성자명 (보조/레거시)  |                     |
+| `user_id`        | `uuid` (FK)     | 등록자 ID (`profiles.id` 참조) | `auth.uid()`        |
+| `view_count`     | `integer`       | 조회수                         | `0`                 |
+| `download_count` | `integer`       | 다운로드 횟수                  | `0`                 |
+| `content_html`   | `text`          | HTML/Markdown 내용             |                     |
+| `created_at`     | `timestamp`     | 생성 일시 (DB 등록 일시)       | `now()`             |
 
-> **Note**: `registrant_email` 필드는 제거되었으며, `user_id`를 통해 `profiles` 테이블의 정보(`real_name`, `login_email`)를 참조합니다.
+> **Note**:
+>
+> - **`slug`**: URL 친화적 고유 식별자 (예: `safety-regulations-guide`)
+>     - 체크리스트, 알림 등에서 자료를 안정적으로 참조하기 위해 사용
+>     - 한 번 설정하면 **절대 변경 금지** (링크 깨짐 방지)
+>     - 자료 삭제 후 재등록 시 동일한 slug 재사용 가능
+>     - 관리: `documents/resource_slugs.md` 참조
+> - **`year`**: 자료의 저작년도(제작년도)를 저장하며, `created_at`(DB 등록일시)과 구별됩니다.
+> - **`view_count`, `download_count`**: 자료의 조회수와 다운로드 횟수를 추적합니다.
+> - `registrant_email` 필드는 제거되었으며, `user_id`를 통해 `profiles` 테이블의 정보(`real_name`, `login_email`)를 참조합니다.
 
 ### 4. `allowed_members`
 
@@ -199,36 +211,128 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
     - `findings` 테이블: `ON DELETE SET NULL`로 인해 작성자 정보만 NULL로 변경되고 데이터는 보존됨
     - `archives` 테이블: `ON DELETE SET NULL`로 인해 작성자 정보만 NULL로 변경되고 데이터는 보존됨
 
-## SQL 스크립트
+## SQL 스크립트 관리
 
-`sql_query/` 폴더에는 단 하나의 스크립트만 존재합니다:
+`sql_query/` 폴더에는 두 개의 스크립트가 있습니다:
 
-| 파일                     | 용도                                                                |
-| ------------------------ | ------------------------------------------------------------------- |
-| `rebuild_all_tables.sql` | 전체 스키마 마이그레이션 (데이터 보존, 멱등성 보장, 반복 실행 가능) |
+| 파일                         | 용도                                                                                           | 실행 시점                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------- |
+| `rebuild_all_tables.sql`     | 완전한 단일 설치 스크립트 (신규 설치 + 마이그레이션, 데이터 보존, 멱등성 보장, 반복 실행 가능) | 신규 환경 구축, 스키마 업데이트 |
+| `diagnose_archives_fkey.sql` | archives 외래키 진단 및 강제 재생성 (트러블슈팅용)                                             | 외래키 오류 발생 시             |
 
-- 신규 환경 세팅: SQL Editor에서 `rebuild_all_tables.sql` 실행
-- 기존 환경 업데이트: 동일 스크립트 재실행 (기존 데이터 자동 보존)
-- 전체 초기화: Supabase Dashboard에서 테이블 수동 삭제 후 재실행
+**Version 3.2 (2026-02-21)**:
+
+- RLS 무한 재귀 문제 완전 해결 (SECURITY DEFINER 함수 사용)
+- archives 외래키 제약조건을 별도 블록으로 분리하여 안정성 향상
+- 이제 신규 Supabase 환경에서 `rebuild_all_tables.sql` 하나만 실행하면 모든 필수 테이블이 생성됩니다.
+
+- **신규 환경 세팅**: SQL Editor에서 `rebuild_all_tables.sql` 실행 → 모든 테이블 + RLS 정책 + 인덱스 자동 생성
+- **기존 환경 업데이트**: 동일 스크립트 재실행 (기존 데이터 자동 보존, 누락된 컬럼만 추가)
+- **전체 초기화**: Supabase Dashboard에서 테이블 수동 삭제 후 재실행
+
+### 생성되는 테이블 목록
+
+섹션 0에서 핵심 테이블을 생성합니다:
+
+1. `profiles` - 사용자 프로필 (auth.users와 1:1 관계)
+2. `findings` - 지적 및 권고 사례
+3. `allowed_members` - 회원 가입 허용 목록
+4. `verification_requests` - 인증 요청 내역
+5. `notifications` - 사용자 알림
+6. `email_verification_codes` - 이메일 OTP 인증 (섹션 2)
+7. `glossary_terms` - 법령용어사전 (섹션 10)
+8. `feedback` - 사용자 의견/문의 (섹션 10)
+9. `push_subscriptions` - 웹 푸시 알림 구독 (섹션 11)
+10. `archives` - 자료실 게시물 (**섹션 12**, profiles 외래키 포함)
 
 ### 스크립트 구성 (섹션별)
 
-| 섹션          | 내용                                                       |
-| ------------- | ---------------------------------------------------------- |
-| 1             | `profiles` 컬럼 추가 (email_verified, verification_method) |
-| 2             | `email_verification_codes` 테이블                          |
-| 3             | 인증 상태 마이그레이션 (admin → verified)                  |
-| 4             | 기존 데이터 업데이트                                       |
-| 5             | 코멘트                                                     |
-| 6             | 검증 요약 출력                                             |
-| 7             | `verification_requests` 컬럼 추가                          |
-| 8             | `notifications` 컬럼 추가                                  |
-| 9             | `notifications` 인덱스/코멘트                              |
-| 10            | `glossary_terms` 테이블                                    |
-| 11 (구 7)     | `feedback` 테이블 + Storage 버킷                           |
-| 12 (구 10)    | RPC Functions (`delete_own_account`)                       |
-| **13 (신규)** | **`push_subscriptions` 테이블 (웹 푸시)**                  |
-| **14 (신규)** | **테스트 계정 초기 profiles 설정**                         |
+| 섹션   | 내용                                                                                                  |
+| ------ | ----------------------------------------------------------------------------------------------------- |
+| **0**  | **핵심 테이블 전체 생성 (profiles, findings, allowed_members, verification_requests, notifications)** |
+| 1      | `profiles` 컬럼 추가 (email_verified, verification_method) - 기존 환경 마이그레이션용                 |
+| 2      | `email_verification_codes` 테이블                                                                     |
+| 3      | 인증 상태 마이그레이션 (admin → verified)                                                             |
+| 4      | 기존 데이터 업데이트                                                                                  |
+| 5      | 코멘트                                                                                                |
+| 6      | 검증 요약 출력                                                                                        |
+| 7      | `verification_requests` 컬럼 추가                                                                     |
+| 8      | `notifications` 컬럼 추가                                                                             |
+| 9      | `notifications` 인덱스/코멘트                                                                         |
+| 10     | `glossary_terms` 테이블 + `feedback` 테이블 + Storage 버킷                                            |
+| 11     | `push_subscriptions` 테이블 (웹 푸시)                                                                 |
+| **12** | **`archives` 테이블 전체 생성 + RLS 정책 + 인덱스 + RPC 함수**                                        |
+| 13     | 테스트 계정 초기 profiles 설정                                                                        |
+
+### 주요 기술적 개선 사항
+
+#### RLS 무한 재귀 방지 (업계 표준 방식)
+
+**문제**: RLS 정책 내에서 동일 테이블(`profiles`)을 조회하면 무한 재귀 발생
+
+```sql
+-- ❌ 무한 재귀 발생
+CREATE POLICY "Admins can view all profiles"
+ON public.profiles FOR SELECT
+USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
+);
+```
+
+**해결**: SECURITY DEFINER 함수를 사용하여 RLS 우회
+
+```sql
+-- ✅ 안전한 방식
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN (
+        SELECT COALESCE(is_admin, false)
+        FROM public.profiles
+        WHERE id = auth.uid()
+        LIMIT 1
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+CREATE POLICY "Admins can view all profiles"
+ON public.profiles FOR SELECT
+USING (
+    id = auth.uid() OR public.is_current_user_admin() = true
+);
+```
+
+이 패턴은 `profiles`, `findings`, `allowed_members`, `verification_requests`, `notifications`, `glossary_terms`, `feedback`, `archives` 등 모든 관리자 권한 RLS 정책에 적용되었습니다.
+
+#### archives 외래키 안정성 보강
+
+**문제**: 긴 SQL 스크립트 실행 시 일부 블록이 누락되어 외래키가 생성되지 않음
+
+**해결**: CREATE TABLE에서 외래키 인라인 정의 제거, 별도 DO 블록으로 명시적 생성
+
+```sql
+-- ✅ 안전한 방식
+CREATE TABLE IF NOT EXISTS public.archives (
+    ...
+    user_id UUID,  -- 외래키는 별도로 추가
+    ...
+);
+
+-- 외래키 제약조건 명시적 추가 (테이블 생성 후 별도 실행)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'archives' AND constraint_name = 'archives_user_id_fkey'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD CONSTRAINT archives_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+        RAISE NOTICE '✅ [archives] Foreign key constraint created';
+    END IF;
+END $$;
+```
 
 ## SQL 조회 쿼리 참고
 
@@ -245,4 +349,18 @@ SELECT column_name, data_type, is_nullable
 FROM information_schema.columns
 WHERE table_name = 'profiles'
 ORDER BY ordinal_position;
+
+-- 외래키 제약조건 확인
+SELECT
+    tc.constraint_name,
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY';
 ```

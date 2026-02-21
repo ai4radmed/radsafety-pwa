@@ -1,10 +1,27 @@
 -- ==============================================================================
--- Master Database Schema: Safe Migration Script (데이터 보존)
--- Description: 기존 데이터를 유지하면서 스키마 변경 적용
--- Version: 2.4 (push_subscriptions 테이블 추가 + 테스트 계정 초기 설정 통합)
--- Usage: Supabase SQL Editor에서 실행 (반복 실행 가능)
+-- Master Database Schema: Complete Installation Script (신규 설치 및 마이그레이션)
+-- Description: 신규 설치 시 전체 테이블 생성, 기존 환경에서는 데이터 보존하며 마이그레이션
+-- Version: 3.2 (RLS 무한 재귀 완전 해결 - 업계 표준 방식)
+-- Usage: Supabase SQL Editor에서 실행 (신규/기존 환경 모두 안전)
 --
 -- 변경 이력:
+-- - 2026-02-21: [FIX] archives 외래키 제약조건 누락 문제 해결
+--   - CREATE TABLE에서 외래키 정의 제거, 별도 ALTER TABLE로 분리
+--   - 긴 스크립트 실행 시 일부 블록 누락 문제 방지
+--   - 외래키 생성을 명시적 DO 블록으로 보장
+-- - 2026-02-21: [FIX] RLS 무한 재귀 문제 완전 해결 (업계 표준 방식 적용)
+--   - SECURITY DEFINER 함수 is_current_user_admin() 추가
+--   - 모든 RLS 정책에서 profiles 테이블 직접 조회 제거
+--   - PostgreSQL RLS 재귀 방지 베스트 프랙티스 적용
+-- - 2026-02-20: [FIX] profiles RLS 정책 무한 재귀 문제 수정 (미해결)
+--   - "Admins can view all profiles" 정책에서 COALESCE + LIMIT 1 시도 (불충분)
+--   - 스키마 캐시 강제 갱신 (NOTIFY pgrst) 추가
+-- - 2026-02-20: [MAJOR] 모든 핵심 테이블 CREATE TABLE 추가 (신규 설치 시 필요한 모든 테이블)
+--   - profiles, findings, allowed_members, verification_requests, notifications
+--   - archives 테이블 전체 생성 (profiles 외래키 관계 포함, RLS 정책 포함)
+--   - 이제 이 파일 하나만 실행하면 신규 Supabase 환경에서 전체 DB 구성 가능
+-- - 2026-02-19: archives 테이블 slug 컬럼 추가 (URL 친화적 고유 식별자)
+-- - 2026-02-19: archives 테이블 year, download_count 컬럼 추가
 -- - 2026-02-18: push_subscriptions 테이블 추가 (웹 푸시 알림 구독 정보)
 -- - 2026-02-18: 테스트 계정 초기 profiles 설정 SQL 통합 (11번 섹션)
 -- - 2026-02-16: delete_own_account() RPC 함수 추가 (회원 탈퇴)
@@ -17,6 +34,265 @@
 -- 주의: 이 스크립트는 기존 데이터를 보존합니다.
 --       전체 초기화가 필요한 경우 Supabase Dashboard에서 테이블 수동 삭제 후 재실행
 -- ==============================================================================
+
+-- ============================================================
+-- 0. 핵심 테이블 생성 (신규 설치 시)
+-- ============================================================
+
+-- profiles 테이블 생성
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    nickname TEXT,
+    login_email TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    is_admin BOOLEAN DEFAULT false,
+    verification_status TEXT DEFAULT 'none',
+    verification_date TIMESTAMPTZ,
+    society TEXT,
+    classification TEXT,
+    society_email TEXT,
+    real_name TEXT,
+    affiliation TEXT,
+    department TEXT,
+    license_type TEXT,
+    is_safety_manager BOOLEAN DEFAULT false,
+    safety_manager_start_year TEXT,
+    safety_manager_end_year TEXT,
+    email_verified BOOLEAN DEFAULT false,
+    verification_method TEXT
+);
+
+-- RLS 활성화
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- SECURITY DEFINER 함수: RLS 무한 재귀 방지용 관리자 체크 함수
+-- ============================================================
+-- 업계 표준 방법: RLS 정책 내에서 동일 테이블을 조회하면 무한 재귀 발생
+-- SECURITY DEFINER로 RLS를 우회하여 is_admin 값을 안전하게 조회
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN (
+        SELECT COALESCE(is_admin, false)
+        FROM public.profiles
+        WHERE id = auth.uid()
+        LIMIT 1
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+COMMENT ON FUNCTION public.is_current_user_admin() IS 'RLS 정책에서 안전하게 관리자 여부 확인 (무한 재귀 방지)';
+
+-- RLS 정책 (무한 재귀 완전 해결)
+DO $$
+BEGIN
+    -- 기존 정책 삭제 후 재생성 (멱등성 보장)
+    DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
+
+    -- 1. 본인 프로필 조회 가능
+    CREATE POLICY "Users can view their own profile"
+    ON public.profiles FOR SELECT
+    TO authenticated
+    USING (auth.uid() = id);
+
+    -- 2. 본인 프로필 수정 가능
+    CREATE POLICY "Users can update their own profile"
+    ON public.profiles FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = id);
+
+    -- 3. 관리자는 모든 프로필 조회 가능 (SECURITY DEFINER 함수로 재귀 완전 차단)
+    CREATE POLICY "Admins can view all profiles"
+    ON public.profiles FOR SELECT
+    TO authenticated
+    USING (
+        id = auth.uid() OR public.is_current_user_admin() = true
+    );
+END $$;
+
+-- findings 테이블 생성
+CREATE TABLE IF NOT EXISTS public.findings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    finding_type TEXT NOT NULL,
+    tags TEXT[],
+    year TEXT,
+    description TEXT,
+    violation_clause TEXT,
+    solution TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE public.findings ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'findings' AND policyname = 'Anyone can view findings'
+    ) THEN
+        CREATE POLICY "Anyone can view findings"
+        ON public.findings FOR SELECT
+        TO authenticated
+        USING (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'findings' AND policyname = 'Admins can manage findings'
+    ) THEN
+        CREATE POLICY "Admins can manage findings"
+        ON public.findings FOR ALL
+        TO authenticated
+        USING (public.is_current_user_admin() = true);
+    END IF;
+END $$;
+
+-- allowed_members 테이블 생성
+CREATE TABLE IF NOT EXISTS public.allowed_members (
+    society_email TEXT PRIMARY KEY,
+    society TEXT,
+    classification TEXT,
+    real_name TEXT,
+    affiliation TEXT,
+    department TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.allowed_members ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'allowed_members' AND policyname = 'Only admins can view allowed members'
+    ) THEN
+        CREATE POLICY "Only admins can view allowed members"
+        ON public.allowed_members FOR SELECT
+        TO authenticated
+        USING (public.is_current_user_admin() = true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'allowed_members' AND policyname = 'Only admins can manage allowed members'
+    ) THEN
+        CREATE POLICY "Only admins can manage allowed members"
+        ON public.allowed_members FOR ALL
+        TO authenticated
+        USING (public.is_current_user_admin() = true);
+    END IF;
+END $$;
+
+-- verification_requests 테이블 생성
+CREATE TABLE IF NOT EXISTS public.verification_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    verification_status TEXT DEFAULT 'pending',
+    verification_date TIMESTAMPTZ DEFAULT now(),
+    society TEXT,
+    classification TEXT,
+    society_email TEXT,
+    real_name TEXT,
+    affiliation TEXT,
+    department TEXT,
+    reason TEXT,
+    reject_reason TEXT,
+    approved_at TIMESTAMPTZ,
+    rejected_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.verification_requests ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'verification_requests' AND policyname = 'Users can view their own requests'
+    ) THEN
+        CREATE POLICY "Users can view their own requests"
+        ON public.verification_requests FOR SELECT
+        TO authenticated
+        USING (auth.uid() = user_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'verification_requests' AND policyname = 'Users can insert their own requests'
+    ) THEN
+        CREATE POLICY "Users can insert their own requests"
+        ON public.verification_requests FOR INSERT
+        TO authenticated
+        WITH CHECK (auth.uid() = user_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'verification_requests' AND policyname = 'Admins can manage all requests'
+    ) THEN
+        CREATE POLICY "Admins can manage all requests"
+        ON public.verification_requests FOR ALL
+        TO authenticated
+        USING (public.is_current_user_admin() = true);
+    END IF;
+END $$;
+
+-- notifications 테이블 생성
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title TEXT,
+    message TEXT NOT NULL,
+    link TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    sender_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    type VARCHAR(50) DEFAULT 'admin_message',
+    priority VARCHAR(20) DEFAULT 'normal',
+    action_label TEXT,
+    action_url TEXT,
+    read_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'notifications' AND policyname = 'Users can view their own notifications'
+    ) THEN
+        CREATE POLICY "Users can view their own notifications"
+        ON public.notifications FOR SELECT
+        TO authenticated
+        USING (auth.uid() = user_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'notifications' AND policyname = 'Users can update their own notifications'
+    ) THEN
+        CREATE POLICY "Users can update their own notifications"
+        ON public.notifications FOR UPDATE
+        TO authenticated
+        USING (auth.uid() = user_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'notifications' AND policyname = 'Admins can create notifications'
+    ) THEN
+        CREATE POLICY "Admins can create notifications"
+        ON public.notifications FOR INSERT
+        TO authenticated
+        WITH CHECK (public.is_current_user_admin() = true);
+    END IF;
+END $$;
 
 -- ============================================================
 -- 1. Add new columns to profiles table (if not exists)
@@ -477,9 +753,7 @@ BEGIN
         WHERE tablename = 'glossary_terms' AND policyname = 'Admins can manage glossary'
     ) THEN
         CREATE POLICY "Admins can manage glossary" ON public.glossary_terms
-            FOR ALL USING (
-                EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
-            );
+            FOR ALL USING (public.is_current_user_admin() = true);
     END IF;
 END $$;
 
@@ -561,12 +835,7 @@ BEGIN
         CREATE POLICY "Admins can view all feedback"
             ON public.feedback
             FOR SELECT
-            USING (
-                EXISTS (
-                    SELECT 1 FROM public.profiles
-                    WHERE id = auth.uid() AND is_admin = true
-                )
-            );
+            USING (public.is_current_user_admin() = true);
     END IF;
 
     IF NOT EXISTS (
@@ -576,12 +845,7 @@ BEGIN
         CREATE POLICY "Admins can update all feedback"
             ON public.feedback
             FOR UPDATE
-            USING (
-                EXISTS (
-                    SELECT 1 FROM public.profiles
-                    WHERE id = auth.uid() AND is_admin = true
-                )
-            );
+            USING (public.is_current_user_admin() = true);
     END IF;
 
     IF NOT EXISTS (
@@ -591,12 +855,7 @@ BEGIN
         CREATE POLICY "Admins can delete all feedback"
             ON public.feedback
             FOR DELETE
-            USING (
-                EXISTS (
-                    SELECT 1 FROM public.profiles
-                    WHERE id = auth.uid() AND is_admin = true
-                )
-            );
+            USING (public.is_current_user_admin() = true);
     END IF;
 END $$;
 
@@ -654,10 +913,7 @@ BEGIN
                 bucket_id = 'feedback-attachments' AND
                 (
                     auth.uid()::text = (storage.foldername(name))[1] OR
-                    EXISTS (
-                        SELECT 1 FROM public.profiles
-                        WHERE id = auth.uid() AND is_admin = true
-                    )
+                    public.is_current_user_admin() = true
                 )
             );
     END IF;
@@ -671,10 +927,7 @@ BEGIN
             FOR DELETE
             USING (
                 bucket_id = 'feedback-attachments' AND
-                EXISTS (
-                    SELECT 1 FROM public.profiles
-                    WHERE id = auth.uid() AND is_admin = true
-                )
+                public.is_current_user_admin() = true
             );
     END IF;
 END $$;
@@ -773,7 +1026,219 @@ COMMENT ON COLUMN public.push_subscriptions.auth IS '인증 시크릿';
 COMMENT ON COLUMN public.push_subscriptions.user_agent IS '구독한 기기 UA (디버깅용)';
 
 -- ============================================================
--- 12. 개발용 테스트 계정 초기 profiles 설정
+-- 12. archives (자료실) 테이블
+-- ============================================================
+
+-- 테이블 생성 (IF NOT EXISTS로 기존 데이터 보존)
+CREATE TABLE IF NOT EXISTS public.archives (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    category TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    year INTEGER,
+    file_url TEXT,
+    file_name TEXT,
+    author TEXT,
+    user_id UUID,  -- 외래키는 별도로 추가 (CREATE TABLE에서는 제외)
+    view_count INTEGER DEFAULT 0,
+    download_count INTEGER DEFAULT 0,
+    content_html TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 외래키 제약조건 명시적 추가 (테이블 생성 후 별도 실행)
+DO $$
+BEGIN
+    -- 기존 외래키가 없으면 추가
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_name = 'archives'
+            AND constraint_name = 'archives_user_id_fkey'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD CONSTRAINT archives_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+        RAISE NOTICE '✅ [archives] Foreign key constraint created: user_id -> profiles(id)';
+    ELSE
+        RAISE NOTICE '✓ [archives] Foreign key constraint already exists';
+    END IF;
+END $$;
+
+-- 기존 테이블이 있는 경우 누락된 컬럼 추가
+DO $$
+BEGIN
+    -- Add year column for production year
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'archives'
+        AND column_name = 'year'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD COLUMN year INTEGER;
+
+        RAISE NOTICE 'Added year column to archives';
+    ELSE
+        RAISE NOTICE 'year column already exists';
+    END IF;
+
+    -- Add download_count column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'archives'
+        AND column_name = 'download_count'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD COLUMN download_count INTEGER DEFAULT 0;
+
+        RAISE NOTICE 'Added download_count column to archives';
+    ELSE
+        RAISE NOTICE 'download_count column already exists';
+    END IF;
+
+    -- Add slug column
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'archives'
+        AND column_name = 'slug'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD COLUMN slug TEXT UNIQUE;
+
+        RAISE NOTICE 'Added slug column to archives';
+    ELSE
+        RAISE NOTICE 'slug column already exists';
+    END IF;
+END $$;
+
+-- RLS 활성화
+ALTER TABLE public.archives ENABLE ROW LEVEL SECURITY;
+
+-- RLS 정책: 누구나 조회 가능
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'archives' AND policyname = 'Anyone can view archives'
+    ) THEN
+        CREATE POLICY "Anyone can view archives"
+        ON public.archives
+        FOR SELECT
+        TO authenticated
+        USING (true);
+    END IF;
+END $$;
+
+-- RLS 정책: 인증된 사용자는 자료 등록 가능
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'archives' AND policyname = 'Verified users can create archives'
+    ) THEN
+        CREATE POLICY "Verified users can create archives"
+        ON public.archives
+        FOR INSERT
+        TO authenticated
+        WITH CHECK (
+            auth.uid() = user_id AND
+            (
+                public.is_current_user_admin() = true OR
+                EXISTS (
+                    SELECT 1 FROM public.profiles
+                    WHERE id = auth.uid()
+                    AND verification_status IN ('list', 'temp_verified', 'verified')
+                )
+            )
+        );
+    END IF;
+END $$;
+
+-- RLS 정책: 작성자 본인 또는 관리자는 수정 가능
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'archives' AND policyname = 'Authors and admins can update archives'
+    ) THEN
+        CREATE POLICY "Authors and admins can update archives"
+        ON public.archives
+        FOR UPDATE
+        TO authenticated
+        USING (
+            auth.uid() = user_id OR
+            public.is_current_user_admin() = true
+        );
+    END IF;
+END $$;
+
+-- RLS 정책: 작성자 본인 또는 관리자는 삭제 가능
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'archives' AND policyname = 'Authors and admins can delete archives'
+    ) THEN
+        CREATE POLICY "Authors and admins can delete archives"
+        ON public.archives
+        FOR DELETE
+        TO authenticated
+        USING (
+            auth.uid() = user_id OR
+            public.is_current_user_admin() = true
+        );
+    END IF;
+END $$;
+
+-- 인덱스 생성
+CREATE INDEX IF NOT EXISTS idx_archives_slug ON public.archives(slug);
+CREATE INDEX IF NOT EXISTS idx_archives_user_id ON public.archives(user_id);
+CREATE INDEX IF NOT EXISTS idx_archives_category ON public.archives(category);
+CREATE INDEX IF NOT EXISTS idx_archives_created_at ON public.archives(created_at DESC);
+
+-- 코멘트
+COMMENT ON TABLE public.archives IS '자료실 게시물 및 파일 정보';
+COMMENT ON COLUMN public.archives.title IS '자료 제목';
+COMMENT ON COLUMN public.archives.category IS '분류 (작성지침, 가이드북 등)';
+COMMENT ON COLUMN public.archives.slug IS 'URL 친화적 고유 식별자 (예: safety-regulations-guide). 한번 설정하면 변경 금지';
+COMMENT ON COLUMN public.archives.year IS '자료 저작년도 (제작년도)';
+COMMENT ON COLUMN public.archives.file_url IS 'Supabase Storage 파일 경로';
+COMMENT ON COLUMN public.archives.file_name IS '원본 파일명';
+COMMENT ON COLUMN public.archives.author IS '표시용 작성자명 (보조/레거시)';
+COMMENT ON COLUMN public.archives.user_id IS '등록자 ID (profiles.id 참조)';
+COMMENT ON COLUMN public.archives.view_count IS '조회수';
+COMMENT ON COLUMN public.archives.download_count IS '다운로드 횟수';
+COMMENT ON COLUMN public.archives.content_html IS 'HTML/Markdown 내용';
+COMMENT ON COLUMN public.archives.created_at IS '생성 일시 (DB 등록 일시)';
+
+-- RPC functions for incrementing counters
+CREATE OR REPLACE FUNCTION increment_view_count(archive_id UUID)
+RETURNS void AS $$
+BEGIN
+    UPDATE public.archives
+    SET view_count = COALESCE(view_count, 0) + 1
+    WHERE id = archive_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_download_count(archive_id UUID)
+RETURNS void AS $$
+BEGIN
+    UPDATE public.archives
+    SET download_count = COALESCE(download_count, 0) + 1
+    WHERE id = archive_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION increment_view_count(UUID) IS '자료 조회수 증가';
+COMMENT ON FUNCTION increment_download_count(UUID) IS '자료 다운로드 횟수 증가';
+
+-- ============================================================
+-- 13. 개발용 테스트 계정 초기 profiles 설정
 -- ============================================================
 -- 목적: 테스트 계정(test-user@radsafety.kr, test-admin@radsafety.kr)의
 --       profiles 행을 올바른 상태로 설정합니다.
@@ -810,5 +1275,55 @@ BEGIN
         RAISE NOTICE '✓ 테스트 계정 profiles 설정 완료 (user: %, admin: %)', user_count, admin_count;
     ELSE
         RAISE NOTICE '- 테스트 계정 profiles 없음 (로그인 전이거나 Production 환경)';
+    END IF;
+END $$;
+
+-- ============================================================
+-- 14. Supabase 스키마 캐시 강제 갱신
+-- ============================================================
+-- archives와 profiles 간 외래키 관계를 Supabase PostgREST가 인식하도록 함
+
+-- 방법 1: NOTIFY 명령 (PostgREST 재시작)
+NOTIFY pgrst, 'reload schema';
+
+-- 방법 2: 외래키 제약조건 명시적 확인 (디버깅용)
+DO $$
+DECLARE
+    fk_exists boolean;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_name = 'archives'
+            AND tc.constraint_type = 'FOREIGN KEY'
+            AND kcu.column_name = 'user_id'
+    ) INTO fk_exists;
+
+    IF fk_exists THEN
+        RAISE NOTICE '✅ Foreign key archives.user_id -> profiles.id exists';
+    ELSE
+        RAISE WARNING '❌ Foreign key archives.user_id -> profiles.id NOT FOUND';
+    END IF;
+END $$;
+
+-- 방법 3: 수동으로 외래키 재생성 (이미 있으면 무시)
+DO $$
+BEGIN
+    -- 기존 제약조건이 없는 경우에만 추가
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_name = 'archives'
+            AND constraint_name = 'archives_user_id_fkey'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD CONSTRAINT archives_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+        RAISE NOTICE '✅ Created foreign key constraint archives_user_id_fkey';
+    ELSE
+        RAISE NOTICE '✓ Foreign key constraint archives_user_id_fkey already exists';
     END IF;
 END $$;

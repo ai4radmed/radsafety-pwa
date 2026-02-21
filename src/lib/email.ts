@@ -39,7 +39,8 @@ export async function sendVerificationEmail({ to, code, userName = '사용자' }
 
         // API Key가 없으면 개발 모드 (콘솔만)
         if (!apiKey) {
-            logger.info('개발모드: 인증 이메일 스킵', { to, code });
+            logger.info('개발모드: 인증 이메일 스킵', { to, codeLength: code.length });
+            console.log(`[개발모드] 인증 코드: ${code}`); // 개발 서버 콘솔에만 출력
             return { success: true, messageId: 'dev-mode' };
         }
 
