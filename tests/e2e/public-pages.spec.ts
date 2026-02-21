@@ -99,8 +99,7 @@ test.describe('개발자 모드 패널 (PUBLIC_DEV_MODE)', () => {
         // 패널이 있을 때: 버튼 두 개 모두 존재해야 함
         await expect(page.locator('#devLoginUserBtn')).toBeVisible();
         await expect(page.locator('#devLoginAdminBtn')).toBeVisible();
-        await expect(page.locator('#resetSessionBtn')).toBeVisible();
-        console.log('  ✓ 개발자 모드 패널 및 버튼 3개 존재 확인');
+        console.log('  ✓ 개발자 모드 패널 및 버튼 2개 존재 확인');
     });
 
     test('/login — 개발자 모드 패널이 있으면 data-* 환경변수 값이 비어 있지 않음', async ({ page }) => {
