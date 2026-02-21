@@ -211,15 +211,20 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
     - `findings` 테이블: `ON DELETE SET NULL`로 인해 작성자 정보만 NULL로 변경되고 데이터는 보존됨
     - `archives` 테이블: `ON DELETE SET NULL`로 인해 작성자 정보만 NULL로 변경되고 데이터는 보존됨
 
-## SQL 스크립트
+## SQL 스크립트 관리
 
-`sql_query/` 폴더에는 단 하나의 스크립트만 존재합니다:
+`sql_query/` 폴더에는 두 개의 스크립트가 있습니다:
 
-| 파일                     | 용도                                                                                           |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| `rebuild_all_tables.sql` | 완전한 단일 설치 스크립트 (신규 설치 + 마이그레이션, 데이터 보존, 멱등성 보장, 반복 실행 가능) |
+| 파일                         | 용도                                                                                           | 실행 시점                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------- |
+| `rebuild_all_tables.sql`     | 완전한 단일 설치 스크립트 (신규 설치 + 마이그레이션, 데이터 보존, 멱등성 보장, 반복 실행 가능) | 신규 환경 구축, 스키마 업데이트 |
+| `diagnose_archives_fkey.sql` | archives 외래키 진단 및 강제 재생성 (트러블슈팅용)                                             | 외래키 오류 발생 시             |
 
-**Version 3.0 (2026-02-20)**: 이제 신규 Supabase 환경에서 이 파일 하나만 실행하면 모든 필수 테이블이 생성됩니다.
+**Version 3.2 (2026-02-21)**:
+
+- RLS 무한 재귀 문제 완전 해결 (SECURITY DEFINER 함수 사용)
+- archives 외래키 제약조건을 별도 블록으로 분리하여 안정성 향상
+- 이제 신규 Supabase 환경에서 `rebuild_all_tables.sql` 하나만 실행하면 모든 필수 테이블이 생성됩니다.
 
 - **신규 환경 세팅**: SQL Editor에서 `rebuild_all_tables.sql` 실행 → 모든 테이블 + RLS 정책 + 인덱스 자동 생성
 - **기존 환경 업데이트**: 동일 스크립트 재실행 (기존 데이터 자동 보존, 누락된 컬럼만 추가)
@@ -259,6 +264,76 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | **12** | **`archives` 테이블 전체 생성 + RLS 정책 + 인덱스 + RPC 함수**                                        |
 | 13     | 테스트 계정 초기 profiles 설정                                                                        |
 
+### 주요 기술적 개선 사항
+
+#### RLS 무한 재귀 방지 (업계 표준 방식)
+
+**문제**: RLS 정책 내에서 동일 테이블(`profiles`)을 조회하면 무한 재귀 발생
+
+```sql
+-- ❌ 무한 재귀 발생
+CREATE POLICY "Admins can view all profiles"
+ON public.profiles FOR SELECT
+USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
+);
+```
+
+**해결**: SECURITY DEFINER 함수를 사용하여 RLS 우회
+
+```sql
+-- ✅ 안전한 방식
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN (
+        SELECT COALESCE(is_admin, false)
+        FROM public.profiles
+        WHERE id = auth.uid()
+        LIMIT 1
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+CREATE POLICY "Admins can view all profiles"
+ON public.profiles FOR SELECT
+USING (
+    id = auth.uid() OR public.is_current_user_admin() = true
+);
+```
+
+이 패턴은 `profiles`, `findings`, `allowed_members`, `verification_requests`, `notifications`, `glossary_terms`, `feedback`, `archives` 등 모든 관리자 권한 RLS 정책에 적용되었습니다.
+
+#### archives 외래키 안정성 보강
+
+**문제**: 긴 SQL 스크립트 실행 시 일부 블록이 누락되어 외래키가 생성되지 않음
+
+**해결**: CREATE TABLE에서 외래키 인라인 정의 제거, 별도 DO 블록으로 명시적 생성
+
+```sql
+-- ✅ 안전한 방식
+CREATE TABLE IF NOT EXISTS public.archives (
+    ...
+    user_id UUID,  -- 외래키는 별도로 추가
+    ...
+);
+
+-- 외래키 제약조건 명시적 추가 (테이블 생성 후 별도 실행)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'archives' AND constraint_name = 'archives_user_id_fkey'
+    ) THEN
+        ALTER TABLE public.archives
+        ADD CONSTRAINT archives_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+        RAISE NOTICE '✅ [archives] Foreign key constraint created';
+    END IF;
+END $$;
+```
+
 ## SQL 조회 쿼리 참고
 
 Supabase SQL Editor에서 아래 쿼리를 사용하여 직접 스키마를 조회할 수 있습니다:
@@ -274,4 +349,18 @@ SELECT column_name, data_type, is_nullable
 FROM information_schema.columns
 WHERE table_name = 'profiles'
 ORDER BY ordinal_position;
+
+-- 외래키 제약조건 확인
+SELECT
+    tc.constraint_name,
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY';
 ```
