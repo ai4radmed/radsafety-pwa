@@ -17,6 +17,6 @@ order: 2.95
     - ※ 사용이 종료된 밀봉선원은 [원안위 고시 「방사성동위원소 보안관리에 관한 규정」 제13조](https://www.law.go.kr/%ED%96%89%EC%A0%95%EA%B7%9C%EC%B9%99/%EB%B0%A9%EC%82%AC%EC%84%B1%EB%8F%99%EC%9C%84%EC%9B%90%EC%86%8C%EB%B3%B4%EC%95%88%EA%B4%80%EB%A6%AC%EC%97%90%EA%B4%80%ED%95%9C%EA%B7%9C%EC%A0%95/%EC%A0%9C13%EC%A1%B0)에 따라 보관기한이 2년이므로 보관기간을 확인한다.
 2. 배기·배수를 통한 배출물 관리 기록 확인
     - 배기시설(기체) 또는 배수시설(액체)을 통하여 방사성물질이 포함된 배출물을 사업소 외부로 배출하는 경우 배출기록을 확인한다.
-    - 배기구 또는 배수구에서의 배기·배수 중 방사성동위원소의 농도가 <a href="/resources/emission-management-standards" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">배출관리기준(원안위 고시 「방사선방호등에 관한 기준」)</a>이 제한값 이하임을 제시한다.
+    - 배기구 또는 배수구에서의 배기·배수 중 방사성동위원소의 농도가 <a href="/api/archives/view/emission-management-standards" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">배출관리기준(원안위 고시 「방사선방호등에 관한 기준」)</a>이 제한값 이하임을 제시한다.
 3. 폐기물의 보관·처리·저장·처분에 대한 기록 유지 여부 확인
     - 방사성폐기물의 보관·처리·저장·배출·처분에 관한 내용을 기록하고 이를 제시한다.

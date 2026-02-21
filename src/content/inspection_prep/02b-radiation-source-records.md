@@ -13,7 +13,7 @@ order: 2.6
 
 ### 💡 핵심점검사항
 
-1. 과년도 수검일 이후부터 현재까지 생산·판매·사용현황을 정리한다. (<a href="/resources/radiation-source-usage-example" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">사용현황 작성예시</a>, <a href="/resources/radiation-source-production-sales-example" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">생산·판매현황 작성예시</a>)
+1. 과년도 수검일 이후부터 현재까지 생산·판매·사용현황을 정리한다. (<a href="/api/archives/view/radiation-source-usage-example" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">사용현황 작성예시</a>, <a href="/api/archives/view/radiation-source-production-sales-example" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">생산·판매현황 작성예시</a>)
 2. 소지, 사용중인 방사선원이 허가 받은 사항(허가증상에 등재)과 동일함을 확인한다(허가한도 초과여부 확인)
     - 개봉선원의 경우 사용장소별로 허가받은 핵종별 연간 누적 취득(생산/판매)량이 허가증 상의 허가한도 이하이어야 함.
 3. (주의) 연간 누적량은 인체 투여량과 같이 허가받은 용도에 사용된 양 뿐만 아니라, 안전보고서에서 평가된 방사선원항이 해당 시설내로 반입된 RI의 양 전체에 디한 누적량을 의미함.

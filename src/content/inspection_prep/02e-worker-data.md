@@ -39,7 +39,7 @@ order: 2.9
     - 과년도 정기검사 수검일 부터 현재까지 종사한 전체 방사선작업종사자 및 수시출입자 개인별로 작업(출입)개시일자, 건강검진일자 등을 기록·관리하고 이를 제시한다.
     - 신규 종사자가 방사선작업 개시 전 건강진단을 완료하였음을 제시한다.
     - 건강진단 결과서의 양식과 검사항목이 아래의 내용을 모두 반영하고 있는지 점검하고, 특이사항 발생 시 담당의사의 소견에 따라 관리 및 사후조치가 적절히 이루어졌음을 입증한다.
-    - ☞ 건강진단 항목은 [원자력안전법 시행규칙 제121조](https://www.law.go.kr/%EB%B2%95%EB%A0%B9/%EC%9B%90%EC%9E%90%EB%A0%A5%EC%95%88%EC%A0%84%EB%B2%95%EC%8B%9C%ED%96%89%EA%B7%9C%EC%B9%99/%EC%A0%9C121%EC%A1%B0)에 따라 다음과 같으며 법정 양식은 <a href="/resources/radiation-worker-health-exam-form" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">원자력안전위원회 고시 (방사선방호등에 관한 기준) 별지 제4호의3 서식</a>을 사용하여야 함
+    - ☞ 건강진단 항목은 [원자력안전법 시행규칙 제121조](https://www.law.go.kr/%EB%B2%95%EB%A0%B9/%EC%9B%90%EC%9E%90%EB%A0%A5%EC%95%88%EC%A0%84%EB%B2%95%EC%8B%9C%ED%96%89%EA%B7%9C%EC%B9%99/%EC%A0%9C121%EC%A1%B0)에 따라 다음과 같으며 법정 양식은 <a href="/api/archives/view/radiation-worker-health-exam-form" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">원자력안전위원회 고시 (방사선방호등에 관한 기준) 별지 제4호의3 서식</a>을 사용하여야 함
         1. 직업력 및 노출력
         2. 방사선 취급과 관련된 병력
         3. 임상검사 및 진찰
