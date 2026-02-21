@@ -254,23 +254,16 @@ const sortedItems = items.sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 
     </div>
 
     <div class="download-section">
-        <p>전체 내용을 원본으로 확인하시려면 PDF를 다운로드하세요.</p>
-        <div class="button-group" style="display:flex; justify-content:center; gap:0.5rem; flex-wrap:wrap;">
+        <p>
+            원본파일 전체보기:
             <a
-                href="/archive/방사선분야 정기검사수검가이드(2022년 개정)_최종본.pdf"
-                class="download-link"
+                href="/api/archives/view/inspection-guide-2022"
                 target="_blank"
+                style="color: #2563eb; text-decoration: none; font-weight: bold; margin-left: 0.5rem;"
             >
-                👁️ 원본 가이드 보기 (PDF)
+                정기검사 수검 가이드
             </a>
-            <a
-                href="/archive/방사선분야 정기검사수검가이드(2022년 개정)_최종본.pdf"
-                class="download-link secondary"
-                download
-            >
-                💾 다운로드
-            </a>
-        </div>
+        </p>
     </div>
 
     <Lightbox />
