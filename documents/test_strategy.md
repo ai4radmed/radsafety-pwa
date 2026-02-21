@@ -224,7 +224,18 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 - [ ] 확인 → 로그아웃 → 홈으로 이동
 - [ ] 같은 계정으로 재로그인 → 새 계정으로 처리됨
 
-### 4-6. 크로스 환경 (릴리스 시)
+### 4-6. 데이터베이스 스키마 검증 (스키마 변경 시)
+
+> SQL 스크립트 수정 후 Supabase에 반영했을 때 검증
+
+- [ ] **rebuild_all_tables.sql 실행**: Supabase SQL Editor에서 전체 실행 → 성공 메시지 확인
+- [ ] **RLS 무한 재귀 확인**: 로그인 후 `/mypage` 접속 → 콘솔에 `infinite recursion` 오류 없음
+- [ ] **archives 외래키 확인**: 자료실 페이지 정상 로드 → `Could not find relationship` 오류 없음
+- [ ] **프로필 조회 정상**: 마이페이지 → 프로필 정보 표시됨
+- [ ] **관리자 권한 정상**: 관리자 계정 → 회원관리/인증요청 페이지 접근 가능
+- [ ] **진단 쿼리 실행**: `diagnose_archives_fkey.sql` 실행 → `✅ Foreign key exists` 확인
+
+### 4-7. 크로스 환경 (릴리스 시)
 
 - [x] ~~**도메인**: `https://radsafety.kr` 정상 접속, HTTPS 자물쇠~~ → **자동화됨** (`check:production`)
 - [x] ~~**www 리다이렉트**: `https://www.radsafety.kr` → `radsafety.kr`~~ → **자동화됨** (`check:production`)
@@ -350,17 +361,19 @@ Auth State Change: INITIAL_SESSION undefined
 
 **주의할 로그 패턴**
 
-| 로그                                        | 의미                                                       | 조치                                                                                                                                          |
-| ------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Multiple GoTrueClient instances`           | Supabase 클라이언트 중복 생성 경고                         | 브라우저/서버 클라이언트 분리 확인 ([환경 분리 원칙](codebase_guide.md#5-환경-분리-원칙-브라우저-vs-서버))                                    |
-| `❌ Notification Check Error`               | 알림 조회 실패                                             | Supabase RLS 정책 확인                                                                                                                        |
-| `Supabase Profile Fetch Error`              | 프로필 조회 실패                                           | profiles 테이블/RLS 확인                                                                                                                      |
-| `Self-healing successful`                   | 프로필 행 누락 후 자동 복구됨                              | DB 트리거 확인 필요                                                                                                                           |
-| `Self-healing failed`                       | 프로필 자동 복구 실패                                      | profiles 테이블 구조 확인                                                                                                                     |
-| `Unauthorized access. Redirecting`          | 비로그인 사용자 보호 페이지 접근                           | 정상 동작 (인증 가드)                                                                                                                         |
-| 재방문 시 "로딩 중..." 고정                 | View Transitions 후 스크립트 미재실행                      | 해당 페이지 `<script>`에 `astro:page-load` 래퍼 누락 ([codebase_guide.md 3-4](codebase_guide.md#3-4-script-작성-규칙--view-transitions-대응)) |
-| `TypeError: Cannot read properties of null` | View Transitions 재방문 시 조건부 DOM 요소에 `!` 강제 접근 | `if (element)` 가드 추가 ([codebase_guide.md 3-5](codebase_guide.md#3-5-dom-접근-규칙--null-safety-view-transitions-대응))                    |
-| 빨간색 `console.error`                      | 예상치 못한 오류                                           | 메시지 확인 후 디버깅                                                                                                                         |
+| 로그                                                        | 의미                                                       | 조치                                                                                                                                          |
+| ----------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Multiple GoTrueClient instances`                           | Supabase 클라이언트 중복 생성 경고                         | 브라우저/서버 클라이언트 분리 확인 ([환경 분리 원칙](codebase_guide.md#5-환경-분리-원칙-브라우저-vs-서버))                                    |
+| `❌ Notification Check Error`                               | 알림 조회 실패                                             | Supabase RLS 정책 확인                                                                                                                        |
+| `Supabase Profile Fetch Error: infinite recursion detected` | **RLS 무한 재귀 오류 (심각)**                              | `sql_query/rebuild_all_tables.sql` 재실행 (SECURITY DEFINER 함수 누락)                                                                        |
+| `Archives Load Error: Could not find relationship`          | **archives-profiles 외래키 누락 (심각)**                   | `sql_query/diagnose_archives_fkey.sql` 실행 또는 `rebuild_all_tables.sql` 재실행                                                              |
+| `Supabase Profile Fetch Error`                              | 프로필 조회 실패                                           | profiles 테이블/RLS 확인                                                                                                                      |
+| `Self-healing successful`                                   | 프로필 행 누락 후 자동 복구됨                              | DB 트리거 확인 필요                                                                                                                           |
+| `Self-healing failed`                                       | 프로필 자동 복구 실패                                      | profiles 테이블 구조 확인                                                                                                                     |
+| `Unauthorized access. Redirecting`                          | 비로그인 사용자 보호 페이지 접근                           | 정상 동작 (인증 가드)                                                                                                                         |
+| 재방문 시 "로딩 중..." 고정                                 | View Transitions 후 스크립트 미재실행                      | 해당 페이지 `<script>`에 `astro:page-load` 래퍼 누락 ([codebase_guide.md 3-4](codebase_guide.md#3-4-script-작성-규칙--view-transitions-대응)) |
+| `TypeError: Cannot read properties of null`                 | View Transitions 재방문 시 조건부 DOM 요소에 `!` 강제 접근 | `if (element)` 가드 추가 ([codebase_guide.md 3-5](codebase_guide.md#3-5-dom-접근-규칙--null-safety-view-transitions-대응))                    |
+| 빨간색 `console.error`                                      | 예상치 못한 오류                                           | 메시지 확인 후 디버깅                                                                                                                         |
 
 **콘솔에 에러가 없어야 하는 페이지들**
 
