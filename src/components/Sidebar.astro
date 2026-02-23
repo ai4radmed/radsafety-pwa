@@ -197,6 +197,10 @@ const { pathname } = Astro.url;
             <span class="icon"><Icon name="book" size="18" /></span>
             <span class="link-text">용어 관리</span>
         </a>
+        <a href="/admin-guide" class={pathname.startsWith('/admin-guide') ? 'active' : ''} aria-label="Admin Guide">
+            <span class="icon"><Icon name="shield" size="18" /></span>
+            <span class="link-text">관리자 안내</span>
+        </a>
     </div>
 
     <div class="sidebar-footer">
