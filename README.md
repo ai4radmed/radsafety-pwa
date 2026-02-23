@@ -1,32 +1,6 @@
 # RadSafety PWA
 
-방사선안전관리 통합 웹 서비스
-
----
-
-## 빠른 시작
-
-```bash
-# 의존성 설치
-npm install --legacy-peer-deps
-
-# 개발 서버 실행
-npm run dev
-# → http://localhost:4321
-```
-
-### 필요한 환경 변수 (`.env`)
-
-```env
-PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
-RESEND_API_KEY=re_xxxxxxxx
-RESEND_FROM_EMAIL=noreply@radsafety.kr
-PUBLIC_ADMIN_EMAILS=admin@example.com
-```
-
-> Supabase 키는 Dashboard > Settings > API에서 확인할 수 있습니다.
+RadSafety는 대한핵의학회 방사선안전위원회와 대한핵의학기술학회 방사선안전관리위원회가 회원들과 유용한 정보를 공유하기 위해 개발 중인 PWA(Progressive Web App)입니다.
 
 ---
 
@@ -35,22 +9,28 @@ PUBLIC_ADMIN_EMAILS=admin@example.com
 ```
 radsafety-pwa/
 ├── src/
-│   ├── pages/          ← 파일명 = URL (예: login.astro → /login)
-│   ├── layouts/        ← 공통 레이아웃 (DashboardLayout.astro)
-│   ├── components/     ← 재사용 UI 조각
-│   ├── lib/            ← 유틸리티 (DB 연결, 이메일, 로깅)
-│   ├── store/          ← 전역 상태 관리 (사용자 정보)
 │   ├── actions/        ← 서버 사이드 함수 (DB 쓰기 등)
-│   ├── content/        ← MDX 콘텐츠 (수검 준비, 지적사항)
-│   └── styles/         ← 전역 CSS
-├── sql_query/          ← DB 스키마 (rebuild_all_tables.sql)
-├── tests/              ← 단위 테스트(unit/) + E2E(e2e/)
-├── public/             ← 정적 파일 (아이콘, 폰트)
-└── documents/          ← 유지보수 문서 (아래 참조)
+│   ├── assets/         ← 이미지 및 정적 자산
+│   ├── components/     ← 재사용 UI 컴포넌트
+│   ├── config/         ← 앱 설정 및 환경 설정
+│   ├── content/        ← MDX 콘텐츠 (수검 준비, 지적사항 등)
+│   ├── data/           ← 로컬 데이터 파일
+│   ├── layouts/        ← 공통 레이아웃 (DashboardLayout.astro 등)
+│   ├── lib/            ← 유틸리티 (DB 연결, API, 로깅 등)
+│   ├── pages/          ← 파일 생성 시 자동으로 경로가 생성되는 페이지
+│   ├── store/          ← 전역 상태 관리 (Nanostores)
+│   └── styles/         ← 전역 CSS 및 스타일
+├── documents/          ← 개발 및 유지보수 문서
+├── public/             ← 정적 파일 (아이콘, 폰트 등)
+├── scripts/            ← 관리 및 자동화 스크립트
+├── sql_query/          ← DB 스키마 및 초기화 쿼리
+└── tests/              ← 단위 테스트(unit/) 및 E2E 테스트(e2e/)
 ```
 
 > 코드를 처음 읽을 때는 [코드베이스 가이드](./documents/codebase_guide.md)를 먼저 보세요.
 > 파이썬 경험자를 위한 비유와 파일별 설명이 있습니다.
+
+---
 
 ---
 
