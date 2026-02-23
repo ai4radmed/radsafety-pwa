@@ -2,6 +2,8 @@
 
 방사선안전관리 통합 웹 서비스
 
+> Branch Protection Test: GitHub Actions 테스트 통과 후에만 merge 가능
+
 ---
 
 ## 빠른 시작
