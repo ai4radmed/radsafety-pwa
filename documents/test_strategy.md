@@ -79,27 +79,42 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 
 ### 현재 커버리지
 
-| 파일                                 | 테스트 대상                                                           | 상태 |
-| ------------------------------------ | --------------------------------------------------------------------- | ---- |
-| `unit/config/auth.test.ts`           | `getRole()`, `isAdmin()`, `getCertification()`                        | 완료 |
-| `unit/store/user.test.ts`            | `setUser()`, `clearUser()`, 타입 변환                                 | 완료 |
-| `unit/lib/logger.test.ts`            | `createLogger()` 구조화 로그                                          | 완료 |
-| `unit/lib/email.test.ts`             | `sendVerificationEmail()`, `sendFeedbackEmail()` dev-mode             | 완료 |
-| `unit/data/glossary.test.ts`         | 용어 데이터 무결성                                                    | 완료 |
-| `unit/data/resources.test.ts`        | 자료실 데이터 무결성                                                  | 완료 |
-| `unit/lib/push.test.ts`              | `sendPushToUser()`, `sendPushToUsers()`, VAPID 키 미설정 시 조기 반환 | 완료 |
-| `unit/pages/prerender-check.test.ts` | 모든 페이지 `prerender = false` 검증 (`/api/push/unsubscribe` 포함)   | 완료 |
+| 파일                                   | 테스트 대상                                                           | 상태 |
+| -------------------------------------- | --------------------------------------------------------------------- | ---- |
+| `unit/config/auth.test.ts`             | `getRole()`, `isAdmin()`, `getCertification()`                        | 완료 |
+| `unit/store/user.test.ts`              | `setUser()`, `clearUser()`, 타입 변환                                 | 완료 |
+| `unit/lib/logger.test.ts`              | `createLogger()` 구조화 로그                                          | 완료 |
+| `unit/lib/email.test.ts`               | `sendVerificationEmail()`, `sendFeedbackEmail()` dev-mode             | 완료 |
+| `unit/data/glossary.test.ts`           | 용어 데이터 무결성                                                    | 완료 |
+| `unit/data/resources.test.ts`          | 자료실 데이터 무결성                                                  | 완료 |
+| `unit/lib/push.test.ts`                | `sendPushToUser()`, `sendPushToUsers()`, VAPID 키 미설정 시 조기 반환 | 완료 |
+| `unit/pages/prerender-check.test.ts`   | 모든 페이지 `prerender = false` 검증 (`/api/push/unsubscribe` 포함)   | 완료 |
+| `unit/consts.test.ts`                  | SITE_TITLE, SITE_DESCRIPTION 상수 검증                                | 완료 |
+| `unit/pages/auth.test.ts`              | auth/callback, auth/confirm `prerender = false` 검증                  | 완료 |
+| `unit/lib/runtime-separation.test.ts`  | supabase-browser가 supabase-server 미 import 검증                     | 완료 |
+| `unit/pages/page-load-event.test.ts`   | 동적 데이터 페이지 `astro:page-load` 리스너 존재 검증                 | 완료 |
+| `unit/lib/supabase-server.test.ts`     | `createSupabaseServerClient()` 쿠키 파싱, supabaseAnon/Admin          | 완료 |
+| `unit/middleware.test.ts`              | 미들웨어 구조 정적 분석 (astro:middleware)                            | 완료 |
+| `unit/content.config.test.ts`          | collections 구조 정적 분석                                            | 완료 |
+| `unit/lib/notification-helper.test.ts` | getUserIdsByFilter, createVerificationApprovedNotification            | 완료 |
+| `unit/lib/supabase-browser.test.ts`    | supabase export, createBrowserClient auth 옵션                        | 완료 |
+| `unit/actions/index.test.ts`           | deleteFinding local- 가드, saveFinding insert/update 분기             | 완료 |
 
-### 추가 필요 (우선순위 순)
+### 추가 완료 (유지보수 강화)
 
-| 파일                                       | 테스트 대상                                                             | 이유                                          |
-| ------------------------------------------ | ----------------------------------------------------------------------- | --------------------------------------------- |
-| `unit/pages/auth.test.ts`                  | `/auth/callback`, `/auth/confirm`의 `prerender = false` 검증            | 프리렌더링 누락 → 로그인 장애 재발 방지       |
-| `unit/lib/supabase-server.test.ts`         | `createSupabaseServerClient()` 쿠키 파싱                                | 인증 핵심 경로                                |
-| `unit/middleware.test.ts`                  | 미들웨어 세션 주입                                                      | 인증 핵심 경로                                |
-| `unit/lib/runtime-separation.test.ts`      | 브라우저/서버 클라이언트 분리 검증                                      | 클라이언트 중복 생성 방지                     |
-| `unit/pages/page-load-event.test.ts`       | 동적 데이터 로딩 페이지의 `astro:page-load` 리스너 존재 여부            | View Transitions 재방문 버그 재발 방지        |
-| `e2e/view-transitions-null-safety.spec.ts` | View Transitions 재방문 시 `console.error` 없음 검증 (비인증·인증 모두) | 조건부 DOM 요소 null 접근 TypeError 재발 방지 |
+| 파일                                  | 테스트 대상                                                  | 상태 |
+| ------------------------------------- | ------------------------------------------------------------ | ---- |
+| `unit/consts.test.ts`                 | SITE_TITLE, SITE_DESCRIPTION 상수 검증                       | 완료 |
+| `unit/pages/auth.test.ts`             | `/auth/callback`, `/auth/confirm`의 `prerender = false` 검증 | 완료 |
+| `unit/lib/runtime-separation.test.ts` | supabase-browser가 supabase-server를 import하지 않음 검증    | 완료 |
+| `unit/pages/page-load-event.test.ts`  | 동적 데이터 로딩 페이지의 `astro:page-load` 리스너 존재 여부 | 완료 |
+| `unit/config/auth.test.ts`            | ROLES, CERTIFICATIONS 상수 검증 추가                         | 완료 |
+
+### 추가 완료 (E2E)
+
+| 파일                                       | 테스트 대상                                                          | 상태 |
+| ------------------------------------------ | -------------------------------------------------------------------- | ---- |
+| `e2e/view-transitions-null-safety.spec.ts` | View Transitions 재방문 시 `console.error` 없음 검증 (비인증 페이지) | 완료 |
 
 ---
 
@@ -109,17 +124,18 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 
 ### 2-1. 기본 E2E — CI 포함 (비로그인, 세션 불필요)
 
-| 파일                           | 테스트 대상                                                                                                    | 상태 |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------- | ---- |
-| `e2e/home.spec.ts`             | 홈페이지 렌더링, 네비게이션 링크                                                                               | 완료 |
-| `e2e/navigation.spec.ts`       | 주요 페이지 HTTP 200 응답                                                                                      | 완료 |
-| `e2e/pwa.spec.ts`              | PWA manifest 검증, `sw-push.js` 서빙, `/api/push/subscribe·unsubscribe` 비로그인 401 및 빈 body 인증 우선 검사 | 완료 |
-| `e2e/auth-guard.spec.ts`       | 비로그인 시 보호 페이지 15개 → /login 리다이렉트 자동 검증                                                     | 완료 |
-| `e2e/public-pages.spec.ts`     | 홈/로그인 페이지 렌더링, 이메일 폼 UI 요소, 비로그인 리다이렉트                                                | 완료 |
-| `e2e/view-transitions.spec.ts` | View Transitions 재방문 시 콘텐츠 렌더링 유지 (비인증 페이지)                                                  | 완료 |
-| `e2e/sidebar-flash.spec.ts`    | 사이드바 초기 상태 깜빡임 없음, 스테일 데이터 초기화 확인                                                      | 완료 |
-| `e2e/auth-callback.spec.ts`    | `/auth/confirm`, `/auth/callback` SSR 동작, CDN 308 캐시 감지                                                  | 완료 |
-| `e2e/offline.spec.ts`          | `/offline` 페이지 렌더링, 링크, 오프라인 시뮬레이션 SW fallback                                                | 완료 |
+| 파일                                       | 테스트 대상                                                                                                    | 상태 |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ---- |
+| `e2e/home.spec.ts`                         | 홈페이지 렌더링, 네비게이션 링크                                                                               | 완료 |
+| `e2e/navigation.spec.ts`                   | 주요 페이지 HTTP 200 응답                                                                                      | 완료 |
+| `e2e/pwa.spec.ts`                          | PWA manifest 검증, `sw-push.js` 서빙, `/api/push/subscribe·unsubscribe` 비로그인 401 및 빈 body 인증 우선 검사 | 완료 |
+| `e2e/auth-guard.spec.ts`                   | 비로그인 시 보호 페이지 15개 → /login 리다이렉트 자동 검증                                                     | 완료 |
+| `e2e/public-pages.spec.ts`                 | 홈/로그인 페이지 렌더링, 이메일 폼 UI 요소, 비로그인 리다이렉트                                                | 완료 |
+| `e2e/view-transitions.spec.ts`             | View Transitions 재방문 시 콘텐츠 렌더링 유지 (비인증 페이지)                                                  | 완료 |
+| `e2e/view-transitions-null-safety.spec.ts` | 비인증 페이지 전환 시 `console.error` 없음 (null 접근 TypeError 방지)                                          | 완료 |
+| `e2e/sidebar-flash.spec.ts`                | 사이드바 초기 상태 깜빡임 없음, 스테일 데이터 초기화 확인                                                      | 완료 |
+| `e2e/auth-callback.spec.ts`                | `/auth/confirm`, `/auth/callback` SSR 동작, CDN 308 캐시 감지                                                  | 완료 |
+| `e2e/offline.spec.ts`                      | `/offline` 페이지 렌더링, 링크, 오프라인 시뮬레이션 SW fallback                                                | 완료 |
 
 ### 2-2. 인증 후 E2E — 로컬 전용 (`npm run test:e2e:auth`)
 

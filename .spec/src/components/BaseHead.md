@@ -1,0 +1,22 @@
+# 명세: src/components/BaseHead.astro
+
+## 역할 요약
+
+전역 메타데이터 및 head 요소. global.css import, charset, viewport, favicon, sitemap, RSS, canonical, Open Graph, Twitter 카드, PWA registerSW 스크립트.
+
+## Props
+
+| 이름        | 타입          | 기본값        |
+| ----------- | ------------- | ------------- |
+| title       | string        | -             |
+| description | string        | -             |
+| image       | ImageMetadata | FallbackImage |
+| scale       | number        | 1             |
+
+## 핵심 규칙
+
+1. canonicalURL: `new URL(Astro.url.pathname, Astro.site)`.
+2. og:image, twitter:image: `new URL(image.src, Astro.url)`.
+3. PWA: `import.meta.env.PROD`일 때만 `<script src="/registerSW.js"></script>` 수동 추가. (dev 모드 404 방지)
+4. favicon: public에 존재하는 favicon.svg 사용. `<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`
+5. apple-touch-icon: favicon.svg 사용 (404 방지). `<link rel="apple-touch-icon" href="/favicon.svg" />`
