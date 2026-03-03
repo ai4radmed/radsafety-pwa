@@ -7,7 +7,7 @@ vi.mock('resend', () => {
     return {
         Resend: class MockResend {
             emails = { send: mockSend };
-            constructor(_apiKey: string) {}
+            constructor(_apiKey: string) { }
         },
     };
 });
@@ -17,7 +17,7 @@ import { sendVerificationEmail, sendFeedbackEmail } from '../../../src/lib/email
 describe('sendVerificationEmail', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
-        vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => { });
     });
 
     it('API 키 없으면 개발모드로 성공 반환', async () => {
@@ -44,13 +44,17 @@ describe('sendVerificationEmail', () => {
 
         expect(result.success).toBe(true);
         expect(result.messageId).toBe('mock-message-id');
+        expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
+            from: '방사선안전관리앱 <noreply@radsafety.kr>',
+            subject: '[RadSafety] 이메일 인증 코드'
+        }));
     });
 });
 
 describe('sendFeedbackEmail', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
-        vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => { });
     });
 
     it('API 키 없으면 개발모드로 성공 반환', async () => {
@@ -99,5 +103,8 @@ describe('sendFeedbackEmail', () => {
 
         expect(result.success).toBe(true);
         expect(result.messageId).toBe('mock-message-id');
+        expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
+            from: '방사선안전관리앱 <noreply@radsafety.kr>'
+        }));
     });
 });

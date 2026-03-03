@@ -28,6 +28,6 @@ Astro server actions 진입점. `defineAction`으로 `saveFinding`, `deleteFindi
 ## 핵심 규칙
 
 1. `accept: 'form'`은 saveFinding만 사용.
-2. sendVerificationCode: 코드 유효 10분, 이메일 실패해도 DB 저장 성공 시 성공 처리.
+2. sendVerificationCode: 코드 유효 10분, profiles에서 사용자 이름을 조회하여 이메일 개인화. 이메일 발송 실패 시 에러 처리.
 3. sendNotification: targetType별 profiles 필터(all/provider/verification_status/specific).
 4. sendFeedback: 이메일 실패해도 DB 저장 성공 시 성공 처리.

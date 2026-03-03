@@ -10,6 +10,8 @@ const mockAdminUpdate = vi.fn();
 const mockAdminEq = vi.fn();
 const mockAdminSingle = vi.fn();
 
+const mockSingle = vi.fn();
+
 vi.mock('../../../src/lib/supabase-server', () => ({
     supabaseAnon: {
         from: (table: string) => {
@@ -41,7 +43,7 @@ vi.mock('../../../src/lib/supabase-server', () => ({
         from: (table: string) => {
             mockAdminFrom(table);
             return {
-                select: (cols: string) => ({
+                select: (cols?: string) => ({
                     eq: (col: string, val: string) => ({
                         single: () => mockAdminSingle(table, col, val),
                     }),
@@ -54,6 +56,10 @@ vi.mock('../../../src/lib/supabase-server', () => ({
                             return Promise.resolve({ error: null });
                         },
                     };
+                },
+                insert: (data: unknown) => {
+                    mockInsert(data);
+                    return { select: () => ({ single: () => mockAdminSingle(table, 'insert', data) }) };
                 },
             };
         },
@@ -197,5 +203,59 @@ describe('admin.verification', () => {
                 verification_status: 'pending',
             }),
         );
+    });
+});
+
+describe('server.sendVerificationCode', () => {
+    const email = 'user@test.com';
+    const userId = '123e4567-e89b-12d3-a456-426614174001';
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('성공 케이스: DB 저장 및 이메일 발송', async () => {
+        const { sendVerificationEmail } = await import('../../../src/lib/email');
+        (sendVerificationEmail as any).mockResolvedValue({ success: true, messageId: 'test-id' });
+
+        mockAdminSingle.mockImplementation((table) => {
+            if (table === 'email_verification_codes') return Promise.resolve({ data: { id: 'code-id' }, error: null });
+            if (table === 'profiles') return Promise.resolve({ data: { real_name: '김테스트' }, error: null });
+            return Promise.resolve({ data: null, error: null });
+        });
+
+        const res = await (server.sendVerificationCode as any)({ email, userId });
+
+        expect(res.data.success).toBe(true);
+        expect(mockAdminFrom).toHaveBeenCalledWith('email_verification_codes');
+        expect(mockInsert).toHaveBeenCalled();
+        expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ to: email, userName: '김테스트' }));
+    });
+
+    it('이메일 발송 실패 시 에러 발생', async () => {
+        const { sendVerificationEmail } = await import('../../../src/lib/email');
+        (sendVerificationEmail as any).mockRejectedValue(new Error('SMTP Error'));
+
+        mockAdminSingle.mockImplementation((table) => {
+            if (table === 'email_verification_codes') return Promise.resolve({ data: { id: 'code-id' }, error: null });
+            if (table === 'profiles') return Promise.resolve({ data: { real_name: '김테스트' }, error: null });
+            return Promise.resolve({ data: null, error: null });
+        });
+
+        await expect((server.sendVerificationCode as any)({ email, userId })).rejects.toThrow('이메일 발송에 실패했습니다');
+    });
+
+    it('프로필 조회 실패 시 기본값(사용자)으로 발송', async () => {
+        const { sendVerificationEmail } = await import('../../../src/lib/email');
+        (sendVerificationEmail as any).mockResolvedValue({ success: true, messageId: 'test-id' });
+
+        mockAdminSingle.mockImplementation((table) => {
+            if (table === 'email_verification_codes') return Promise.resolve({ data: { id: 'code-id' }, error: null });
+            if (table === 'profiles') return Promise.resolve({ data: null, error: null });
+            return Promise.resolve({ data: null, error: null });
+        });
+
+        await (server.sendVerificationCode as any)({ email, userId });
+        expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ userName: '사용자' }));
     });
 });

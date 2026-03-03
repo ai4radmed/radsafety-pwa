@@ -8,7 +8,7 @@ Resend 기반 이메일 발송. `sendVerificationEmail`(인증 코드), `sendFee
 
 | 함수                    | 입력                                                                       | 설명                                                                                 |
 | ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `sendVerificationEmail` | to, code, userName?                                                        | 인증 코드 이메일. from: noreply@radsafety.kr, subject: [방사선안전] 이메일 인증 코드 |
+| `sendVerificationEmail` | to, code, userName?                                                        | 인증 코드 이메일. from: 방사선안전관리앱 <noreply@radsafety.kr>, subject: [RadSafety] 이메일 인증 코드 |
 | `sendFeedbackEmail`     | adminEmails, userName, userEmail, title, message, feedbackId, attachments? | 관리자에게 피드백 알림. replyTo: userEmail                                           |
 
 ## 사이드 이펙트
