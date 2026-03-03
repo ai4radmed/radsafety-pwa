@@ -16,7 +16,8 @@
 
 ## NotificationData
 
-type, userId, senderId?, title, message, priority?, link?, actionLabel?, actionUrl?, expiresInDays?, metadata?
+- **type**: `verification_approved` | `verification_rejected` | `admin_message' | 'system_notice' | 'announcement'
+- **fields**: userId, senderId?, title, message, priority?, link?, actionLabel?, actionUrl?, expiresInDays?, metadata?
 
 ## 사이드 이펙트
 

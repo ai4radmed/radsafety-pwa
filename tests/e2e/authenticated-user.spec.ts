@@ -47,8 +47,6 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         // 로그인 리다이렉트가 발생하지 않아야 함
         expect(page.url()).toContain('/mypage');
 
-        // 프로필 섹션 존재 여부 (닉네임, 이메일 중 하나)
-        const profileSection = page.locator('.mypage-container, [data-testid="profile"], .profile-section, .user-info');
         // 페이지 자체가 로드되었는지 확인 (DashboardLayout의 title 기반)
         await expect(page).toHaveTitle(/마이페이지|RadSafety/);
     });

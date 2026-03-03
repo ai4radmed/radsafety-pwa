@@ -5,8 +5,6 @@ const mockDelete = vi.fn();
 const mockEq = vi.fn();
 const mockInsert = vi.fn();
 const mockUpdate = vi.fn();
-const mockSelect = vi.fn();
-const mockSingle = vi.fn();
 
 vi.mock('../../../src/lib/supabase-server', () => ({
     supabaseAnon: {
