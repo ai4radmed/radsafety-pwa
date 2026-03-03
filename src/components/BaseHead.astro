@@ -21,8 +21,8 @@ const { title, description, image = FallbackImage, scale = 1 } = Astro.props;
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content={`width=device-width,initial-scale=${scale}`} />
-<link rel="icon" href="/favicon.ico" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/favicon.svg" />
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={new URL('rss.xml', Astro.site)} />
 <meta name="generator" content={Astro.generator} />
@@ -51,5 +51,5 @@ const { title, description, image = FallbackImage, scale = 1 } = Astro.props;
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={new URL(image.src, Astro.url)} />
 
-<!-- PWA: Service Worker 등록 (vite-pwa가 SSR 모드에서 자동 주입하지 않으므로 수동 추가) -->
-<script is:inline src="/registerSW.js"></script>
+<!-- PWA: Service Worker 등록 (dev 모드에서 registerSW.js 404 방지) -->
+{import.meta.env.PROD && <script is:inline src="/registerSW.js" />}
