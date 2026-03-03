@@ -4,8 +4,10 @@ globs:
 alwaysApply: true
 ---
 
-# Cursor 진입점(Entry)
+# AI Entry Rule
 
-- **진입점 문서**: 프로젝트 루트의 `entry.cursor.md`를 진입점으로 사용한다.
-- `entry.cursor.md`는 `ARCHITECTURE.md`(아키텍처) 및 `AGENTS.md`(공통 규칙)를 참조하도록 구성되어 있다.
-- 코드·명세 작업 시 `entry.cursor.md` → `ARCHITECTURE.md` → `.spec/` 순으로 컨텍스트를 확보할 것.
+- 이 프로젝트에서 코드를 작성·수정하기 전에, 항상 프로젝트의 시스템 지도인 다음 문서를 먼저 읽으세요.
+  - `ARCHITECTURE.md`
+
+- `ARCHITECTURE.md`는 전체 시스템 구조, AI 협업 규칙, 명세 주도 개발(Spec-Driven Development) 워크플로우를 모두 정의하고 있습니다.
+- 각 파일의 상세 구현 설계는 `.spec/` 디렉토리 내의 대응 문서를 참조하세요.
