@@ -10,8 +10,7 @@
 
 ## 사이드 이펙트
 
-- verification_requests select/update.
-- profiles verification_status 업데이트.
+- verification_requests / profiles (Astro Actions 호출을 통해 서버 측에서 업데이트).
 
 ## 핵심 규칙
 

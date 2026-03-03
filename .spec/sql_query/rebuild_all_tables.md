@@ -18,3 +18,4 @@
 1. AGENTS.md: 모든 DB 스키마 변경은 이 파일에 통합.
 2. 변경 이력은 파일 상단 주석에 버전·날짜 기록.
 3. is_current_user_admin() SECURITY DEFINER로 RLS 재귀 방지.
+4. profiles: 관리자에게 모든 프로필 수정/삭제 권한 부여 (RLS).
