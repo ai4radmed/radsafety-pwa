@@ -14,6 +14,9 @@ Astro server actions 진입점. `defineAction`으로 `saveFinding`, `deleteFindi
 | `verifyEmailCode`      | code(6자), userId                                                                                                      | 코드 검증 후 verified 업데이트                                   |
 | `sendNotification`     | senderId, targetType, provider?, verificationStatus?, specificUserId?, title, message, link?, actionLabel?, actionUrl? | 관리자만. profiles 조회 후 notifications insert, 웹 푸시 발송    |
 | `sendFeedback`         | userId?, userName, userEmail, title, message, attachments?                                                             | feedback insert, 관리자 이메일 발송                              |
+| `approveVerification`  | adminId, targetUserId                                                                                                  | 관리자 권한 확인 후 타겟 사용자 인증 승인 (verified)             |
+| `rejectVerification`   | adminId, targetUserId, reason                                                                                          | 관리자 권한 확인 후 타겟 사용자 인증 반려 (rejected)             |
+| `revokeVerification`   | adminId, targetUserId                                                                                                  | 관리자 권한 확인 후 타겟 사용자 인증 회수 (temp_verified)        |
 
 ## 사이드 이펙트
 
