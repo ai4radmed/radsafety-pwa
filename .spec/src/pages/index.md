@@ -16,4 +16,4 @@
 
 1. publicPaths에 포함되어 미인증 접근 가능.
 2. 카드 링크: /inspection-prep, /findings-recommendations, /resources, /login.
-3. 의견보내기는 앱 내 전송.
+3. 의견보내기: "앱 오류 및 개선사항을 관리자에게 보내기" 문구 사용.

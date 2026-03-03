@@ -107,23 +107,31 @@ export const server = {
 
                 if (error) {
                     logger.error('인증코드 DB 저장 실패', { error });
-                    throw new Error('코드 생성 실패: ' + error.message);
+                    throw new Error(`코드 생성 실패 (${error.code}): ${error.message}${error.detail ? ' - ' + error.detail : ''}`);
                 }
 
                 logger.info('인증코드 DB 저장 성공', { id: insertData?.id });
+
+                // 사용자 이름 가져오기
+                const { data: userProfile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('real_name, nickname')
+                    .eq('id', userId)
+                    .single();
+
+                const userName = userProfile?.real_name || userProfile?.nickname || '사용자';
 
                 // Send email with verification code
                 try {
                     await sendVerificationEmail({
                         to: email,
                         code,
-                        userName: '사용자', // TODO: 실제 사용자 이름을 프로필에서 가져오기
+                        userName,
                     });
                     logger.info('인증 이메일 발송 성공', { email });
                 } catch (emailError) {
                     logger.error('인증 이메일 발송 실패', { error: emailError });
-                    // 이메일 발송 실패해도 DB에는 저장되었으므로 성공으로 처리
-                    // 실제 프로덕션에서는 재시도 로직 또는 에러 처리 필요
+                    throw new Error('이메일 발송에 실패했습니다: ' + (emailError as Error).message);
                 }
 
                 return { success: true, message: '인증 코드가 발송되었습니다.' };

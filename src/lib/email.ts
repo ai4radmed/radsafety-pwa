@@ -48,9 +48,9 @@ export async function sendVerificationEmail({ to, code, userName = '사용자' }
         const resend = new Resend(apiKey);
 
         const { data, error } = await resend.emails.send({
-            from: '방사선안전관리통합시스템 <noreply@radsafety.kr>',
+            from: '방사선안전관리앱 <noreply@radsafety.kr>',
             to: [to],
-            subject: '[방사선안전] 이메일 인증 코드',
+            subject: '[RadSafety] 이메일 인증 코드',
             html: getEmailTemplate(code, userName),
             text: `안녕하세요, ${userName}님!\n\n이메일 인증 코드: ${code}\n\n이 코드는 10분간 유효합니다.\n\n본인이 요청하지 않았다면 이 메일을 무시하세요.`,
         });
@@ -89,7 +89,7 @@ function getEmailTemplate(code: string, userName: string): string {
                     <tr>
                         <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
                             <h1 style="margin: 0; color: #1f2937; font-size: 24px; font-weight: 600;">
-                                방사선안전관리통합시스템
+                                방사선안전관리앱
                             </h1>
                         </td>
                     </tr>
@@ -172,7 +172,7 @@ export async function sendFeedbackEmail({
         const fromEmail = 'noreply@radsafety.kr';
 
         const emailPayload: any = {
-            from: `방사선안전관리통합시스템 <${fromEmail}>`,
+            from: `방사선안전관리앱 <${fromEmail}>`,
             to: adminEmails,
             replyTo: userEmail, // 관리자가 바로 회신 가능하도록
             subject: `[의견보내기] ${title}`,
@@ -261,32 +261,31 @@ function getFeedbackEmailTemplate(
                                 </div>
                             </div>
 
-                            ${
-                                attachments && attachments.length > 0
-                                    ? `
+                            ${attachments && attachments.length > 0
+            ? `
                             <!-- Attachments -->
                             <div style="margin-bottom: 20px;">
                                 <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px; font-weight: 600;">첨부파일 (${attachments.length}개)</p>
                                 <div style="padding: 15px; background-color: #fef3c7; border-radius: 8px; border: 1px solid #fde047;">
                                     ${attachments
-                                        .map((att) => {
-                                            const sizeKB = (att.size / 1024).toFixed(1);
-                                            return `
+                .map((att) => {
+                    const sizeKB = (att.size / 1024).toFixed(1);
+                    return `
                                         <div style="padding: 8px 0;">
                                             <span style="color: #92400e; font-size: 14px;">📎 ${att.filename}</span>
                                             <span style="color: #92400e; font-size: 12px; margin-left: 8px;">(${sizeKB} KB)</span>
                                         </div>
                                     `;
-                                        })
-                                        .join('')}
+                })
+                .join('')}
                                 </div>
                                 <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">
                                     ℹ️ 첨부파일은 관리 페이지에서 다운로드할 수 있습니다.
                                 </p>
                             </div>
                             `
-                                    : ''
-                            }
+            : ''
+        }
 
                             <!-- Admin Link -->
                             <div style="margin-top: 30px; text-align: center;">

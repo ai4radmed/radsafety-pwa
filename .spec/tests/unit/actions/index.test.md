@@ -22,6 +22,9 @@ Vitest (단위)
 | server.approveVerification | 관리자 권한 확인 후 profiles/verification_requests 업데이트     | mockAdmin.update 호출 및 success 반환            |
 | server.rejectVerification  | 관리자 권한 확인 후 profiles/verification_requests 업데이트     | mockAdmin.update 호출 및 success 반환            |
 | server.revokeVerification  | 관리자 권한 확인 후 profiles/verification_requests 업데이트     | mockAdmin.update 호출 및 success 반환            |
+| server.sendVerificationCode| 코드 생성, DB 저장 및 이메일 발송([RadSafety] 제목 및 발신자 확인) 성공 확인 | DB insert 및 email.send 호출 검증                |
+| server.sendVerificationCode| 이메일 발송 실패 시 에러 발생 확인                               | email.send 에러 시 Error throw 검증              |
+| server.sendVerificationCode| 사용자 이름 조회 실패 시 '사용자' 기본값 사용                    | profiles lookup 실패 시 에러 없이 발송           |
 | server.\*Verification      | 관리자가 아니면 에러 반환                                       | is_admin false인 경우 Error throw                |
 
 ## Mock/Setup
