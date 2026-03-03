@@ -1,1 +1,11 @@
-npx lint-staged
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 [Verification] Checking types..."
+npm run check || exit 1
+
+echo "🧪 [Verification] Running unit tests..."
+npm run test:unit || exit 1
+
+echo "✨ [Linting] Running lint-staged..."
+npx lint-staged || exit 1
