@@ -19,7 +19,7 @@
 | `vitest.config.ts`     | 단위 테스트 설정                                      | `pytest.ini`                             |
 | `playwright.config.ts` | E2E(브라우저 자동화) 테스트 설정                      | Selenium/Playwright 설정                 |
 | `.env`                 | 환경변수 (DB 접속 키 등 비밀 정보)                    | `.env` (동일)                            |
-| `CLAUDE.md`            | AI 에이전트 행동 규칙                                 | -                                        |
+| `ARCHITECTURE.md`      | 프로젝트 시스템 지도 및 AI 통합 진입점                | -                                        |
 
 ---
 
