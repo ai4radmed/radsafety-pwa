@@ -696,43 +696,32 @@ import Icon from '../../components/Icon.astro';
             if (!confirm('임시 인증을 최종 인증으로 승인하시겠습니까?')) return;
 
             try {
-                // 사용자 정보 조회
-                const { data: profile, error: fetchError } = await supabase
+                const { actions } = await import('astro:actions');
+
+                // 1. 서버 액션 호출 (프로필 및 요청 상태 업데이트 + RLS 우회)
+                const result = await actions.approveVerification({
+                    adminId: currentUser.id,
+                    targetUserId: userId,
+                });
+
+                if (result.error) throw new Error(result.error.message);
+
+                // 2. 알림 발송을 위한 프로필 정보 조회 (조회는 RLS에서 관리자에게 허용됨)
+                const { data: profile } = await supabase
                     .from('profiles')
-                    .select('society, classification, real_name')
+                    .select('society, classification')
                     .eq('id', userId)
                     .single();
-
-                if (fetchError) throw fetchError;
-
-                // profiles 테이블 업데이트
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .update({ verification_status: 'verified' })
-                    .eq('id', userId);
-
-                if (profileError) throw profileError;
-
-                // verification_requests 테이블 업데이트 (승인 일시 기록)
-                const { error: requestError } = await supabase
-                    .from('verification_requests')
-                    .update({
-                        verification_status: 'approved',
-                        approved_at: new Date().toISOString(),
-                    })
-                    .eq('user_id', userId);
-
-                if (requestError) console.warn('verification_requests 업데이트 실패:', requestError);
 
                 // 학회 이름 매핑
                 const societyMap: Record<string, string> = {
                     nuclear_medicine: '대한핵의학회',
                     technology: '대한핵의학기술학회',
                 };
-                const societyName = societyMap[profile.society] || profile.society || '-';
-                const classification = profile.classification || '-';
+                const societyName = profile ? societyMap[profile.society] || profile.society || '-' : '-';
+                const classification = profile?.classification || '-';
 
-                // 알림 생성 (확장된 필드 사용)
+                // 3. 알림 생성
                 await supabase.from('notifications').insert({
                     user_id: userId,
                     sender_id: currentUser.id,
@@ -751,7 +740,7 @@ import Icon from '../../components/Icon.astro';
                 });
 
                 alert('✅ 최종 인증 처리가 완료되었습니다.');
-                window.location.reload(); // 모달 닫기 대신 페이지 새로고침
+                window.location.reload();
             } catch (err) {
                 console.error('Approve Error:', err);
                 alert('❌ 오류가 발생했습니다: ' + (err as Error).message);
@@ -769,32 +758,21 @@ import Icon from '../../components/Icon.astro';
                 return;
             }
 
-            if (!confirm('이 사용자를 미인증으로 처리하시겠습니까?')) {
-                return;
-            }
+            if (!confirm('이 사용자를 미인증으로 처리하시겠습니까?')) return;
 
             try {
-                // profiles 테이블 업데이트 - 'rejected' 상태로 변경
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .update({ verification_status: 'rejected' })
-                    .eq('id', userId);
+                const { actions } = await import('astro:actions');
 
-                if (profileError) throw profileError;
+                // 1. 서버 액션 호출 (반려 처리)
+                const result = await actions.rejectVerification({
+                    adminId: currentUser.id,
+                    targetUserId: userId,
+                    reason: note,
+                });
 
-                // verification_requests 테이블 업데이트 (취소 일시 및 사유 기록)
-                const { error: requestError } = await supabase
-                    .from('verification_requests')
-                    .update({
-                        verification_status: 'rejected',
-                        rejected_at: new Date().toISOString(),
-                        reject_reason: note,
-                    })
-                    .eq('user_id', userId);
+                if (result.error) throw new Error(result.error.message);
 
-                if (requestError) console.warn('verification_requests 업데이트 실패:', requestError);
-
-                // 알림 생성 (확장된 필드 사용)
+                // 2. 알림 생성
                 await supabase.from('notifications').insert({
                     user_id: userId,
                     sender_id: currentUser.id,
@@ -812,7 +790,7 @@ import Icon from '../../components/Icon.astro';
                 });
 
                 alert('✅ 미인증 처리 및 알림 전송이 완료되었습니다.');
-                window.location.reload(); // 모달 닫기 대신 페이지 새로고침
+                window.location.reload();
             } catch (err) {
                 console.error('Reject Error:', err);
                 alert('❌ 오류가 발생했습니다: ' + (err as Error).message);
@@ -823,24 +801,20 @@ import Icon from '../../components/Icon.astro';
             if (!confirm('최종 인증을 임시 인증으로 되돌리시겠습니까?')) return;
 
             try {
-                // profiles 테이블 업데이트
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .update({ verification_status: 'temp_verified' })
-                    .eq('id', userId);
+                const { actions } = await import('astro:actions');
 
-                if (profileError) throw profileError;
+                // 1. 서버 액션 호출 (회수 처리)
+                const result = await actions.revokeVerification({
+                    adminId: currentUser.id,
+                    targetUserId: userId,
+                });
 
-                // verification_requests 테이블 업데이트
-                const { error: requestError } = await supabase
-                    .from('verification_requests')
-                    .update({ verification_status: 'pending' })
-                    .eq('user_id', userId);
+                if (result.error) throw new Error(result.error.message);
 
-                if (requestError) console.warn('verification_requests 업데이트 실패:', requestError);
-
+                // 2. 알림 생성
                 await supabase.from('notifications').insert({
                     user_id: userId,
+                    sender_id: currentUser.id,
                     type: 'verification',
                     title: '⚠️ 인증 상태 변경',
                     message: `최종 인증이 임시 인증으로 되돌려졌습니다. 재검토가 필요합니다.`,
