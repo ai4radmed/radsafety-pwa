@@ -1,6 +1,10 @@
 name: "AI Spec-Driven Reviewer"
 
 on:
+  push:
+    branches:
+      - main
+      - dev
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
