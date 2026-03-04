@@ -655,6 +655,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
     <script>
         import { userProfile } from '../store/user';
         import { supabase } from '../lib/supabase-browser';
+        import { deleteOwnAccount } from '../lib/delete-account';
 
         console.log('Mypage script loaded');
         document.addEventListener('astro:page-load', async () => {
@@ -1088,7 +1089,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                 else window.location.href = '/login';
             });
 
-            // Delete Account
+            // Delete Account (명세: .spec/src/pages/mypage.md)
             document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
                 if (
                     !confirm(
@@ -1098,7 +1099,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                     return;
 
                 try {
-                    const { error } = await supabase.rpc('delete_own_account');
+                    const { error } = await deleteOwnAccount(supabase);
                     if (error) throw error;
 
                     await supabase.auth.signOut();

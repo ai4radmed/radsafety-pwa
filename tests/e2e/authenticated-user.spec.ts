@@ -268,6 +268,35 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         }
     });
 
+    // ── 회원 탈퇴 (명세: .spec/tests/e2e/account-deletion.spec.md) ─────
+    test('회원 탈퇴 — 마이페이지에 탈퇴 버튼이 존재한다', async ({ page }) => {
+        await page.goto('/mypage');
+        await page.waitForLoadState('networkidle');
+        const deleteBtn = page.locator(
+            '#deleteAccountBtn, button:has-text("회원 탈퇴"), [data-action="delete-account"]',
+        );
+        await expect(deleteBtn.first()).toBeVisible();
+    });
+
+    test('회원 탈퇴 — 탈퇴 버튼 클릭 시 확인 대화상자 표시 후 취소 (실제 탈퇴 없음)', async ({ page }) => {
+        await page.goto('/mypage');
+        await page.waitForLoadState('networkidle');
+
+        let dialogShown = false;
+        page.on('dialog', (dialog) => {
+            dialogShown = true;
+            expect(dialog.message()).toMatch(/탈퇴|되돌릴 수 없습니다/);
+            dialog.dismiss();
+        });
+
+        const deleteBtn = page.locator('#deleteAccountBtn, button:has-text("회원 탈퇴")').first();
+        await deleteBtn.click();
+
+        expect(dialogShown).toBe(true);
+        // 취소했으므로 여전히 마이페이지에 있어야 함
+        expect(page.url()).toContain('/mypage');
+    });
+
     // ── 웹 푸시 구독 API (반자동) ─────────────────────────────
     test('웹 푸시 — 로그인 상태에서 /api/push/subscribe 가 400 반환 (잘못된 데이터)', async ({ request }) => {
         // 로그인 상태에서 빈 payload → 400 Bad Request (인증은 통과, 유효성 검사 실패)
