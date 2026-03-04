@@ -50,6 +50,8 @@ git push
 
 #### 1-1. Authentication > URL Configuration
 
+**설정 경로**: `Supabase Dashboard > Authentication > URL Configuration`
+
 | 항목          | 올바른 값                |
 | ------------- | ------------------------ |
 | Site URL      | `https://radsafety.kr`   |
