@@ -3,7 +3,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Icon from '../../components/Icon.astro';
 ---
 
-<DashboardLayout title="회원 인증 관리">
+<DashboardLayout title="인증관리">
     <style>
         .requests-container {
             max-width: 1400px;
@@ -334,8 +334,8 @@ import Icon from '../../components/Icon.astro';
 
     <div class="requests-container">
         <div class="page-header">
-            <h1 class="page-title">인증요청 검토</h1>
-            <p class="page-subtitle">회원들의 인증 요청을 검토하고 승인/반려 처리합니다.</p>
+            <h1 class="page-title">인증관리</h1>
+            <p class="page-subtitle">회원들의 인증 상태를 확인하고 권한을 관리합니다.</p>
         </div>
 
         <!-- Status Tabs -->
@@ -344,7 +344,7 @@ import Icon from '../../components/Icon.astro';
                 임시인증 (<span id="temp_verifiedCount">0</span>)
             </button>
             <button class="status-tab" data-status="verified">
-                최종인증 (<span id="verifiedCount">0</span>)
+                관리자인증 (<span id="verifiedCount">0</span>)
             </button>
             <button class="status-tab" data-status="rejected">
                 인증취소 (<span id="rejectedCount">0</span>)
@@ -371,7 +371,7 @@ import Icon from '../../components/Icon.astro';
                         <th>이름</th>
                         <th>소속</th>
                         <th>구분</th>
-                        <th>인증요청일</th>
+                        <th>상태변경일</th>
                     </tr>
                 </thead>
                 <tbody id="usersTableBody">
@@ -473,12 +473,12 @@ import Icon from '../../components/Icon.astro';
                 // 4번째 헤더 (인덱스 3)를 상태에 따라 변경
                 const headerTexts: Record<string, string> = {
                     temp_verified: '인증요청일',
-                    verified: '최종인증일',
+                    verified: '관리자인증일',
                     list: '자동인증일',
                     rejected: '인증취소일',
-                    none: '인증요청일',
+                    none: '가입일',
                 };
-                headerCells[3].textContent = headerTexts[status] || '인증요청일';
+                headerCells[3].textContent = headerTexts[status] || '날짜';
             }
         }
 
@@ -502,12 +502,14 @@ import Icon from '../../components/Icon.astro';
 
                 if (reqError) throw reqError;
 
-                // profiles 데이터 가져오기
-                const { data: profiles, error: profError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('verification_status', status)
-                    .not('society_email', 'is', null);
+                // profiles 데이터 가져오기 (미인증 탭은 society_email 필터 제외)
+                let profQuery = supabase.from('profiles').select('*').eq('verification_status', status);
+
+                if (status !== 'none') {
+                    profQuery = profQuery.not('society_email', 'is', null);
+                }
+
+                const { data: profiles, error: profError } = await profQuery;
 
                 if (profError) throw profError;
 
@@ -551,7 +553,7 @@ import Icon from '../../components/Icon.astro';
                             ? new Date(user.verification_date).toLocaleDateString('ko-KR')
                             : '-';
                     } else if (currentStatus === 'verified') {
-                        // 최종 인증: 최종 인증일 (approved_at)
+                        // 관리자 인증: 승인일 (approved_at)
                         dateToShow = user.approved_at ? new Date(user.approved_at).toLocaleDateString('ko-KR') : '-';
                     } else if (currentStatus === 'list') {
                         // 명부 인증: 자동 인증일 (verification_date)
@@ -562,8 +564,8 @@ import Icon from '../../components/Icon.astro';
                         // 인증 취소: 인증 취소일 (rejected_at)
                         dateToShow = user.rejected_at ? new Date(user.rejected_at).toLocaleDateString('ko-KR') : '-';
                     } else if (currentStatus === 'none') {
-                        // 미인증: 데이터 없음 (항상 "-")
-                        dateToShow = '-';
+                        // 미인증: 가입일 (created_at)
+                        dateToShow = user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '-';
                     }
 
                     return `
@@ -693,7 +695,7 @@ import Icon from '../../components/Icon.astro';
 
         // Actions
         async function approveUser(userId: string) {
-            if (!confirm('임시 인증을 최종 인증으로 승인하시겠습니까?')) return;
+            if (!confirm('임시 인증을 관리자 인증으로 승인하시겠습니까?')) return;
 
             try {
                 const { actions } = await import('astro:actions');
@@ -728,7 +730,7 @@ import Icon from '../../components/Icon.astro';
                     type: 'verification_approved',
                     priority: 'high',
                     title: '✅ 인증이 최종 승인되었습니다',
-                    message: `인증 요청이 앱관리자에 의해 최종 승인되었습니다.\n\n${societyName} ${classification}으로 등록되었습니다.`,
+                    message: `인증 요청이 관리자에 의해 최종 승인되었습니다.\n\n${societyName} ${classification}으로 등록되었습니다.`,
                     link: '/mypage',
                     action_label: '프로필 확인',
                     action_url: '/mypage',
@@ -739,7 +741,7 @@ import Icon from '../../components/Icon.astro';
                     }),
                 });
 
-                alert('✅ 최종 인증 처리가 완료되었습니다.');
+                alert('✅ 관리자 인증 처리가 완료되었습니다.');
                 window.location.reload();
             } catch (err) {
                 console.error('Approve Error:', err);
@@ -798,7 +800,7 @@ import Icon from '../../components/Icon.astro';
         }
 
         async function revokeUser(userId: string) {
-            if (!confirm('최종 인증을 임시 인증으로 되돌리시겠습니까?')) return;
+            if (!confirm('승인된 인증을 임시 인증으로 되돌리시겠습니까?')) return;
 
             try {
                 const { actions } = await import('astro:actions');
@@ -817,7 +819,7 @@ import Icon from '../../components/Icon.astro';
                     sender_id: currentUser.id,
                     type: 'verification',
                     title: '⚠️ 인증 상태 변경',
-                    message: `최종 인증이 임시 인증으로 되돌려졌습니다. 재검토가 필요합니다.`,
+                    message: `관리자 인증이 임시 인증으로 되돌려졌습니다. 재검토가 필요합니다.`,
                     link: '/mypage',
                 });
 
@@ -833,11 +835,16 @@ import Icon from '../../components/Icon.astro';
         async function updateCounts() {
             const statuses = ['temp_verified', 'verified', 'list', 'rejected', 'none'];
             for (const status of statuses) {
-                const { count } = await supabase
+                let countQuery = supabase
                     .from('profiles')
                     .select('*', { count: 'exact', head: true })
-                    .eq('verification_status', status)
-                    .not('society_email', 'is', null);
+                    .eq('verification_status', status);
+
+                if (status !== 'none') {
+                    countQuery = countQuery.not('society_email', 'is', null);
+                }
+
+                const { count } = await countQuery;
 
                 const countEl = document.getElementById(`${status}Count`);
                 if (countEl) {
