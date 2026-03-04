@@ -59,11 +59,19 @@ git push
 
 ```
 https://radsafety.kr/**
-https://radsafety-pwa-*.vercel.app/**
+https://radsafety-*.vercel.app/**
+https://*-benkoreas-projects.vercel.app/**
 ```
 
 > **정책**: Site URL이 `https://radsafety.kr`로 고정이므로 운영 도메인 하나만 필요합니다.
-> 다만, Vercel Preview 환경에서 로그인을 테스트하려면 `https://radsafety-pwa-*.vercel.app/**` 와일드카드를 추가해야 합니다.
+> 다만, Vercel Preview 환경에서 로그인을 테스트하려면 와일드카드(`*`) 패턴을 추가해야 합니다.
+>
+> **주의 (와일드카드 설정)**:
+>
+> - Vercel 프로젝트명이 `radsafety-pwa`여도 실제 생성되는 프리뷰 주소는 `pwa-`가 생략된 `radsafety-*.vercel.app` 형태일 수 있습니다. (Vercel의 내부 슬러그 생성 규칙 때문)
+> - 따라서 `https://radsafety-*.vercel.app/**`와 같이 넓은 범위의 와일드카드를 등록해야 모든 프리뷰 환경에서 리다이렉션이 정상 작동합니다.
+> - 만약 위 패턴으로도 실패한다면, 사용자/팀 도메인 패턴인 `https://*-benkoreas-projects.vercel.app/**`를 추가하여 모든 배포본을 커버합니다.
+>
 > 로컬 개발 환경에서는 매직링크 테스트가 불가능하며, 배포 후 운영(또는 프리뷰)에서 테스트합니다.
 > (상세: [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크))
 >
