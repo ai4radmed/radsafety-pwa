@@ -107,7 +107,7 @@ Astro 디렉터리 구조를 따르며, 각 파일은 `.spec/` 디렉터리에 1
 
 프로젝트의 세부 운영 및 유지보수를 위해 다음 문서들을 참조하십시오.
 
-- **[개발자 가이드](documents/codebase_guide.md)**: 상세 파이썬 비유 구조 및 파일별 역할 안내.
+- **[개발자 가이드](documents/codebase_guide.md)**: 상세 파일별 기술적 역할 및 시스템 설계 가이드.
 - **[데이터베이스 설계](documents/database_schema.md)**: ERD 및 테이블/필드 상세 정의.
 - **[외부 서비스 설정 가이드](documents/external_services_guide.md)**: **(중요)** Supabase, Vercel, Cloudflare, 카카오, Resend 초기 설정 및 장애 복구 절차.
 - **[테스트 전략](documents/test_strategy.md)**: 상세 자동화 시나리오 및 수동 점검 체크리스트.

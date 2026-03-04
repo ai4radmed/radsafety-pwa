@@ -10,8 +10,6 @@ const mockAdminUpdate = vi.fn();
 const mockAdminEq = vi.fn();
 const mockAdminSingle = vi.fn();
 
-const mockSingle = vi.fn();
-
 vi.mock('../../../src/lib/supabase-server', () => ({
     supabaseAnon: {
         from: (table: string) => {
@@ -43,7 +41,7 @@ vi.mock('../../../src/lib/supabase-server', () => ({
         from: (table: string) => {
             mockAdminFrom(table);
             return {
-                select: (cols?: string) => ({
+                select: (_cols?: string) => ({
                     eq: (col: string, val: string) => ({
                         single: () => mockAdminSingle(table, col, val),
                     }),
@@ -229,7 +227,9 @@ describe('server.sendVerificationCode', () => {
         expect(res.data.success).toBe(true);
         expect(mockAdminFrom).toHaveBeenCalledWith('email_verification_codes');
         expect(mockInsert).toHaveBeenCalled();
-        expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ to: email, userName: '김테스트' }));
+        expect(sendVerificationEmail).toHaveBeenCalledWith(
+            expect.objectContaining({ to: email, userName: '김테스트' }),
+        );
     });
 
     it('이메일 발송 실패 시 에러 발생', async () => {
@@ -242,7 +242,9 @@ describe('server.sendVerificationCode', () => {
             return Promise.resolve({ data: null, error: null });
         });
 
-        await expect((server.sendVerificationCode as any)({ email, userId })).rejects.toThrow('이메일 발송에 실패했습니다');
+        await expect((server.sendVerificationCode as any)({ email, userId })).rejects.toThrow(
+            '이메일 발송에 실패했습니다',
+        );
     });
 
     it('프로필 조회 실패 시 기본값(사용자)으로 발송', async () => {

@@ -135,7 +135,7 @@ graph LR
 
 ### 개발 및 코드 품질
 
-- **[코드베이스 가이드](documents/codebase_guide.md)**: 프로젝트의 상세 파일 구조 및 노드(Node.js) 입문자를 위한 가이드
+- **[코드베이스 가이드](documents/codebase_guide.md)**: 상세 파일별 기술적 역할 및 시스템 설계 가이드. 개별 명세(`.spec/`)는 AI 에이전트 전용으로 작성되어 가독성이 낮을 수 있으므로, 유지보수 목적의 코드 역할 파악은 이 가이드라인을 참조할 것을 권장합니다.
 - **[테스트 및 로깅 전략](documents/test_strategy.md)**: QA를 위한 테스트 시나리오 및 [로그 활용 가이드](documents/logging_guide.md)
 
 ---
