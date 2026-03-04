@@ -59,10 +59,12 @@ git push
 
 ```
 https://radsafety.kr/**
+https://radsafety-pwa-*.vercel.app/**
 ```
 
 > **정책**: Site URL이 `https://radsafety.kr`로 고정이므로 운영 도메인 하나만 필요합니다.
-> 로컬 개발 환경에서는 매직링크 테스트가 불가능하며, 배포 후 운영에서 테스트합니다.
+> 다만, Vercel Preview 환경에서 로그인을 테스트하려면 `https://radsafety-pwa-*.vercel.app/**` 와일드카드를 추가해야 합니다.
+> 로컬 개발 환경에서는 매직링크 테스트가 불가능하며, 배포 후 운영(또는 프리뷰)에서 테스트합니다.
 > (상세: [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크))
 >
 > **삭제된 항목 및 이유:**
@@ -134,18 +136,29 @@ https://radsafety.kr/**
 
 #### 2-1. Domains
 
-| 도메인             | 역할                                        |
-| ------------------ | ------------------------------------------- |
-| `radsafety.kr`     | **Primary domain** (Production에 직접 연결) |
-| `www.radsafety.kr` | `radsafety.kr`로 308 리다이렉트             |
+| 도메인             | 역할                                           |
+| ------------------ | ---------------------------------------------- |
+| `radsafety.kr`     | **Primary domain** (Production에 직접 연결)    |
+| `www.radsafety.kr` | `radsafety.kr`로 308 리다이렉트                |
+| `*-*.vercel.app`   | **Preview domain** (커밋마다 바뀌는 동적 주소) |
 
-> **Vercel 308 동작**: Vercel은 도메인 리다이렉트에 308(Permanent Redirect)을 기본값으로 사용합니다.
-> `www → apex` 리다이렉트의 308은 정상 동작이며, CDN 캐시 장애의 308과는 다릅니다.
-> 헬스체크 스크립트(`check:production`)도 www → apex 308을 정상으로 허용합니다.
+#### 2-2. 환경 변수 및 동적 리다이렉션
 
-> 관련 검증: [Part 2-3. 도메인/SSL](#2-3-도메인ssl)
+Vercel 프리뷰 환경에서 로그인 후 원래 주소로 정확히 돌아오기 위해 시스템 환경 변수를 활용합니다.
 
-#### 2-2. Environment Variables
+**코드 구현 원칙**:
+
+- **클라이언트**: `window.location.origin`을 사용하여 현재 접속 중인 도메인을 동적으로 획득하여 Supabase에 전달합니다.
+- **서버**: `process.env.VERCEL_URL` (프리뷰용) 또는 고정 도메인을 상황에 맞게 사용합니다.
+
+**동작 메커니즘**:
+
+1. 사용자가 프리뷰(`A.vercel.app`)에서 로그인 시도
+2. 앱이 `redirectTo: "A.vercel.app/auth/callback"` 명령을 Supabase에 전달
+3. Supabase는 `Redirect URLs` 허용 목록(와일드카드)을 확인 후 승인
+4. 로그인 완료 후 다시 `A.vercel.app`으로 정확히 복귀
+
+#### 2-3. Environment Variables (Settings > Environment Variables)
 
 Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 
