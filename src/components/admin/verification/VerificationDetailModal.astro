@@ -1,0 +1,169 @@
+---
+/**
+ * VerificationDetailModal.astro
+ * 사용자 상세 정보 모달 컴포넌트
+ */
+import Icon from '../../Icon.astro';
+---
+
+<div id="userDetailModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalUserName">사용자 상세 정보</h2>
+            <button class="close-btn" id="closeModal">
+                <Icon name="x" size="24" />
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="info-grid">
+                <div class="info-section">
+                    <div class="info-row">
+                        <span class="info-label">이메일</span>
+                        <span class="info-value" id="detailEmail" style="font-size: 0.9rem;">-</span>
+                    </div>
+                </div>
+                <div class="info-section">
+                    <div class="info-row">
+                        <span class="info-label">부서</span>
+                        <span class="info-value" id="detailDepartment">-</span>
+                    </div>
+                </div>
+                <div class="info-section">
+                    <div class="info-row">
+                        <span class="info-label">신청 이유</span>
+                        <span class="info-value" id="detailReason">-</span>
+                    </div>
+                </div>
+                <div class="info-section" id="rejectReasonSection" style="display: none;">
+                    <div class="info-row">
+                        <span class="info-label">취소 사유</span>
+                    </div>
+                    <textarea
+                        id="rejectReasonInput"
+                        placeholder="취소 사유를 입력하세요 (사용자에게 알림으로 전송됩니다)"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions" id="modalActions">
+            <!-- Actions dynamically populated -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    .modal-overlay.open {
+        display: flex;
+    }
+    .modal-container {
+        background: var(--bg-card);
+        border-radius: 16px;
+        max-width: 650px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        background: var(--bg-card);
+        z-index: 10;
+    }
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        display: flex;
+    }
+    .modal-body {
+        padding: 1.5rem;
+    }
+    .info-grid {
+        display: grid;
+        gap: 1.25rem;
+    }
+    .info-section {
+        background: var(--bg-body);
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    .info-row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+    .info-label {
+        color: var(--text-muted);
+    }
+    #rejectReasonInput {
+        width: 100%;
+        min-height: 80px;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-card);
+        color: var(--text-main);
+        resize: vertical;
+        margin-top: 0.5rem;
+    }
+    .modal-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        background: var(--bg-card);
+    }
+    :global(.btn) {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.95rem;
+    }
+    :global(.btn-approve) {
+        background: #10b981;
+        color: white;
+    }
+    :global(.btn-reject) {
+        background: #ef4444;
+        color: white;
+    }
+    :global(.btn-revoke) {
+        background: #f59e0b;
+        color: white;
+    }
+    :global(.btn-secondary) {
+        background: var(--bg-body);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+    }
+</style>
