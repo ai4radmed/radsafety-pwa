@@ -107,7 +107,10 @@ export const server = {
 
                 if (error) {
                     logger.error('인증코드 DB 저장 실패', { error });
-                    throw new Error(`코드 생성 실패 (${error.code}): ${error.message}${error.detail ? ' - ' + error.detail : ''}`);
+                    throw new Error(
+                        `코드 생성 실패 (${error.code}): ${error.message}${error.details ? ' - ' + error.details : ''}`,
+                        { cause: error },
+                    );
                 }
 
                 logger.info('인증코드 DB 저장 성공', { id: insertData?.id });
@@ -131,7 +134,9 @@ export const server = {
                     logger.info('인증 이메일 발송 성공', { email });
                 } catch (emailError) {
                     logger.error('인증 이메일 발송 실패', { error: emailError });
-                    throw new Error('이메일 발송에 실패했습니다: ' + (emailError as Error).message);
+                    throw new Error('이메일 발송에 실패했습니다: ' + (emailError as Error).message, {
+                        cause: emailError,
+                    });
                 }
 
                 return { success: true, message: '인증 코드가 발송되었습니다.' };

@@ -12,7 +12,6 @@ const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-
 
 function getChangedFiles() {
     try {
-        const baseRef = process.env.GITHUB_BASE_REF || 'HEAD';
         let diffCmd = `git diff --name-only HEAD~1`;
 
         if (process.env.GITHUB_BASE_REF) {

@@ -97,9 +97,9 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         expect(page.url()).toContain('/resources');
 
         // 자료 목록 또는 "자료가 없습니다" 메시지가 있어야 함
-        const resourceList = page.locator('#resourceList, .resource-list, [data-testid="resource-list"]');
-        const emptyMsg = page.locator('text=자료가 없습니다, text=등록된 자료');
-        const hasContent = (await resourceList.count()) > 0 || (await emptyMsg.count()) > 0;
+        // const resourceList = page.locator('#resourceList, .resource-list, [data-testid="resource-list"]');
+        // const emptyMsg = page.locator('text=자료가 없습니다, text=등록된 자료');
+        // const hasContent = (await resourceList.count()) > 0 || (await emptyMsg.count()) > 0;
         // 페이지 타이틀로 최소 로드 확인
         await expect(page).toHaveTitle(/자료실|RadSafety/);
     });
