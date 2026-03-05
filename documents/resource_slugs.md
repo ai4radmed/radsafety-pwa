@@ -14,25 +14,27 @@
 
 - 영문 소문자, 숫자, 하이픈(`-`)만 사용
 - 의미있고 간결하게 작성
-- 예시: `safety-regulations-guide`, `radiation-report-2024`, `checklist-example`
+- 예시: `safety-management-regulations-preparation-guide`, `radiation-report-2024`, `checklist-example`
 
 ## 등록된 Slug 목록
 
 ### 작성지침
 
-| Slug                            | 제목                      | 카테고리 | 참조 위치     | 등록일 |
-| ------------------------------- | ------------------------- | -------- | ------------- | ------ |
-| `safety-regulations-guide`      | 안전관리규정 작성지침     | 작성지침 | 체크리스트 02 | 미등록 |
-| `radiation-safety-report-guide` | 방사선안전보고서 작성지침 | 작성지침 | 체크리스트 02 | 미등록 |
+| 제목                      | Slug                                              | 참조 위치     | 등록일     |
+| ------------------------- | ------------------------------------------------- | ------------- | ---------- |
+| 안전관리규정 작성지침     | `safety-management-regulations-preparation-guide` | 체크리스트 02 | 2026-03-05 |
+| 방사선안전보고서 작성지침 | `safety-report-on-radiation-preparation-guide`    | 체크리스트 02 | 2026-03-05 |
 
 ### 작성예시
 
-| 제목                               | Slug                                         | 참조 위치      | 등록일     |
-| ---------------------------------- | -------------------------------------------- | -------------- | ---------- |
-| 질병관리청 방사선안전관리규정 예시 | `safety-regulations-example-kcdc`            | 체크리스트 02  | 미등록     |
-| 방사선원 사용현황 작성예시         | `radiation-source-usage-example`             | 체크리스트 02b | 미등록     |
-| 방사선원 생산·판매현황 작성예시    | `radiation-source-production-sales-example`  | 체크리스트 02b | 미등록     |
-| 방사선기기 설계승인서 작성예시     | `radiation-equipment-design-approval-sample` | 체크리스트 00a | 2026-03-05 |
+| 제목                              | Slug                                             | 참조 위치      | 등록일     |
+| --------------------------------- | ------------------------------------------------ | -------------- | ---------- |
+| 안전관리규정 예시                 | `safety-management-regulations-sample`           | 체크리스트 02  | 2026-03-05 |
+| 방사선원 사용현황 작성예시        | `radiation-source-usage-example`                 | 체크리스트 02b | 미등록     |
+| 방사선원 생산·판매현황 작성예시   | `radiation-source-production-sales-example`      | 체크리스트 02b | 미등록     |
+| 방사선기기 설계승인서 예시        | `radiation-equipment-design-approval-sample`     | 체크리스트 00a | 2026-03-05 |
+| 정기검사 결과통보공문 예시        | `periodic-inspection-result-notification-sample` | 체크리스트 01  | 2026-03-05 |
+| 검사지적 권고사항 시정보고서 예시 | `inspection-corrective-action-report-sample`     | 체크리스트 01  | 2026-03-05 |
 
 ### 가이드북
 
@@ -68,13 +70,18 @@
 
 ### 02-safety-management-regulations-report.md
 
-- `safety-regulations-guide` - 안전관리규정 작성지침
-- `safety-regulations-example-kcdc` - 질병관리청 예시
-- `radiation-safety-report-guide` - 방사선안전보고서 작성지침
+- `safety-management-regulations-preparation-guide` - 안전관리규정 작성지침
+- `safety-management-regulations-sample` - 안전관리규정 예시
+- `safety-report-on-radiation-preparation-guide` - 방사선안전보고서 작성지침
+
+### 01-previous-inspection-records.md
+
+- `periodic-inspection-result-notification-sample` - 예시
+- `inspection-corrective-action-report-sample` - 예시
 
 ### 00a-permit-design-approval.md
 
-- `radiation-equipment-design-approval-sample` - 방사선기기 설계승인서 작성예시
+- `radiation-equipment-design-approval-sample` - 예시
 
 ### 02b-radiation-source-records.md
 
@@ -102,14 +109,17 @@
 ## 주의사항
 
 1. **새 자료 등록 시**
-    - 이 문서에 먼저 slug 등록
+
+- 이 문서에 먼저 slug 등록
     - 중복 확인 (Ctrl+F)
     - 자료실에 등록 후 "등록일" 업데이트
 
 2. **자료 삭제 시**
-    - 이 문서에서 slug 삭제 금지 (재등록 대비)
+
+- 이 문서에서 slug 삭제 금지 (재등록 대비)
     - "참조 위치" 칸에 "삭제됨 (YYYY-MM-DD)" 표기
 
 3. **체크리스트 링크 변경 시**
-    - 이 문서 확인하여 정확한 slug 사용
+
+- 이 문서 확인하여 정확한 slug 사용
     - 변경 후 실제 링크 동작 테스트 필수
