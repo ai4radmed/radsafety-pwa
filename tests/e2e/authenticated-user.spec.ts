@@ -269,13 +269,15 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
     });
 
     // ── 회원 탈퇴 (명세: .spec/tests/e2e/account-deletion.spec.md) ─────
-    test('회원 탈퇴 — 마이페이지에 탈퇴 버튼이 존재한다', async ({ page }) => {
+    test('회원 탈퇴 — 마이페이지에 탈퇴 버튼이 존재한다 (모달 밖 본문에 노출)', async ({ page }) => {
         await page.goto('/mypage');
         await page.waitForLoadState('networkidle');
         const deleteBtn = page.locator(
             '#deleteAccountBtn, button:has-text("회원 탈퇴"), [data-action="delete-account"]',
         );
         await expect(deleteBtn.first()).toBeVisible();
+        // 명세: 탈퇴 버튼은 모달 밖에 있어야 함 (인증 모달 내부에 있으면 숨겨짐)
+        await expect(page.locator('#verifyModal #deleteAccountBtn')).toHaveCount(0);
     });
 
     test('회원 탈퇴 — 탈퇴 버튼 클릭 시 확인 대화상자 표시 후 취소 (실제 탈퇴 없음)', async ({ page }) => {
