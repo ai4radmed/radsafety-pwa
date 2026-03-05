@@ -10,7 +10,7 @@
 
 ## 사이드 이펙트
 
-없음. astro:page-load에서 추가 로직 없음.
+- astro:page-load 시 `restoreLastRouteIfNeeded()` 호출. 저장된 마지막 경로가 있고 이 탭에서 미복원이면 해당 경로로 `replace` 리다이렉트(명세: `.spec/src/lib/last-route.md`).
 
 ## 핵심 규칙
 

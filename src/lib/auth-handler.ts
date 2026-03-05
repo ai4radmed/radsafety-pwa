@@ -1,6 +1,7 @@
 import { supabase } from './supabase-browser';
 import { setUser, clearUser } from '../store/user';
 import { isAdmin as checkIsAdmin } from '../config/auth';
+import { saveLastRoute } from './last-route';
 
 /**
  * 초기 인증 및 페이지 로드 핸들러 초기화
@@ -17,6 +18,7 @@ export function initAuthHandler() {
 
     // 2. Page Load Event Listener
     document.addEventListener('astro:page-load', async () => {
+        saveLastRoute();
         console.log('✅ Auth Handler: Page Load - Syncing Session...');
         const {
             data: { session },

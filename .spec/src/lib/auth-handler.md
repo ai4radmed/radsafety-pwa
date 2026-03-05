@@ -10,7 +10,7 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
 1. **initAuthHandler()**:
     - `supabase.auth.onAuthStateChange` 리스너 등록.
     - `SIGNED_OUT` 이벤트 발생 시: `clearUser()` 호출 및 보호된 페이지인 경우 `/login` 리다이렉트.
-    - `astro:page-load` 이벤트 등록: 매 페이지 로드 시 `updateUserStore` 실행.
+    - `astro:page-load` 이벤트 등록: 매 페이지 로드 시 `saveLastRoute()`(마지막 경로 저장), 이후 `updateUserStore` 실행.
 
 2. **updateUserStore(session)**:
     - 세션 정보(email, id 등)를 기반으로 기본 유저 정보 설정.
