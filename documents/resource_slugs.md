@@ -27,11 +27,12 @@
 
 ### 작성예시
 
-| Slug                                        | 제목                               | 카테고리 | 참조 위치      | 등록일 |
-| ------------------------------------------- | ---------------------------------- | -------- | -------------- | ------ |
-| `safety-regulations-example-kcdc`           | 질병관리청 방사선안전관리규정 예시 | 작성예시 | 체크리스트 02  | 미등록 |
-| `radiation-source-usage-example`            | 방사선원 사용현황 작성예시         | 작성예시 | 체크리스트 02b | 미등록 |
-| `radiation-source-production-sales-example` | 방사선원 생산·판매현황 작성예시    | 작성예시 | 체크리스트 02b | 미등록 |
+| 제목                               | Slug                                         | 참조 위치      | 등록일     |
+| ---------------------------------- | -------------------------------------------- | -------------- | ---------- |
+| 질병관리청 방사선안전관리규정 예시 | `safety-regulations-example-kcdc`            | 체크리스트 02  | 미등록     |
+| 방사선원 사용현황 작성예시         | `radiation-source-usage-example`             | 체크리스트 02b | 미등록     |
+| 방사선원 생산·판매현황 작성예시    | `radiation-source-production-sales-example`  | 체크리스트 02b | 미등록     |
+| 방사선기기 설계승인서 작성예시     | `radiation-equipment-design-approval-sample` | 체크리스트 00a | 2026-03-05 |
 
 ### 가이드북
 
@@ -70,6 +71,10 @@
 - `safety-regulations-guide` - 안전관리규정 작성지침
 - `safety-regulations-example-kcdc` - 질병관리청 예시
 - `radiation-safety-report-guide` - 방사선안전보고서 작성지침
+
+### 00a-permit-design-approval.md
+
+- `radiation-equipment-design-approval-sample` - 방사선기기 설계승인서 작성예시
 
 ### 02b-radiation-source-records.md
 
