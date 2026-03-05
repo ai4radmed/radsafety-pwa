@@ -17,7 +17,7 @@
 
 ## 회원 탈퇴 (계정 삭제)
 
-1. **UI**: "회원 탈퇴" 버튼(`#deleteAccountBtn`) 노출.
+1. **UI**: "회원 탈퇴" 버튼(`#deleteAccountBtn`) 노출. 버튼은 **모달 밖** 메인 콘텐츠 영역(마이페이지 본문)에 두어 항상 접근 가능해야 함(인증 모달 내부에 두면 탭/모달에 가려져 보이지 않음).
 2. **확인**: 클릭 시 `confirm()`으로 경고 문구 표시(되돌릴 수 없음, 게시글은 '알 수 없음' 유지 등). 취소 시 종료.
 3. **실행**: `deleteOwnAccount(supabase)` 호출 (명세: `.spec/src/lib/delete-account.md`). 성공 시 `supabase.auth.signOut()` 후 `window.location.href = '/'`.
 4. **실패**: 에러 메시지 alert 후 진행 없음.
