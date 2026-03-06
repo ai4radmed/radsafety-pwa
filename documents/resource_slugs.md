@@ -14,48 +14,63 @@
 
 - 영문 소문자, 숫자, 하이픈(`-`)만 사용
 - 의미있고 간결하게 작성
-- 예시: `safety-regulations-guide`, `radiation-report-2024`, `checklist-example`
+- 예시: `safety-management-regulations-guide`, `radiation-report-2024`, `checklist-example`
 
 ## 등록된 Slug 목록
 
 ### 작성지침
 
-| Slug                            | 제목                      | 카테고리 | 참조 위치     | 등록일 |
-| ------------------------------- | ------------------------- | -------- | ------------- | ------ |
-| `safety-regulations-guide`      | 안전관리규정 작성지침     | 작성지침 | 체크리스트 02 | 미등록 |
-| `radiation-safety-report-guide` | 방사선안전보고서 작성지침 | 작성지침 | 체크리스트 02 | 미등록 |
+| 제목                      | Slug                                  | 참조 위치     | 등록일     |
+| ------------------------- | ------------------------------------- | ------------- | ---------- |
+| 안전관리규정 작성지침     | `safety-management-regulations-guide` | 체크리스트 02 | 2026-03-06 |
+| 방사선안전보고서 작성지침 | `radiation-safety-report-guide`       | 체크리스트 02 | 2026-03-06 |
 
 ### 작성예시
 
-| Slug                                        | 제목                               | 카테고리 | 참조 위치      | 등록일 |
-| ------------------------------------------- | ---------------------------------- | -------- | -------------- | ------ |
-| `safety-regulations-example-kcdc`           | 질병관리청 방사선안전관리규정 예시 | 작성예시 | 체크리스트 02  | 미등록 |
-| `radiation-source-usage-example`            | 방사선원 사용현황 작성예시         | 작성예시 | 체크리스트 02b | 미등록 |
-| `radiation-source-production-sales-example` | 방사선원 생산·판매현황 작성예시    | 작성예시 | 체크리스트 02b | 미등록 |
+| 제목                                 | Slug                                           | 참조 위치                                          | 등록일     |
+| ------------------------------------ | ---------------------------------------------- | -------------------------------------------------- | ---------- |
+| 안전관리규정 예시                    | `safety-management-regulations-sample`         | 체크리스트 02                                      | 2026-03-06 |
+| 방사선원 사용현황 작성예시           | `radiation-source-usage-example`               | 체크리스트 02b                                     | 2026-03-06 |
+| RI 생산판매현황 예시                 | `ri-production-sales-record-sample`            | 체크리스트 02b                                     | 2026-03-06 |
+| 방사선원 구매요구서 예시             | `radiation-source-order-sample`                | 체크리스트 02b                                     | 2026-03-06 |
+| 방사선관리구역 출입기록 예시         | `controlled-area-access-log-sample`            | -                                                  | 2026-03-06 |
+| 선량률∙표면오염도 측정기록부 예시    | `doserate-surface-contamination-record-sample` | 체크리스트 02d                                     | 2026-03-06 |
+| 배출전 방사능농도 기록부             | `pre-discharge-concentration-log-sample`       | -                                                  | 2026-03-06 |
+| 밀봉선원 누설점검 기록부 예시        | `sealed-source-leak-test-record-sample`        | -                                                  | 2026-03-06 |
+| 선량확정 통보 공문 예시              | `dose-determination-notification-sample`       | 체크리스트 02e (판독특이자 공문)                   | 2026-03-06 |
+| 종사자 건강진단서 예시               | `worker-health-certificate-sample`             | 체크리스트 02e (건강진단서)                        | 2026-03-06 |
+| 법정교육 수료증 예시                 | `radiation-training-cert-sample`               | 체크리스트 02e (법정교육 수료증)                   | 2026-03-06 |
+| 수시출입자 피폭선량 기록 예시        | `occasional-visitor-dose-record-sample`        | 체크리스트 02e (피폭선량 기록부)                   | 2026-03-06 |
+| RI 취급시설 보안점검표 예시          | `ri-facility-security-checklist-sample`        | 체크리스트 02g (선원보안관리 현황)                 | 2026-03-06 |
+| 방사선원 위탁폐기 관련 증빙자료 예시 | `ri-waste-disposal-consignment-proof-sample`   | 체크리스트 02f (방사선원 위탁폐기 관련 증빙자료)   | 2026-03-06 |
+| RI 치료동의서 예시                   | `patient-informed-consent-sample`              | 체크리스트 31 (환자/보호자 이해 동의 확인 서류)    | 2026-03-06 |
+| RI치료 퇴원 선량측정 예시            | `ri-tx-release-doserate-measurement-sample`    | 체크리스트 36 (RI 투여환자의 안전관리에 관한 기록) | 2026-03-06 |
+| RI치료 퇴원지침서 예시               | `ri-tx-release-instruction-sample`             | 체크리스트 36 (RI 투여 치료병실 퇴원지침서)        | 2026-03-06 |
+| RI 원내운반 신청서 예시              | `ri-inhospital-transport-request-sample`       | 체크리스트 45 (생산제품의 표면오염도 측정기록부)   | 2026-03-06 |
+| 방사선원 생산·판매현황 작성예시      | `radiation-source-production-sales-example`    | 체크리스트 02b                                     | 2026-03-06 |
+| 방사선기기 설계승인서 예시           | `radiation-equipment-design-approval-sample`   | 체크리스트 00a                                     | 2026-03-06 |
+| 방사선발생장치 사용허가증 예시       | `radiation-generating-device-permit-sample`    | -                                                  | 2026-03-06 |
+| 방사선안전관리자 대리자 지정서 예시  | `rsm-proxy-designation-sample`                 | -                                                  | 2026-03-06 |
+| 정기검사 결과통보공문 예시           | `inspection-notification-sample`               | 체크리스트 01                                      | 2026-03-06 |
+| 검사지적 권고사항 시정보고서 예시    | `inspection-corrective-report-sample`          | 체크리스트 01                                      | 2026-03-06 |
 
 ### 가이드북
 
-| Slug | 제목 | 카테고리 | 참조 위치 | 등록일 |
-| ---- | ---- | -------- | --------- | ------ |
-| -    | -    | 가이드북 | -         | -      |
-
-### 발표자료
-
-| Slug | 제목 | 카테고리 | 참조 위치 | 등록일 |
-| ---- | ---- | -------- | --------- | ------ |
-| -    | -    | 발표자료 | -         | -      |
+| 제목                       | Slug                        | 참조 위치 | 등록일     |
+| -------------------------- | --------------------------- | --------- | ---------- |
+| 정기검사 수검가이드북 2022 | `inspection-guidebook-2022` | -         | 2026-03-06 |
 
 ### 법정양식
 
-| Slug                                | 제목                             | 카테고리 | 참조 위치      | 등록일 |
-| ----------------------------------- | -------------------------------- | -------- | -------------- | ------ |
-| `radiation-worker-health-exam-form` | 방사선작업종사자 건강진단서 양식 | 법정양식 | 체크리스트 02e | 미등록 |
+| 제목                             | Slug                                | 참조 위치      | 등록일     |
+| -------------------------------- | ----------------------------------- | -------------- | ---------- |
+| 방사선작업종사자 건강진단서 양식 | `radiation-worker-health-exam-form` | 체크리스트 02e | 2026-03-06 |
 
 ### 기준/규정
 
-| Slug                            | 제목                                    | 카테고리  | 참조 위치      | 등록일 |
-| ------------------------------- | --------------------------------------- | --------- | -------------- | ------ |
-| `emission-management-standards` | 배출관리기준 (방사선방호등에 관한 기준) | 기준/규정 | 체크리스트 02f | 미등록 |
+| Slug                            | 제목                                    | 카테고리  | 참조 위치      | 등록일     |
+| ------------------------------- | --------------------------------------- | --------- | -------------- | ---------- |
+| `emission-management-standards` | 배출관리기준 (방사선방호등에 관한 기준) | 기준/규정 | 체크리스트 02f | 2026-03-06 |
 
 ### 기타
 
@@ -65,24 +80,67 @@
 
 ## 체크리스트별 필요 자료
 
+### 02-1-safety-management-organization.md
+
+- `rsm-proxy-designation-sample` - 방사선안전관리자 대리자 지정서 예시
+
 ### 02-safety-management-regulations-report.md
 
-- `safety-regulations-guide` - 안전관리규정 작성지침
-- `safety-regulations-example-kcdc` - 질병관리청 예시
+- `safety-management-regulations-guide` - 안전관리규정 작성지침
+- `safety-management-regulations-sample` - 안전관리규정 예시
 - `radiation-safety-report-guide` - 방사선안전보고서 작성지침
+
+### 01-previous-inspection-records.md
+
+- `inspection-notification-sample` - 예시
+- `inspection-corrective-report-sample` - 예시
+
+### 00a-permit-design-approval.md
+
+- `radiation-generating-device-permit-sample` - 방사선발생장치 사용허가증 예시
+- `radiation-equipment-design-approval-sample` - 예시
 
 ### 02b-radiation-source-records.md
 
 - `radiation-source-usage-example` - 방사선원 사용현황 작성예시
 - `radiation-source-production-sales-example` - 방사선원 생산·판매현황 작성예시
+- `ri-production-sales-record-sample` - RI 생산판매현황 예시
+- `controlled-area-access-log-sample` - 방사선관리구역 출입기록 예시
+
+### 02d-measurement-records.md
+
+- `doserate-surface-contamination-record-sample` - 선량률∙표면오염도 측정기록부 예시
+- `sealed-source-leak-test-record-sample` - 밀봉선원 누설 점검기록부 예시
 
 ### 02e-worker-data.md
 
 - `radiation-worker-health-exam-form` - 방사선작업종사자 건강진단서 양식
+- `dose-determination-notification-sample` - 선량확정 통보 공문 예시
+- `worker-health-certificate-sample` - 종사자 건강진단서 예시
+- `radiation-training-cert-sample` - 법정교육 수료증 예시
+- `occasional-visitor-dose-record-sample` - 수시출입자 피폭선량 기록 예시
 
 ### 02f-waste-data.md
 
 - `emission-management-standards` - 배출관리기준
+- `ri-waste-disposal-consignment-proof-sample` - 방사선원 위탁폐기 관련 증빙자료 예시
+
+### 02g-radiation-security-management.md
+
+- `ri-facility-security-checklist-sample` - RI 취급시설 보안점검표 예시
+
+### 31-patient-consent.md
+
+- `patient-informed-consent-sample` - RI 치료동의서 예시
+
+### 36-patient-safety-management.md
+
+- `ri-tx-release-doserate-measurement-sample` - RI치료 퇴원 선량측정 예시
+- `ri-tx-release-instruction-sample` - RI치료 퇴원지침서 예시
+
+### 45-contamination-records-product.md
+
+- `ri-inhospital-transport-request-sample` - RI 원내운반 신청서 예시
 
 ### (추가 필요)
 
@@ -97,14 +155,17 @@
 ## 주의사항
 
 1. **새 자료 등록 시**
-    - 이 문서에 먼저 slug 등록
+
+- 이 문서에 먼저 slug 등록
     - 중복 확인 (Ctrl+F)
     - 자료실에 등록 후 "등록일" 업데이트
 
-2. **자료 삭제 시**
-    - 이 문서에서 slug 삭제 금지 (재등록 대비)
+1. **자료 삭제 시**
+
+- 이 문서에서 slug 삭제 금지 (재등록 대비)
     - "참조 위치" 칸에 "삭제됨 (YYYY-MM-DD)" 표기
 
-3. **체크리스트 링크 변경 시**
-    - 이 문서 확인하여 정확한 slug 사용
+1. **체크리스트 링크 변경 시**
+
+- 이 문서 확인하여 정확한 slug 사용
     - 변경 후 실제 링크 동작 테스트 필수

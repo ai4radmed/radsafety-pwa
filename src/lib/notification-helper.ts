@@ -11,7 +11,7 @@ import { sendPushToUser, sendPushToUsers } from './push';
 const logger = createLogger('notification');
 
 export interface NotificationData {
-    type: 'verification_approved' | 'verification_rejected' | 'admin_message' | 'system_notice';
+    type: 'verification_approved' | 'verification_rejected' | 'admin_message' | 'system_notice' | 'announcement';
     userId: string;
     senderId?: string | null;
     title: string;

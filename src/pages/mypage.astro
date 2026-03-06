@@ -385,6 +385,15 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                 </div>
             </div>
         </div>
+        <!-- Delete Account Section -->
+        <div style="margin-top: 3rem; text-align: center; border-top: 1px solid #eee; padding-top: 1rem;">
+            <button
+                id="deleteAccountBtn"
+                style="background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-size: 0.8rem;"
+            >
+                회원 탈퇴
+            </button>
+        </div>
     </div>
 
     <!-- Verification Modal (Reused) -->
@@ -640,21 +649,12 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                 </form>
             </div>
         </div>
-
-        <!-- Delete Account Section -->
-        <div style="margin-top: 3rem; text-align: center; border-top: 1px solid #eee; padding-top: 1rem;">
-            <button
-                id="deleteAccountBtn"
-                style="background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-size: 0.8rem;"
-            >
-                회원 탈퇴
-            </button>
-        </div>
     </div>
 
     <script>
         import { userProfile } from '../store/user';
         import { supabase } from '../lib/supabase-browser';
+        import { deleteOwnAccount } from '../lib/delete-account';
 
         console.log('Mypage script loaded');
         document.addEventListener('astro:page-load', async () => {
@@ -1088,7 +1088,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                 else window.location.href = '/login';
             });
 
-            // Delete Account
+            // Delete Account (명세: .spec/src/pages/mypage.md)
             document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
                 if (
                     !confirm(
@@ -1098,7 +1098,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                     return;
 
                 try {
-                    const { error } = await supabase.rpc('delete_own_account');
+                    const { error } = await deleteOwnAccount(supabase);
                     if (error) throw error;
 
                     await supabase.auth.signOut();
@@ -1288,10 +1288,15 @@ import Icon from '../components/Icon.astro'; // Import Icon component
 
                     try {
                         const { actions } = await import('astro:actions');
-                        const result = await actions.sendVerificationCode({
+                        const result = await (actions as any).sendVerificationCode({
                             email,
                             userId: currentUser.id,
                         });
+
+                        if (result.error) {
+                            alert('코드 발송 실패: ' + result.error.message);
+                            return;
+                        }
 
                         alert(result.data?.message || '인증 코드가 발송되었습니다.');
                         verifySection!.style.display = 'none';
@@ -1318,10 +1323,15 @@ import Icon from '../components/Icon.astro'; // Import Icon component
 
                     try {
                         const { actions } = await import('astro:actions');
-                        const result = await actions.verifyEmailCode({
+                        const result = await (actions as any).verifyEmailCode({
                             code,
                             userId: currentUser.id,
                         });
+
+                        if (result.error) {
+                            alert('검증 실패: ' + result.error.message);
+                            return;
+                        }
 
                         statusDiv!.textContent = '✓ 이메일이 검증되었습니다';
                         statusDiv!.style.color = '#10b981';

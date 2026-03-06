@@ -36,15 +36,13 @@ import Icon from '../components/Icon.astro';
                 <p class="card-desc">작성지침, 예시 및 각종 발표자료</p>
             </a>
 
-            <div class="card secondary">
+            <a href="/feedback" class="card secondary">
                 <div class="card-header">
                     <Icon name="mail" size="20" class="card-icon" />
                     <h3>의견보내기</h3>
                 </div>
-                <p class="card-desc">
-                    kimbi.kirams@gmail.com으로 연락 부탁드립니다. (향후 앱 내 직접 의견 전송 기능 개발 예정)
-                </p>
-            </div>
+                <p class="card-desc">앱 오류 및 개선사항을 관리자에게 보내기</p>
+            </a>
         </div>
 
         <!-- Action Area -->
@@ -168,10 +166,11 @@ import Icon from '../components/Icon.astro';
     </style>
 
     <script>
+        import { restoreLastRouteIfNeeded } from '../lib/last-route';
         // astro:page-load는 직접 접속과 View Transitions 재방문 모두에서 발생하므로
         // readyState 체크 없이 단일 이벤트로 처리 (codebase_guide.md 3-4 참조)
         document.addEventListener('astro:page-load', () => {
-            // 홈 페이지 초기화 (현재 추가 로직 없음)
+            if (restoreLastRouteIfNeeded()) return; // 리다이렉트 발생
         });
     </script>
 </DashboardLayout>

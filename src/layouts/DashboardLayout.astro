@@ -5,7 +5,7 @@ import MobileBottomNav from '../components/MobileBottomNav.astro';
 import Icon from '../components/Icon.astro';
 import PWAInstall from '../components/PWAInstall.astro';
 import LoginGuide from '../components/LoginGuide.astro';
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import GlossaryModal from '../components/GlossaryModal.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
@@ -20,7 +20,7 @@ const { title, description, scale } = Astro.props;
             description={description || SITE_DESCRIPTION}
             scale={scale}
         />
-        <ViewTransitions />
+        <ClientRouter />
         <script is:inline>
             function applyFontSize() {
                 const savedSize = localStorage.getItem('fontSize') || 'medium';
@@ -41,12 +41,10 @@ const { title, description, scale } = Astro.props;
                 grid-template-columns: 60px 1fr;
                 min-height: 100vh;
             }
-
             main {
-                grid-column: 2; /* Force content to second column */
-                min-width: 0; /* Prevent grid blowout */
+                grid-column: 2;
+                min-width: 0;
             }
-
             .content-area {
                 padding: 2rem;
                 max-width: 1200px;
@@ -54,8 +52,6 @@ const { title, description, scale } = Astro.props;
                 width: 100%;
                 box-sizing: border-box;
             }
-
-            /* Mobile Header */
             .mobile-header {
                 display: none;
                 background: #1c1c1c;
@@ -75,19 +71,17 @@ const { title, description, scale } = Astro.props;
                 padding: 0;
                 margin-right: 1rem;
             }
-
             .header-actions {
                 display: flex;
                 align-items: center;
                 gap: 1rem;
             }
-
             @media (max-width: 768px) {
                 .dashboard-grid {
                     grid-template-columns: 1fr;
                 }
                 main {
-                    grid-column: 1; /* Reset for mobile */
+                    grid-column: 1;
                 }
                 .mobile-header {
                     display: flex;
@@ -96,7 +90,6 @@ const { title, description, scale } = Astro.props;
                 .content-area {
                     padding: 0.5rem;
                 }
-                /* Overlay for sidebar when open */
                 .sidebar-overlay {
                     display: none;
                     position: fixed;
@@ -113,15 +106,14 @@ const { title, description, scale } = Astro.props;
             }
         </style>
     </head>
-    <body>
-        <div class="mobile-header">
+    <body class="dash-layout">
+        <header class="mobile-header">
             <div style="display:flex; align-items:center;">
                 <button id="menuBtn" class="hamburger" aria-label="Menu">
                     <Icon name="menu" size="24" />
                 </button>
-                <span style="font-weight:bold; font-size:1.1rem;">{SITE_TITLE} 0.1</span>
+                <span style="font-weight:bold; font-size:1.1rem;">{SITE_TITLE}</span>
             </div>
-
             <div class="header-actions">
                 <button
                     id="headerGlossaryBtn"
@@ -138,253 +130,53 @@ const { title, description, scale } = Astro.props;
                     ></span>
                 </a>
             </div>
-        </div>
+        </header>
 
-        <!-- Sidebar Overlay -->
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
         <div class="dashboard-grid">
-            <!-- Sidebar (Desktop & Mobile Drawer) -->
             <Sidebar />
-
-            <!-- Main Content -->
             <main transition:animate="slide">
-                <div class="content-area">
-                    <slot />
-                </div>
-                <!-- Spacer for Bottom Nav (only if bottom nav exists) -->
+                <div class="content-area"><slot /></div>
                 <div style="height: 80px;"></div>
             </main>
         </div>
 
-        <GlossaryModal />
-        <MobileBottomNav />
-        <PWAInstall />
-        <LoginGuide />
+        <GlossaryModal /><MobileBottomNav /><PWAInstall /><LoginGuide />
 
         <script is:inline>
-            // Mobile Menu Toggle
-            function initMobileMenu() {
-                console.log('✅ 1. Initializing Mobile Menu...');
+            function initMobileUI() {
                 const menuBtn = document.getElementById('menuBtn');
                 const sidebar = document.querySelector('.sidebar');
                 const overlay = document.getElementById('sidebarOverlay');
                 const glossaryBtn = document.getElementById('headerGlossaryBtn');
 
-                if (menuBtn && sidebar) {
-                    // Remove old listener to avoid duplicates if re-running
-                    const newBtn = menuBtn.cloneNode(true);
-                    if (menuBtn.parentNode) menuBtn.parentNode.replaceChild(newBtn, menuBtn);
-
-                    newBtn.addEventListener('click', () => {
-                        console.log('Menu clicked');
-                        sidebar.classList.toggle('open');
-                        overlay?.classList.toggle('active');
-                    });
-                }
-
-                if (overlay && sidebar) {
-                    // Remove old listener
-                    const newOverlay = overlay.cloneNode(true);
-                    if (overlay.parentNode) overlay.parentNode.replaceChild(newOverlay, overlay);
-
-                    newOverlay.addEventListener('click', () => {
-                        console.log('Overlay clicked');
-                        sidebar.classList.remove('open');
-                        newOverlay.classList.remove('active');
-                    });
-                }
-
-                if (glossaryBtn) {
-                    const newGlossaryBtn = glossaryBtn.cloneNode(true);
-                    if (glossaryBtn.parentNode) glossaryBtn.parentNode.replaceChild(newGlossaryBtn, glossaryBtn);
-
-                    newGlossaryBtn.addEventListener('click', () => {
-                        document.dispatchEvent(new CustomEvent('open-glossary'));
-                    });
-                }
+                const toggle = () => {
+                    sidebar?.classList.toggle('open');
+                    overlay?.classList.toggle('active');
+                };
+                menuBtn?.addEventListener('click', toggle);
+                overlay?.addEventListener('click', () => {
+                    sidebar?.classList.remove('open');
+                    overlay?.classList.remove('active');
+                });
+                glossaryBtn?.addEventListener('click', () => document.dispatchEvent(new CustomEvent('open-glossary')));
             }
-
-            // Run immediately
-            initMobileMenu();
-
-            // Run on ViewTransitions navigation
-            document.addEventListener('astro:after-swap', initMobileMenu);
+            initMobileUI();
+            document.addEventListener('astro:after-swap', initMobileUI);
         </script>
         <script is:inline define:vars={{ vapidPublicKey: import.meta.env.PUBLIC_VAPID_KEY }}>
-            // 푸시 알림 유틸리티를 window에 노출 (mypage 토글에서 사용)
-            window.urlBase64ToUint8Array = function (base64String) {
-                const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                const rawData = atob(base64);
-                return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+            window.urlBase64ToUint8Array = (str) => {
+                const padding = '='.repeat((4 - (str.length % 4)) % 4);
+                const b64 = (str + padding).replace(/-/g, '+').replace(/_/g, '/');
+                return Uint8Array.from([...atob(b64)].map((c) => c.charCodeAt(0)));
             };
             window.vapidPublicKey = vapidPublicKey;
         </script>
         <script>
-            import { supabase } from '../lib/supabase-browser';
-            import { setUser, clearUser } from '../store/user';
-            import { isAdmin } from '../config/auth';
-
-            // 로그아웃 감지 전용 리스너
-            // 세션 로드/프로필/알림은 astro:page-load → updateUserStore 단일 경로로만 처리.
-            // SIGNED_OUT만 여기서 처리하여 어떤 상황에서도 중복 실행 방지.
-            supabase.auth.onAuthStateChange((event, session) => {
-                console.log('Auth State Change:', event, session?.user?.email);
-                if (event === 'SIGNED_OUT') {
-                    clearUser();
-                    const currentPath = window.location.pathname;
-                    const publicPaths = ['/', '/login'];
-                    const isPublic = publicPaths.some(
-                        (path) => currentPath === path || (path !== '/' && currentPath.startsWith(path)),
-                    );
-                    if (!isPublic) {
-                        console.log('Unauthorized access. Redirecting to /login...');
-                        window.location.href = '/login';
-                    }
-                }
-            });
-
-            // Auth Check & Store Sync on every page load (supports View Transitions)
-            document.addEventListener('astro:page-load', async () => {
-                console.log('✅ 2. Page Load Event: Checking Auth...');
-                const {
-                    data: { session },
-                } = await supabase.auth.getSession();
-                await updateUserStore(session);
-            });
-
-            async function updateUserStore(session: any) {
-                const currentPath = window.location.pathname;
-                const publicPaths = ['/', '/login'];
-                const isPublic = publicPaths.some(
-                    (path) => currentPath === path || (path !== '/' && currentPath.startsWith(path)),
-                );
-
-                if (session?.user) {
-                    // 1. Basic Info from Session
-                    const baseUser = {
-                        id: session.user.id,
-                        email: session.user.email || '',
-                        login_email: session.user.email || '',
-                        created_at: session.user.created_at || '',
-                        provider: session.user.app_metadata?.provider || 'email',
-                        nickname:
-                            session.user.user_metadata?.full_name ||
-                            session.user.user_metadata?.name ||
-                            session.user.user_metadata?.user_name ||
-                            '',
-                    };
-
-                    // Check if user is admin based on email
-                    const userIsAdmin = isAdmin(baseUser.login_email);
-
-                    // 2. Fetch Full Profile from DB
-                    try {
-                        const { data: profile, error } = await supabase
-                            .from('profiles')
-                            .select('*')
-                            .eq('id', session.user.id)
-                            .maybeSingle(); // Use maybeSingle to prevent 406 on 0 rows, though 406 usually means format error.
-                        // However, 406 Not Acceptable in Supabase often means it returned more than 1 row when single() was expected,
-                        // or header issue. 'maybeSingle' is safer than 'single'.
-
-                        if (error) {
-                            console.error('Supabase Profile Fetch Error:', error);
-                            // If error, we still have baseUser. Don't throw.
-                        }
-
-                        if (profile) {
-                            // If user is admin but DB doesn't reflect it, update DB
-                            if (userIsAdmin && !profile.is_admin) {
-                                await supabase.from('profiles').update({ is_admin: true }).eq('id', session.user.id);
-                            }
-
-                            setUser({
-                                ...baseUser,
-                                ...profile,
-                                nickname: profile.nickname || baseUser.nickname,
-                                is_admin: userIsAdmin,
-                                licenses: profile.licenses || [],
-                            });
-                            checkNotifications(session.user.id);
-                            document.dispatchEvent(new CustomEvent('user:loggedin'));
-                        } else {
-                            // Valid response but no profile row found (Critical issue)
-                            console.warn(
-                                'No profile row found for user:',
-                                session.user.id,
-                                'Attempting self-healing...',
-                            );
-
-                            // Try to insert a default profile (Self-healing)
-                            const newProfile = {
-                                id: session.user.id,
-                                login_email: baseUser.login_email,
-                                nickname: baseUser.nickname,
-                                created_at: new Date().toISOString(),
-                                is_admin: userIsAdmin,
-                            };
-
-                            const { error: insertError } = await supabase.from('profiles').insert(newProfile);
-
-                            if (insertError) {
-                                console.error('Self-healing failed (Insert Profile Error):', insertError);
-                                // Fallback to baseUser only
-                                setUser({ ...baseUser, is_admin: userIsAdmin });
-                            } else {
-                                console.log('Self-healing successful: Created new profile for user.');
-                                // Use the creating profile data
-                                setUser({
-                                    ...baseUser,
-                                    ...newProfile,
-                                    licenses: [],
-                                });
-                            }
-                            checkNotifications(session.user.id);
-                            document.dispatchEvent(new CustomEvent('user:loggedin'));
-                        }
-                    } catch (err) {
-                        console.error('Unexpected error fetching profile:', err);
-                        setUser({ ...baseUser, is_admin: userIsAdmin });
-                    }
-
-                    // Logged in user on /login -> redirect to /mypage
-                    if (currentPath === '/login') {
-                        window.location.href = '/mypage';
-                    }
-                } else {
-                    clearUser();
-                    // Auth Guard: Redirect to login if on a protected page
-                    if (!isPublic) {
-                        console.log('Unauthorized access. Redirecting to /login...');
-                        window.location.href = '/login';
-                    }
-                }
-            }
-
-            async function checkNotifications(userId: string) {
-                try {
-                    console.log('✅ 3. Checking Notifications for user:', userId);
-                    const { count, error } = await supabase
-                        .from('notifications')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('user_id', userId)
-                        .eq('is_read', false);
-
-                    if (!error) {
-                        console.log('✅ 4. Notification Check Complete. Unread count:', count);
-                        const dots = document.querySelectorAll('.global-noti-dot');
-                        dots.forEach((dot) => {
-                            (dot as HTMLElement).style.display = count! > 0 ? 'block' : 'none';
-                        });
-                    } else {
-                        console.error('❌ Notification Check Error:', error);
-                    }
-                } catch (e) {
-                    console.error('❌ Check Noti Exception:', e);
-                }
-            }
+            import { initAuthHandler } from '../lib/auth-handler';
+            // Note: astro:page-load listener is inside initAuthHandler()
+            initAuthHandler();
         </script>
     </body>
 </html>

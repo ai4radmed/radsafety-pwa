@@ -111,6 +111,18 @@ BEGIN
     USING (
         id = auth.uid() OR public.is_current_user_admin() = true
     );
+
+    -- 4. 관리자는 모든 프로필 수정 가능
+    CREATE POLICY "Admins can update any profile"
+    ON public.profiles FOR UPDATE
+    TO authenticated
+    USING (public.is_current_user_admin() = true);
+
+    -- 5. 관리자는 모든 프로필 삭제 가능
+    CREATE POLICY "Admins can delete any profile"
+    ON public.profiles FOR DELETE
+    TO authenticated
+    USING (public.is_current_user_admin() = true);
 END $$;
 
 -- findings 테이블 생성

@@ -107,23 +107,36 @@ export const server = {
 
                 if (error) {
                     logger.error('인증코드 DB 저장 실패', { error });
-                    throw new Error('코드 생성 실패: ' + error.message);
+                    throw new Error(
+                        `코드 생성 실패 (${error.code}): ${error.message}${error.details ? ' - ' + error.details : ''}`,
+                        { cause: error },
+                    );
                 }
 
                 logger.info('인증코드 DB 저장 성공', { id: insertData?.id });
+
+                // 사용자 이름 가져오기
+                const { data: userProfile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('real_name, nickname')
+                    .eq('id', userId)
+                    .single();
+
+                const userName = userProfile?.real_name || userProfile?.nickname || '사용자';
 
                 // Send email with verification code
                 try {
                     await sendVerificationEmail({
                         to: email,
                         code,
-                        userName: '사용자', // TODO: 실제 사용자 이름을 프로필에서 가져오기
+                        userName,
                     });
                     logger.info('인증 이메일 발송 성공', { email });
                 } catch (emailError) {
                     logger.error('인증 이메일 발송 실패', { error: emailError });
-                    // 이메일 발송 실패해도 DB에는 저장되었으므로 성공으로 처리
-                    // 실제 프로덕션에서는 재시도 로직 또는 에러 처리 필요
+                    throw new Error('이메일 발송에 실패했습니다: ' + (emailError as Error).message, {
+                        cause: emailError,
+                    });
                 }
 
                 return { success: true, message: '인증 코드가 발송되었습니다.' };
@@ -347,6 +360,150 @@ export const server = {
             } catch (error) {
                 logger.error('피드백 전송 실패', { error });
                 throw new Error('의견 전송에 실패했습니다. 잠시 후 다시 시도해주세요.', { cause: error });
+            }
+        },
+    }),
+
+    // Admin Verification Actions
+    approveVerification: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+        }),
+        handler: async ({ adminId, targetUserId }) => {
+            try {
+                logger.info('인증 승인 처리 시작', { adminId, targetUserId });
+
+                // 1. Check if requester is admin
+                const { data: adminProfile, error: adminError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', adminId)
+                    .single();
+
+                if (adminError || !adminProfile?.is_admin) {
+                    throw new Error('관리자 권한이 필요합니다.');
+                }
+
+                // 2. Update Profile using admin client to bypass RLS
+                const { error: profileError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({ verification_status: 'verified' })
+                    .eq('id', targetUserId);
+
+                if (profileError) throw profileError;
+
+                // 3. Update Verification Request
+                const { error: requestError } = await supabaseAdmin
+                    .from('verification_requests')
+                    .update({
+                        verification_status: 'approved',
+                        approved_at: new Date().toISOString(),
+                    })
+                    .eq('user_id', targetUserId);
+
+                if (requestError) logger.warn('인증 요청 내역 업데이트 실패', { error: requestError });
+
+                return { success: true, message: '인증 승인이 완료되었습니다.' };
+            } catch (error) {
+                logger.error('인증 승인 중 오류 발생', { error });
+                throw error;
+            }
+        },
+    }),
+
+    rejectVerification: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+            reason: z.string(),
+        }),
+        handler: async ({ adminId, targetUserId, reason }) => {
+            try {
+                logger.info('인증 반려 처리 시작', { adminId, targetUserId });
+
+                // Check admin
+                const { data: adminProfile, error: adminError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', adminId)
+                    .single();
+
+                if (adminError || !adminProfile?.is_admin) {
+                    throw new Error('관리자 권한이 필요합니다.');
+                }
+
+                // Update Profile
+                const { error: profileError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({ verification_status: 'rejected' })
+                    .eq('id', targetUserId);
+
+                if (profileError) throw profileError;
+
+                // Update Request
+                const { error: requestError } = await supabaseAdmin
+                    .from('verification_requests')
+                    .update({
+                        verification_status: 'rejected',
+                        rejected_at: new Date().toISOString(),
+                        reject_reason: reason,
+                    })
+                    .eq('user_id', targetUserId);
+
+                if (requestError) logger.warn('인증 요청 반려 내역 업데이트 실패', { error: requestError });
+
+                return { success: true, message: '인증 반려 처리가 완료되었습니다.' };
+            } catch (error) {
+                logger.error('인증 반려 중 오류 발생', { error });
+                throw error;
+            }
+        },
+    }),
+
+    revokeVerification: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+        }),
+        handler: async ({ adminId, targetUserId }) => {
+            try {
+                logger.info('인증 취소(회수) 처리 시작', { adminId, targetUserId });
+
+                // Check admin
+                const { data: adminProfile, error: adminError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', adminId)
+                    .single();
+
+                if (adminError || !adminProfile?.is_admin) {
+                    throw new Error('관리자 권한이 필요합니다.');
+                }
+
+                // Update Profile to temp_verified
+                const { error: profileError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({ verification_status: 'temp_verified' })
+                    .eq('id', targetUserId);
+
+                if (profileError) throw profileError;
+
+                // Update Request
+                const { error: requestError } = await supabaseAdmin
+                    .from('verification_requests')
+                    .update({
+                        verification_status: 'pending',
+                        approved_at: null, // Clear approval time
+                    })
+                    .eq('user_id', targetUserId);
+
+                if (requestError) logger.warn('인증 요청 회수 내역 업데이트 실패', { error: requestError });
+
+                return { success: true, message: '인증 회수 처리가 완료되었습니다.' };
+            } catch (error) {
+                logger.error('인증 회수 중 오류 발생', { error });
+                throw error;
             }
         },
     }),
