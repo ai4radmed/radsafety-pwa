@@ -5,7 +5,7 @@ importance: '필수'
 order: 2.95
 ---
 
-- [ ] 방사선원 위탁폐기 관련 증빙자료
+- [ ] 방사선원 위탁폐기 관련 증빙자료 (<a href="/api/archives/view/ri-waste-disposal-consignment-proof-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">RI 위탁폐기 증빙자료 예시</a>)
 - [ ] 자체처분기록부 (방사성폐기물 발생원, 종류, 수량, 방사선량률, 처분방법 및 처리일시)
 
 ### 💡 핵심점검사항

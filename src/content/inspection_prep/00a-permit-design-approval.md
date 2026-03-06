@@ -5,7 +5,5 @@ importance: '필수'
 order: 0.5
 ---
 
-- [ ] 허가증 사본 (생산/판매/사용 등 해당 분야별)
-- [ ] 방사선기기 설계승인서 사본 (해당 기기 보유 시)
-
-
+- [ ] 허가증 사본 (생산/판매/사용 등 해당 분야별) (<a href="/api/archives/view/radiation-generating-device-permit-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">방사선발생장치 사용허가증 예시</a>)
+- [ ] 방사선기기 설계승인서 사본 (해당 기기 보유 시) (<a href="/api/archives/view/radiation-equipment-design-approval-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)

@@ -5,11 +5,11 @@ importance: '필수'
 order: 2.9
 ---
 
-- [ ] 피폭선량 기록부 (판독기관에서 발송한 종사자별 피폭선량 기록지)
-- [ ] 판독특이자 발생 보고 및 선량확정 통보 공문
-- [ ] 건강검진 기록부 (건강진단서)
+- [ ] 피폭선량 기록부 (판독기관에서 발송한 종사자별 피폭선량 기록지) (<a href="/api/archives/view/occasional-visitor-dose-record-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">수시출입자 피폭선량 기록 예시</a>)
+- [ ] 판독특이자 발생 보고 및 선량확정 통보 공문 (<a href="/api/archives/view/dose-determination-notification-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">판독특이자 선량확정 통보 공문 예시</a>)
+- [ ] 건강검진 기록부 (건강진단서) (<a href="/api/archives/view/worker-health-certificate-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">종사자 건강진단서 예시</a>)
 - [ ] 건강검진 이상소견자에 대한 후속조치 결과
-- [ ] 법정교육(기본/직장교육) 수료증
+- [ ] 법정교육(기본/직장교육) 수료증 (<a href="/api/archives/view/radiation-training-cert-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">법정교육 수료증 예시</a>)
 - [ ] 방사선안전관리자 보수교육 확인서류 (면허증, 교육수료증)
 - [ ] 운반관계종사자 자체교육 관련 서류
 

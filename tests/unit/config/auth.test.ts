@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getRole, getCertification, isAdmin, ADMIN_EMAILS } from '../../../src/config/auth';
+import { getRole, getCertification, isAdmin, ADMIN_EMAILS, ROLES, CERTIFICATIONS } from '../../../src/config/auth';
 
 describe('getRole', () => {
     it('관리자 이메일은 admin 반환', () => {
@@ -58,5 +58,21 @@ describe('getCertification', () => {
 describe('ADMIN_EMAILS', () => {
     it('기본 관리자 이메일이 포함되어 있어야 함', () => {
         expect(ADMIN_EMAILS).toContain('benkorea.ai@gmail.com');
+    });
+});
+
+describe('ROLES', () => {
+    it('ADMIN, USER 상수가 정의되어 있어야 함', () => {
+        expect(ROLES.ADMIN).toBe('admin');
+        expect(ROLES.USER).toBe('user');
+    });
+});
+
+describe('CERTIFICATIONS', () => {
+    it('KSNM, KSNMT, SPECIAL, NONE 상수가 정의되어 있어야 함', () => {
+        expect(CERTIFICATIONS.KSNM).toBe('ksnm');
+        expect(CERTIFICATIONS.KSNMT).toBe('ksnmt');
+        expect(CERTIFICATIONS.SPECIAL).toBe('special');
+        expect(CERTIFICATIONS.NONE).toBe('none');
     });
 });

@@ -1,0 +1,13 @@
+---
+description: Cursor AI 작업 시 진입점 및 아키텍처 참조
+globs: 
+alwaysApply: true
+---
+
+# AI Entry Rule
+
+- 이 프로젝트에서 코드를 작성·수정하기 전에, 항상 프로젝트의 시스템 지도인 다음 문서를 먼저 읽으세요.
+  - `ARCHITECTURE.md`
+
+- `ARCHITECTURE.md`는 전체 시스템 구조, AI 협업 규칙, 명세 주도 개발(Spec-Driven Development) 워크플로우를 모두 정의하고 있습니다.
+- 각 파일의 상세 구현 설계는 `.spec/` 디렉토리 내의 대응 문서를 참조하세요.

@@ -47,8 +47,6 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         // 로그인 리다이렉트가 발생하지 않아야 함
         expect(page.url()).toContain('/mypage');
 
-        // 프로필 섹션 존재 여부 (닉네임, 이메일 중 하나)
-        const profileSection = page.locator('.mypage-container, [data-testid="profile"], .profile-section, .user-info');
         // 페이지 자체가 로드되었는지 확인 (DashboardLayout의 title 기반)
         await expect(page).toHaveTitle(/마이페이지|RadSafety/);
     });
@@ -99,9 +97,9 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
         expect(page.url()).toContain('/resources');
 
         // 자료 목록 또는 "자료가 없습니다" 메시지가 있어야 함
-        const resourceList = page.locator('#resourceList, .resource-list, [data-testid="resource-list"]');
-        const emptyMsg = page.locator('text=자료가 없습니다, text=등록된 자료');
-        const hasContent = (await resourceList.count()) > 0 || (await emptyMsg.count()) > 0;
+        // const resourceList = page.locator('#resourceList, .resource-list, [data-testid="resource-list"]');
+        // const emptyMsg = page.locator('text=자료가 없습니다, text=등록된 자료');
+        // const hasContent = (await resourceList.count()) > 0 || (await emptyMsg.count()) > 0;
         // 페이지 타이틀로 최소 로드 확인
         await expect(page).toHaveTitle(/자료실|RadSafety/);
     });
@@ -268,6 +266,37 @@ test.describe('3-3 일반 사용자 기능 (인증 후)', () => {
             // 로그아웃 버튼을 찾지 못한 경우 — 사이드바 구조 확인 필요
             console.warn('  ⚠ 로그아웃 버튼을 찾지 못함. 사이드바 구조 확인 필요.');
         }
+    });
+
+    // ── 회원 탈퇴 (명세: .spec/tests/e2e/account-deletion.spec.md) ─────
+    test('회원 탈퇴 — 마이페이지에 탈퇴 버튼이 존재한다 (모달 밖 본문에 노출)', async ({ page }) => {
+        await page.goto('/mypage');
+        await page.waitForLoadState('networkidle');
+        const deleteBtn = page.locator(
+            '#deleteAccountBtn, button:has-text("회원 탈퇴"), [data-action="delete-account"]',
+        );
+        await expect(deleteBtn.first()).toBeVisible();
+        // 명세: 탈퇴 버튼은 모달 밖에 있어야 함 (인증 모달 내부에 있으면 숨겨짐)
+        await expect(page.locator('#verifyModal #deleteAccountBtn')).toHaveCount(0);
+    });
+
+    test('회원 탈퇴 — 탈퇴 버튼 클릭 시 확인 대화상자 표시 후 취소 (실제 탈퇴 없음)', async ({ page }) => {
+        await page.goto('/mypage');
+        await page.waitForLoadState('networkidle');
+
+        let dialogShown = false;
+        page.on('dialog', (dialog) => {
+            dialogShown = true;
+            expect(dialog.message()).toMatch(/탈퇴|되돌릴 수 없습니다/);
+            dialog.dismiss();
+        });
+
+        const deleteBtn = page.locator('#deleteAccountBtn, button:has-text("회원 탈퇴")').first();
+        await deleteBtn.click();
+
+        expect(dialogShown).toBe(true);
+        // 취소했으므로 여전히 마이페이지에 있어야 함
+        expect(page.url()).toContain('/mypage');
     });
 
     // ── 웹 푸시 구독 API (반자동) ─────────────────────────────

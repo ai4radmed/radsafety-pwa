@@ -1,118 +1,163 @@
-# RadSafety PWA
+# RadSafety-PWA
 
-방사선안전관리 통합 웹 서비스
+이 프로젝트는 **방사선 안전 관리 및 의료진 보호**를 위한 시스템을 **Astro(SSR)와 Supabase** 기반으로 구축한 현대적인 PWA(Progressive Web App) 템플릿입니다. 단순한 웹사이트를 넘어, 의료 현장에서 오프라인 상태에서도 작동하며 최고 수준의 보안과 속도를 제공하도록 설계되었습니다.
 
 ---
 
-## 빠른 시작
+## AI-Native Spec-Driven Development
 
-```bash
-# 의존성 설치
-npm install --legacy-peer-deps
+본 프로젝트는 기획 단계부터 배포까지 AI 에이전트와의 적극적인 협업을 통해 높은 품질과 생산성을 보장하는 **AI Native Spec-Driven Development** 워크플로우를 채택하고 있습니다. 명세(`.spec/`)를 중심으로 구현과 검증이 순환하는 자동화된 파이프라인이 매력적인 개발 경험을 제공합니다.
 
-# 개발 서버 실행
-npm run dev
-# → http://localhost:4321
+### 개발 워크플로우 및 검증 루프
+
+```mermaid
+graph TD
+    classDef ai fill:#f3e5f5,stroke:#ce93d8,stroke-width:2px,color:#4a148c;
+    classDef cursor fill:#e8f5e9,stroke:#81c784,stroke-width:2px,color:#1b5e20;
+    classDef ci fill:#e3f2fd,stroke:#90caf9,stroke-width:2px,color:#0d47a1;
+    classDef state fill:#fff3e0,stroke:#ffb74d,stroke-width:2px,color:#e65100;
+
+    A([시작: 사용자 기획 프롬프트 주입]):::state --> B[Level 1: 아키텍처 설계 & 시스템 지도 생성]:::ai
+    B --> C[Level 2: .spec/ 파일 기반 상세 명세 작성]:::ai
+
+    C --> D{Cursor IDE: 명세 파일 기반 수정 및 완성}:::cursor
+    D --> E[Level 3: Astro/TypeScript 구현체 생성]:::cursor
+    E --> F[테스트 명세 및 Vitest 코드 생성]:::cursor
+    F --> G{로컬 Pre-commit 검증 통과?}:::cursor
+
+    G -- No --> D
+    G -- Yes --> H[GitHub Actions CI 자동 검증 파이프라인]:::ci
+
+    H --> I[Lint 및 전체 테스트 실행]:::ci
+    I --> J{CI 검증 통과?}:::ci
+
+    J -- No --> D
+    J -- Yes --> K[AI Spec-Driven Reviewer Gemini 교차검증]:::ai
+
+    K --> L{명세-구현 완전 일치 확인?}:::ai
+    L -- No --> D
+    L -- Yes --> M([최종 배포 및 운영]):::state
 ```
 
-### 필요한 환경 변수 (`.env`)
+1.  **AI 기획 및 설계 (AI Planning)**: [ARCHITECTURE.md](ARCHITECTURE.md)를 통해 시스템 지도를 먼저 정의하고, 모든 구현체 전에 `.spec/` 디렉토리에 명세를 먼저 작성합니다.
+2.  **명세 주도 개발 (Spec-Driven with Cursor)**: 작성된 명세 파일을 Cursor IDE에 전달하여 사용자와 AI가 명세의 디테일을 완성합니다. 완성된 명세를 바탕으로 1:1로 매칭되는 실행 파일을 생성한 뒤, Vitest를 위한 테스트 명세 및 실제 테스트 코드를 작성합니다. 테스트를 통과해야만 명세에 대한 구현 파일이 올바르게 만들어진 것으로 간주합니다.
+3.  **CI 검증 & AI 교차 리뷰 (CI & AI Review)**: 모든 실행 파일 개발이 완료되어 GitHub에 코드가 푸시되면, CI 파이프라인에서 Lint 및 전체 테스트가 진행됩니다. 모든 CI 테스트를 통과하면 마지막으로 **AI Spec-Driven Reviewer(Gemini)** 동작을 통해 명세와 실행 파일이 애초의 계획과 의도대로 정확히 작성되었는지 교차 검증을 수행합니다.
 
-```env
-PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
-RESEND_API_KEY=re_xxxxxxxx
-RESEND_FROM_EMAIL=noreply@radsafety.kr
-PUBLIC_ADMIN_EMAILS=admin@example.com
+---
+
+## 핵심 기능 및 설계 철학
+
+### 📱 PWA (Progressive Web App) 도입의 장점
+
+별도의 앱 스토어 설치 과정 없이, 웹의 접근성과 앱의 사용자 경험을 동시에 제공합니다.
+
+- **오프라인 폴백 (Offline Strategy)**: 의료 현장의 통신 음영 지역에서도 `수검준비`, `지적사례` 등 핵심 콘텐츠를 Service Worker 캐시를 통해 즉시 조회할 수 있습니다.
+- **No App Store**: 심사 대기 시간 없이 즉각적인 업데이트가 가능하며, 빠른 설치(A2HS)를 지원합니다.
+- **네이티브 UX**: 푸시 알림, 전체 화면 모드 등을 통해 일반 앱과 차이 없는 사용자 경험을 제공합니다.
+
+### ⚡ 최고의 성능을 위한 인프라 아키텍처
+
+사용자가 어디에 있든 1초 이내에 페이지를 경험할 수 있도록 엣지(Edge) 기반의 고성능 아키텍처를 구성했습니다.
+
+```mermaid
+graph LR
+    subgraph "User Environment"
+        User([사용자 기기]) --- SW[Service Worker Cache]
+    end
+
+    subgraph "Global Edge Routing"
+        User --> CF{Cloudflare DNS/CDN}
+        CF -- Full Strict SSL --> V[Vercel Seoul Region]
+    end
+
+    subgraph "Application Logic (SSR)"
+        V --> Astro[Astro 5.x SSR]
+        Astro --> Actions[Astro Server Actions]
+    end
+
+    subgraph "Data & Auth (Serverless)"
+        Actions --> S[Supabase Tokyo Region]
+        S --> DB[(PostgreSQL / RLS)]
+        S --> Auth[JWT Auth]
+    end
+
+    style CF fill:#f6821f,stroke:#fff,stroke-width:2px,color:#fff
+    style V fill:#000,stroke:#fff,stroke-width:2px,color:#fff
+    style S fill:#3ecf8e,stroke:#fff,stroke-width:2px,color:#fff
 ```
 
-> Supabase 키는 Dashboard > Settings > API에서 확인할 수 있습니다.
+- **지연 시간 최적화**: Vercel 서울 리전과 Supabase 도쿄 리전을 결합하여 성능 저하 없는 SSR 환경을 구축했습니다.
+- **보안 아키텍처**: Cloudflare Full (Strict) SSL과 Supabase RLS(Row Level Security)를 통해 의료 데이터급 보안을 유지합니다.
+
+---
+
+## 포함된 기능
+
+### 코드 품질 및 테스트
+
+- **린터·포매터**: ESLint, Prettier — `npm run lint`, `npm run format`
+- **타입 검사**: TypeScript — `npm run check`
+- **커밋 전 검사**: Husky + lint-staged — 타입 체크 및 단위 테스트 자동 실행
+- **테스트**: Vitest (Unit), Playwright (E2E) — `npm run test:unit`, `npm run test:e2e`
+- **CI/CD**: GitHub Actions — 자동 빌드, 테스트, AI Spec Review 및 Vercel 자동 배포
+
+### 주요 기술 스택
+
+- **프레임워크**: Astro 5.x (SSR 전용, PWA)
+- **백엔드 서비스**: Supabase (Auth, DB, Storage)
+- **상태 관리**: Nanostores (Persistent 스토어 지원)
+- **통합 서비스**: Resend (이메일), Web Push API (푸시 알림)
 
 ---
 
 ## 프로젝트 구조
 
-```
-radsafety-pwa/
-├── src/
-│   ├── pages/          ← 파일명 = URL (예: login.astro → /login)
-│   ├── layouts/        ← 공통 레이아웃 (DashboardLayout.astro)
-│   ├── components/     ← 재사용 UI 조각
-│   ├── lib/            ← 유틸리티 (DB 연결, 이메일, 로깅)
-│   ├── store/          ← 전역 상태 관리 (사용자 정보)
-│   ├── actions/        ← 서버 사이드 함수 (DB 쓰기 등)
-│   ├── content/        ← MDX 콘텐츠 (수검 준비, 지적사항)
-│   └── styles/         ← 전역 CSS
-├── sql_query/          ← DB 스키마 (rebuild_all_tables.sql)
-├── tests/              ← 단위 테스트(unit/) + E2E(e2e/)
-├── public/             ← 정적 파일 (아이콘, 폰트)
-└── documents/          ← 유지보수 문서 (아래 참조)
-```
-
-> 코드를 처음 읽을 때는 [코드베이스 가이드](./documents/codebase_guide.md)를 먼저 보세요.
-> 파이썬 경험자를 위한 비유와 파일별 설명이 있습니다.
+| 경로              | 설명                                           |
+| ----------------- | ---------------------------------------------- |
+| `src/pages/`      | 라우팅 및 페이지 컴포넌트 (SSR 강제)           |
+| `src/actions/`    | 서버 사이드 비즈니스 로직 (Astro Actions)      |
+| `src/lib/`        | DB 클라이언트, 메일, 알림 헬퍼 등 유틸리티     |
+| `src/components/` | 재사용 가능한 UI 컴포넌트                      |
+| `.spec/`          | 파일별 1:1 매핑 명세서 (Level 2)               |
+| `sql_query/`      | DB 스키마 통합 관리 (`rebuild_all_tables.sql`) |
+| `tests/`          | 단위(Unit) 및 종단 간(E2E) 테스트 코드         |
 
 ---
 
-## 자주 쓰는 명령어
+## 상세 가이드 및 유지보수 참조 (Maintenance Documents)
 
-| 명령어              | 용도                               |
-| ------------------- | ---------------------------------- |
-| `npm run dev`       | 개발 서버 실행 (localhost:4321)    |
-| `npm run build`     | 프로덕션 빌드                      |
-| `npm run preview`   | 빌드 결과물 로컬 미리보기          |
-| `npm run test:unit` | 단위 테스트 (Vitest)               |
-| `npm run test:e2e`  | E2E 테스트 (Playwright)            |
-| `npm run test`      | 타입검사 + 린트 + 단위 테스트 전체 |
-| `npm run lint`      | ESLint 코드 검사                   |
-| `npm run check`     | Astro 타입 검사                    |
+프로젝트의 지속적인 운영과 기술적 세부 사항 파악을 위해 `documents/` 디렉토리에 다음 가이드들을 보관하고 있습니다. 특히 외부 서비스 설정 가이드는 운영 중 필수적으로 참조해야 할 자산입니다.
+
+### 인프라 및 설정
+
+- **[외부 서비스 설정 가이드](documents/external_services_guide.md)**: **(운영 필수)** Supabase, Vercel, Cloudflare, Resend 등의 연동 및 환경 설정 체크리스트
+- **[데이터베이스 설계](documents/database_schema.md)**: 전체 테이블 구조, RLS 정책 및 데이터 관계 정의
+
+### 개발 및 코드 품질
+
+- **[코드베이스 가이드](documents/codebase_guide.md)**: 상세 파일별 기술적 역할 및 시스템 설계 가이드. 개별 명세(`.spec/`)는 AI 에이전트 전용으로 작성되어 가독성이 낮을 수 있으므로, 유지보수 목적의 코드 역할 파악은 이 가이드라인을 참조할 것을 권장합니다.
+- **[테스트 및 로깅 전략](documents/test_strategy.md)**: QA를 위한 테스트 시나리오 및 [로그 활용 가이드](documents/logging_guide.md)
 
 ---
 
-## DB 초기화 및 재구축
+## 시작하기
 
-데이터베이스를 처음부터 다시 세팅해야 할 때의 절차입니다.
-
-### 1단계: 기존 데이터 삭제
-
-1. Supabase Dashboard > Authentication > Users에서 모든 회원 삭제
-2. Supabase Dashboard > Table Editor에서 테이블들을 수동 삭제 (또는 SQL Editor에서 `DROP TABLE` 실행)
-
-### 2단계: 테이블 재생성
-
-- SQL Editor에서 `sql_query/rebuild_all_tables.sql` 실행 (모든 테이블 자동 생성)
-
-### 3단계: 관리자 등록
-
-1. 웹사이트에서 카카오 로그인으로 가입
-2. SQL Editor에서 관리자 승격:
-    ```sql
-    UPDATE public.profiles SET role = 'admin' WHERE email = '본인_이메일';
+1.  **의존성 설치**:
+    ```bash
+    npm install
     ```
-3. 재로그인 후 관리자 페이지(`/admin/members`)에서 회원 명단 엑셀 업로드
+2.  **환경 변수 설정**:
+    `.env.example` 파일을 복사하여 `.env` 파일을 생성하고 필요한 API Key를 입력합니다.
+3.  **개발 서버 실행**:
+    ```bash
+    npm run dev
+    ```
 
 ---
 
-## 유지보수 문서
+## 라이선스 및 이용 안내
 
-| 문서                                                              | 내용                                                                  | 언제 읽나?                                    |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------- |
-| [코드베이스 가이드](./documents/codebase_guide.md)                | 프로젝트 구조, 파일 역할, 데이터 흐름, 유지보수 How-to                | 코드를 처음 읽을 때, 새 페이지/기능 추가할 때 |
-| [데이터베이스 스키마](./documents/database_schema.md)             | 모든 테이블 컬럼, RPC 함수, RLS 정책 설명                             | DB 관련 작업할 때                             |
-| [외부 서비스 설정 절차서](./documents/external_services_guide.md) | Supabase, Vercel, Cloudflare, 카카오, Resend 설정값과 검증 체크리스트 | 배포/설정 변경 후 검증할 때                   |
-| [테스트 전략](./documents/test_strategy.md)                       | 자동/수동 테스트 범위, CI 파이프라인, 실행 방법                       | 테스트 작성/실행할 때                         |
+본 프로젝트는 의료 안전 정보의 접근성 향상과 AI 기반 개발 표준의 확산을 위해 공개되었습니다.
 
----
-
-## 기술 스택
-
-| 분류         | 기술                            | 비고                          |
-| ------------ | ------------------------------- | ----------------------------- |
-| 프레임워크   | Astro 5.x (SSR)                 | Vercel 서울 리전 배포         |
-| 데이터베이스 | Supabase (PostgreSQL)           | 도쿄 리전, 인증/스토리지 포함 |
-| 상태 관리    | Nanostores                      | 클라이언트 전역 상태          |
-| 이메일       | Resend                          | 인증 코드 발송                |
-| DNS          | Cloudflare                      | DNS only (프록시 OFF)         |
-| 인증         | 카카오 로그인 + 이메일 매직링크 | Supabase Auth 기반            |
-| 테스트       | Vitest + Playwright             | CI: GitHub Actions            |
-| 린트/포맷    | ESLint + Prettier               | Husky pre-commit hook         |
+- **비상업적 목적**: 교육, 연구 및 개인적 용도의 활용은 자유롭게 허용됩니다.
+- **상업적 목적**: 본 프로젝트의 아키텍처, 명세 구조 또는 코드를 상업적 서비스에 인용하거나 재배포하려는 경우, 반드시 저작권자와의 사전 협의 및 서면 승인이 필요합니다.
