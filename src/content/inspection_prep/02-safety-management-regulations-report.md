@@ -5,8 +5,8 @@ importance: '필수'
 order: 2
 ---
 
-- [ ] 안전관리규정 (<a href="/api/archives/view/safety-management-regulations-preparation-guide" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">작성지침</a>, <a href="/api/archives/view/safety-management-regulations-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
-- [ ] 방사선안전보고서 (시설, 배기 및 배수계통 도면 포함) (<a href="/api/archives/view/safety-report-on-radiation-preparation-guide" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">작성지침</a>)
+- [ ] 안전관리규정 (<a href="/api/archives/view/safety-management-regulations-guide" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">작성지침</a>, <a href="/api/archives/view/safety-management-regulations-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
+- [ ] 방사선안전보고서 (시설, 배기 및 배수계통 도면 포함) (<a href="/api/archives/view/radiation-safety-report-guide" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">작성지침</a>)
 
 ### 💡 핵심점검사항
 

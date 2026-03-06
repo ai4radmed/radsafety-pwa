@@ -7,9 +7,9 @@ order: 2.6
 
 - [ ] RI 등의 생산/판매/사용기록 (일시, 장소, 종사자명, 종류 및 수량, 구입처, 판매처 등)
 - [ ] RI 또는 RI에 의한 오염물의 보관 처리 저장 및 배출 기록부 (일시, 장소, 방법, 종사자명, 종류 및 수량)
-- [ ] 방사선원 관리현황보고(분기) 또는 생산 판매현황보고(월) 사본
-- [ ] 방사선원 구매요구서 (안전관리규정에 반영된 업체만 해당)
-- [ ] 방사선관리구역 출입기록 (기록 유지 시)
+- [ ] 방사선원 관리현황보고(분기) 또는 생산 판매현황보고(월) 사본 (<a href="/api/archives/view/ri-production-sales-record-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
+- [ ] 방사선원 구매요구서 (안전관리규정에 반영된 업체만 해당) (<a href="/api/archives/view/radiation-source-order-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
+- [ ] 방사선관리구역 출입기록 (기록 유지 시) (<a href="/api/archives/view/controlled-area-access-log-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
 
 ### 💡 핵심점검사항
 

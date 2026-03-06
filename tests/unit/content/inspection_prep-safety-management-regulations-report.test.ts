@@ -9,7 +9,8 @@ describe('inspection_prep 02-safety-management-regulations-report', () => {
             '../../../src/content/inspection_prep/02-safety-management-regulations-report.md',
         );
         const content = readFileSync(filePath, 'utf-8');
-        expect(content).toContain('safety-management-regulations-preparation-guide');
+        expect(content).toContain('safety-management-regulations-guide');
         expect(content).toContain('safety-management-regulations-sample');
+        expect(content).toContain('radiation-safety-report-guide');
     });
 });

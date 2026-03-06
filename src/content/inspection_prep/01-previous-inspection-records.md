@@ -5,8 +5,8 @@ importance: '필수'
 order: 1
 ---
 
-- [ ] 결과통보 공문(최초 수검일 경우 제외) (<a href="/api/archives/view/periodic-inspection-result-notification-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
-- [ ] 지적/권고사항 발생 시 제출한 공문(검사지적, 권고사항 시정조치보고서) (<a href="/api/archives/view/inspection-corrective-action-report-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
+- [ ] 결과통보 공문(최초 수검일 경우 제외) (<a href="/api/archives/view/inspection-notification-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
+- [ ] 지적/권고사항 발생 시 제출한 공문(검사지적, 권고사항 시정조치보고서) (<a href="/api/archives/view/inspection-corrective-report-sample" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">예시</a>)
 
 ### 💡 핵심점검사항
 
