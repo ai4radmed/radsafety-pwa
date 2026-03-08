@@ -25,7 +25,31 @@ DELETE FROM public.profiles WHERE id = '공유받은-사용자-ID';
 DELETE FROM public.notifications WHERE user_id = '공유받은-사용자-ID';
 ```
 
-### 1-2. 관리자 권한 강제 부여
+### 1-2. 카카오 계정 생성 및 자가 치유(Self-healing) 테스트
+
+신규 가입 흐름이나 데이터 누락 시 복구 로직이 정상 작동하는지 확인하는 절차입니다.
+
+#### A. 완전 신규 가입 테스트 (E2E)
+
+1.  **로그아웃**: 현재 브라우저 세션을 종료합니다.
+2.  **Supabase Auth 유저 삭제**: Supabase 콘솔 -> Authentication -> Users에서 해당 카카오 이메일 계정을 삭제합니다.
+3.  **카카오 앱 연결 해제 (선택)**: 카카오톡 설정 -> 카카오계정 -> 연결된 서비스 관리 -> 'RadSafety' 선택 후 **연결 끊기**를 수행합니다. (동의창부터 다시 확인하려는 경우)
+4.  **다시 로그인**: 서비스 접속 후 카카오 로그인을 진행하여 `auth.users`와 `public.profiles`에 데이터가 정상 생성되는지 확인합니다.
+
+pc에서 최초접속하여 ㅋ![alt text](image.png)
+
+#### B. 프로필 데이터 자가 치유 테스트
+
+사용자 인증(Auth)은 유지된 채로 DB의 프로필 정보만 소실되었을 때, 시스템이 이를 감지하고 자동으로 복구하는지 테스트합니다.
+
+1.  **DB 프로필 삭제**: SQL Editor에서 본인의 `profiles` 로우만 삭제합니다.
+    ```sql
+    DELETE FROM public.profiles WHERE login_email = '내-카카오-이메일';
+    ```
+2.  **새로고침**: 앱으로 돌아와 페이지를 새로고침(또는 재접속)합니다.
+3.  **결과 확인**: `auth-handler.ts`의 `performSelfHealing` 로직에 의해 프로필이 자동 재생성되는지 확인합니다.
+
+### 1-3. 관리자 권한 강제 부여
 
 애플리케이션 내에서 관리자 설정이 불가능할 경우, DB에서 직접 특정 이메일 사용자를 관리자로 지정합니다.
 
