@@ -44,7 +44,7 @@
 
 1. **Plan** — 작업 지시 수령 → 타겟 파일 및 명세 초안 도출.
 2. **Manifest** — `.spec/` 하위에 명세 작성/갱신.
-3. **Execute** — 명세 기반으로 구현(`src/`) 및 테스트(`tests/`) 작성.
+3. **Execute** — 명세 기반으로 구현(`src/`) 작성. **구현체 추가/변경 시** 해당 구현체와 **1:1 테스트 명세**를 `.spec/tests/` 하위에 작성하고, 그 명세에 따라 **테스트 구현체**를 `tests/` 하위에 작성한 뒤 **테스트를 실행**한다. 상세 절차는 [테스트 명세·구현 절차](.spec/tests/README.md) 참조.
 4. **Verify** — 로컬 검증(`npm run test`) 및 CI 자동 검증.
 
 ### 브랜치 전략
@@ -62,16 +62,17 @@
 - **DB 관리**: 스키마 변경은 `sql_query/rebuild_all_tables.sql`에 통합 (멱등성 보장).
 - **로깅**: JSON 구조화 로그, 민감 정보 노출 금지, `PUBLIC_LOG_LEVEL`로 제어.
 - **Slug**: `documents/resource_slugs.md`에 등록 후 사용, 한 번 설정된 Slug는 변경 금지.
-- **PWA**: 주요 페이지는 캐시를 통한 읽기 전용 오프라인 지원.
+- **PWA 및 인증**: 주요 페이지는 캐시를 통한 읽기 전용 오프라인 지원. iOS PWA(Safari 샌드박스)의 세션 단절 한계를 피하기 위해 **인증 시 화면 전환(Redirect)이 발생하는 매직링크 URL 클릭이나 OAuth Redirect를 지양하고, 6자리 숫자(OTP) 입력 등 PWA 내부에서 세션을 유지하는 방식을 우선 구현**합니다.
 
 ---
 
 ## 6. 상세 참조 문서
 
-| 문서                                                               | 용도                            |
-| ------------------------------------------------------------------ | ------------------------------- |
-| [codebase_guide.md](documents/codebase_guide.md)                   | 파일별 기술 역할 및 설계 가이드 |
-| [database_schema.md](documents/database_schema.md)                 | ERD, 테이블/필드 정의           |
-| [external_services_guide.md](documents/external_services_guide.md) | 외부 서비스 설정 및 장애 복구   |
-| [test_strategy.md](documents/test_strategy.md)                     | 자동화 시나리오 및 수동 점검    |
-| [logging_guide.md](documents/logging_guide.md)                     | 모듈별 로그 위치 및 보안 가이드 |
+| 문서                                                               | 용도                                                              |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| [.spec/tests/README.md](.spec/tests/README.md)                     | **구현체당 테스트 명세 1:1 작성 절차** 및 테스트 구현체 생성 규칙 |
+| [codebase_guide.md](documents/codebase_guide.md)                   | 파일별 기술 역할 및 설계 가이드                                   |
+| [database_schema.md](documents/database_schema.md)                 | ERD, 테이블/필드 정의                                             |
+| [external_services_guide.md](documents/external_services_guide.md) | 외부 서비스 설정 및 장애 복구                                     |
+| [test_strategy.md](documents/test_strategy.md)                     | 자동화 시나리오 및 수동 점검                                      |
+| [logging_guide.md](documents/logging_guide.md)                     | 모듈별 로그 위치 및 보안 가이드                                   |

@@ -23,15 +23,15 @@ test.describe('공개 페이지 렌더링 (비로그인)', () => {
         await expect(links.first()).toBeVisible();
     });
 
-    test('로그인 페이지(/login) — 카카오 버튼 및 이메일 폼 존재', async ({ page }) => {
+    test('로그인 페이지(/login) — 카카오 버튼 및 이메일 OTP 폼 존재', async ({ page }) => {
         await page.goto('/login');
         // 카카오 로그인 버튼
         const kakaoBtn = page.locator('a[href*="kakao"], button:has-text("카카오")');
         await expect(kakaoBtn.first()).toBeVisible();
-        // 이메일 입력 폼
-        await expect(page.locator('#emailLoginForm')).toBeVisible();
-        await expect(page.locator('#emailInput')).toBeVisible();
-        await expect(page.locator('.email-btn')).toBeVisible();
+        // 이메일 OTP 1단계 폼 (이메일 입력 → 인증 코드 받기)
+        await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
+        await expect(page.locator('#emailOtpEmail')).toBeVisible();
+        await expect(page.locator('#emailOtpRequestBtn')).toBeVisible();
     });
 
     test('/guide — 비로그인 시 /login 리다이렉트 (설계 동작)', async ({ page }) => {
@@ -59,14 +59,14 @@ test.describe('로그인 페이지 UI 상세', () => {
     });
 
     test('이메일 입력 → 버튼 클릭 가능 상태', async ({ page }) => {
-        const input = page.locator('#emailInput');
-        const button = page.locator('.email-btn');
+        const input = page.locator('#emailOtpEmail');
+        const button = page.locator('#emailOtpRequestBtn');
         await expect(input).toBeEnabled();
         await expect(button).toBeEnabled();
     });
 
     test('이메일 미입력 → 폼 제출 차단 (HTML validation)', async ({ page }) => {
-        const button = page.locator('.email-btn');
+        const button = page.locator('#emailOtpRequestBtn');
         await button.click();
         // 이메일 미입력 시 브라우저 validation으로 제출 안 됨 → URL 유지
         await page.waitForTimeout(300);
@@ -129,9 +129,9 @@ test.describe('개발자 모드 패널 (PUBLIC_DEV_MODE)', () => {
         await page.goto('/login');
         await page.waitForLoadState('networkidle');
 
-        // 일반 로그인 UI는 항상 존재해야 함
-        await expect(page.locator('#emailLoginForm')).toBeVisible();
-        await expect(page.locator('#emailInput')).toBeVisible();
+        // 일반 로그인 UI(이메일 OTP 1단계)는 항상 존재해야 함
+        await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
+        await expect(page.locator('#emailOtpEmail')).toBeVisible();
 
         // 개발자 모드 패널 유무와 무관하게 카카오 버튼도 존재
         const kakaoBtn = page.locator('a[href*="kakao"], button:has-text("카카오")');

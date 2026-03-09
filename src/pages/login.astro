@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import LoginButton from '../components/auth/LoginButton.astro';
+import EmailOtpForm from '../components/auth/EmailOtpForm.astro';
 
 const isDevMode = import.meta.env.PUBLIC_DEV_MODE === 'true';
 const devUserEmail = import.meta.env.DEV_TEST_USER_EMAIL ?? '';
@@ -75,50 +76,8 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
             cursor: not-allowed;
         }
 
-        /* Email Login Styles */
-        .email-login-section {
-            margin-bottom: 1rem;
-        }
-        .email-form {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .email-form input {
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-        .email-btn {
-            background: #111827;
-            color: white;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .email-btn:hover {
-            background: #374151;
-        }
-        .helper-text {
-            font-size: 0.85rem;
-            color: #6b7280;
-            margin-top: 0.5rem;
-        }
-
         .sns-buttons {
             margin-top: 1rem;
-        }
-
-        @media (max-width: 380px) {
-            .email-btn {
-                font-size: 0.85rem;
-                padding: 0.75rem 0.5rem;
-            }
         }
     </style>
 
@@ -136,12 +95,7 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
 
             <div class="divider">또는 이메일 인증으로 시작하기</div>
 
-            <div class="email-login-section">
-                <form id="emailLoginForm" class="email-form">
-                    <input type="email" id="emailInput" placeholder="이메일 주소를 입력하세요" required />
-                    <button type="submit" class="email-btn">이메일 인증으로 RadSafety 시작하기</button>
-                </form>
-            </div>
+            <EmailOtpForm />
 
             {
                 isDevMode && (
@@ -219,35 +173,7 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
                 ?.addEventListener('click', () => devLogin(adminEmail, adminPassword, 'admin'));
         }
 
-        // Email Login Logic (Magic Link)
-        const emailForm = document.getElementById('emailLoginForm');
-        emailForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = (document.getElementById('emailInput') as HTMLInputElement).value;
-            const btn = emailForm.querySelector('button') as HTMLButtonElement;
-
-            btn!.disabled = true;
-            btn!.textContent = '전송 중...';
-
-            try {
-                const { error } = await supabase.auth.signInWithOtp({
-                    email: email,
-                    options: {
-                        emailRedirectTo: `${window.location.origin}/auth/callback?next=/mypage`,
-                    },
-                });
-
-                if (error) throw error;
-                alert('이메일로 로그인 링크를 보냈습니다!\n메일함을 확인해주세요.');
-            } catch (err) {
-                alert('오류 발생: ' + (err instanceof Error ? err.message : String(err)));
-            } finally {
-                btn!.disabled = false;
-                btn!.textContent = '이메일로 로그인 (매직링크)';
-            }
-        });
-
-        // Real Logic
+        // OAuth: LoginButton 클릭 시 signInWithOAuth
         const btns = document.querySelectorAll('.login-btn');
         btns.forEach((btn) => {
             btn.addEventListener('click', async () => {
