@@ -1,0 +1,159 @@
+---
+// 이메일 6자리 OTP 인증 폼. 명세: .spec/src/components/auth/EmailOtpForm.md
+---
+
+<div class="email-otp-section">
+    <div id="emailStep" class="email-form-wrap">
+        <form id="emailOtpRequestForm" class="email-form">
+            <input type="email" id="emailOtpEmail" placeholder="이메일 주소를 입력하세요" required />
+            <button type="submit" class="email-btn" id="emailOtpRequestBtn">이메일로 인증 코드 받기</button>
+        </form>
+    </div>
+    <div id="otpStep" class="otp-form-wrap" hidden>
+        <p class="otp-sent-msg" id="otpSentTo"></p>
+        <form id="emailOtpVerifyForm" class="email-form">
+            <input
+                type="text"
+                id="emailOtpCode"
+                placeholder="6자리 코드"
+                inputmode="numeric"
+                pattern="[0-9]{6}"
+                maxlength="6"
+                autocomplete="one-time-code"
+            />
+            <button type="submit" class="email-btn" id="emailOtpVerifyBtn">인증하기</button>
+        </form>
+        <button type="button" class="link-btn" id="emailOtpBackBtn">다른 이메일로 받기</button>
+    </div>
+</div>
+
+<style>
+    .email-otp-section {
+        margin-bottom: 1rem;
+    }
+    .email-form-wrap,
+    .otp-form-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .email-form input {
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    .email-btn {
+        background: #111827;
+        color: white;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .email-btn:hover {
+        background: #374151;
+    }
+    .email-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    .otp-sent-msg {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+    }
+    .link-btn {
+        background: none;
+        border: none;
+        color: #6b7280;
+        font-size: 0.85rem;
+        cursor: pointer;
+        padding: 0.25rem 0;
+    }
+    .link-btn:hover {
+        text-decoration: underline;
+    }
+    @media (max-width: 380px) {
+        .email-btn {
+            font-size: 0.85rem;
+            padding: 0.75rem 0.5rem;
+        }
+    }
+</style>
+
+<script>
+    import { supabase } from '../../lib/supabase-browser';
+
+    const emailStep = document.getElementById('emailStep');
+    const otpStep = document.getElementById('otpStep');
+    const requestForm = document.getElementById('emailOtpRequestForm');
+    const verifyForm = document.getElementById('emailOtpVerifyForm');
+    const emailInput = document.getElementById('emailOtpEmail') as HTMLInputElement;
+    const codeInput = document.getElementById('emailOtpCode') as HTMLInputElement;
+    const requestBtn = document.getElementById('emailOtpRequestBtn') as HTMLButtonElement;
+    const verifyBtn = document.getElementById('emailOtpVerifyBtn') as HTMLButtonElement;
+    const otpSentTo = document.getElementById('otpSentTo');
+    const backBtn = document.getElementById('emailOtpBackBtn');
+
+    let pendingEmail = '';
+
+    requestForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput?.value?.trim();
+        if (!email) return;
+        requestBtn.disabled = true;
+        requestBtn.textContent = '전송 중...';
+        try {
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: { shouldCreateUser: true },
+            });
+            if (error) throw error;
+            pendingEmail = email;
+            if (otpSentTo) otpSentTo.textContent = `${email}로 인증 코드를 보냈습니다.`;
+            emailStep?.setAttribute('hidden', '');
+            otpStep?.removeAttribute('hidden');
+            codeInput?.focus();
+        } catch (err) {
+            alert('오류: ' + (err instanceof Error ? err.message : String(err)));
+        } finally {
+            requestBtn.disabled = false;
+            requestBtn.textContent = '이메일로 인증 코드 받기';
+        }
+    });
+
+    verifyForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = codeInput?.value?.trim();
+        if (!token || !pendingEmail) return;
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = '확인 중...';
+        try {
+            const { error } = await supabase.auth.verifyOtp({
+                email: pendingEmail,
+                token,
+                type: 'email',
+            });
+            if (error) throw error;
+            window.location.href = '/mypage';
+            return;
+        } catch (err) {
+            alert('인증 실패: ' + (err instanceof Error ? err.message : String(err)));
+        } finally {
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = '인증하기';
+        }
+    });
+
+    backBtn?.addEventListener('click', () => {
+        pendingEmail = '';
+        if (emailInput) emailInput.value = '';
+        if (codeInput) codeInput.value = '';
+        otpStep?.setAttribute('hidden', '');
+        emailStep?.removeAttribute('hidden');
+    });
+</script>
