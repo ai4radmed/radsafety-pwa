@@ -46,7 +46,7 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
         await loginLink.first().click();
         await page.waitForURL('**/login');
         await page.waitForLoadState('networkidle');
-        await expect(page.locator('#emailLoginForm')).toBeVisible();
+        await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
 
         // 3. 홈으로 다시 이동 (네비게이션 홈 링크)
         await clickHomeLink(page);
@@ -62,8 +62,8 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
         // 1. 로그인 페이지 방문
         await page.goto('/login');
         await page.waitForLoadState('networkidle');
-        await expect(page.locator('#emailLoginForm')).toBeVisible();
-        await expect(page.locator('#emailInput')).toBeVisible();
+        await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
+        await expect(page.locator('#emailOtpEmail')).toBeVisible();
 
         // 2. 홈으로 이동 (네비게이션 홈 링크)
         await clickHomeLink(page);
@@ -78,10 +78,10 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
         await page.waitForURL('**/login');
         await page.waitForLoadState('networkidle');
 
-        // 재방문 후에도 폼이 다시 렌더링되어야 함
-        await expect(page.locator('#emailLoginForm')).toBeVisible();
-        await expect(page.locator('#emailInput')).toBeVisible();
-        await expect(page.locator('.email-btn')).toBeVisible();
+        // 재방문 후에도 폼이 다시 렌더링되어야 함 (1단계: 이메일 요청 버튼만 지정 — .email-btn은 2개 있어 strict mode 위반)
+        await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
+        await expect(page.locator('#emailOtpEmail')).toBeVisible();
+        await expect(page.locator('#emailOtpRequestBtn')).toBeVisible();
         await expect(page.locator('body')).not.toContainText('로딩 중...');
     });
 
@@ -96,7 +96,7 @@ test.describe('View Transitions — 페이지 재방문 렌더링', () => {
             await loginLink.first().click();
             await page.waitForURL('**/login');
             await page.waitForLoadState('networkidle');
-            await expect(page.locator('#emailLoginForm')).toBeVisible();
+            await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
 
             // 홈으로 복귀 (네비게이션 홈 링크)
             await clickHomeLink(page);

@@ -60,45 +60,53 @@ git push
 **Redirect URLs 목록:**
 
 ```
-https://radsafety.kr/**
-https://radsafety-*.vercel.app/**
-https://*-benkoreas-projects.vercel.app/**
+https://radsafety.kr/auth/callback
+https://www.radsafety.kr/auth/callback
+https://*-benkoreas-projects.vercel.app/auth/callback
 ```
 
-> **정책**: Site URL이 `https://radsafety.kr`로 고정이므로 운영 도메인 하나만 필요합니다.
-> 다만, Vercel Preview 환경에서 로그인을 테스트하려면 와일드카드(`*`) 패턴을 추가해야 합니다.
+> **정책**: 보안을 강화하고 리다이렉트 실패(홈 화면으로 튕기는 현상)를 방지하기 위해 **로그인 인증 콜백 주소만 정확히 명시(Exact Match)**해야 합니다.
+> 넓은 범위의 와일드카드(`https://radsafety.kr/**`)는 오픈 리다이렉트 취약점을 유발할 수 있으며, OAuth 제공자의 쿼리 파라미터와 충돌하여 리다이렉트를 실패하게 만드는 원인이 됩니다.
 >
-> **주의 (와일드카드 설정)**:
+> **주의 (Vercel Preview 환경)**:
 >
-> - Vercel 프로젝트명이 `radsafety-pwa`여도 실제 생성되는 프리뷰 주소는 `pwa-`가 생략된 `radsafety-*.vercel.app` 형태일 수 있습니다. (Vercel의 내부 슬러그 생성 규칙 때문)
-> - 따라서 `https://radsafety-*.vercel.app/**`와 같이 넓은 범위의 와일드카드를 등록해야 모든 프리뷰 환경에서 리다이렉션이 정상 작동합니다.
-> - 만약 위 패턴으로도 실패한다면, 사용자/팀 도메인 패턴인 `https://*-benkoreas-projects.vercel.app/**`를 추가하여 모든 배포본을 커버합니다.
+> - Vercel 프리뷰 도메인과 같이 도메인이 계속 바뀌는 환경은 어쩔 수 없이 와일드카드를 사용하되, **경로는 `/auth/callback`으로 고정**합니다.
+> - 예: `https://*-benkoreas-projects.vercel.app/auth/callback`
 >
 > 로컬 개발 환경에서는 매직링크 테스트가 불가능하며, 배포 후 운영(또는 프리뷰)에서 테스트합니다.
 > (상세: [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크))
 >
 > **삭제된 항목 및 이유:**
 >
-> - `http://localhost:4321/auth/callback` — `https://radsafety.kr/**`으로 커버되지 않지만, 로컬 매직링크 테스트 자체가 불가하여 불필요
-> - `https://www.radsafety.kr/**` — www는 radsafety.kr로 리다이렉트되므로 불필요
-> - `http://localhost:4321/**` — 로컬 매직링크 테스트 불가
-> - `http://localhost:4322/**` — 용도 불명확, 불필요
-> - `https://radsafety.kr/auth/callback` — `/**` 와일드카드로 커버됨
+> - `https://radsafety.kr/**` 및 `https://www.radsafety.kr/**` — 보안 위험 및 리다이렉트 충돌을 방지하기 위해 정확한 경로(`/auth/callback`)로 대체되었습니다.
+> - `http://localhost:4321/auth/callback` — 매직링크 수신불가로 삭제했었으나, 소셜 로그인 로컬 테스트가 필요하다면 추가할 수 있습니다.
+> - `http://localhost:4321/**` 및 `http://localhost:4322/**` — 불필요한 와일드카드
 
 > 관련 검증: [Part 2-1. 카카오 로그인](#2-1-카카오-로그인), [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크)
 
-#### 1-2. Authentication > Email Templates > Magic Link
+#### 1-2. Authentication > Email Templates (이메일 OTP — 6자리 코드)
+
+앱에서 **이메일 6자리 OTP** 방식으로 로그인하므로, Supabase에서 **Magic Link** 템플릿을 **6자리 코드가 노출되도록** 수정해야 합니다.
+
+**설정 경로**: `Supabase Dashboard > Authentication > Email Templates > Magic Link`
+
+**올바른 템플릿 예시 (6자리 OTP용):**
 
 ```html
-<h2>Magic Link</h2>
-<p>Follow this link to login:</p>
-<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink">Log In</a></p>
+<h2>RadSafety 로그인 인증 코드</h2>
+<p>아래 6자리 코드를 앱 로그인 화면에 입력하세요.</p>
+<p style="font-size:24px; font-weight:bold; letter-spacing:0.2em;">{{ .Token }}</p>
+<p>이 코드는 제한 시간 내에 한 번만 사용할 수 있습니다.</p>
 ```
 
-> **주의**: `{{ .ConfirmationURL }}` 사용 금지. Supabase verify 엔드포인트를 거치면 JSON 응답 → 브라우저 다운로드 발생.
-> 반드시 `{{ .SiteURL }}/auth/confirm` 으로 앱에 직접 연결해야 합니다.
+**필수 사항:**
 
-> 관련 검증: [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크)
+- **`{{ .Token }}`** 변수를 반드시 포함해야 합니다. 이 값이 이메일로 전송되는 6자리 숫자 코드입니다.
+- `{{ .Token }}` 없이 `{{ .TokenHash }}` 링크만 있으면 매직링크 방식이 되어, PWA 내부에서 세션이 유지되지 않는 문제가 발생합니다.
+
+**참고:** 동일한 `signInWithOtp` API를 쓰더라도, 이메일 템플릿에 `{{ .Token }}`이 있으면 Supabase가 6자리 코드를 생성해 이메일로 보내고, 앱에서는 `verifyOtp({ email, token, type: 'email' })`로 검증합니다.
+
+> 관련 검증: [Part 2-2. 이메일 OTP](#2-2-이메일-otp)
 
 #### 1-3. Authentication > Providers > Kakao
 
@@ -330,31 +338,28 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 3. 카카오 콘솔 Redirect URI가 Supabase 값과 일치하는지
 4. 브라우저 개발자 도구 Network 탭에서 리다이렉트 체인 확인
 
-### 2-2. 이메일 매직링크
+### 2-2. 이메일 OTP
 
 **관련 설정**: Supabase(1-1, 1-2), Vercel(2-1, 2-2)
 
-> **⚠️ 테스트 제약 조건**: 매직링크는 반드시 **배포(push) 후 운영 서버**에서 테스트해야 합니다.
+> **⚠️ 테스트 제약 조건**: 이메일 OTP는 반드시 **배포(push) 후 운영 서버**에서 테스트해야 합니다.
 >
 > 이유: Supabase Site URL이 `https://radsafety.kr`로 고정되어 있어, 로컬에서 로그인을 시도해도
-> 매직링크는 항상 `radsafety.kr/auth/confirm`으로 전송됩니다. 로컬 서버는 이 흐름에 관여하지 않습니다.
+> OTP 이메일은 운영 도메인 기준으로 발송됩니다.
 >
 > **테스트 순서**: 코드 수정 → `git push` → Vercel 배포 완료 확인 → `radsafety.kr`에서 테스트
 
-| #   | 절차                                 | 예상 결과                                                              |
-| --- | ------------------------------------ | ---------------------------------------------------------------------- |
-| 1   | 로그인 페이지에서 이메일 입력 → 전송 | "이메일로 로그인 링크를 보냈습니다" 알림                               |
-| 2   | 수신된 이메일에서 링크 주소 확인     | `https://radsafety.kr/auth/confirm?token_hash=...&type=magiclink` 형태 |
-| 3   | 링크 클릭                            | `/mypage`로 이동 (다운로드 아님!)                                      |
+| #   | 절차                                             | 예상 결과                                                        |
+| --- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| 1   | 로그인 페이지에서 이메일 입력 → "인증 코드 받기" | "이메일로 인증 코드를 보냈습니다" 등 안내, 2단계(코드 입력) 표시 |
+| 2   | 수신된 이메일에서 6자리 숫자 확인                | `{{ .Token }}` 값이 메일 본문에 표시됨                           |
+| 3   | 앱 로그인 화면에 6자리 코드 입력 → 인증하기      | 같은 탭에서 `/mypage`로 이동 (PWA 세션 유지)                     |
 
 **실패 시 확인 순서**:
 
-1. 이메일 링크가 `supabase.co/auth/v1/verify`로 시작하면 → 이메일 템플릿이 잘못됨 (1-2 참조)
-2. 링크 클릭 시 다운로드되면 → `/auth/confirm`에 `prerender = false` 확인
-3. `/login`으로 리다이렉트되면 → Vercel 로그에서 `[confirm]` 로그 확인 후 아래 진단
-    - 로그 없음: CDN 캐시 문제 → 빈 커밋 push로 캐시 무효화
-    - `verifyOtp error`: 토큰 만료(1시간) 또는 이미 사용된 링크 → 새 매직링크 재발송
-    - `파라미터 누락`: 이메일 템플릿 확인 (1-2 참조)
+1. 이메일에 **6자리 코드가 안 보이고 링크만 있으면** → Supabase 이메일 템플릿에 `{{ .Token }}` 포함 여부 확인 (1-2 참조)
+2. 코드 입력 후 "인증 실패" 또는 `/login` 유지 → 토큰 만료(기본 1시간) 또는 이미 사용된 코드 → 새 코드 요청
+3. 이메일 자체가 오지 않음 → Supabase Auth > Rate Limits, SMTP(사용 시) 설정 확인
 
 ### 2-3. 도메인/SSL
 

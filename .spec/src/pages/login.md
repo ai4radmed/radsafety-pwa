@@ -2,7 +2,7 @@
 
 ## 역할 요약
 
-로그인 페이지. 카카오 OAuth, 이메일 매직링크, PUBLIC_DEV_MODE 시 테스트 사용자/관리자 로그인 버튼.
+로그인 페이지. 카카오 OAuth, 이메일 6자리 OTP(EmailOtpForm), PUBLIC_DEV_MODE 시 테스트 사용자/관리자 로그인 버튼.
 
 ## Props
 
