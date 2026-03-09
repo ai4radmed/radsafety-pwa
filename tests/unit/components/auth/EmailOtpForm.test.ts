@@ -50,8 +50,11 @@ describe('verifyOtp', () => {
 });
 
 describe('성공 시 이동', () => {
-    it('검증 성공 시 /mypage으로 이동해야 한다', () => {
+    it('검증 성공 시 마지막 경로로 이동하거나 기본값으로 /mypage으로 이동해야 한다', () => {
         const content = fs.readFileSync(COMPONENT_PATH, 'utf-8');
-        expect(content).toMatch(/location\.href\s*=\s*['"]\/mypage['"]/);
+        expect(content).toMatch(/import\('\.\.\/\.\.\/lib\/last-route'\)\.then/);
+        expect(content).toMatch(
+            /window\.location\.href\s*=\s*last\s*&&\s*last\.path\s*!==\s*'\/'.*\?\s*last\.path\s*:\s*'\/mypage'/,
+        );
     });
 });

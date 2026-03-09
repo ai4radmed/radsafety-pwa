@@ -139,7 +139,10 @@
                 type: 'email',
             });
             if (error) throw error;
-            window.location.href = '/mypage';
+            import('../../lib/last-route').then(({ getLastRoute }) => {
+                const last = getLastRoute();
+                window.location.href = last && last.path !== '/' ? last.path : '/mypage';
+            });
             return;
         } catch (err) {
             alert('인증 실패: ' + (err instanceof Error ? err.message : String(err)));
