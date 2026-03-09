@@ -15,5 +15,5 @@
 ## 핵심 규칙
 
 1. signInWithOtp 호출 시 emailRedirectTo 미사용(6자리 코드 이메일만 발송). Supabase 이메일 템플릿에 `{{ .Token }}` 사용 필요.
-2. verifyOtp({ email, token, type: 'email' })로 검증 후 window.location으로 /mypage 이동.
+2. verifyOtp({ email, token, type: 'email' })로 검증 후 `getLastRoute()`를 확인하여 마지막 방문 경로가 있다면 해당 경로로, 없거나 `/`라면 `/mypage`로 이동.
 3. 1단계·2단계 UI 전환은 클라이언트 상태로 처리.
