@@ -28,7 +28,7 @@
 [로컬] npm run check:production   ← 운영 서버 HTTP 헬스체크 (2분)
 [로컬] npm run test:e2e:auth      ← 로그인 후 기능 자동 점검 (세션 필요)
                       ↓
-[수동] 잔여 항목만 체크 (이메일 매직링크, 카카오 로그인 실제 확인)
+[수동] 잔여 항목만 체크 (이메일 OTP 인증, 카카오 로그인 실제 확인)
 ```
 
 ### 세션 최초 저장 (배포마다 세션 만료 시)
@@ -42,7 +42,7 @@ npm run test:e2e:save-session
 # → 로컬/Preview (PUBLIC_DEV_MODE=true + DEV_TEST_*_EMAIL/PASSWORD 설정):
 #     [개발자 모드] 버튼을 자동으로 클릭하여 로그인 → 완전 자동화
 # → Production 또는 환경변수 미설정:
-#     카카오 또는 이메일 매직링크로 직접 로그인 → /mypage 도달 시 자동 저장
+#     카카오 또는 이메일 OTP로 직접 로그인 → /mypage 도달 시 자동 저장
 # → 일반 사용자·관리자 순서로 2회 실행
 
 # 3. 이후 반복 실행 (세션 유효한 동안)
@@ -122,6 +122,15 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 
 **설정**: `playwright.config.ts` | **위치**: `tests/e2e/` | **명령어**: `npm run test:e2e`
 
+### 로컬(Linux/WSL)에서 E2E 실행 시
+
+Linux/WSL에서 `npx playwright install` 또는 `npm run test:e2e` 시 **Host system is missing dependencies** 경고가 나오면, 브라우저 실행에 필요한 시스템 라이브러리를 먼저 설치해야 합니다.
+
+- **Ubuntu/Debian/WSL (apt 사용)**  
+  `sudo npx playwright install-deps`  
+  지원되는 배포판이면 필요한 패키지를 한 번에 설치합니다.
+- 그래도 일부 라이브러리(libgtk-4 등)가 없다고 나오면, 배포판 버전에 따라 패키지 이름이 다를 수 있으므로 [Playwright 공식 문서 — Linux 의존성](https://playwright.dev/docs/intro#installing-system-dependencies)을 참고해 수동 설치하거나, Docker/CI에서만 E2E를 실행하는 방법을 고려하세요.
+
 ### 2-1. 기본 E2E — CI 포함 (비로그인, 세션 불필요)
 
 | 파일                                       | 테스트 대상                                                                                                    | 상태 |
@@ -130,7 +139,7 @@ Preview 및 로컬 환경(`PUBLIC_DEV_MODE=true`)에서 `/login` 하단 [개발�
 | `e2e/navigation.spec.ts`                   | 주요 페이지 HTTP 200 응답                                                                                      | 완료 |
 | `e2e/pwa.spec.ts`                          | PWA manifest 검증, `sw-push.js` 서빙, `/api/push/subscribe·unsubscribe` 비로그인 401 및 빈 body 인증 우선 검사 | 완료 |
 | `e2e/auth-guard.spec.ts`                   | 비로그인 시 보호 페이지 15개 → /login 리다이렉트 자동 검증                                                     | 완료 |
-| `e2e/public-pages.spec.ts`                 | 홈/로그인 페이지 렌더링, 이메일 폼 UI 요소, 비로그인 리다이렉트                                                | 완료 |
+| `e2e/public-pages.spec.ts`                 | 홈/로그인 페이지 렌더링, 이메일 OTP 1단계 폼 UI 요소, 비로그인 리다이렉트                                      | 완료 |
 | `e2e/view-transitions.spec.ts`             | View Transitions 재방문 시 콘텐츠 렌더링 유지 (비인증 페이지)                                                  | 완료 |
 | `e2e/view-transitions-null-safety.spec.ts` | 비인증 페이지 전환 시 `console.error` 없음 (null 접근 TypeError 방지)                                          | 완료 |
 | `e2e/sidebar-flash.spec.ts`                | 사이드바 초기 상태 깜빡임 없음, 스테일 데이터 초기화 확인                                                      | 완료 |
@@ -196,11 +205,11 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 
 ### 4-2. 로그인/로그아웃 (배포마다)
 
-> **⚠️ 이메일 매직링크는 로컬에서 테스트 불가** — Supabase Site URL이 `https://radsafety.kr`로
-> 고정되어 있어 매직링크는 항상 운영 서버로 옵니다. 반드시 `git push` 후 배포 완료 시점에 테스트하세요.
+> **⚠️ 이메일 OTP는 로컬에서 테스트 불가** — Supabase Site URL이 `https://radsafety.kr`로
+> 고정되어 있어 OTP 이메일은 운영 서버 기준으로 발송됩니다. 반드시 `git push` 후 배포 완료 시점에 테스트하세요.
 
 - [ ] **카카오 로그인**: 카카오 로그인 → `/auth/callback` → `/mypage` 도착
-- [ ] **이메일 매직링크** _(배포 후 운영에서만 테스트)_: 이메일 입력 → 링크 수신 → 클릭 → `/mypage` 도착 (다운로드 아님)
+- [ ] **이메일 OTP** _(배포 후 운영에서만 테스트)_: 이메일 입력 → 6자리 코드 수신 → PWA 내 코드 입력 → `/mypage` 도착
 - [x] ~~**로그아웃**: 사이드바 로그아웃 → 세션 초기화 → `/login` 이동~~ → **반자동화됨** (`e2e/authenticated-user.spec.ts`)
 
 ### 4-3. 일반 사용자 기능 (배포마다)
@@ -283,7 +292,7 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 [로컬] npm run check:production   ← 운영 서버 HTTP 헬스체크
 [로컬] npm run test:e2e:auth      ← 인증 후 기능 검증 (세션 있는 경우)
   ↓
-[수동] 체크리스트 4-2 (카카오/매직링크), 4-3 일부, 4-4 일부
+[수동] 체크리스트 4-2 (카카오/이메일 OTP), 4-3 일부, 4-4 일부
 ```
 
 ### 로컬 실행 명령어
