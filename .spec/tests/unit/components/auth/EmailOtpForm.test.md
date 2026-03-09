@@ -18,7 +18,7 @@ Vitest (단위)
 | 2단계 UI          | OTP 검증 폼 및 6자리 입력이 정의되어 있어야 한다   | id="emailOtpVerifyForm", id="emailOtpCode", maxlength="6", type="email" 검증 |
 | signInWithOtp     | emailRedirectTo를 사용하지 않아야 한다 (PWA 호환)  | 소스에 signInWithOtp 포함, emailRedirectTo 미포함                            |
 | verifyOtp         | type: 'email'로 검증해야 한다                      | verifyOtp 호출 및 type: 'email' 포함                                         |
-| 성공 시 이동      | 검증 성공 시 /mypage으로 이동해야 한다             | window.location.href = '/mypage' 또는 location.href 포함                     |
+| 성공 시 이동      | 검증 성공 시 마지막 경로 또는 /mypage으로 이동해야 한다 | getLastRoute 유틸 사용 여부 및 동적 라우팅 조건문 포함 검증 |
 
 ## Mock/Setup
 
