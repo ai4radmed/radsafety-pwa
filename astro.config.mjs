@@ -41,6 +41,7 @@ export default defineConfig({
                 name: '방사선안전관리',
                 short_name: '방사선안전',
                 description: '대한핵의학회 방사선안전위원회',
+                start_url: '/',
                 theme_color: '#ffffff',
                 background_color: '#ffffff',
                 display: 'standalone',
