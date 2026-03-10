@@ -15,5 +15,6 @@
 
 ## 핵심 규칙
 
-1. is_admin 체크.
-2. sendNotification server action 사용.
+1. 관리자 가드: astro:page-load 내부에서 처리. **비로그인(user.id 없음)은 가드에서 제외** — DashboardLayout의 auth guard가 /login으로 리다이렉트함.
+2. 로그인된 사용자 중 is_admin !== 'true'인 경우에만 alert 후 `/mypage`로 리다이렉트.
+3. sendNotification server action 사용.

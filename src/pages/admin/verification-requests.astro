@@ -51,6 +51,9 @@ export const prerender = false;
     function init() {
         const currentUser = userProfile.get() as any;
 
+        // Guard: Admin only (비로그인은 DashboardLayout이 /login으로 리다이렉트)
+        if (!currentUser?.id) return;
+
         const isAdmin = currentUser.is_admin === 'true';
         const isBypass = new URLSearchParams(window.location.search).get('bypass_admin') === 'true';
 
