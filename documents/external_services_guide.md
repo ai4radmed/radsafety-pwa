@@ -115,7 +115,7 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 
 앱에서 이메일 인증 코드를 원활하게 발송하려면, 우리가 이미 세팅해둔 **Resend** 서비스를 Supabase의 SMTP 서버로 지정해야 합니다.
 
-**설정 경로**: `Supabase Dashboard > Authentication > Email` 화면 아래쪽의 **SMTP Settings** 영역
+**설정 경로**: `Supabase Dashboard > Authentication > Configuration > Email` 화면 아래쪽의 **SMTP Settings** 영역
 
 | 항목                   | 설정값                    | 비고                                             |
 | :--------------------- | :------------------------ | :----------------------------------------------- |
