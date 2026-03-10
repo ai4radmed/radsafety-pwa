@@ -1,4 +1,5 @@
 import { createBrowserClient, parseCookieHeader, serializeCookieHeader } from '@supabase/ssr';
+import { diagLog } from './session-diag'; // [SESSION-DIAG]
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://mock.supabase.co';
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'mock-key';
@@ -12,6 +13,10 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
         getAll() {
             if (typeof document === 'undefined') return [];
             const cookies = parseCookieHeader(document.cookie) as { name: string; value: string }[];
+            diagLog('L1:getAll', {
+                hasSbCookie: cookies.some((c) => c.name.startsWith('sb-')),
+                cookieCount: cookies.length,
+            }); // [SESSION-DIAG]
             if (cookies.some((c) => c.name.startsWith('sb-'))) return cookies;
             // Cookie 소실 시 localStorage 백업에서 복원
             try {
@@ -25,6 +30,7 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
                             sameSite: 'lax',
                         });
                     });
+                    diagLog('L2:getAll:restored', { count: restored.length, names: restored.map((c) => c.name) }); // [SESSION-DIAG]
                     return [...cookies, ...restored];
                 }
             } catch {
@@ -34,6 +40,9 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
         },
         setAll(cookiesToSet) {
             if (typeof document === 'undefined') return;
+            diagLog('L3:setAll', {
+                cookies: cookiesToSet.map((c) => ({ n: c.name, v: !!c.value, maxAge: c.options?.maxAge })),
+            }); // [SESSION-DIAG]
             cookiesToSet.forEach(({ name, value, options }) => {
                 document.cookie = serializeCookieHeader(name, value, options);
             });
