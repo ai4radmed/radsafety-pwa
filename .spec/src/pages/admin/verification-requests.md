@@ -16,7 +16,7 @@
 
 ## 핵심 규칙
 
-1. **접근 제어**: `is_admin` 권한이 있는 사용자만 접근 가능.
+1. **접근 제어**: `is_admin` 권한이 있는 사용자만 접근 가능. **비로그인(user.id 없음)은 가드에서 제외** — DashboardLayout의 auth guard가 /login으로 리다이렉트함. 로그인된 사용자 중 비관리자만 alert 후 `/mypage`로 리다이렉트.
 2. **동적 렌더링**: `export const prerender = false`.
 3. **컴포넌트 구성**:
     - `VerificationTabs`: 상단 탭.
