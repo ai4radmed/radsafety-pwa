@@ -1,68 +1,67 @@
 # 외부 서비스 설정 및 검증 절차서
 
 > 이 문서는 RadSafety PWA가 의존하는 외부 서비스의 **올바른 설정값**과 **검증 방법**을 정리합니다.
-> 코드가 정상이어도 외부 설정이 틀리면 장애가 발생합니다.
 
-## 장애 사례 기록
+## 1. Supabase
 
-| 날짜       | 증상                                     | 원인                                                                                                                           | 해결                                |
-| ---------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| 2026-02-16 | 매직링크 클릭 시 파일 다운로드           | `/auth/confirm`에 `prerender = false` 누락 → 정적 파일로 빌드됨                                                                | `prerender = false` 추가 후 재배포  |
-| 2026-02-17 | 매직링크 클릭 시 `/login`으로 리다이렉트 | 위 장애 수정 전 Vercel CDN이 `/auth/confirm`을 `308 Permanent Redirect`로 캐시 → 코드 수정 후에도 캐시가 남아 서버 코드 미실행 | 새 배포(git push)로 CDN 캐시 무효화 |
+> 서버구축없이 로그인, 데이터베이스, 스토리지 기능을 구현할 수 있는 오픈소스 BaaS  
+> Vercel을 front-end로 웹서비스 구현
 
-### CDN 308 캐시 장애 패턴
+## 1-1. 설정
 
-이 프로젝트에서 반복될 수 있는 패턴입니다. 아래를 숙지하세요.
+- 조직(Organization=AI4RADMED)을 설정하고
+- 그 안에 프로젝트(Project=RadsSfety)를 생성한다.
+- Region은 Seoul(ap-northeast-2)로 설정한다.
 
-**발생 조건**:
+## 1-2. API 연결 설정 (URL & Keys)
 
-1. 특정 경로(예: `/auth/confirm`)가 한 번이라도 `308 Permanent Redirect`로 응답한 적이 있음
-2. Vercel CDN 또는 브라우저가 이 응답을 캐시함
-3. 이후 코드를 올바르게 수정해도 캐시가 먼저 반환되어 수정이 반영 안 됨
+> 앱이 Supabase와 대화하기 위한 **통로(URL)**와 **열쇠(Keys)**를 확보하는 단계입니다.
 
-**진단 방법** (Vercel Dashboard → Logs):
+- **Project URL (API URL)**:
+    - **확인 경로**: `Supabase Dashboard > Integrations > Data API`
+    - **특징**: 이 주소 하나로 **데이터베이스, 파일 스토리지, 사용자 인증(Auth)** 기능을 모두 통합하여 처리합니다.
+- **API Keys (열쇠)**:
+    - **확인 경로**: `Supabase Dashboard > Project Settings > API Keys`
+    - **Publishable key (Anon Key)**: 브라우저(Front-end)에서 안전하게 사용할 수 있는 공개 열쇠입니다. (RLS 보안 기능과 함께 동작)
+    - **Secret keys (Service Role Key)**: 절대로 외부에 노출되면 안 되는 관리자용 열쇠입니다. (Vercel 서버 로직에서만 사용)
 
-```
-정상: GET /auth/confirm  200  (서버 코드 실행, 100ms 이상)
-문제: GET /auth/confirm  308  Cache: 308 Permanent Redirect  (12ms, 서버 코드 미실행)
-```
+## 1-3. Authentication (인증)
 
-**해결 방법**:
+> 사용자가 누구인지 확인(로그인)하고, 인증된 사용자만 안전하게 접근할 수 있도록 제어하는 설정입니다.
 
-```bash
-# 새 배포로 CDN 캐시 무효화
-git commit --allow-empty -m "chore: CDN 캐시 무효화"
-git push
-# 배포 완료 후 브라우저 캐시도 삭제 (개발자 도구 → Application → Clear site data)
-```
+- **로그인 수단**: 카카오톡, 이메일 매직링크/OTP 등 어떤 방식으로 로그인할지 결정합니다.
+- **리다이렉트 보안 (URL Config)**: 로그인 성공 후 우리 앱의 올바른 주소(프리뷰, 운영 도메인 등)로 안전하게 되돌려보내는 화이트리스트를 관리합니다.
+- **이메일 템플릿**: 비밀번호 없이 로그인할 때 발송되는 안내 메일의 내용을 꾸미는 곳입니다.
 
-**재발 방지**: `prerender = false`를 누락하지 않으면 이 문제는 발생하지 않습니다.
-→ 자동 검증: `tests/unit/pages/prerender-check.test.ts` (CI에서 자동 실행)
+### 1-3-1. Providers > Kakao
 
----
+> 앱에서 사용할 소셜 로그인 수단을 설정합니다.
 
-## Part 1. 서비스별 설정
+| 항목          | 설명                                           |
+| ------------- | ---------------------------------------------- |
+| Client ID     | 카카오 개발자 콘솔에서 발급한 REST API 키      |
+| Client Secret | 카카오 개발자 콘솔에서 발급한 Secret           |
+| Redirect URL  | Supabase가 자동 생성 (카카오 콘솔에 등록 필요) |
 
-### 1. Supabase
+> 관련 검증: [Part 2-1. 카카오 로그인](#2-1-카카오-로그인)
 
-**대시보드**: https://supabase.com/dashboard (프로젝트: wfnvvczfzbqzhjrxxznq)
-**리전**: Tokyo (ap-northeast-1)
+### 1-3-2. URL Configuration
 
-#### 1-1. Authentication > URL Configuration
+> 인증 성공 후 사용자를 돌려보낼 주소들을 정의합니다.
 
 **설정 경로**: `Supabase Dashboard > Authentication > URL Configuration`
 
-| 항목          | 올바른 값                |
-| ------------- | ------------------------ |
-| Site URL      | `https://radsafety.kr`   |
-| Redirect URLs | 아래 목록 전체 포함 필수 |
+| 항목              | 기능 및 설명                                                                                                                                                                          | 올바른 값                |
+| :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :----------------------- |
+| **Site URL**      | **최종 목적지(본진)**: 앱의 대표 주소이자, 별도의 요청이 없을 때 기본적으로 되돌아갈 고정 경로입니다.                                                                                 | `https://radsafety.kr`   |
+| **Redirect URLs** | **허용 목록(화이트리스트)**: 프리뷰 도메인(`*.vercel.app`)처럼 'Site URL' 이외의 다른 주소로 리다이렉트가 필요할 때, Supabase가 "믿고 보내도 되는 주소"인지 검증하는 보안 명단입니다. | 아래 목록 전체 포함 필수 |
 
 **Redirect URLs 목록:**
 
 ```
 https://radsafety.kr/auth/callback
 https://www.radsafety.kr/auth/callback
-https://*-benkoreas-projects.vercel.app/auth/callback
+https://*-ai4radmed.vercel.app/auth/callback
 ```
 
 > **정책**: 보안을 강화하고 리다이렉트 실패(홈 화면으로 튕기는 현상)를 방지하기 위해 **로그인 인증 콜백 주소만 정확히 명시(Exact Match)**해야 합니다.
@@ -71,7 +70,7 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 > **주의 (Vercel Preview 환경)**:
 >
 > - Vercel 프리뷰 도메인과 같이 도메인이 계속 바뀌는 환경은 어쩔 수 없이 와일드카드를 사용하되, **경로는 `/auth/callback`으로 고정**합니다.
-> - 예: `https://*-benkoreas-projects.vercel.app/auth/callback`
+> - 예: `https://*-ai4radmed.vercel.app/auth/callback`
 >
 > 로컬 개발 환경에서는 매직링크 테스트가 불가능하며, 배포 후 운영(또는 프리뷰)에서 테스트합니다.
 > (상세: [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크))
@@ -84,7 +83,9 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 
 > 관련 검증: [Part 2-1. 카카오 로그인](#2-1-카카오-로그인), [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크)
 
-#### 1-2. Authentication > Email Templates (이메일 OTP — 6자리 코드)
+### 1-3-3. Email Templates (이메일 OTP — 6자리 코드)
+
+> 비밀번호 없이 이메일로 발송되는 인증 코드 형식을 설정합니다.
 
 앱에서 **이메일 6자리 OTP** 방식으로 로그인하므로, Supabase에서 **Magic Link** 템플릿을 **6자리 코드가 노출되도록** 수정해야 합니다.
 
@@ -108,17 +109,28 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 
 > 관련 검증: [Part 2-2. 이메일 OTP](#2-2-이메일-otp)
 
-#### 1-3. Authentication > Providers > Kakao
+### 1-3-4. Email (SMTP Settings: 발송 제한 해제)
 
-| 항목          | 설명                                           |
-| ------------- | ---------------------------------------------- |
-| Client ID     | 카카오 개발자 콘솔에서 발급한 REST API 키      |
-| Client Secret | 카카오 개발자 콘솔에서 발급한 Secret           |
-| Redirect URL  | Supabase가 자동 생성 (카카오 콘솔에 등록 필요) |
+> Supabase 기본 이메일 서버의 엄격한 발송 제한(1시간 2회)을 우회하기 위해 커스텀 이메일 서버를 연결합니다.
 
-> 관련 검증: [Part 2-1. 카카오 로그인](#2-1-카카오-로그인)
+앱에서 이메일 인증 코드를 원활하게 발송하려면, 우리가 이미 세팅해둔 **Resend** 서비스를 Supabase의 SMTP 서버로 지정해야 합니다.
 
-#### 1-4. 환경 변수
+**설정 경로**: `Supabase Dashboard > Authentication > Configuration > Email` 화면 아래쪽의 **SMTP Settings** 영역
+
+| 항목                   | 설정값                    | 비고                                             |
+| :--------------------- | :------------------------ | :----------------------------------------------- |
+| **Enable Custom SMTP** | `ON` (활성화)             | 토글 스위치 켜기                                 |
+| **Sender email**       | `noreply@radsafety.kr`    | Resend에 등록된 발신 전용 도메인 이메일          |
+| **Sender name**        | `RadSafety` (또는 자유)   | 수신자 메일함에 표시될 보낸 사람 이름            |
+| **Host**               | `smtp.resend.com`         | Resend SMTP 서버 주소                            |
+| **Port**               | `465`                     | SSL 권장 포트                                    |
+| **Username**           | `resend`                  | 고정값 (모두 소문자)                             |
+| **Password**           | `re_...` (Resend API Key) | **Resend Dashboard > API Keys**에서 생성한 키 값 |
+
+> [!IMPORTANT]
+> **왜 중요한가요?**: 이 설정을 하지 않으면, 테스트 중이나 사용자가 몰릴 때 "Too many requests" 에러가 발생하며 이메일 전송이 차단되어 앱 로그인이 완전히 불가능해집니다.
+
+## 1-4. 환경 변수
 
 | 변수명                      | 용도                      | 위치           |
 | --------------------------- | ------------------------- | -------------- |
@@ -128,7 +140,7 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 
 > 키 확인: Supabase Dashboard > Settings > API
 
-#### 1-5. Database > SQL (RPC 함수)
+## 1-5. Database > SQL (RPC 함수)
 
 `sql_query/rebuild_all_tables.sql` 전체를 SQL Editor에서 실행하면 아래가 생성됩니다:
 
@@ -147,70 +159,64 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 
 ---
 
-### 2. Vercel
+## 2. Vercel
 
-**대시보드**: https://vercel.com (프로젝트: radsafety-pwa)
-**리전**: Seoul (icn1)
+> GitHub 저장소와 연동되어 웹 서비스를 자동 배포하고 호스팅하는 프론트엔드 플랫폼  
+> 모든 커밋에 대해 독립적인 **Preview** 환경을 제공하여 안전한 테스트가 가능합니다.
 
-#### 2-1. Domains
+## 2-1. 설정 (Project & Region)
 
-| 도메인             | 역할                                           |
-| ------------------ | ---------------------------------------------- |
-| `radsafety.kr`     | **Primary domain** (Production에 직접 연결)    |
-| `www.radsafety.kr` | `radsafety.kr`로 308 리다이렉트                |
-| `*-*.vercel.app`   | **Preview domain** (커밋마다 바뀌는 동적 주소) |
+> 프로젝트의 기본 정보와 서버의 물리적 위치를 설정합니다.
 
-#### 2-2. 환경 변수 및 동적 리다이렉션
+- **대시보드**: https://vercel.com (프로젝트: `radsafety-pwa`)
+- **리전(Region)**: `Seoul (icn1)`
+    - **설정 경로**: `Vercel Dashboard > Settings > Functions > Service Region`
+    - **중요**: 한국 사용자에게 가장 빠른 응답 속도를 제공하기 위해 서버리스 함수 실행 리전을 서울로 지정합니다.
 
-Vercel 프리뷰 환경에서 로그인 후 원래 주소로 정확히 돌아오기 위해 시스템 환경 변수를 활용합니다.
+## 2-2. 도메인 설정 (Domains)
 
-**코드 구현 원칙**:
+> 주소를 관리하고, 주소 통합(www 리다이렉트)을 설정합니다.
 
-- **클라이언트**: `window.location.origin`을 사용하여 현재 접속 중인 도메인을 동적으로 획득하여 Supabase에 전달합니다.
-- **서버**: `process.env.VERCEL_URL` (프리뷰용) 또는 고정 도메인을 상황에 맞게 사용합니다.
+| 도메인             | 역할                                                 |
+| ------------------ | ---------------------------------------------------- |
+| **`radsafety.kr`** | **Primary Domain**: 실제 서비스가 운영되는 공식 주소 |
+| `www.radsafety.kr` | **Redirect**: 공식 주소로 자동 연결 (308 Redirect)   |
+| `*-*.vercel.app`   | **Preview**: 개발/테스트용 주소 (커밋마다 자동 생성) |
 
-**동작 메커니즘**:
+## 2-3. 환경 변수 및 리다이렉트 로직
 
-1. 사용자가 프리뷰(`A.vercel.app`)에서 로그인 시도
-2. 앱이 `redirectTo: "A.vercel.app/auth/callback"` 명령을 Supabase에 전달
-3. Supabase는 `Redirect URLs` 허용 목록(와일드카드)을 확인 후 승인
-4. 로그인 완료 후 다시 `A.vercel.app`으로 정확히 복귀
+> 외부 서비스 연동에 필요한 비밀 키를 관리하고, 도메인 변경에 유연하게 대응하는 로직을 포함합니다.
 
-#### 2-3. Environment Variables (Settings > Environment Variables)
+### 2-3-1. Environment Variables
 
-Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
+**설정 경로**: `Vercel Dashboard > Settings > Environment Variables`
 
-| 변수명                      | Scope                            | 비고                                                 |
-| --------------------------- | -------------------------------- | ---------------------------------------------------- |
-| `PUBLIC_SUPABASE_URL`       | Production, Preview, Development | Supabase Dashboard > Settings > API                  |
-| `PUBLIC_SUPABASE_ANON_KEY`  | Production, Preview, Development | Supabase Dashboard > Settings > API                  |
-| `SUPABASE_SERVICE_ROLE_KEY` | Production, Preview, Development | Supabase Dashboard > Settings > API (서버 전용)      |
-| `RESEND_API_KEY`            | Production, Preview, Development | Resend Dashboard > API Keys (서버 전용)              |
-| `RESEND_FROM_EMAIL`         | Production, Preview, Development | `noreply@radsafety.kr`                               |
-| `PUBLIC_ADMIN_EMAILS`       | Production, Preview, Development | 쉼표 구분 이메일 목록                                |
-| `PUBLIC_LOG_LEVEL`          | Production                       | `info`                                               |
-| `PUBLIC_VAPID_KEY`          | Production, Preview, Development | 웹 푸시 공개키 — `.env`에 있는 값 그대로             |
-| `VAPID_PRIVATE_KEY`         | Production, Preview, Development | 웹 푸시 비밀키 — `.env`에 있는 값 그대로 (서버 전용) |
-| `VAPID_EMAIL`               | Production, Preview, Development | `mailto:noreply@radsafety.kr`                        |
+| 변수명                      | Scope (적용 범위)              | 비고                   |
+| :-------------------------- | :----------------------------- | :--------------------- |
+| `PUBLIC_SUPABASE_URL`       | All (Production, Preview, Dev) | Supabase API URL       |
+| `PUBLIC_SUPABASE_ANON_KEY`  | All                            | Supabase 공개 키       |
+| `SUPABASE_SERVICE_ROLE_KEY` | All                            | 서버 전용 비밀 키      |
+| `RESEND_API_KEY`            | All                            | 이메일 발송용 API 키   |
+| `PUBLIC_VAPID_KEY`          | All                            | 웹 푸시 알림용 공개 키 |
 
-> **VAPID 키 재생성이 필요한 경우** (키 분실, 보안 사고 등):
->
-> ```bash
-> node -e "const wp=require('web-push'); const k=wp.generateVAPIDKeys(); console.log(k);"
-> ```
->
-> 재생성 시 기존 구독자는 모두 재구독이 필요합니다 (`push_subscriptions` 테이블 초기화 권장).
+> 상세 목록은 [## 1-4. 환경 변수](#1-4-환경-변수) 섹션을 참조하세요.
 
-> 관련 검증: [Part 2-4. 이메일 발송](#2-4-이메일-발송), [Part 2-7. 웹 푸시 알림](#2-7-웹-푸시-알림)
+### 2-3-2. 동적 리다이렉션 메커니즘
 
-#### 2-3. 빌드 설정
+Vercel 프리뷰 환경(`*.vercel.app`)에서도 로그인이 끊기지 않도록 아래 원칙을 준수합니다.
 
-| 항목             | 값                               |
-| ---------------- | -------------------------------- |
-| Framework Preset | Astro                            |
-| Build Command    | `npm run build` (기본값)         |
-| Install Command  | `npm install --legacy-peer-deps` |
-| Output Directory | 자동 감지                        |
+- **원리**: 브라우저의 `window.location.origin`을 활용하여 현재 접속 중인 도메인을 Supabase에 실시간으로 전달합니다.
+- **흐름**: [프리뷰 접속] → [로그인 요청 시 현재 주소 전달] → [Supabase 허용 목록 확인] → [정확히 해당 프리뷰 주소로 복귀]
+
+## 2-4. 빌드 및 배포 설정 (Build Settings)
+
+> 소스 코드를 실행 가능한 웹 앱으로 변환하는 과정을 설정합니다.
+
+| 항목                 | 값                               | 비고                       |
+| :------------------- | :------------------------------- | :------------------------- |
+| **Framework Preset** | `Astro`                          | 사용하는 웹 프레임워크     |
+| **Build Command**    | `npm run build`                  | 빌드 실행 명령어           |
+| **Install Command**  | `npm install --legacy-peer-deps` | 의존성 충돌 방지 옵션 필수 |
 
 ---
 
@@ -477,3 +483,41 @@ Vercel Dashboard > Settings > Environment Variables에 아래 값 설정:
 | 코드: `pages/api/push/unsubscribe.ts`             | 2-7              |
 | 코드: `layouts/DashboardLayout.astro` (자동 구독) | 2-7              |
 | 코드: `pages/settings.astro` (알림 상태 표시)     | 2-7              |
+
+## 장애 사례 기록
+
+| 날짜       | 증상                                     | 원인                                                                                                                           | 해결                                |
+| ---------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| 2026-02-16 | 매직링크 클릭 시 파일 다운로드           | `/auth/confirm`에 `prerender = false` 누락 → 정적 파일로 빌드됨                                                                | `prerender = false` 추가 후 재배포  |
+| 2026-02-17 | 매직링크 클릭 시 `/login`으로 리다이렉트 | 위 장애 수정 전 Vercel CDN이 `/auth/confirm`을 `308 Permanent Redirect`로 캐시 → 코드 수정 후에도 캐시가 남아 서버 코드 미실행 | 새 배포(git push)로 CDN 캐시 무효화 |
+
+### CDN 308 캐시 장애 패턴
+
+이 프로젝트에서 반복될 수 있는 패턴입니다. 아래를 숙지하세요.
+
+**발생 조건**:
+
+1. 특정 경로(예: `/auth/confirm`)가 한 번이라도 `308 Permanent Redirect`로 응답한 적이 있음
+2. Vercel CDN 또는 브라우저가 이 응답을 캐시함
+3. 이후 코드를 올바르게 수정해도 캐시가 먼저 반환되어 수정이 반영 안 됨
+
+**진단 방법** (Vercel Dashboard → Logs):
+
+```
+정상: GET /auth/confirm  200  (서버 코드 실행, 100ms 이상)
+문제: GET /auth/confirm  308  Cache: 308 Permanent Redirect  (12ms, 서버 코드 미실행)
+```
+
+**해결 방법**:
+
+```bash
+# 새 배포로 CDN 캐시 무효화
+git commit --allow-empty -m "chore: CDN 캐시 무효화"
+git push
+# 배포 완료 후 브라우저 캐시도 삭제 (개발자 도구 → Application → Clear site data)
+```
+
+**재발 방지**: `prerender = false`를 누락하지 않으면 이 문제는 발생하지 않습니다.
+→ 자동 검증: `tests/unit/pages/prerender-check.test.ts` (CI에서 자동 실행)
+
+---
