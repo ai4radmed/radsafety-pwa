@@ -61,7 +61,7 @@
 ```
 https://radsafety.kr/auth/callback
 https://www.radsafety.kr/auth/callback
-https://*-benkoreas-projects.vercel.app/auth/callback
+https://*-ai4radmed.vercel.app/auth/callback
 ```
 
 > **정책**: 보안을 강화하고 리다이렉트 실패(홈 화면으로 튕기는 현상)를 방지하기 위해 **로그인 인증 콜백 주소만 정확히 명시(Exact Match)**해야 합니다.
@@ -70,7 +70,7 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 > **주의 (Vercel Preview 환경)**:
 >
 > - Vercel 프리뷰 도메인과 같이 도메인이 계속 바뀌는 환경은 어쩔 수 없이 와일드카드를 사용하되, **경로는 `/auth/callback`으로 고정**합니다.
-> - 예: `https://*-benkoreas-projects.vercel.app/auth/callback`
+> - 예: `https://*-ai4radmed.vercel.app/auth/callback`
 >
 > 로컬 개발 환경에서는 매직링크 테스트가 불가능하며, 배포 후 운영(또는 프리뷰)에서 테스트합니다.
 > (상세: [Part 2-2. 이메일 매직링크](#2-2-이메일-매직링크))
