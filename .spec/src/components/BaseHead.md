@@ -20,3 +20,6 @@
 3. PWA: `import.meta.env.PROD`일 때만 `<script src="/registerSW.js"></script>` 수동 추가. (dev 모드 404 방지)
 4. favicon: public에 존재하는 favicon.svg 사용. `<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`
 5. apple-touch-icon: favicon.svg 사용 (404 방지). `<link rel="apple-touch-icon" href="/favicon.svg" />`
+6. PWA 매니페스트: `<link rel="manifest" href="/manifest.webmanifest" />`. iOS 홈화면 추가 시 standalone PWA로 설치되기 위한 필수 태그.
+7. iOS standalone: `<meta name="apple-mobile-web-app-capable" content="yes" />`. iOS Safari에서 홈화면 추가 시 Safari UI 없이 독립 앱으로 실행되도록 지시.
+8. iOS 상태바: `<meta name="apple-mobile-web-app-status-bar-style" content="default" />`. standalone 모드의 상태바 스타일.
