@@ -1,5 +1,5 @@
 ---
-import { SITE_TITLE } from '../consts';
+import { SITE_TITLE, APP_VERSION, APP_RELEASE_DATE } from '../consts';
 import Icon from './Icon.astro';
 
 const { pathname } = Astro.url;
@@ -75,136 +75,139 @@ const { pathname } = Astro.url;
         <a href="/" class="logo text-gradient">{SITE_TITLE}</a>
     </div>
 
-    <div class="nav-group">
-        <span class="group-title">메뉴</span>
-        <a href="/" class={pathname === '/' ? 'active' : ''} aria-label="Home">
-            <span class="icon"><Icon name="home" size="18" /></span>
-            <span class="link-text">홈</span>
-        </a>
-        <a
-            href="/inspection-prep"
-            class={pathname.startsWith('/inspection-prep') ? 'active' : ''}
-            aria-label="Inspection Guide"
-        >
-            <span class="icon"><Icon name="check-square" size="18" /></span>
-            <span class="link-text">정기검사 수검준비</span>
-        </a>
-        <a
-            href="/findings-recommendations"
-            class={pathname.startsWith('/findings-recommendations') ? 'active' : ''}
-            aria-label="Findings"
-        >
-            <span class="icon"><Icon name="alert-circle" size="18" /></span>
-            <span class="link-text">지적권고사례</span>
-        </a>
-        <a href="/resources" class={pathname.startsWith('/resources') ? 'active' : ''} aria-label="Resources">
-            <span class="icon"><Icon name="folder" size="18" /></span>
-            <span class="link-text">자료실</span>
-        </a>
-        <button type="button" id="sidebarGlossaryBtn" class="nav-btn" aria-label="Glossary">
-            <span class="icon"><Icon name="search" size="18" /></span>
-            <span class="link-text">용어검색</span>
-        </button>
-        <a href="/guide" class={pathname.startsWith('/guide') ? 'active' : ''} aria-label="Usage Guide">
-            <span class="icon"><Icon name="help" size="18" /></span>
-            <span class="link-text">이용안내</span>
-        </a>
-        <a href="/settings" class={pathname.startsWith('/settings') ? 'active' : ''} aria-label="Settings">
-            <span class="icon"><Icon name="settings" size="18" /></span>
-            <span class="link-text">설정</span>
-        </a>
-    </div>
-    <div class="nav-group">
-        <span class="group-title">사용자</span>
-        <a href="/mypage" class={pathname.startsWith('/mypage') ? 'active' : ''} aria-label="My Page">
-            <span class="icon"><Icon name="user" size="18" /></span>
-            <span class="link-text">마이페이지</span>
-        </a>
-        <a
-            href="/notifications"
-            class={pathname.startsWith('/notifications') ? 'active' : ''}
-            aria-label="Notifications"
-            style="position: relative;"
-        >
-            <span class="icon">
-                <Icon name="bell" size="18" />
-                <span class="global-noti-dot notification-dot"></span>
-            </span>
-            <span class="link-text">알림함</span>
-        </a>
-        <a href="/feedback" class={pathname === '/feedback' ? 'active' : ''} aria-label="Feedback">
-            <span class="icon"><Icon name="mail" size="18" /></span>
-            <span class="link-text">의견보내기</span>
-        </a>
-        <a href="/my-feedback" class={pathname.startsWith('/my-feedback') ? 'active' : ''} aria-label="My Feedback">
-            <span class="icon"><Icon name="inbox" size="18" /></span>
-            <span class="link-text">내 의견함</span>
-        </a>
-        <a href="/login" id="navLoginLink" class={pathname.startsWith('/login') ? 'active' : ''} aria-label="Login">
-            <span class="icon"><Icon name="lock-closed" size="18" /></span>
-            <span class="link-text">로그인</span>
-        </a>
-        <button type="button" id="navLogoutBtn" class="nav-btn" aria-label="Logout" style="display: none;">
-            <span class="icon"><Icon name="lock-closed" size="18" /></span>
-            <span class="link-text">로그아웃</span>
-        </button>
-    </div>
+    <div class="nav-links">
+        <div class="nav-group">
+            <span class="group-title">메뉴</span>
+            <a href="/" class={pathname === '/' ? 'active' : ''} aria-label="Home">
+                <span class="icon"><Icon name="home" size="18" /></span>
+                <span class="link-text">홈</span>
+            </a>
+            <a
+                href="/inspection-prep"
+                class={pathname.startsWith('/inspection-prep') ? 'active' : ''}
+                aria-label="Inspection Guide"
+            >
+                <span class="icon"><Icon name="check-square" size="18" /></span>
+                <span class="link-text">정기검사 수검준비</span>
+            </a>
+            <a
+                href="/findings-recommendations"
+                class={pathname.startsWith('/findings-recommendations') ? 'active' : ''}
+                aria-label="Findings"
+            >
+                <span class="icon"><Icon name="alert-circle" size="18" /></span>
+                <span class="link-text">지적권고사례</span>
+            </a>
+            <a href="/resources" class={pathname.startsWith('/resources') ? 'active' : ''} aria-label="Resources">
+                <span class="icon"><Icon name="folder" size="18" /></span>
+                <span class="link-text">자료실</span>
+            </a>
+            <button type="button" id="sidebarGlossaryBtn" class="nav-btn" aria-label="Glossary">
+                <span class="icon"><Icon name="search" size="18" /></span>
+                <span class="link-text">용어검색</span>
+            </button>
+            <a href="/guide" class={pathname.startsWith('/guide') ? 'active' : ''} aria-label="Usage Guide">
+                <span class="icon"><Icon name="help" size="18" /></span>
+                <span class="link-text">이용안내</span>
+            </a>
+            <a href="/settings" class={pathname.startsWith('/settings') ? 'active' : ''} aria-label="Settings">
+                <span class="icon"><Icon name="settings" size="18" /></span>
+                <span class="link-text">설정</span>
+            </a>
+        </div>
 
-    <!-- Admin Group (Hidden by default, toggled by JS) -->
-    <div
-        id="adminNavGroup"
-        class="nav-group"
-        style="display:none; border-top:1px solid #333; padding-top:1rem; margin-top:1rem;"
-    >
-        <span class="group-title" style="color:#ef4444;">관리자</span>
-        <a
-            href="/admin/members"
-            class={pathname.startsWith('/admin/members') ? 'active' : ''}
-            aria-label="Member List Registration"
+        <div class="nav-group">
+            <span class="group-title">사용자</span>
+            <a href="/mypage" class={pathname.startsWith('/mypage') ? 'active' : ''} aria-label="My Page">
+                <span class="icon"><Icon name="user" size="18" /></span>
+                <span class="link-text">마이페이지</span>
+            </a>
+            <a
+                href="/notifications"
+                class={pathname.startsWith('/notifications') ? 'active' : ''}
+                aria-label="Notifications"
+                style="position: relative;"
+            >
+                <span class="icon">
+                    <Icon name="bell" size="18" />
+                    <span class="global-noti-dot notification-dot"></span>
+                </span>
+                <span class="link-text">알림함</span>
+            </a>
+            <a href="/feedback" class={pathname === '/feedback' ? 'active' : ''} aria-label="Feedback">
+                <span class="icon"><Icon name="mail" size="18" /></span>
+                <span class="link-text">의견보내기</span>
+            </a>
+            <a href="/my-feedback" class={pathname.startsWith('/my-feedback') ? 'active' : ''} aria-label="My Feedback">
+                <span class="icon"><Icon name="inbox" size="18" /></span>
+                <span class="link-text">내 의견함</span>
+            </a>
+            <a href="/login" id="navLoginLink" class={pathname.startsWith('/login') ? 'active' : ''} aria-label="Login">
+                <span class="icon"><Icon name="lock-closed" size="18" /></span>
+                <span class="link-text">로그인</span>
+            </a>
+            <button type="button" id="navLogoutBtn" class="nav-btn" aria-label="Logout" style="display: none;">
+                <span class="icon"><Icon name="lock-closed" size="18" /></span>
+                <span class="link-text">로그아웃</span>
+            </button>
+        </div>
+
+        <!-- Admin Group (Hidden by default, toggled by JS) -->
+        <div
+            id="adminNavGroup"
+            class="nav-group"
+            style="display:none; border-top:1px solid #333; padding-top:1rem; margin-top:1rem;"
         >
-            <span class="icon"><Icon name="clipboard" size="18" /></span>
-            <span class="link-text">회원명부 등록</span>
-        </a>
-        <a
-            href="/admin/verification-requests"
-            class={pathname.startsWith('/admin/verification-requests') ? 'active' : ''}
-            aria-label="Verification Requests"
-        >
-            <span class="icon"><Icon name="check-square" size="18" /></span>
-            <span class="link-text">인증관리</span>
-        </a>
-        <a
-            href="/admin/send-notification"
-            class={pathname.startsWith('/admin/send-notification') ? 'active' : ''}
-            aria-label="Send Notification"
-        >
-            <span class="icon"><Icon name="bell" size="18" /></span>
-            <span class="link-text">알림 발송</span>
-        </a>
-        <a
-            href="/admin/feedback"
-            class={pathname.startsWith('/admin/feedback') ? 'active' : ''}
-            aria-label="Feedback Management"
-        >
-            <span class="icon"><Icon name="mail" size="18" /></span>
-            <span class="link-text">의견 관리</span>
-        </a>
-        <a
-            href="/admin/glossary"
-            class={pathname.startsWith('/admin/glossary') ? 'active' : ''}
-            aria-label="Glossary Management"
-        >
-            <span class="icon"><Icon name="book" size="18" /></span>
-            <span class="link-text">용어 관리</span>
-        </a>
-        <a href="/admin-guide" class={pathname.startsWith('/admin-guide') ? 'active' : ''} aria-label="Admin Guide">
-            <span class="icon"><Icon name="shield" size="18" /></span>
-            <span class="link-text">관리자 안내</span>
-        </a>
+            <span class="group-title" style="color:#ef4444;">관리자</span>
+            <a
+                href="/admin/members"
+                class={pathname.startsWith('/admin/members') ? 'active' : ''}
+                aria-label="Member List Registration"
+            >
+                <span class="icon"><Icon name="clipboard" size="18" /></span>
+                <span class="link-text">회원명부 등록</span>
+            </a>
+            <a
+                href="/admin/verification-requests"
+                class={pathname.startsWith('/admin/verification-requests') ? 'active' : ''}
+                aria-label="Verification Requests"
+            >
+                <span class="icon"><Icon name="check-square" size="18" /></span>
+                <span class="link-text">인증관리</span>
+            </a>
+            <a
+                href="/admin/send-notification"
+                class={pathname.startsWith('/admin/send-notification') ? 'active' : ''}
+                aria-label="Send Notification"
+            >
+                <span class="icon"><Icon name="bell" size="18" /></span>
+                <span class="link-text">알림 발송</span>
+            </a>
+            <a
+                href="/admin/feedback"
+                class={pathname.startsWith('/admin/feedback') ? 'active' : ''}
+                aria-label="Feedback Management"
+            >
+                <span class="icon"><Icon name="mail" size="18" /></span>
+                <span class="link-text">의견 관리</span>
+            </a>
+            <a
+                href="/admin/glossary"
+                class={pathname.startsWith('/admin/glossary') ? 'active' : ''}
+                aria-label="Glossary Management"
+            >
+                <span class="icon"><Icon name="book" size="18" /></span>
+                <span class="link-text">용어 관리</span>
+            </a>
+            <a href="/admin-guide" class={pathname.startsWith('/admin-guide') ? 'active' : ''} aria-label="Admin Guide">
+                <span class="icon"><Icon name="shield" size="18" /></span>
+                <span class="link-text">관리자 안내</span>
+            </a>
+        </div>
     </div>
 
     <div class="sidebar-footer">
-        <span class="version">v0.1.0 (Beta)</span>
+        <span class="version">RadSafety v{APP_VERSION} · {APP_RELEASE_DATE}</span>
     </div>
 </aside>
 
@@ -222,7 +225,6 @@ const { pathname } = Astro.url;
         top: 0;
         z-index: 200 !important;
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
         white-space: nowrap; /* Prevent text wrapping */
     }
 
