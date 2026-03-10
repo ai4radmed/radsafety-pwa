@@ -2,11 +2,23 @@ import { supabase } from './supabase-browser';
 import { setUser, clearUser } from '../store/user';
 import { isAdmin as checkIsAdmin } from '../config/auth';
 import { saveLastRoute } from './last-route';
+import { diagLog } from './session-diag'; // [SESSION-DIAG]
 
 /**
  * 초기 인증 및 페이지 로드 핸들러 초기화
  */
 export function initAuthHandler() {
+    // [SESSION-DIAG] start — 앱 기동 시 저장소 상태 스냅샷
+    diagLog('L0:launch', {
+        hasSbCookie: document.cookie.includes('sb-'),
+        hasLsBackup: !!localStorage.getItem('sb-cookie-backup'),
+        hasLastRoute: !!localStorage.getItem('last_route'),
+        lastRoute: localStorage.getItem('last_route'),
+        pathname: window.location.pathname,
+        isStandalone: window.matchMedia('(display-mode: standalone)').matches,
+    });
+    // [SESSION-DIAG] end
+
     // 1. Auth State Change Listener (Logout focus)
     supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth State Change:', event, session?.user?.email);
@@ -18,11 +30,17 @@ export function initAuthHandler() {
 
     // 2. Page Load Event Listener
     document.addEventListener('astro:page-load', async () => {
+        diagLog('L6:page-load', { pathname: window.location.pathname, ts: Date.now() }); // [SESSION-DIAG]
         saveLastRoute();
         console.log('✅ Auth Handler: Page Load - Syncing Session...');
         const {
             data: { session },
         } = await supabase.auth.getSession();
+        diagLog('L4:getSession', {
+            hasSession: !!session,
+            email: session?.user?.email ?? null,
+            expiresAt: (session as any)?.expires_at ?? null,
+        }); // [SESSION-DIAG]
         await updateUserStore(session);
     });
 }
