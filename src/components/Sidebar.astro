@@ -1,5 +1,5 @@
 ---
-import { SITE_TITLE } from '../consts';
+import { SITE_TITLE, APP_VERSION, APP_RELEASE_DATE } from '../consts';
 import Icon from './Icon.astro';
 
 const { pathname } = Astro.url;
@@ -204,7 +204,7 @@ const { pathname } = Astro.url;
     </div>
 
     <div class="sidebar-footer">
-        <span class="version">v0.1.0 (Beta)</span>
+        <span class="version">RadSafety v{APP_VERSION} · {APP_RELEASE_DATE}</span>
     </div>
 </aside>
 
