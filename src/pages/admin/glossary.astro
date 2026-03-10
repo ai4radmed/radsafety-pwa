@@ -303,8 +303,9 @@ import Icon from '../../components/Icon.astro';
         import { userProfile } from '../../store/user';
 
         document.addEventListener('astro:page-load', () => {
-            // Guard: Admin only
-            const user = userProfile.get();
+            // Guard: Admin only (비로그인은 DashboardLayout이 /login으로 리다이렉트)
+            const user = userProfile.get() as any;
+            if (!user?.id) return;
             if (user.is_admin !== 'true') {
                 alert('관리자 권한이 필요합니다.');
                 window.location.href = '/';
