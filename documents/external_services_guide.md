@@ -109,13 +109,13 @@ https://*-benkoreas-projects.vercel.app/auth/callback
 
 > 관련 검증: [Part 2-2. 이메일 OTP](#2-2-이메일-otp)
 
-### 1-3-4. SMTP Settings (발송 제한 해제)
+### 1-3-4. Email (SMTP Settings: 발송 제한 해제)
 
-> Supabase 기본 이메일 서버의 엄격한 발송 제한(1시간 2~3회)을 우회하기 위해 커스텀 이메일 서버를 연결합니다.
+> Supabase 기본 이메일 서버의 엄격한 발송 제한(1시간 2회)을 우회하기 위해 커스텀 이메일 서버를 연결합니다.
 
 앱에서 이메일 인증 코드를 원활하게 발송하려면, 우리가 이미 세팅해둔 **Resend** 서비스를 Supabase의 SMTP 서버로 지정해야 합니다.
 
-**설정 경로**: `Supabase Dashboard > Authentication > SMTP Settings`
+**설정 경로**: `Supabase Dashboard > Authentication > Email` 화면 아래쪽의 **SMTP Settings** 영역
 
 | 항목                   | 설정값                    | 비고                                             |
 | :--------------------- | :------------------------ | :----------------------------------------------- |
