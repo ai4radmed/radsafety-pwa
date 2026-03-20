@@ -10,8 +10,8 @@
 | ---------------- | ------ | ---------------------------- | ---------------------------------- |
 | SITE_TITLE       | string | 'RadSafety'                  | 사이드바 로고, 문서 제목 등에 사용 |
 | SITE_DESCRIPTION | string | 'RadSafety Official Website' | 메타 설명, SNS 공유 등             |
-| APP_VERSION      | string | '0.2.0'                      | 앱 버전 표기(사이드바, 로그 등)    |
-| APP_RELEASE_DATE | string | '2026-03-09'                 | 해당 버전의 기준 배포 날짜         |
+| APP_VERSION      | string | '0.2.1'                      | 앱 버전 표기(사이드바, 로그 등)    |
+| APP_RELEASE_DATE | string | '2026-03-20'                 | 해당 버전의 기준 배포 날짜         |
 
 ## 핵심 규칙
 
