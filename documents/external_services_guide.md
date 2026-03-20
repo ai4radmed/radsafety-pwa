@@ -21,9 +21,9 @@
     - **확인 경로**: `Supabase Dashboard > Integrations > Data API`
     - **특징**: 이 주소 하나로 **데이터베이스, 파일 스토리지, 사용자 인증(Auth)** 기능을 모두 통합하여 처리합니다.
 - **API Keys (열쇠)**:
-    - **확인 경로**: `Supabase Dashboard > Project Settings > API Keys`
+    - **확인 경로**: `Supabase Dashboard > Settings > API Keys`
     - **Publishable key (Anon Key)**: 브라우저(Front-end)에서 안전하게 사용할 수 있는 공개 열쇠입니다. (RLS 보안 기능과 함께 동작)
-    - **Secret keys (Service Role Key)**: 절대로 외부에 노출되면 안 되는 관리자용 열쇠입니다. (Vercel 서버 로직에서만 사용)
+    - **Secret key (Service Role Key)**: **마스터키**입니다. RLS를 무시하므로 절대로 외부에 노출하지 않으며 Vercel 서버 로직에서만 사용해야 합니다.
 
 ## 1-3. Authentication (인증)
 
@@ -138,7 +138,7 @@ https://*-ai4radmed.vercel.app/auth/callback
 | `PUBLIC_SUPABASE_ANON_KEY`  | 클라이언트용 공개 키      | `.env`, Vercel |
 | `SUPABASE_SERVICE_ROLE_KEY` | 서버용 비밀 키 (RLS 우회) | `.env`, Vercel |
 
-> 키 확인: Supabase Dashboard > Settings > API
+> 키 확인: Supabase Dashboard > Settings > API Keys
 
 ## 1-5. Database > SQL (RPC 함수)
 
