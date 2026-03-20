@@ -6,7 +6,7 @@ import Icon from '../../components/Icon.astro';
 ---
 
 <DashboardLayout title="의견 관리">
-    <style>
+    <style is:global>
         .feedback-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -66,6 +66,18 @@ import Icon from '../../components/Icon.astro';
         .feedback-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        /* Fixed column widths to make ellipsis work reliably (iOS) */
+        .feedback-table th:nth-child(2),
+        .feedback-table td:nth-child(2) {
+            width: 220px;
+        }
+        .feedback-table th:nth-child(1),
+        .feedback-table td:nth-child(1) {
+            width: 85px;
+            padding-right: 0.25rem; /* keep title close to status */
         }
         .feedback-table thead {
             background: var(--bg-body);
@@ -96,6 +108,18 @@ import Icon from '../../components/Icon.astro';
             font-size: 0.95rem;
         }
 
+        .feedback-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: block;
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            word-break: keep-all;
+        }
+
         .status-badge {
             display: inline-block;
             padding: 0.35rem 0.85rem;
@@ -104,15 +128,91 @@ import Icon from '../../components/Icon.astro';
             font-weight: 600;
             white-space: nowrap;
         }
-        .badge-pending {
+
+        /* Sender cell ellipsis */
+        .feedback-sender {
+            max-width: 160px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Sender is revealed on row click */
+        .feedback-sender-hidden {
+            display: none;
+        }
+
+        .feedback-sender-trigger {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.2;
+        }
+
+        .status-text {
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: block;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        /* Status selector (radio segment) in modal */
+        .status-radio-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: nowrap; /* keep on one line */
+            align-items: center;
+        }
+
+        .status-radio-option {
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .status-radio-option input {
+            display: none;
+        }
+
+        .status-radio-label {
+            display: block;
+            text-align: center;
+            padding: 0.35rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-body);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .status-radio-option input:checked + .status-radio-label {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Feedback status badges (4 categories) */
+        .badge-reviewing {
             background: #fef3c7;
             color: #92400e;
         }
-        .badge-processing {
+        .badge-on_hold {
+            background: #ede9fe;
+            color: #4c1d95;
+        }
+        .badge-reflected {
             background: #dbeafe;
             color: #1e40af;
         }
-        .badge-resolved {
+        .badge-completed {
             background: #d1fae5;
             color: #065f46;
         }
@@ -121,6 +221,46 @@ import Icon from '../../components/Icon.astro';
             padding: 4rem 2rem;
             text-align: center;
             color: var(--text-muted);
+        }
+
+        /* Mobile typography (인증관리와 동일 감각) */
+        @media (max-width: 768px) {
+            .feedback-table th:nth-child(2),
+            .feedback-table td:nth-child(2) {
+                width: 140px;
+            }
+
+            .feedback-table th:nth-child(1),
+            .feedback-table td:nth-child(1) {
+                width: 60px;
+                padding-right: 0.25rem;
+            }
+
+            .feedback-title {
+                font-size: 0.85rem;
+                display: block;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+
+            .feedback-sender {
+                max-width: 120px;
+            }
+
+            .feedback-table th,
+            .feedback-table tbody td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .status-radio-group {
+                gap: 0.25rem;
+            }
+
+            .status-radio-label {
+                padding: 0.3rem 0.45rem;
+                font-size: 0.8rem;
+            }
         }
 
         /* Modal */
@@ -298,10 +438,18 @@ import Icon from '../../components/Icon.astro';
 
         <!-- Status Tabs -->
         <div class="status-tabs">
-            <button class="status-tab active" data-status="all"> 전체 </button>
-            <button class="status-tab" data-status="pending"> 대기중 </button>
-            <button class="status-tab" data-status="processing"> 처리중 </button>
-            <button class="status-tab" data-status="resolved"> 완료 </button>
+            <button class="status-tab active" data-status="all">
+                전체 (<span id="feedbackAllCount">0</span>)
+            </button>
+            <button class="status-tab" data-status="reviewing">
+                검토중 (<span id="feedbackReviewingCount">0</span>)
+            </button>
+            <button class="status-tab" data-status="on_hold">
+                보류 (<span id="feedbackOnHoldCount">0</span>)
+            </button>
+            <button class="status-tab" data-status="completed">
+                완료 (<span id="feedbackCompletedCount">0</span>)
+            </button>
         </div>
 
         <!-- Feedback Table -->
@@ -309,16 +457,14 @@ import Icon from '../../components/Icon.astro';
             <table class="feedback-table">
                 <thead>
                     <tr>
-                        <th>제목</th>
-                        <th>보낸사람</th>
                         <th>상태</th>
-                        <th>첨부파일</th>
+                        <th>제목</th>
                         <th>제출일</th>
                     </tr>
                 </thead>
                 <tbody id="feedbackTableBody">
                     <tr>
-                        <td colspan="5" class="empty-state"> 로딩 중... </td>
+                        <td colspan="3" class="empty-state"> 로딩 중... </td>
                     </tr>
                 </tbody>
             </table>
@@ -365,7 +511,8 @@ import Icon from '../../components/Icon.astro';
                     storage_path: string;
                     size: number;
                 }>;
-                status: 'pending' | 'processing' | 'resolved';
+                // Raw DB values (legacy + new categories)
+                status: 'reviewing' | 'on_hold' | 'reflected' | 'completed' | 'pending' | 'processing' | 'resolved';
                 admin_note: string | null;
                 created_at: string;
                 resolved_at: string | null;
@@ -381,6 +528,52 @@ import Icon from '../../components/Icon.astro';
             const modalFooter = document.getElementById('modalFooter');
             const closeModalBtn = document.getElementById('closeModal');
 
+            type NormalizedStatus = 'reviewing' | 'on_hold' | 'completed';
+
+            function normalizeStatus(status: Feedback['status']): NormalizedStatus {
+                if (status === 'pending' || status === 'reviewing') return 'reviewing';
+                if (status === 'on_hold') return 'on_hold';
+                // processing/reflected/resolved/completed are all treated as "completed" in the UI.
+                if (
+                    status === 'processing' ||
+                    status === 'reflected' ||
+                    status === 'resolved' ||
+                    status === 'completed'
+                )
+                    return 'completed';
+                // Fallback for unexpected values
+                return 'reviewing';
+            }
+
+            function getStatusLabel(status: NormalizedStatus): string {
+                return (
+                    {
+                        reviewing: '검토중',
+                        on_hold: '보류',
+                        completed: '완료',
+                    }[status] || '검토중'
+                );
+            }
+
+            function updateCounts() {
+                const allEl = document.getElementById('feedbackAllCount');
+                const reviewingEl = document.getElementById('feedbackReviewingCount');
+                const onHoldEl = document.getElementById('feedbackOnHoldCount');
+                const completedEl = document.getElementById('feedbackCompletedCount');
+
+                if (!allEl || !reviewingEl || !onHoldEl || !completedEl) return;
+
+                const all = allFeedback.length;
+                const reviewing = allFeedback.filter((f) => normalizeStatus(f.status) === 'reviewing').length;
+                const on_hold = allFeedback.filter((f) => normalizeStatus(f.status) === 'on_hold').length;
+                const completed = allFeedback.filter((f) => normalizeStatus(f.status) === 'completed').length;
+
+                allEl.textContent = String(all);
+                reviewingEl.textContent = String(reviewing);
+                onHoldEl.textContent = String(on_hold);
+                completedEl.textContent = String(completed);
+            }
+
             // Load feedback from database
             async function loadFeedback() {
                 try {
@@ -392,13 +585,14 @@ import Icon from '../../components/Icon.astro';
                     if (error) throw error;
 
                     allFeedback = data || [];
+                    updateCounts();
                     renderTable();
                 } catch (error) {
                     console.error('Failed to load feedback:', error);
                     if (tableBody) {
                         tableBody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="empty-state">
+                            <td colspan="4" class="empty-state">
                                 데이터를 불러오는데 실패했습니다.
                             </td>
                         </tr>
@@ -412,12 +606,14 @@ import Icon from '../../components/Icon.astro';
                 if (!tableBody) return;
 
                 const filtered =
-                    currentStatus === 'all' ? allFeedback : allFeedback.filter((f) => f.status === currentStatus);
+                    currentStatus === 'all'
+                        ? allFeedback
+                        : allFeedback.filter((f) => normalizeStatus(f.status) === currentStatus);
 
                 if (filtered.length === 0) {
                     tableBody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="3" class="empty-state">
                             의견이 없습니다.
                         </td>
                     </tr>
@@ -428,27 +624,16 @@ import Icon from '../../components/Icon.astro';
                 tableBody.innerHTML = filtered
                     .map((feedback) => {
                         const date = new Date(feedback.created_at).toLocaleDateString('ko-KR');
-                        const statusClass = `badge-${feedback.status}`;
-                        const statusText = {
-                            pending: '대기중',
-                            processing: '처리중',
-                            resolved: '완료',
-                        }[feedback.status];
+                        const normalized = normalizeStatus(feedback.status);
+                        const statusLabel = getStatusLabel(normalized);
 
                         return `
                     <tr data-id="${feedback.id}">
                         <td>
-                            <div style="font-weight: 600;">${feedback.title}</div>
+                            <div class="status-text">${statusLabel}</div>
                         </td>
                         <td>
-                            <div>${feedback.user_name}</div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted);">${feedback.user_email}</div>
-                        </td>
-                        <td>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                        </td>
-                        <td>
-                            ${feedback.attachments?.length || 0}개
+                            <div class="feedback-title">${feedback.title}</div>
                         </td>
                         <td>${date}</td>
                     </tr>
@@ -474,11 +659,8 @@ import Icon from '../../components/Icon.astro';
                 if (!modal || !modalBody || !modalFooter) return;
 
                 const date = new Date(feedback.created_at).toLocaleString('ko-KR');
-                const statusText = {
-                    pending: '대기중',
-                    processing: '처리중',
-                    resolved: '완료',
-                }[feedback.status];
+                const normalized = normalizeStatus(feedback.status);
+                const statusText = getStatusLabel(normalized);
 
                 modalBody.innerHTML = `
                 <div class="info-row">
@@ -496,7 +678,38 @@ import Icon from '../../components/Icon.astro';
                 <div class="info-row">
                     <div class="info-label">상태</div>
                     <div class="info-value">
-                        <span class="status-badge badge-${feedback.status}">${statusText}</span>
+                        <div class="status-radio-group" role="radiogroup" aria-label="상태 선택">
+                            <label class="status-radio-option">
+                                <input
+                                    type="radio"
+                                    name="feedbackStatusRadio"
+                                    id="feedbackStatusReviewingRadio"
+                                    value="reviewing"
+                                    ${normalized === 'reviewing' ? 'checked' : ''}
+                                />
+                                <span class="status-radio-label">검토중</span>
+                            </label>
+                            <label class="status-radio-option">
+                                <input
+                                    type="radio"
+                                    name="feedbackStatusRadio"
+                                    id="feedbackStatusOnHoldRadio"
+                                    value="on_hold"
+                                    ${normalized === 'on_hold' ? 'checked' : ''}
+                                />
+                                <span class="status-radio-label">보류</span>
+                            </label>
+                            <label class="status-radio-option">
+                                <input
+                                    type="radio"
+                                    name="feedbackStatusRadio"
+                                    id="feedbackStatusCompletedRadio"
+                                    value="completed"
+                                    ${normalized === 'completed' ? 'checked' : ''}
+                                />
+                                <span class="status-radio-label">완료</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="info-row">
@@ -536,30 +749,26 @@ import Icon from '../../components/Icon.astro';
                 </div>
             `;
 
-                // Render footer based on status
-                if (feedback.status === 'pending') {
-                    modalFooter.innerHTML = `
+                // Footer: always allow status change via radio selector.
+                // (Delete is kept only when the current record is completed, like the previous flow.)
+                modalFooter.innerHTML = `
                     <button class="btn btn-secondary" id="closeModalBtn">닫기</button>
-                    <button class="btn btn-primary" id="startProcessingBtn">처리 시작</button>
+                    <button class="btn btn-primary" id="saveStatusBtn">상태 저장</button>
+                    ${normalized === 'completed' ? `<button class="btn btn-danger" id="deleteBtn">삭제</button>` : ''}
                 `;
-                } else if (feedback.status === 'processing') {
-                    modalFooter.innerHTML = `
-                    <button class="btn btn-secondary" id="closeModalBtn">닫기</button>
-                    <button class="btn btn-success" id="resolveBtn">완료 처리</button>
-                `;
-                } else {
-                    modalFooter.innerHTML = `
-                    <button class="btn btn-secondary" id="closeModalBtn">닫기</button>
-                    <button class="btn btn-danger" id="deleteBtn">삭제</button>
-                `;
-                }
 
                 // Attach handlers
                 document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
-                document
-                    .getElementById('startProcessingBtn')
-                    ?.addEventListener('click', () => updateStatus('processing'));
-                document.getElementById('resolveBtn')?.addEventListener('click', () => updateStatus('resolved'));
+                document.getElementById('saveStatusBtn')?.addEventListener('click', () => {
+                    const checked = modal?.querySelector(
+                        'input[name="feedbackStatusRadio"]:checked',
+                    ) as HTMLInputElement | null;
+                    if (!checked) {
+                        alert('상태를 선택하세요.');
+                        return;
+                    }
+                    updateStatus(checked.value as NormalizedStatus);
+                });
                 document.getElementById('deleteBtn')?.addEventListener('click', deleteFeedback);
 
                 modal.classList.add('active');
@@ -572,7 +781,7 @@ import Icon from '../../components/Icon.astro';
             }
 
             // Update status
-            async function updateStatus(newStatus: 'processing' | 'resolved') {
+            async function updateStatus(newStatus: NormalizedStatus) {
                 if (!selectedFeedback) return;
 
                 const adminNote = (document.getElementById('adminNote') as HTMLTextAreaElement)?.value || null;
@@ -583,9 +792,13 @@ import Icon from '../../components/Icon.astro';
                         admin_note: adminNote,
                     };
 
-                    if (newStatus === 'resolved') {
+                    if (newStatus === 'completed') {
                         updateData.resolved_at = new Date().toISOString();
                         updateData.resolved_by = user.id;
+                    } else {
+                        // Clear resolved metadata when moving away from completed state.
+                        updateData.resolved_at = null;
+                        updateData.resolved_by = null;
                     }
 
                     const { error } = await supabase.from('feedback').update(updateData).eq('id', selectedFeedback.id);

@@ -26,4 +26,15 @@ describe('admin-guide.astro', () => {
         expect(source).toContain('자동 인증');
         expect(source).toMatch(/승인|취소/);
     });
+
+    it('섹션 5(의견 관리)에 사용자 의견 수신/관리 흐름 키워드가 있다', () => {
+        expect(source).toContain('의견보내기');
+        expect(source).toContain('의견 관리');
+        expect(source).toContain('관리자 이메일');
+        expect(source).toContain('검토중');
+        expect(source).toContain('관리자 의견(admin_note)');
+        expect(source).toContain('개선의견조회');
+        expect(source).toContain('보류');
+        expect(source).toContain('완료');
+    });
 });

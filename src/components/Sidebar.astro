@@ -142,6 +142,14 @@ const { pathname } = Astro.url;
                 <span class="icon"><Icon name="inbox" size="18" /></span>
                 <span class="link-text">내 의견함</span>
             </a>
+            <a
+                href="/feedback-query"
+                class={pathname.startsWith('/feedback-query') ? 'active' : ''}
+                aria-label="Improvement Feedback Query"
+            >
+                <span class="icon"><Icon name="search" size="18" /></span>
+                <span class="link-text">개선의견조회</span>
+            </a>
             <a href="/login" id="navLoginLink" class={pathname.startsWith('/login') ? 'active' : ''} aria-label="Login">
                 <span class="icon"><Icon name="lock-closed" size="18" /></span>
                 <span class="link-text">로그인</span>

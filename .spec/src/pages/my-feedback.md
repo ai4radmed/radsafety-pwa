@@ -16,3 +16,4 @@
 
 1. prerender = false. 인증 필요.
 2. user_id로 본인 의견만 조회.
+3. feedback.status는 legacy(`pending`/`processing`/`resolved`) 및 신규(`reviewing`/`on_hold`/`reflected`/`completed`)를 모두 정규화하여 화면에는 `검토중/보류/완료` 3가지 라벨로 표시한다.
