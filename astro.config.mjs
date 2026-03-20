@@ -106,4 +106,9 @@ export default defineConfig({
     ],
 
     adapter: vercel(),
+    vite: {
+        server: {
+            allowedHosts: true,
+        },
+    },
 });
