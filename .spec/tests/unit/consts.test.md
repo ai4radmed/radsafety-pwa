@@ -11,14 +11,14 @@ Vitest (단위)
 
 ## 검증 항목
 
-| describe         | it                | 검증 내용                                 |
-| ---------------- | ----------------- | ----------------------------------------- |
-| SITE_TITLE       | 예상값과 일치     | 'RadSafety'                               |
-| SITE_DESCRIPTION | 예상값과 일치     | 'RadSafety Official Website'              |
-| SITE_TITLE       | 타입이 string     | typeof SITE_TITLE === 'string'            |
-| SITE_DESCRIPTION | 타입이 string     | typeof SITE_DESCRIPTION === 'string'      |
-| APP_VERSION      | 형식 및 타입 검증 | truthy string, 예: '0.2.0'                |
-| APP_RELEASE_DATE | 형식 및 타입 검증 | truthy string, 예: 'YYYY-MM-DD' 형식 여부 |
+| describe         | it            | 검증 내용                            |
+| ---------------- | ------------- | ------------------------------------ |
+| SITE_TITLE       | 예상값과 일치 | 'RadSafety'                          |
+| SITE_DESCRIPTION | 예상값과 일치 | 'RadSafety Official Website'         |
+| SITE_TITLE       | 타입이 string | typeof SITE_TITLE === 'string'       |
+| SITE_DESCRIPTION | 타입이 string | typeof SITE_DESCRIPTION === 'string' |
+| APP_VERSION      | 예상값과 일치 | '0.2.1'                              |
+| APP_RELEASE_DATE | 예상값과 일치 | '2026-03-20'                         |
 
 ## 유지보수 목적
 

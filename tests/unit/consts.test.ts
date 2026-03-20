@@ -22,15 +22,13 @@ describe('SITE_DESCRIPTION', () => {
 });
 
 describe('APP_VERSION', () => {
-    it('truthy string 이어야 한다', () => {
-        expect(typeof APP_VERSION).toBe('string');
-        expect(APP_VERSION.length).toBeGreaterThan(0);
+    it('예상값과 일치해야 한다', () => {
+        expect(APP_VERSION).toBe('0.2.1');
     });
 });
 
 describe('APP_RELEASE_DATE', () => {
-    it('YYYY-MM-DD 형식의 문자열이어야 한다', () => {
-        expect(typeof APP_RELEASE_DATE).toBe('string');
-        expect(APP_RELEASE_DATE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    it('예상값과 일치해야 한다', () => {
+        expect(APP_RELEASE_DATE).toBe('2026-03-20');
     });
 });
