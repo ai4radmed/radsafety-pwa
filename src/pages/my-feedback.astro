@@ -101,15 +101,20 @@ import Icon from '../components/Icon.astro';
             font-weight: 600;
             white-space: nowrap;
         }
-        .badge-pending {
+
+        .badge-reviewing {
             background: #fef3c7;
             color: #92400e;
         }
-        .badge-processing {
+        .badge-on_hold {
+            background: #ede9fe;
+            color: #4c1d95;
+        }
+        .badge-reflected {
             background: #dbeafe;
             color: #1e40af;
         }
-        .badge-resolved {
+        .badge-completed {
             background: #d1fae5;
             color: #065f46;
         }
@@ -311,7 +316,8 @@ import Icon from '../components/Icon.astro';
                 storage_path: string;
                 size: number;
             }>;
-            status: 'pending' | 'processing' | 'resolved';
+            // Raw DB values (legacy + new categories)
+            status: 'reviewing' | 'on_hold' | 'reflected' | 'completed' | 'pending' | 'processing' | 'resolved';
             admin_note: string | null;
             created_at: string;
             resolved_at: string | null;
@@ -324,6 +330,26 @@ import Icon from '../components/Icon.astro';
         const closeModalBtn = document.getElementById('closeModal');
 
         let myFeedback: Feedback[] = [];
+
+        type NormalizedStatus = 'reviewing' | 'on_hold' | 'completed';
+
+        function normalizeStatus(status: Feedback['status']): NormalizedStatus {
+            if (status === 'pending' || status === 'reviewing') return 'reviewing';
+            if (status === 'on_hold') return 'on_hold';
+            if (status === 'processing' || status === 'reflected' || status === 'resolved' || status === 'completed')
+                return 'completed';
+            return 'reviewing';
+        }
+
+        function getStatusLabel(status: NormalizedStatus): string {
+            return (
+                {
+                    reviewing: '검토중',
+                    on_hold: '보류중',
+                    completed: '완료',
+                }[status] || '검토중'
+            );
+        }
 
         // Load user's feedback
         async function loadMyFeedback() {
@@ -405,12 +431,9 @@ import Icon from '../components/Icon.astro';
                         month: 'long',
                         day: 'numeric',
                     });
-                    const statusClass = `badge-${feedback.status}`;
-                    const statusText = {
-                        pending: '대기중',
-                        processing: '처리중',
-                        resolved: '완료',
-                    }[feedback.status];
+                    const normalized = normalizeStatus(feedback.status);
+                    const statusClass = `badge-${normalized}`;
+                    const statusText = getStatusLabel(normalized);
 
                     return `
                     <div class="feedback-card" data-id="${feedback.id}">
@@ -456,11 +479,8 @@ import Icon from '../components/Icon.astro';
             const date = new Date(feedback.created_at).toLocaleString('ko-KR');
             const resolvedDate = feedback.resolved_at ? new Date(feedback.resolved_at).toLocaleString('ko-KR') : '-';
 
-            const statusText = {
-                pending: '대기중',
-                processing: '처리중',
-                resolved: '완료',
-            }[feedback.status];
+            const normalized = normalizeStatus(feedback.status);
+            const statusText = getStatusLabel(normalized);
 
             modalBody.innerHTML = `
                 <div class="info-row">
@@ -474,11 +494,11 @@ import Icon from '../components/Icon.astro';
                 <div class="info-row">
                     <div class="info-label">상태</div>
                     <div class="info-value">
-                        <span class="status-badge badge-${feedback.status}">${statusText}</span>
+                        <span class="status-badge badge-${normalized}">${statusText}</span>
                     </div>
                 </div>
                 ${
-                    feedback.status === 'resolved'
+                    normalized === 'completed'
                         ? `
                 <div class="info-row">
                     <div class="info-label">처리 완료일</div>

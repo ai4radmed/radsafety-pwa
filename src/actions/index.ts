@@ -327,7 +327,7 @@ export const server = {
                         title: input.title,
                         message: input.message,
                         attachments: input.attachments || [],
-                        status: 'pending',
+                        status: 'reviewing',
                     })
                     .select()
                     .single();

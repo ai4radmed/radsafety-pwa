@@ -29,4 +29,9 @@ describe('Sidebar.astro', () => {
     it('버전 푸터에서 APP_VERSION과 APP_RELEASE_DATE를 사용한다', () => {
         expect(source).toContain('RadSafety v{APP_VERSION} · {APP_RELEASE_DATE}');
     });
+
+    it('사용자 개선의견조회 링크가 존재한다', () => {
+        expect(source).toContain('href="/feedback-query"');
+        expect(source).toContain('개선의견조회');
+    });
 });

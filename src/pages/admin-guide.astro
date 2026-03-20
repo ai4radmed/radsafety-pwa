@@ -73,7 +73,25 @@ import Icon from '../components/Icon.astro';
 
         <section class="guide-section">
             <h2>5. 의견 관리</h2>
-            <p>사용자들이 보내온 의견을 확인하고 관리할 수 있습니다.</p>
+            <ul class="feature-list">
+                <li>
+                    <strong>수신 경로</strong> : 사용자가 <strong>의견보내기</strong>로 의견을 제출하면 앱에서 <strong
+                        >의견 관리</strong
+                    >로 수신되며, 동시에 관리자 이메일로도 발송됩니다.
+                </li>
+                <li>
+                    <strong>최초 상태</strong> : 새로운 접수는 기본적으로 <strong>검토중</strong> 상태로 시작합니다.
+                </li>
+                <li>
+                    <strong>개선의견조회 노출</strong> : 관리자가 해당 의견에 <strong>관리자 의견(admin_note)</strong>을
+                    작성하면, 사용자 사이드메뉴의 <strong>개선의견조회</strong>에서 해당 접수가 보이게 됩니다.
+                </li>
+                <li>
+                    <strong>상태 변경</strong> : 관리자는 필요에 따라 접수 상태를 <strong>보류</strong> 또는 <strong
+                        >완료</strong
+                    >로 수정할 수 있습니다.
+                </li>
+            </ul>
         </section>
 
         <section class="guide-section">

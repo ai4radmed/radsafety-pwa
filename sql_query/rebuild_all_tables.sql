@@ -808,7 +808,7 @@ CREATE TABLE IF NOT EXISTS public.feedback (
     title text NOT NULL,
     message text NOT NULL,
     attachments jsonb DEFAULT '[]'::jsonb,
-    status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'resolved')),
+    status text DEFAULT 'reviewing' CHECK (status IN ('reviewing', 'on_hold', 'reflected', 'completed', 'pending', 'processing', 'resolved')),
     admin_note text,
     created_at timestamptz DEFAULT now(),
     resolved_at timestamptz,
@@ -817,6 +817,39 @@ CREATE TABLE IF NOT EXISTS public.feedback (
 
 -- RLS for feedback
 ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- Feedback status categories (4 states)
+-- ============================================================
+DO $$
+BEGIN
+    -- 1) Default status
+    ALTER TABLE public.feedback ALTER COLUMN status SET DEFAULT 'reviewing';
+
+    -- 2) Drop old/inline CHECK constraints (best-effort)
+    FOR conname IN
+        SELECT c.conname
+        FROM pg_constraint c
+        WHERE c.conrelid = 'public.feedback'::regclass
+          AND c.contype = 'c'
+          AND pg_get_constraintdef(c.oid) ILIKE '%status IN%'
+    LOOP
+        EXECUTE format('ALTER TABLE public.feedback DROP CONSTRAINT %I', conname);
+    END LOOP;
+
+    -- 3) Add canonical CHECK constraint for both new(4) and legacy(3) values
+    BEGIN
+        ALTER TABLE public.feedback DROP CONSTRAINT feedback_status_check;
+    EXCEPTION
+        WHEN undefined_object THEN
+            -- ignore
+            NULL;
+    END;
+
+    ALTER TABLE public.feedback
+        ADD CONSTRAINT feedback_status_check
+        CHECK (status IN ('reviewing', 'on_hold', 'reflected', 'completed', 'pending', 'processing', 'resolved'));
+END $$;
 
 DO $$
 BEGIN
