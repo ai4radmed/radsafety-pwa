@@ -2,7 +2,9 @@ name: Supabase Keep-Alive
 
 # Supabase 무료 플랜은 7일간 DB/API 무요청이면 프로젝트를 자동 pause 한다.
 # 이 앱의 공개 페이지는 MDX 서버렌더라 DB 를 안 건드려서, 단순 열람만으론 pause 를 못 막는다.
-# 그래서 월·목 정기적으로 anon 공개 테이블(glossary_terms)에 가벼운 GET 을 보내 활동을 만든다.
+# 그래서 월·목 정기적으로 profiles 테이블에 가벼운 anon GET 을 보내 활동을 만든다.
+# (anon 은 RLS 로 행을 못 보지만 200 + 빈 배열 = DB 쿼리는 실제 실행됨 → 데이터 유출 0, 활동 발생.
+#  glossary_terms/findings 는 라이브 DB schema cache 에 없어 404 → 200 나는 profiles 사용.)
 # 최대 간격 3~4일(목→월) < 7일 → pause 안전.
 
 on:
@@ -15,7 +17,7 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST (glossary_terms)
+      - name: Ping Supabase REST (profiles)
         env:
           SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
@@ -26,7 +28,7 @@ jobs:
             exit 1
           fi
           code=$(curl -sS -o /tmp/resp.txt -w '%{http_code}' \
-            "${SUPABASE_URL}/rest/v1/glossary_terms?select=term&limit=1" \
+            "${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
           echo "HTTP $code"
