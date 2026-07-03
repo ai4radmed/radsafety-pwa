@@ -30,6 +30,9 @@ jobs:
         env:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          # RLS 보안 테스트(tests/e2e/rls-policies.spec.ts)용 — 미설정 시 해당 테스트 skip.
+          DEV_TEST_USER_EMAIL: ${{ secrets.DEV_TEST_USER_EMAIL }}
+          DEV_TEST_USER_PASSWORD: ${{ secrets.DEV_TEST_USER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
