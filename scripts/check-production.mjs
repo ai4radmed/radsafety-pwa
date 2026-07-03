@@ -3,7 +3,11 @@
  * 운영 서버 헬스체크 스크립트
  *
  * 사용법: npm run check:production
- * 또는:   node scripts/check-production.mjs [URL]
+ * 또는:   node scripts/check-production.mjs [URL] [--strict]
+ *
+ * 모드(자동 모니터용):
+ *   --strict / HEALTH_STRICT=1  → degraded 도 실패(exit 1)로 처리해 알림이 가게 함.
+ *   HEALTH_CHECK_TOKEN=<토큰>    → Doctor 를 ?deep=1(머신 인증)로 실행 → 스키마·Auth·Storage·기능까지.
  *
  * 배포 후 수동 체크리스트 3-1, 3-6, 3-7의 자동화 가능한 항목을 검증합니다.
  * 브라우저 없이 순수 HTTP 요청으로 확인하므로 빠르고 신뢰도가 높습니다.
@@ -20,6 +24,13 @@
 
 const BASE_URL = process.argv[2] || 'https://radsafety.kr';
 const WWW_URL = BASE_URL.replace('https://', 'https://www.');
+
+// 자동 모니터(GitHub Actions) 모드 —
+// --strict (또는 HEALTH_STRICT=1): degraded 도 실패(exit 1)로 처리해 알림이 가게 한다.
+//   (사람이 배포 전 로컬 실행할 땐 플래그 없이 → degraded 는 경고로만.)
+// HEALTH_CHECK_TOKEN: 있으면 Doctor 를 ?deep=1 로 머신 인증 실행 → 스키마·Auth·Storage·기능까지 점검.
+const STRICT = process.argv.includes('--strict') || process.env.HEALTH_STRICT === '1';
+const HEALTH_CHECK_TOKEN = process.env.HEALTH_CHECK_TOKEN || '';
 
 // ANSI 색상
 const GREEN = '\x1b[32m';
@@ -271,17 +282,28 @@ async function checkApiEndpoints() {
 async function checkDoctorHealth() {
     section('Doctor 헬스체크 (/api/health)');
 
+    // 토큰이 있으면 deep(?deep=1) 머신 인증으로 — 스키마·Auth·Storage·기능까지. 없으면 shallow.
+    const deep = HEALTH_CHECK_TOKEN.length > 0;
+    const healthUrl = `${BASE_URL}/api/health${deep ? '?deep=1' : ''}`;
+    const headers = deep ? { 'x-health-token': HEALTH_CHECK_TOKEN } : {};
+
     const start = Date.now();
     let res;
     let body;
     try {
-        res = await fetch(`${BASE_URL}/api/health`, { signal: AbortSignal.timeout(10000) });
+        res = await fetch(healthUrl, { headers, signal: AbortSignal.timeout(10000) });
         body = await res.json();
     } catch (err) {
         fail('/api/health 요청/파싱 실패', err.message);
         return;
     }
     const elapsed = Date.now() - start;
+
+    // deep 인데 401/403 → 토큰 불일치/미설정(모니터 설정 오류). 조용히 넘기지 말고 실패로.
+    if (deep && (res.status === 401 || res.status === 403)) {
+        fail('deep 인증 실패 — HEALTH_CHECK_TOKEN 불일치(Vercel/CI secret 확인)', `HTTP ${res.status}`);
+        return;
+    }
 
     // 응답 헤더 — 동적 SSR 이 캐시되지 않아야 함
     const cacheControl = res.headers.get('cache-control') || '';
@@ -293,9 +315,15 @@ async function checkDoctorHealth() {
 
     // 전체 상태
     if (body.status === 'ok') {
-        ok(`전체 status=ok`, `v${body.version} · ${elapsed}ms`);
+        ok(`전체 status=ok`, `${body.mode} · v${body.version} · ${elapsed}ms`);
     } else if (body.status === 'degraded') {
-        warn(`전체 status=degraded (핵심 정상, 부가 기능 이상)`, `HTTP ${res.status} · ${elapsed}ms`);
+        const detail = `HTTP ${res.status} · ${elapsed}ms`;
+        // strict(자동 모니터)에선 degraded 도 알림 대상 → 실패로 승격. 아니면 경고만.
+        if (STRICT) {
+            fail(`전체 status=degraded (부가 기능 이상 · strict)`, detail);
+        } else {
+            warn(`전체 status=degraded (핵심 정상, 부가 기능 이상)`, detail);
+        }
     } else {
         fail(`전체 status=${body.status}`, `HTTP ${res.status} · ${elapsed}ms`);
     }
