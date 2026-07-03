@@ -29,6 +29,6 @@ describe('APP_VERSION', () => {
 
 describe('APP_RELEASE_DATE', () => {
     it('예상값과 일치해야 한다', () => {
-        expect(APP_RELEASE_DATE).toBe('2036-03-20');
+        expect(APP_RELEASE_DATE).toBe('2026-03-20');
     });
 });
