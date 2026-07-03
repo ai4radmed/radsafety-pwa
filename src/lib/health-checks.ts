@@ -83,14 +83,7 @@ export async function checkAppHost(): Promise<CheckResult[]> {
 // ── ② 설정 (Config) ──────────────────────────────────────────────────
 // 필수 env 존재·형식. 값은 노출하지 않고 누락된 키 이름만 detail 에.
 const REQUIRED_ENV = ['PUBLIC_SUPABASE_URL', 'PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'];
-const OPTIONAL_ENV = [
-    'RESEND_API_KEY',
-    'RESEND_FROM_EMAIL',
-    'PUBLIC_VAPID_KEY',
-    'VAPID_PRIVATE_KEY',
-    'VAPID_EMAIL',
-    'PUBLIC_ADMIN_EMAILS',
-];
+const OPTIONAL_ENV = ['RESEND_API_KEY', 'PUBLIC_VAPID_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_EMAIL', 'PUBLIC_ADMIN_EMAILS'];
 
 function envPresent(name: string): boolean {
     const v = import.meta.env[name];
@@ -183,18 +176,13 @@ export async function checkSchema(): Promise<CheckResult[]> {
 export async function checkFunctional(): Promise<CheckResult[]> {
     const results: CheckResult[] = [];
 
-    // Resend — 키 형식('re_' 접두) + 발신 주소 형식. 발송 안 함.
+    // Resend — 실제 필수 의존은 API 키뿐. 발신 주소는 email.ts 가 하드코딩('noreply@radsafety.kr')하므로
+    // RESEND_FROM_EMAIL 은 앱이 참조하지 않는다(점검 대상 아님). 발송 안 함.
     results.push(
         await timed('resend-config', 5, async () => {
             const key = import.meta.env.RESEND_API_KEY;
-            const from = import.meta.env.RESEND_FROM_EMAIL;
-            // 미설정(missing)과 형식 불량(invalid)을 구분 — 진단·조치가 다르다.
             if (!key) throw new Error('RESEND_API_KEY missing');
             if (!key.startsWith('re_')) throw new Error('RESEND_API_KEY invalid format');
-            if (!from) throw new Error('RESEND_FROM_EMAIL missing');
-            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(from)) {
-                throw new Error('RESEND_FROM_EMAIL invalid format');
-            }
         }),
     );
 

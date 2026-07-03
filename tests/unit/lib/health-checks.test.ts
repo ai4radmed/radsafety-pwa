@@ -47,7 +47,6 @@ function stubValidEnv() {
     vi.stubEnv('PUBLIC_SUPABASE_ANON_KEY', 'anon-key-xxx');
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-key-xxx');
     vi.stubEnv('RESEND_API_KEY', 're_abc123');
-    vi.stubEnv('RESEND_FROM_EMAIL', 'noreply@radsafety.kr');
     vi.stubEnv('PUBLIC_VAPID_KEY', 'B'.repeat(87));
     vi.stubEnv('VAPID_PRIVATE_KEY', 'p'.repeat(43));
     vi.stubEnv('VAPID_EMAIL', 'mailto:noreply@radsafety.kr');
@@ -155,22 +154,6 @@ describe('checkFunctional', () => {
         const results = await checkFunctional();
         const resend = results.find((r) => r.name === 'resend-config');
         expect(resend?.ok).toBe(false);
-    });
-
-    it('Resend from 미설정 → detail 이 missing (invalid 아님)', async () => {
-        vi.stubEnv('RESEND_FROM_EMAIL', '');
-        const results = await checkFunctional();
-        const resend = results.find((r) => r.name === 'resend-config');
-        expect(resend?.ok).toBe(false);
-        expect(resend?.detail).toContain('missing');
-    });
-
-    it('Resend from 형식 불량 → detail 이 invalid', async () => {
-        vi.stubEnv('RESEND_FROM_EMAIL', 'not-an-email');
-        const results = await checkFunctional();
-        const resend = results.find((r) => r.name === 'resend-config');
-        expect(resend?.ok).toBe(false);
-        expect(resend?.detail).toContain('invalid');
     });
 });
 
