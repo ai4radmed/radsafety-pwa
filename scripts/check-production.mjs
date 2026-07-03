@@ -268,6 +268,67 @@ async function checkApiEndpoints() {
     }
 }
 
+async function checkDoctorHealth() {
+    section('Doctor 헬스체크 (/api/health)');
+
+    const start = Date.now();
+    let res;
+    let body;
+    try {
+        res = await fetch(`${BASE_URL}/api/health`, { signal: AbortSignal.timeout(10000) });
+        body = await res.json();
+    } catch (err) {
+        fail('/api/health 요청/파싱 실패', err.message);
+        return;
+    }
+    const elapsed = Date.now() - start;
+
+    // 응답 헤더 — 동적 SSR 이 캐시되지 않아야 함
+    const cacheControl = res.headers.get('cache-control') || '';
+    if (cacheControl.includes('no-store')) {
+        ok('Cache-Control: no-store');
+    } else {
+        warn('Cache-Control no-store 아님 — 캐시 착시 위험', cacheControl || '(없음)');
+    }
+
+    // 전체 상태
+    if (body.status === 'ok') {
+        ok(`전체 status=ok`, `v${body.version} · ${elapsed}ms`);
+    } else if (body.status === 'degraded') {
+        warn(`전체 status=degraded (핵심 정상, 부가 기능 이상)`, `HTTP ${res.status} · ${elapsed}ms`);
+    } else {
+        fail(`전체 status=${body.status}`, `HTTP ${res.status} · ${elapsed}ms`);
+    }
+
+    // 개별 점검(app-host·config·db-ping·meta …)
+    for (const c of body.checks || []) {
+        if (c.ok) {
+            ok(`[${c.layer}] ${c.name}`, `${c.ms}ms`);
+        } else {
+            fail(`[${c.layer}] ${c.name}`, c.detail || '');
+        }
+    }
+
+    // ts 신선도 — 매 호출 계산 여부(정적 200·캐시 구별)
+    if (body.ts) {
+        const drift = Math.abs(Date.now() - new Date(body.ts).getTime());
+        if (drift < 60_000) {
+            ok('ts 신선 (요청 시각 근처)', `${drift}ms drift`);
+        } else {
+            warn('ts 오래됨 — 캐시 의심', `${Math.round(drift / 1000)}s drift`);
+        }
+    }
+
+    // 비밀값 미노출 회귀 방지 — 실제 비밀 '값'(JWT 형태 eyJ...)만 검사.
+    // env 변수 '이름'(SUPABASE_SERVICE_ROLE_KEY)은 값이 아니라 공개 변수명이므로 제외.
+    const raw = JSON.stringify(body);
+    if (/eyJ[A-Za-z0-9_-]{20,}/.test(raw)) {
+        fail('응답 본문에 비밀값(JWT) 노출 의심');
+    } else {
+        ok('비밀값 미노출');
+    }
+}
+
 async function checkResponseTimes() {
     section('주요 페이지 응답시간 (체감 성능)');
 
@@ -308,6 +369,7 @@ async function main() {
     await checkProtectedPages();
     await checkAuthEndpoints();
     await checkApiEndpoints();
+    await checkDoctorHealth();
     await checkResponseTimes();
 
     // 결과 요약

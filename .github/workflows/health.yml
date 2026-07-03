@@ -1,0 +1,26 @@
+name: Production Health Check
+
+# 매일 정시 자동 + 언제든 수동 실행 — 같은 스크립트(scripts/check-production.mjs)를 공유.
+# 실패(exit 1) 시 job 이 실패로 표시되고 GitHub 가 알림 이메일을 발송(사용자 알림 설정 기준).
+on:
+    schedule:
+        # 00:00 UTC = 09:00 KST (Asia/Seoul). cron 은 UTC 기준.
+        - cron: '0 0 * * *'
+    workflow_dispatch: {} # Actions 탭 "Run workflow" 버튼 / gh workflow run health.yml
+
+# 동시 실행 방지(수동+정시 겹침).
+concurrency:
+    group: health-check
+    cancel-in-progress: false
+
+jobs:
+    health:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+            # check-production.mjs 는 외부 의존성 없이 순수 node(global fetch)로 동작 → npm ci 불필요.
+            - name: Doctor · 프로덕션 헬스체크
+              run: node scripts/check-production.mjs https://radsafety.kr
