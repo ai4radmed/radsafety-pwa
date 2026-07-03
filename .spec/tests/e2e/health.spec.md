@@ -6,14 +6,14 @@
 
 ## 검증 항목
 
-| #   | 요청                                | 기대                                                                               |
-| --- | ----------------------------------- | ---------------------------------------------------------------------------------- |
-| 1   | `GET /api/health`                   | 200, `Content-Type: application/json`, `Cache-Control: no-store`                   |
-| 2   | 위 본문                             | `mode:"shallow"`, `status ∈ {ok,degraded,down}`, `version`·`releaseDate`·`ts` 존재 |
-| 3   | 위 `checks`                         | 배열, 각 원소 `{name, layer, ok, ms}` 형태                                         |
-| 4   | 위 응답                             | 본문 문자열에 anon key·service key 등 **비밀값 미포함**(정규식 검사)               |
-| 5   | `GET /api/health?deep=1` (비로그인) | 401                                                                                |
-| 6   | `ts`                                | 매 호출 갱신(두 번 호출 시 서로 다름) — 신선도                                     |
+| #   | 요청                                | 기대                                                                                      |
+| --- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1   | `GET /api/health`                   | 200, `Content-Type: application/json`, `Cache-Control: no-store`                          |
+| 2   | 위 본문                             | `mode:"shallow"`, `status ∈ {ok,degraded,down}`, `version`·`releaseDate`·`ts` 존재        |
+| 3   | 위 `checks`                         | 배열, 각 원소 `{name, layer, ok, ms}` 형태                                                |
+| 4   | 위 응답                             | 본문에 실제 비밀 **값**(JWT `eyJ…` 형태) 미포함. env 변수 _이름_(공개)은 값 아니므로 허용 |
+| 5   | `GET /api/health?deep=1` (비로그인) | 401                                                                                       |
+| 6   | `ts`                                | 매 호출 갱신(두 번 호출 시 서로 다름) — 신선도                                            |
 
 ## 참고
 

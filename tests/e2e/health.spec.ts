@@ -40,9 +40,10 @@ test.describe('GET /api/health (shallow)', () => {
     test('비밀값 미노출 — 응답 본문에 JWT/키 패턴 없음', async ({ request }) => {
         const res = await request.get('/api/health');
         const text = await res.text();
-        // Supabase JWT(eyJ...)·service_role 문자열 등이 새어나오면 실패.
+        // 실제 비밀 '값'(JWT 형태 — Supabase anon/service 키·세션 토큰은 eyJ 로 시작)만 검사한다.
+        // 주의: 설정 누락 시 config detail 에 env 변수 '이름'(SUPABASE_SERVICE_ROLE_KEY)이 담길 수 있는데,
+        // 이는 값이 아니라 공개 변수명(.env.example 에 존재)이므로 누출이 아니다 → 이름은 검사 대상 아님.
         expect(text).not.toMatch(/eyJ[A-Za-z0-9_-]{20,}/);
-        expect(text.toLowerCase()).not.toContain('service_role');
     });
 
     test('ts 신선도 — 요청 시각 근처(매 호출 계산)', async ({ request }) => {
