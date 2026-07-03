@@ -6,23 +6,26 @@
 
 ## 검증 항목
 
-| #   | 대상                 | 시나리오                                            | 기대                                                                    |
-| --- | -------------------- | --------------------------------------------------- | ----------------------------------------------------------------------- |
-| 1   | checkAppHost         | 항상                                                | `ok:true`, layer 1                                                      |
-| 2   | checkConfig          | 필수 env 전부 존재 + 유효 URL                       | `ok:true`                                                               |
-| 3   | checkConfig          | 필수 env 누락                                       | `ok:false`, detail 에 누락 키 이름                                      |
-| 4   | checkConfig          | PUBLIC_SUPABASE_URL 형식 불량                       | `ok:false`                                                              |
-| 5   | checkConfig          | 값·비밀 미노출                                      | detail 에 실제 키 값이 없음(이름만)                                     |
-| 6   | checkSupabase(false) | DB 핑 성공                                          | `db-ping` 1개, `ok:true`                                                |
-| 7   | checkSupabase(false) | DB 에러                                             | `db-ping` `ok:false`, detail=`error:<code>`                             |
-| 8   | checkSupabase(true)  | deep                                                | `db-ping`·`auth-reach`·`storage-reach` 3개                              |
-| 9   | checkSchema          | 모든 핵심 테이블 존재                               | `ok:true`                                                               |
-| 10  | checkSchema          | 한 테이블 42P01                                     | `ok:false`, detail 에 그 테이블명                                       |
-| 11  | checkFunctional      | Resend 키 `re_` 접두·유효 발신 + VAPID 페어 형식 OK | 둘 다 `ok:true`                                                         |
-| 12  | checkFunctional      | Resend 키 형식 불량                                 | `resend-config` `ok:false`                                              |
-| 13  | checkMeta            | 항상                                                | `ok:true`, detail 에 APP_VERSION                                        |
-| 14  | runChecks('shallow') |                                                     | `app-host`·`config`·`db-ping`·`meta` 4개(스키마·기능·auth·storage 없음) |
-| 15  | runChecks('deep')    |                                                     | 위 + `auth-reach`·`storage-reach`·`schema`·`resend-config`·`vapid-pair` |
+| #   | 대상                 | 시나리오                                                 | 기대                                                                                   |
+| --- | -------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1   | checkAppHost         | 항상                                                     | `ok:true`, layer 1                                                                     |
+| 2   | checkConfig          | 필수 env 전부 존재 + 유효 URL                            | `ok:true`                                                                              |
+| 3   | checkConfig          | 필수 env 누락                                            | `ok:false`, detail 에 누락 키 이름                                                     |
+| 4   | checkConfig          | PUBLIC_SUPABASE_URL 형식 불량                            | `ok:false`                                                                             |
+| 5   | checkConfig          | 값·비밀 미노출                                           | detail 에 실제 키 값이 없음(이름만)                                                    |
+| 6   | checkSupabase(false) | DB 핑 성공                                               | `db-ping` 1개, `ok:true`                                                               |
+| 7   | checkSupabase(false) | DB 에러                                                  | `db-ping` `ok:false`, detail=`error:<code>`                                            |
+| 8   | checkSupabase(true)  | deep                                                     | `db-ping`·`auth-reach`·`storage-reach` 3개                                             |
+| 9   | checkSchema          | 모든 핵심 테이블 존재                                    | `ok:true`                                                                              |
+| 10  | checkSchema          | 한 테이블 42P01                                          | `ok:false`, detail 에 그 테이블명                                                      |
+| 11  | checkFunctional      | Resend 키 `re_` 접두·유효 발신 + VAPID 페어 형식 OK      | 둘 다 `ok:true`                                                                        |
+| 12  | checkFunctional      | Resend 키 형식 불량                                      | `resend-config` `ok:false`                                                             |
+| 13  | checkRlsPolicies     | RLS 비인증 차단 & 인증 로그인 조회 성공 (무한 재귀 없음) | `ok:true`                                                                              |
+| 14  | checkRlsPolicies     | RLS 쿼리 시 무한 재귀 에러 발생                          | `ok:false`, detail에 `infinite recursion` 포함                                         |
+| 15  | checkRlsPolicies     | 환경변수(`DEV_TEST_USER_EMAIL` 등) 누락                  | `ok:true`, detail에 `skipped: env missing`                                             |
+| 16  | checkMeta            | 항상                                                     | `ok:true`, detail 에 APP_VERSION                                                       |
+| 17  | runChecks('shallow') |                                                          | `app-host`·`config`·`db-ping`·`meta` 4개                                               |
+| 18  | runChecks('deep')    |                                                          | 위 + `auth-reach`·`storage-reach`·`schema`·`rls-policies`·`resend-config`·`vapid-pair` |
 
 ## 규칙
 
