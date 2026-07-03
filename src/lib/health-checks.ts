@@ -9,6 +9,7 @@
  *  - 비밀값 원문 반환 금지: 각 check 는 ok/ms 와 범주형 detail 만 노출.
  *  - 각 점검은 개별 timeout·try/catch. 실패는 ok:false 로 보고하고 throw 하지 않는다.
  */
+import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from './supabase-server';
 import { APP_VERSION, APP_RELEASE_DATE } from '../consts';
 
@@ -52,6 +53,9 @@ async function timed(
  */
 function categorize(err: unknown): string {
     if (err && typeof err === 'object') {
+        const message = (err as { message?: string }).message || '';
+        if (message.includes('infinite recursion')) return 'infinite-recursion';
+
         // PostgREST/Supabase 에러 코드만 노출(값·URL·행 데이터 제외)
         const code = (err as { code?: string }).code;
         if (typeof code === 'string' && code.length > 0) return `error:${code}`;
@@ -59,8 +63,7 @@ function categorize(err: unknown): string {
             if (err.message === 'timeout') return 'timeout';
             return err.message.slice(0, 60);
         }
-        const message = (err as { message?: string }).message;
-        if (typeof message === 'string' && message.length > 0) return message.slice(0, 60);
+        if (message.length > 0) return message.slice(0, 60);
     }
     return 'error';
 }
@@ -177,6 +180,78 @@ export async function checkSchema(): Promise<CheckResult[]> {
     ];
 }
 
+// ── ④-2 데이터 · RLS (deep) ─────────────────────────────────────────
+export async function checkRlsPolicies(): Promise<CheckResult[]> {
+    return [
+        await timed('rls-policies', 4, async () => {
+            const email =
+                import.meta.env.DEV_TEST_USER_EMAIL ||
+                (typeof process !== 'undefined' ? process.env.DEV_TEST_USER_EMAIL : undefined);
+            const password =
+                import.meta.env.DEV_TEST_USER_PASSWORD ||
+                (typeof process !== 'undefined' ? process.env.DEV_TEST_USER_PASSWORD : undefined);
+
+            if (!email || !password) {
+                return 'skipped: env missing';
+            }
+
+            const url = import.meta.env.PUBLIC_SUPABASE_URL;
+            const anonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+            if (!url || !anonKey) {
+                throw new Error('Supabase URL or Anon Key missing');
+            }
+
+            // 1단계: 격리된 임시 anon 클라이언트를 활용해 비로그인 차단 검증
+            const tempClient = createClient(url, anonKey, {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false,
+                },
+            });
+
+            // 비로그인 상태로 findings 조회 시도 (보통 빈 결과 혹은 차단 에러)
+            const { error: anonError } = await tempClient.from('findings').select('*', { count: 'exact', head: true });
+
+            if (anonError) {
+                // 비로그인 시 RLS에 의해 거부 에러가 발생하는 것은 정상 가드 작동으로 허용 (예: 401, 403, 400 등)
+                const code = anonError.code;
+                const msg = anonError.message || '';
+                const isRlsBlock =
+                    ['PGRST301', '42501'].includes(code) || msg.includes('policy') || msg.includes('permission');
+                if (!isRlsBlock && code !== 'PGRST116') {
+                    // RLS 거부나 빈 데이터 조회가 아닌 일반 에러라면 실패 처리
+                    throw anonError;
+                }
+            }
+
+            // 2단계: 인증된(로그인 완료) 사용자로 RLS 무한 재귀 검증
+            const { data: authData, error: authError } = await tempClient.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (authError) {
+                throw new Error(`auth failed: ${authError.message}`);
+            }
+
+            try {
+                // 로그인 상태에서 profiles 쿼리를 시도 (무한 루프/무한 재귀 시 에러 발생)
+                const { error: rlsError } = await tempClient
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: true });
+
+                if (rlsError) {
+                    throw rlsError;
+                }
+            } finally {
+                // 검증 후 명시적 로그아웃 (세션 정리)
+                await tempClient.auth.signOut().catch(() => {});
+            }
+        }),
+    ];
+}
+
 // ── ⑤ 기능 (deep, 부작용 없이) ───────────────────────────────────────
 // Resend·VAPID 자격/형식 유효성만. 실제 발송 없음. (콘텐츠 로드는 astro:content
 // 컨텍스트가 필요해 엔드포인트 deep 경로에서 별도 'content' 점검으로 수행.)
@@ -234,7 +309,7 @@ export async function runChecks(mode: 'shallow' | 'deep'): Promise<CheckResult[]
         checkAppHost(),
         checkConfig(),
         checkSupabase(deep),
-        ...(deep ? [checkSchema(), checkFunctional()] : []),
+        ...(deep ? [checkSchema(), checkRlsPolicies(), checkFunctional()] : []),
         checkMeta(),
     ]);
     return groups.flat();
