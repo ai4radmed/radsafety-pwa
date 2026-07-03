@@ -22,5 +22,10 @@ jobs:
               with:
                   node-version: 20
             # check-production.mjs 는 외부 의존성 없이 순수 node(global fetch)로 동작 → npm ci 불필요.
-            - name: Doctor · 프로덕션 헬스체크
-              run: node scripts/check-production.mjs https://radsafety.kr
+            # --strict: degraded 도 실패로 처리(부가 기능 이상도 알림).
+            # HEALTH_CHECK_TOKEN(secret): 설정 시 deep(?deep=1) 머신 인증 실행 → 스키마·Auth·Storage·기능까지.
+            #   미설정이면 스크립트가 자동으로 shallow 로 폴백(빈 문자열).
+            - name: Doctor · 프로덕션 헬스체크 (deep · strict)
+              env:
+                  HEALTH_CHECK_TOKEN: ${{ secrets.HEALTH_CHECK_TOKEN }}
+              run: node scripts/check-production.mjs https://radsafety.kr --strict

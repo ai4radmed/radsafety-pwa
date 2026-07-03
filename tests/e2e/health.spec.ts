@@ -58,4 +58,13 @@ test.describe('GET /api/health?deep=1 (인증 게이트)', () => {
         const res = await request.get('/api/health?deep=1');
         expect(res.status()).toBe(401);
     });
+
+    // 머신 토큰 경로 회귀: 틀린 x-health-token 은 인증으로 인정되지 않는다.
+    // 토큰 미설정 환경이든(항상 불일치) 설정 환경이든(값 불일치) deep 은 열리지 않아야 한다.
+    test('잘못된 x-health-token → 여전히 401 (deep 미개방)', async ({ request }) => {
+        const res = await request.get('/api/health?deep=1', {
+            headers: { 'x-health-token': 'definitely-not-the-real-token' },
+        });
+        expect(res.status()).toBe(401);
+    });
 });
