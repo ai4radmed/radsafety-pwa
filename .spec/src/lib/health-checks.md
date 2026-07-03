@@ -20,14 +20,14 @@ function runChecks(mode: 'shallow' | 'deep'): Promise<CheckResult[]>;
 
 층별 점검 함수:
 
-| 함수                | layer    | 점검 내용                                                                                              | shallow |
-| ------------------- | -------- | ------------------------------------------------------------------------------------------------------ | ------- |
-| `checkAppHost()`    | ① Vercel | 배포 버전·리전·env 로드 여부(응답 도달 자체가 생존 증거)                                               | ✓       |
-| `checkConfig()`     | ② 설정   | env **존재·형식**: SUPABASE URL/anon/service, RESEND_API_KEY, VAPID pair, ADMIN_EMAILS                 | ✓       |
-| `checkSupabase()`   | ③ 백엔드 | shallow=DB 경량 핑(`profiles` head/count); deep=+Auth 도달·Storage 도달                                | ✓(DB만) |
-| `checkSchema()`     | ④ 데이터 | 핵심 테이블 존재: profiles·findings·notifications·verification_requests·archives·feedback              | (deep)  |
-| `checkFunctional()` | ⑤ 기능   | `resend-config`(RESEND*API_KEY `re*`접두) ·`vapid-pair`(페어 base64url 형식·길이) — **발송·변경 없음** | (deep)  |
-| `checkMeta()`       | ⑥ 메타   | APP_VERSION·APP_RELEASE_DATE·빌드시각·(가능시 git sha)·ts                                              | ✓       |
+| 함수                | layer    | 점검 내용                                                                                                  | shallow |
+| ------------------- | -------- | ---------------------------------------------------------------------------------------------------------- | ------- |
+| `checkAppHost()`    | ① Vercel | 배포 버전·리전·env 로드 여부(응답 도달 자체가 생존 증거)                                                   | ✓       |
+| `checkConfig()`     | ② 설정   | env **존재·형식**: SUPABASE URL/anon/service, RESEND_API_KEY, VAPID pair, ADMIN_EMAILS                     | ✓       |
+| `checkSupabase()`   | ③ 백엔드 | shallow=DB 경량 핑(`profiles` head/count); deep=+Auth 도달·Storage 도달                                    | ✓(DB만) |
+| `checkSchema()`     | ④ 데이터 | 핵심 테이블 존재: profiles·findings·notifications·verification_requests·archives·feedback                  | (deep)  |
+| `checkFunctional()` | ⑤ 기능   | `resend-config`(`RESEND_API_KEY` `re_` 접두) · `vapid-pair`(페어 base64url 형식·길이) — **발송·변경 없음** | (deep)  |
+| `checkMeta()`       | ⑥ 메타   | APP_VERSION·APP_RELEASE_DATE·빌드시각·(가능시 git sha)·ts                                                  | ✓       |
 
 `runChecks('shallow')` = `checkAppHost` + `checkConfig` + `checkSupabase(DB핑)` + `checkMeta`.
 `runChecks('deep')` = 위 + `checkSupabase(Auth·Storage)` + `checkSchema` + `checkFunctional`.
@@ -48,10 +48,6 @@ function runChecks(mode: 'shallow' | 'deep'): Promise<CheckResult[]>;
 4. `checkConfig` 는 값의 **존재와 형식**만 본다(예: URL 파싱 가능, VAPID 키 base64url 길이). 실제 인증 성공은 ③에서.
 5. `checkFunctional` 의 VAPID·Resend·OTP 점검은 **자격/설정 유효성만** — 실제 이메일·푸시를 보내지 않는다.
 6. `ms` 는 각 점검의 실측 소요시간(모니터링·회귀 진단용).
-7. `checkRlsPolicies` 는 **Anon 클라이언트** 및 **테스트 사용자 자격증명**을 통해 RLS 정책을 검증한다.
-    - **비인증 가드 검증**: 비로그인 Anon 클라이언트로 `findings` 조회 시 RLS 정책에 의해 정상 차단되는지 확인(데이터 미검출 또는 에러).
-    - **무한 재귀 검증**: `DEV_TEST_USER_EMAIL` 및 `DEV_TEST_USER_PASSWORD` 자격증명으로 로그인 완료 후 Anon 클라이언트를 사용해 `profiles`를 count 쿼리할 때, DB 무한 재귀 에러(`infinite recursion`) 없이 정상적으로 수행되는지 검증.
-    - **환경변수 부재 시**: 테스트 환경변수 누락 시에는 테스트를 스킵하고 `detail: "skipped: env missing"`을 기록하며 `ok: true`를 유지한다. (운영 환경에서의 강제 실패를 방지)
 
 ## 관련
 
