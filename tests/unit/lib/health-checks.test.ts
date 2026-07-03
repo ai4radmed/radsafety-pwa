@@ -155,6 +155,22 @@ describe('checkFunctional', () => {
         const resend = results.find((r) => r.name === 'resend-config');
         expect(resend?.ok).toBe(false);
     });
+
+    it('Resend from 미설정 → detail 이 missing (invalid 아님)', async () => {
+        vi.stubEnv('RESEND_FROM_EMAIL', '');
+        const results = await checkFunctional();
+        const resend = results.find((r) => r.name === 'resend-config');
+        expect(resend?.ok).toBe(false);
+        expect(resend?.detail).toContain('missing');
+    });
+
+    it('Resend from 형식 불량 → detail 이 invalid', async () => {
+        vi.stubEnv('RESEND_FROM_EMAIL', 'not-an-email');
+        const results = await checkFunctional();
+        const resend = results.find((r) => r.name === 'resend-config');
+        expect(resend?.ok).toBe(false);
+        expect(resend?.detail).toContain('invalid');
+    });
 });
 
 describe('checkMeta', () => {
