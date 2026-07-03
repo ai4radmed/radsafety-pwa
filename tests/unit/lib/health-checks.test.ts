@@ -32,28 +32,11 @@ const h = vi.hoisted(() => {
         },
     };
 
-    // RLS Mock
-    const rlsAuthError = { error: null as unknown };
-    const rlsSelectError = { error: null as unknown };
-    const mockSupabaseAnon = {
-        auth: {
-            signInWithPassword: vi.fn(() => Promise.resolve({ data: { user: {} }, error: rlsAuthError.error })),
-            signOut: vi.fn(() => Promise.resolve({ error: null })),
-        },
-        from: vi.fn((table: string) => ({
-            select: vi.fn(() => Promise.resolve({ data: [], error: rlsSelectError.error, count: 0 })),
-        })),
-    };
-
-    return { selectResult, tableErrors, mockSupabaseAdmin, rlsAuthError, rlsSelectError, mockSupabaseAnon };
+    return { selectResult, tableErrors, mockSupabaseAdmin };
 });
 
 vi.mock('../../../src/lib/supabase-server', () => ({
     supabaseAdmin: h.mockSupabaseAdmin,
-}));
-
-vi.mock('@supabase/supabase-js', () => ({
-    createClient: vi.fn(() => h.mockSupabaseAnon),
 }));
 
 const { selectResult, tableErrors } = h;
@@ -69,8 +52,6 @@ function stubValidEnv() {
     vi.stubEnv('VAPID_PRIVATE_KEY', 'p'.repeat(43));
     vi.stubEnv('VAPID_EMAIL', 'mailto:noreply@radsafety.kr');
     vi.stubEnv('PUBLIC_ADMIN_EMAILS', 'admin@radsafety.kr');
-    vi.stubEnv('DEV_TEST_USER_EMAIL', 'test-user@radsafety.kr');
-    vi.stubEnv('DEV_TEST_USER_PASSWORD', 'test-pass-xxx');
 }
 
 import {
@@ -78,7 +59,6 @@ import {
     checkConfig,
     checkSupabase,
     checkSchema,
-    checkRlsPolicies,
     checkFunctional,
     checkMeta,
     runChecks,
@@ -202,39 +182,13 @@ describe('checkMeta', () => {
     });
 });
 
-describe('checkRlsPolicies', () => {
-    it('성공 시 ok:true', async () => {
-        h.rlsAuthError.error = null;
-        h.rlsSelectError.error = null;
-        const [r] = await checkRlsPolicies();
-        expect(r.ok).toBe(true);
-        expect(r.name).toBe('rls-policies');
-        expect(r.layer).toBe(4);
-    });
-
-    it('RLS 무한 재귀 에러 감지 시 ok:false 및 detail 에 에러 메시지', async () => {
-        h.rlsAuthError.error = null;
-        h.rlsSelectError.error = { code: '42P01', message: 'infinite recursion detected' };
-        const [r] = await checkRlsPolicies();
-        expect(r.ok).toBe(false);
-        expect(r.detail).toContain('infinite-recursion');
-    });
-
-    it('환경변수 누락 시 skipped: env missing 메시지 및 ok:true', async () => {
-        vi.stubEnv('DEV_TEST_USER_EMAIL', '');
-        const [r] = await checkRlsPolicies();
-        expect(r.ok).toBe(true);
-        expect(r.detail).toBe('skipped: env missing');
-    });
-});
-
 describe('runChecks', () => {
     it('shallow — app-host·config·db-ping·meta 4개', async () => {
         const results = await runChecks('shallow');
         expect(results.map((r) => r.name)).toEqual(['app-host', 'config', 'db-ping', 'meta']);
     });
 
-    it('deep — shallow + auth·storage·schema·rls-policies·functional', async () => {
+    it('deep — shallow + auth·storage·schema·functional', async () => {
         const names = (await runChecks('deep')).map((r) => r.name);
         expect(names).toEqual([
             'app-host',
@@ -243,7 +197,6 @@ describe('runChecks', () => {
             'auth-reach',
             'storage-reach',
             'schema',
-            'rls-policies',
             'resend-config',
             'vapid-pair',
             'meta',
