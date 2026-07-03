@@ -70,7 +70,11 @@ function categorize(err: unknown): string {
 export async function checkAppHost(): Promise<CheckResult[]> {
     return [
         await timed('app-host', 1, async () => {
-            const region = import.meta.env.VERCEL_REGION || 'local';
+            // Vercel 은 VERCEL_REGION 을 런타임 process.env 에만 주입(import.meta.env 엔 없음).
+            const region =
+                import.meta.env.VERCEL_REGION ||
+                (typeof process !== 'undefined' ? process.env.VERCEL_REGION : undefined) ||
+                'local';
             return `region=${region}`;
         }),
     ];
@@ -184,10 +188,12 @@ export async function checkFunctional(): Promise<CheckResult[]> {
         await timed('resend-config', 5, async () => {
             const key = import.meta.env.RESEND_API_KEY;
             const from = import.meta.env.RESEND_FROM_EMAIL;
+            // 미설정(missing)과 형식 불량(invalid)을 구분 — 진단·조치가 다르다.
             if (!key) throw new Error('RESEND_API_KEY missing');
             if (!key.startsWith('re_')) throw new Error('RESEND_API_KEY invalid format');
-            if (!from || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(from)) {
-                throw new Error('RESEND_FROM_EMAIL invalid');
+            if (!from) throw new Error('RESEND_FROM_EMAIL missing');
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(from)) {
+                throw new Error('RESEND_FROM_EMAIL invalid format');
             }
         }),
     );
