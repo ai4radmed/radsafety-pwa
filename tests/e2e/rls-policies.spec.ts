@@ -21,11 +21,6 @@ const testPassword = process.env.DEV_TEST_USER_PASSWORD;
 
 const hasCreds = Boolean(url && anonKey && testEmail && testPassword);
 
-// eslint-disable-next-line no-console
-console.log(
-    `[RLS-DEBUG] hasCreds=${hasCreds} url=${!!url} anon=${!!anonKey} email=${!!testEmail} pw=${!!testPassword}`,
-);
-
 test.describe('RLS 정책 검증 (보안)', () => {
     test.skip(!hasCreds, 'Supabase URL/anon 또는 DEV_TEST_USER_* 미설정 — 검증 생략');
 
