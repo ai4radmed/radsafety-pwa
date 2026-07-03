@@ -319,10 +319,11 @@ async function checkDoctorHealth() {
         }
     }
 
-    // 비밀값 미노출 회귀 방지
+    // 비밀값 미노출 회귀 방지 — 실제 비밀 '값'(JWT 형태 eyJ...)만 검사.
+    // env 변수 '이름'(SUPABASE_SERVICE_ROLE_KEY)은 값이 아니라 공개 변수명이므로 제외.
     const raw = JSON.stringify(body);
-    if (/eyJ[A-Za-z0-9_-]{20,}/.test(raw) || raw.toLowerCase().includes('service_role')) {
-        fail('응답 본문에 비밀값(JWT/service_role) 노출 의심');
+    if (/eyJ[A-Za-z0-9_-]{20,}/.test(raw)) {
+        fail('응답 본문에 비밀값(JWT) 노출 의심');
     } else {
         ok('비밀값 미노출');
     }
