@@ -6,10 +6,15 @@ GET /api/health. 시스템 정상가동을 **요청이 흐르는 순서**(① �
 
 ## Public API
 
-| Method | 경로        | Query   | 접근       | 설명                                            |
-| ------ | ----------- | ------- | ---------- | ----------------------------------------------- |
-| GET    | /api/health | (없음)  | 공개       | shallow — ① 앱 응답 · ② 설정 · ③ DB 핑 · ⑥ 메타 |
-| GET    | /api/health | ?deep=1 | admin only | deep — 위 + ③(Auth·Storage) · ④ 스키마 · ⑤ 기능 |
+| Method | 경로        | Query   | 접근                | 설명                                            |
+| ------ | ----------- | ------- | ------------------- | ----------------------------------------------- |
+| GET    | /api/health | (없음)  | 공개                | shallow — ① 앱 응답 · ② 설정 · ③ DB 핑 · ⑥ 메타 |
+| GET    | /api/health | ?deep=1 | admin **또는** 토큰 | deep — 위 + ③(Auth·Storage) · ④ 스키마 · ⑤ 기능 |
+
+deep 접근은 두 경로 중 하나로 허용된다:
+
+- **admin 쿠키** — 로그인 세션 이메일이 `PUBLIC_ADMIN_EMAILS` 목록(사람이 브라우저로 열람).
+- **머신 토큰** — `x-health-token` 요청 헤더가 서버 env `HEALTH_CHECK_TOKEN` 과 일치(자동 모니터가 브라우저 없이 deep 을 돌리기 위한 무인 경로). `HEALTH_CHECK_TOKEN` 미설정 시 이 경로는 비활성이고 admin 쿠키만 유효.
 
 응답 본문(JSON):
 
@@ -31,12 +36,12 @@ GET /api/health. 시스템 정상가동을 **요청이 흐르는 순서**(① �
 
 상태코드:
 
-| 코드 | 의미                                                         |
-| ---- | ------------------------------------------------------------ |
-| 200  | status = ok \| degraded (부가 기능만 실패해도 200)           |
-| 503  | status = down — 핵심(앱·DB) 점검 실패                        |
-| 401  | ?deep=1 인데 미인증                                          |
-| 403  | ?deep=1 인데 로그인은 됐으나 admin(PUBLIC_ADMIN_EMAILS) 아님 |
+| 코드 | 의미                                                  |
+| ---- | ----------------------------------------------------- |
+| 200  | status = ok \| degraded (부가 기능만 실패해도 200)    |
+| 503  | status = down — 핵심(앱·DB) 점검 실패                 |
+| 401  | ?deep=1 인데 토큰 불일치 **그리고** 미인증            |
+| 403  | ?deep=1 인데 토큰 불일치 · 로그인은 됐으나 admin 아님 |
 
 ## 사이드 이펙트
 
@@ -46,7 +51,7 @@ GET /api/health. 시스템 정상가동을 **요청이 흐르는 순서**(① �
 
 1. `prerender = false` (동적 SSR). 이 응답이 반환된다는 것 자체가 ① 앱 호스트(Vercel)·SSR 런타임 생존의 자기증명.
 2. **비밀값 원문 반환 금지.** shallow·deep 모두 각 check 는 `ok`(존재/도달/유효 여부)와 `ms`만 노출. env 값·키·연결문자열·행 데이터를 응답에 담지 않는다.
-3. **deep 은 admin 게이트.** `locals.session` 의 이메일이 `PUBLIC_ADMIN_EMAILS` 목록에 있을 때만 deep 점검 수행. 아니면 401/403 후 종료(deep 점검 미실행).
+3. **deep 은 인증 게이트.** 다음 중 하나를 만족할 때만 deep 점검 수행: (a) `x-health-token` 헤더가 서버 env `HEALTH_CHECK_TOKEN` 과 **상수시간 비교로 일치**(머신 경로 — 토큰 미설정 시 항상 불일치로 취급해 비활성), 또는 (b) 로그인 세션 이메일이 `PUBLIC_ADMIN_EMAILS` 목록에 존재(admin 쿠키 경로). 둘 다 아니면 401(미인증)/403(비-admin) 후 종료(deep 미실행). 토큰은 응답 어디에도 반환하지 않는다(규칙 2).
 4. 점검은 `src/lib/health-checks.ts` 의 `runChecks(mode)` 호출로만 수행 — 엔드포인트는 mode 판정·인증 게이트·status 집계·응답 직렬화만. **예외**: deep 모드에서 `content` 점검(`getCollection('inspection_prep')`, layer 5)만 엔드포인트가 추가한다(`astro:content` 컨텍스트가 여기서만 가능 — lib 명세의 as-built 주석 참조).
 5. **status 집계**: `checkAppHost`·`db-ping` 등 **핵심 층**(layer 1·3 DB) 실패 → `down`(503). 그 외 부가 층(④⑤ 및 ③의 Auth/Storage) 실패 → `degraded`(200). 전부 ok → `ok`(200).
 6. **신선도**: 응답 `ts` 는 요청 처리 시각(서버에서 매 호출 계산) — 정적 200·캐시 착시와 구별하는 증거. `Cache-Control: no-store` 헤더.
