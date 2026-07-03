@@ -26,17 +26,6 @@ jobs:
           cache: 'npm'
       - run: npm ci --legacy-peer-deps
       - run: npx playwright install chromium
-      - name: (debug) RLS env 존재 여부 — 값 노출 없이 set/empty 만
-        env:
-          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
-          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
-          DEV_TEST_USER_EMAIL: ${{ secrets.DEV_TEST_USER_EMAIL }}
-          DEV_TEST_USER_PASSWORD: ${{ secrets.DEV_TEST_USER_PASSWORD }}
-        run: |
-          echo "URL      set? ${PUBLIC_SUPABASE_URL:+yes} (len ${#PUBLIC_SUPABASE_URL})"
-          echo "ANON     set? ${PUBLIC_SUPABASE_ANON_KEY:+yes} (len ${#PUBLIC_SUPABASE_ANON_KEY})"
-          echo "EMAIL    set? ${DEV_TEST_USER_EMAIL:+yes} (len ${#DEV_TEST_USER_EMAIL})"
-          echo "PASSWORD set? ${DEV_TEST_USER_PASSWORD:+yes} (len ${#DEV_TEST_USER_PASSWORD})"
       - run: npm run test:e2e
         env:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
