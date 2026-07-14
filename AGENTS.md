@@ -75,6 +75,7 @@ curl -s https://radsafety.kr/api/health | jq   # 헬스만 빠르게
 - **Doctor 헬스체크** `GET /api/health` — shallow(공개: 앱호스트·설정·DB핑·메타) / deep(`?deep=1`, admin 쿠키 또는 `x-health-token` 머신 인증: + Auth·Storage·스키마·resend·vapid·content).
   원칙: 엔드포인트는 얇게 · 점검 로직은 `src/lib/health-checks.ts` · **부작용 0**(발송·쓰기 없음) · 비밀값 원문 미반환 · 핵심 실패 503 / 부가 실패 200 degraded.
 - **자동 모니터 + 아침 보고** `.github/workflows/health.yml` — **매일 08:30 KST**(cron `30 23 * * *` UTC) + 수동 실행. `--strict` 로 degraded 도 실패 처리.
+    - 점검 두 겹: ① HTTP 점검(`check-production.mjs` — **TLS 인증서 만료 임박** ≤7일 실패/≤21일 경고 포함) ② **브라우저 스모크**(Playwright, `SMOKE_BASE_URL` 게이트 — HTTP 로 안 보이는 JS 크래시 백지 화면 감지, 홈·로그인 열람만·로그인 시도 없음). 스모크 결과는 `SMOKE_OUTCOME` 으로 보고에 합산.
     - 알림은 두 겹: ① **텔레그램 아침 보고**(`scripts/health-report.mjs`) — 정상이어도 매일 한 통 보내는 **하트비트**(침묵이 정상인지 죽음인지 구별하기 위함). ② 실패 시 job exit 1 → **GitHub 이메일**(텔레그램이 막혀도 남는 백업 경로).
     - 보고 채널을 앱의 Resend 가 아닌 텔레그램으로 둔 이유: **감시자가 감시 대상에 의존하면 대상이 죽을 때 보고도 침묵**한다.
     - **on/off** — 저장소 변수 `HEALTH_REPORT` (코드 변경·재배포 불필요):
@@ -115,12 +116,13 @@ curl -s https://radsafety.kr/api/health | jq   # 헬스만 빠르게
 
 ### 헬스체크 · 모니터링 (코드 ↔ 명세)
 
-| 영역       | 코드                                                            | 명세                                   |
-| ---------- | --------------------------------------------------------------- | -------------------------------------- |
-| 엔드포인트 | `src/pages/api/health.ts`                                       | `.spec/src/pages/api/health.md`        |
-| 점검 로직  | `src/lib/health-checks.ts`                                      | `.spec/src/lib/health-checks.md`       |
-| 모니터     | `scripts/check-production.mjs` · `.github/workflows/health.yml` | —                                      |
-| RLS 테스트 | `tests/e2e/rls-policies.spec.ts`                                | `.spec/tests/e2e/rls-policies.spec.md` |
+| 영역       | 코드                                                            | 명세                                       |
+| ---------- | --------------------------------------------------------------- | ------------------------------------------ |
+| 엔드포인트 | `src/pages/api/health.ts`                                       | `.spec/src/pages/api/health.md`            |
+| 점검 로직  | `src/lib/health-checks.ts`                                      | `.spec/src/lib/health-checks.md`           |
+| 모니터     | `scripts/check-production.mjs` · `.github/workflows/health.yml` | —                                          |
+| 스모크     | `tests/e2e/production-smoke.spec.ts`                            | `.spec/tests/e2e/production-smoke.spec.md` |
+| RLS 테스트 | `tests/e2e/rls-policies.spec.ts`                                | `.spec/tests/e2e/rls-policies.spec.md`     |
 
 RLS 검증을 Doctor 가 아닌 e2e 로 둔 이유: 실제 로그인은 **부작용**이고 프로덕션 금지 자격증명이 필요하기 때문. CI 는 GitHub secret `DEV_TEST_USER_EMAIL` · `DEV_TEST_USER_PASSWORD` 로 실행.
 

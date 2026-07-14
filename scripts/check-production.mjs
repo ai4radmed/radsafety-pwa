@@ -13,7 +13,7 @@
  * 브라우저 없이 순수 HTTP 요청으로 확인하므로 빠르고 신뢰도가 높습니다.
  *
  * 검증 항목:
- * - HTTPS 인증서 유효성
+ * - HTTPS 인증서 유효성 및 만료 임박(≤7일 실패 / ≤21일 경고)
  * - www → apex 리다이렉트 (301/302/308 허용 — Vercel은 308을 기본값으로 사용)
  * - 주요 페이지 HTTP 200 응답
  * - /auth/confirm SSR 동작 (308 CDN 캐시 버그 감지)
@@ -23,6 +23,7 @@
  */
 
 import { writeFileSync } from 'node:fs';
+import { connect as tlsConnect } from 'node:tls';
 
 const BASE_URL = process.argv[2] || 'https://radsafety.kr';
 const WWW_URL = BASE_URL.replace('https://', 'https://www.');
@@ -140,6 +141,52 @@ async function checkHttps() {
     }
 }
 
+async function checkCertExpiry() {
+    section('TLS 인증서 만료');
+
+    // fetch 는 인증서 상세를 노출하지 않으므로 tls 소켓으로 직접 조회한다.
+    // Vercel 이 인증서를 자동 갱신하지만, 갱신 실패는 만료 당일까지 겉으로 드러나지 않는다 —
+    // 그때는 앱 전체가 한꺼번에 죽으므로, 임박 단계에서 미리 알린다.
+    const { hostname } = new URL(BASE_URL);
+    let cert;
+    try {
+        cert = await new Promise((resolve, reject) => {
+            const socket = tlsConnect({ host: hostname, port: 443, servername: hostname }, () => {
+                const peer = socket.getPeerCertificate();
+                socket.end();
+                resolve(peer);
+            });
+            socket.setTimeout(10000, () => {
+                socket.destroy();
+                reject(new Error('TLS 연결 timeout (10s)'));
+            });
+            socket.on('error', reject);
+        });
+    } catch (err) {
+        fail('TLS 인증서 조회 실패', err.message);
+        return;
+    }
+
+    if (!cert || !cert.valid_to) {
+        fail('인증서 정보 없음', 'getPeerCertificate 빈 응답');
+        return;
+    }
+
+    const expiresAt = new Date(cert.valid_to);
+    const daysLeft = Math.floor((expiresAt.getTime() - Date.now()) / 86_400_000);
+    const expiryStr = expiresAt.toISOString().slice(0, 10);
+
+    if (daysLeft < 0) {
+        fail(`인증서 만료됨 (${expiryStr})`, `${-daysLeft}일 경과`);
+    } else if (daysLeft <= 7) {
+        fail(`인증서 만료 임박 — ${daysLeft}일 남음 (${expiryStr})`, 'Vercel 자동 갱신 실패 여부 확인 필요');
+    } else if (daysLeft <= 21) {
+        warn(`인증서 만료 ${daysLeft}일 전 (${expiryStr})`, '자동 갱신이 보통 만료 전 처리 — 추이 관찰');
+    } else {
+        ok(`인증서 유효 — ${daysLeft}일 남음`, `만료일 ${expiryStr}`);
+    }
+}
+
 async function checkWwwRedirect() {
     section('www → apex 리다이렉트');
 
@@ -192,7 +239,7 @@ async function checkProtectedPages() {
     // HTTP 레벨에서는 200이 정상
     const pages = [
         { path: '/mypage', name: '마이페이지', expectRedirect: false },
-        { path: '/notifications', name: '알림', expectRedirect: true },  // SSR에서 서버사이드 리다이렉트
+        { path: '/notifications', name: '알림', expectRedirect: true }, // SSR에서 서버사이드 리다이렉트
     ];
 
     for (const { path, name, expectRedirect } of pages) {
@@ -232,14 +279,14 @@ async function checkAuthEndpoints() {
         } else if (res.status === 308) {
             fail(
                 '/auth/confirm → 308 영구 리다이렉트 감지!',
-                `CDN 캐시 장애 가능성. 빈 커밋 push로 해결. 응답시간: ${res.elapsed}ms`
+                `CDN 캐시 장애 가능성. 빈 커밋 push로 해결. 응답시간: ${res.elapsed}ms`,
             );
         } else if ([302, 303, 307, 200].includes(res.status)) {
             const isLikelyCached = res.elapsed < 20;
             if (isLikelyCached && res.status !== 200) {
                 warn(
                     `/auth/confirm → ${res.status} 응답시간 ${res.elapsed}ms (매우 빠름 — CDN 캐시 의심)`,
-                    '정상이라면 서버 처리로 100ms 이상 소요'
+                    '정상이라면 서버 처리로 100ms 이상 소요',
                 );
             } else {
                 ok(`/auth/confirm → ${res.status} SSR 정상`, `${res.elapsed}ms`);
@@ -437,6 +484,7 @@ async function main() {
     console.log('─'.repeat(50));
 
     await checkHttps();
+    await checkCertExpiry();
     await checkWwwRedirect();
     await checkPublicPages();
     await checkProtectedPages();
