@@ -65,30 +65,38 @@ const sectionStats = {}; // key → { name, ok, warn, fail }
 // 정상일 때도 보고에 실을 구체 수치(인증서 잔여일·홈 응답속도 등).
 const highlights = {};
 
+function record(status, label, detail) {
+    const s = sectionStats[currentSectionKey];
+    if (!s) return;
+    s[status === 'ok' ? 'ok' : status === 'warn' ? 'warn' : 'fail']++;
+    // 세부 항목 라벨도 보존 — 보고가 "총 N건"을 넘어 항목명까지 나열할 수 있게.
+    s.items.push({ status, label, detail });
+}
+
 function ok(label, detail = '') {
     console.log(`  ${GREEN}✓${RESET} ${label}${detail ? ` ${YELLOW}(${detail})${RESET}` : ''}`);
     passed++;
-    if (sectionStats[currentSectionKey]) sectionStats[currentSectionKey].ok++;
+    record('ok', label, detail);
 }
 
 function fail(label, detail = '') {
     console.log(`  ${RED}✗ ${label}${detail ? ` — ${detail}` : ''}${RESET}`);
     failed++;
     failures.push({ label, detail });
-    if (sectionStats[currentSectionKey]) sectionStats[currentSectionKey].fail++;
+    record('fail', label, detail);
 }
 
 function warn(label, detail = '') {
     console.log(`  ${YELLOW}⚠ ${label}${detail ? ` — ${detail}` : ''}${RESET}`);
     warned++;
     warnings.push({ label, detail });
-    if (sectionStats[currentSectionKey]) sectionStats[currentSectionKey].warn++;
+    record('warn', label, detail);
 }
 
 function section(key, title) {
     console.log(`\n${BOLD}${CYAN}▶ ${title}${RESET}`);
     currentSectionKey = key;
-    sectionStats[key] = { name: title, ok: 0, warn: 0, fail: 0 };
+    sectionStats[key] = { name: title, ok: 0, warn: 0, fail: 0, items: [] };
 }
 
 /**
