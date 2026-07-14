@@ -84,7 +84,9 @@ curl -s https://radsafety.kr/api/health | jq   # 헬스만 빠르게
         gh variable set HEALTH_REPORT --body off    # 보고 끔 (헬스체크·GitHub 실패 알림은 유지)
         ```
     - 필요한 secret: `TELEGRAM_BOT_TOKEN` · `TELEGRAM_CHAT_ID` (미설정이면 발송 없이 문안만 로그에 남김) · `HEALTH_CHECK_TOKEN`(deep 점검).
-    - GitHub cron 은 **정시를 보장하지 않음** — 08:30~08:50 도착은 정상.
+    - **원할 때 재실행**: `gh workflow run health.yml` (또는 Actions 탭 "Run workflow"). 정시 실행과 **동일한 경로**로 돌고 보고도 동일하게 발송된다.
+    - **시각 변경**: `health.yml` 의 cron 한 줄 수정(GitHub 은 cron 에 변수를 못 씀). `UTC = KST − 9h`. **크론은 기본 브랜치(main)에서만 발화** → main 머지 후 적용.
+    - GitHub cron 은 **정시를 보장하지 않음** — 08:30~08:50 도착은 정상. 분 단위 정밀도가 필요하면 Vercel Cron 으로 옮겨야 하나, 그러면 앱이 자기 자신을 감시하게 되어 앱 사망 시 보고도 침묵한다.
 - **`supabase-keepalive.yml`**(월·목 핑)은 free-tier pause 방지용 — **끄지 말 것.**
 
 ---
