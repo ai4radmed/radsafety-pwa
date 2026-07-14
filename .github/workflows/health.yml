@@ -10,12 +10,20 @@ name: Production Health Check
 #   gh variable set HEALTH_REPORT --body all   # 기본 — 정상/이상 매일 보고
 #   gh variable set HEALTH_REPORT --body fail  # 이상일 때만 보고 (정상은 침묵)
 #   gh variable set HEALTH_REPORT --body off   # 보고 끔 (헬스체크·GitHub 실패 알림은 유지)
+#
+# 보고 시각을 바꾸려면 아래 cron 한 줄만 고친다(GitHub 은 cron 에 변수를 못 쓴다 — 리터럴만 허용).
+#   규칙: UTC = KST − 9시간. 분은 그대로.  형식: '<분> <시> * * *'
+#     08:30 KST → '30 23 * * *' (전날 23:30 UTC)   07:00 KST → '0 22 * * *'
+#     09:00 KST → '0 0 * * *'                      10:30 KST → '30 1 * * *'
+#   ※ 크론은 기본 브랜치(main)에서만 발화 → 변경은 main 에 머지돼야 적용된다.
+#   ※ GitHub cron 은 정시를 보장하지 않는다(부하 시 5~20분 지연은 정상). 분 단위 정밀도는 기대하지 말 것.
+#
+# 원할 때 같은 점검을 즉시 재실행:  gh workflow run health.yml   (또는 Actions 탭 "Run workflow")
+#   → 정시 실행과 완전히 동일한 경로(같은 스크립트·deep·strict)로 돌고 텔레그램 보고도 동일하게 온다.
 on:
     schedule:
-        # 23:30 UTC = 08:30 KST (Asia/Seoul). cron 은 UTC 기준.
-        # 주의: GitHub cron 은 정시를 보장하지 않는다(부하 시 5~20분 지연은 정상).
-        - cron: '30 23 * * *'
-    workflow_dispatch: {} # Actions 탭 "Run workflow" 버튼 / gh workflow run health.yml
+        - cron: '30 23 * * *' # 08:30 KST — 위 변환표 참조
+    workflow_dispatch: {} # 수동 재실행(Actions 탭 버튼 / gh workflow run health.yml)
 
 # 동시 실행 방지(수동+정시 겹침).
 concurrency:
