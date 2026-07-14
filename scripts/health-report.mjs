@@ -65,6 +65,7 @@ function sectionLines(summary, smoke) {
         }
 
         lines.push(`${g.emoji} ${g.title}: ${status}${extra}`);
+        lines.push(...itemLines(present.flatMap((k) => byKey[k].items || [])));
     }
 
     // 그룹 매핑에 없는 새 영역이 생겨도 조용히 사라지지 않게 원래 이름으로 표기.
@@ -72,13 +73,30 @@ function sectionLines(summary, smoke) {
         if (covered.has(s.key)) continue;
         const status = s.fail > 0 ? `✗ 문제 ${s.fail}건` : '정상';
         lines.push(`• ${s.name}: ${status}`);
+        lines.push(...itemLines(s.items || []));
     }
 
     if (smoke === 'success' || smoke === 'failure') {
         lines.push(`🖥 실제 브라우저 화면(JS 오류): ${smoke === 'success' ? '정상' : '✗ 문제'}`);
+        // SMOKE_OUTCOME 은 성패만 전달하므로 항목명은 여기 고정 —
+        // tests/e2e/production-smoke.spec.ts 의 테스트 구성이 바뀌면 함께 갱신할 것.
+        if (smoke === 'success') {
+            lines.push('   ✓ 홈 화면 렌더링·JS 크래시 없음');
+            lines.push('   ✓ 로그인 화면 렌더링·JS 크래시 없음');
+        }
     }
 
     return lines;
+}
+
+/** 영역 아래 세부 항목 줄 — 무엇을 확인했는지 항목명까지 보여준다(✓/⚠/✗). */
+function itemLines(items) {
+    return items.map((it) => {
+        const mark = it.status === 'ok' ? '✓' : it.status === 'warn' ? '⚠' : '✗';
+        // 정상 항목은 이름만(수치는 소음), 경고·실패는 사유(detail)까지.
+        const tail = it.status !== 'ok' && it.detail ? ` — ${it.detail}` : '';
+        return `   ${mark} ${it.label}${tail}`;
+    });
 }
 
 /**
@@ -118,15 +136,16 @@ export function formatReport(summary, opts = {}) {
             lines.push('', ...areas, '');
             const warnNote = summary.warned > 0 ? ` · 경고 ${summary.warned}건` : '';
             lines.push(`세부 점검 총 ${summary.passed}건 통과${warnNote}`);
+            // 경고 상세는 영역 안의 ⚠ 줄로 이미 표기됨 — 중복 나열하지 않는다.
         } else {
             // 구버전 요약(영역 정보 없음) 폴백
             const warnNote = summary.warned > 0 ? ` · 경고 ${summary.warned}건` : '';
             const smokeNote = opts.smoke === 'success' ? ' · 브라우저 스모크 통과' : '';
             lines.push(`점검 ${summary.passed}건 모두 통과${warnNote}${smokeNote}`);
-        }
-        // 경고는 초록불을 붉게 만들진 않지만, 뭐가 걸렸는지는 보여준다.
-        for (const w of summary.warnings || []) {
-            lines.push(`⚠ ${w.label}${w.detail ? ` — ${w.detail}` : ''}`);
+            // 경고는 초록불을 붉게 만들진 않지만, 뭐가 걸렸는지는 보여준다.
+            for (const w of summary.warnings || []) {
+                lines.push(`⚠ ${w.label}${w.detail ? ` — ${w.detail}` : ''}`);
+            }
         }
         return lines.join('\n');
     }

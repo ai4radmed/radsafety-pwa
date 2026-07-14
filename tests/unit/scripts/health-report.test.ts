@@ -150,6 +150,44 @@ describe('formatReport — 영역별 문안 (sections 포함 요약)', () => {
         expect(text).toContain('[db] db-ping — timeout');
     });
 
+    it('영역 아래에 세부 항목명을 ✓/✗ 로 나열한다', () => {
+        const withItems = {
+            ...richOk,
+            sections: sections.map((s) =>
+                s.key === 'https'
+                    ? {
+                          ...s,
+                          items: [
+                              { status: 'ok', label: 'https://radsafety.kr → 200 OK', detail: '312ms' },
+                              { status: 'ok', label: 'HSTS 헤더 존재', detail: '' },
+                          ],
+                      }
+                    : s,
+            ),
+        };
+        const text = formatReport(withItems, { smoke: 'success' });
+        expect(text).toContain('   ✓ https://radsafety.kr → 200 OK');
+        expect(text).toContain('   ✓ HSTS 헤더 존재');
+        expect(text).toContain('   ✓ 홈 화면 렌더링·JS 크래시 없음');
+        expect(text).not.toContain('312ms'); // 정상 항목의 수치는 소음 — 이름만
+    });
+
+    it('경고·실패 항목은 사유(detail)까지 표기한다', () => {
+        const withFailItem = {
+            ...richOk,
+            ok: false,
+            failed: 1,
+            failures: [{ label: '인증서 만료 임박', detail: '5일 남음' }],
+            sections: sections.map((s) =>
+                s.key === 'cert'
+                    ? { ...s, fail: 1, items: [{ status: 'fail', label: '인증서 만료 임박', detail: '5일 남음' }] }
+                    : s,
+            ),
+        };
+        const text = formatReport(withFailItem);
+        expect(text).toContain('   ✗ 인증서 만료 임박 — 5일 남음');
+    });
+
     it('그룹 매핑에 없는 새 영역도 원래 이름으로 표기된다 (조용한 누락 방지)', () => {
         const withNew = {
             ...richOk,
