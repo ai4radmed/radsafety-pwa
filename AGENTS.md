@@ -74,7 +74,17 @@ curl -s https://radsafety.kr/api/health | jq   # 헬스만 빠르게
 
 - **Doctor 헬스체크** `GET /api/health` — shallow(공개: 앱호스트·설정·DB핑·메타) / deep(`?deep=1`, admin 쿠키 또는 `x-health-token` 머신 인증: + Auth·Storage·스키마·resend·vapid·content).
   원칙: 엔드포인트는 얇게 · 점검 로직은 `src/lib/health-checks.ts` · **부작용 0**(발송·쓰기 없음) · 비밀값 원문 미반환 · 핵심 실패 503 / 부가 실패 200 degraded.
-- **자동 모니터** `.github/workflows/health.yml` — 매일 09:00 KST + 수동 실행. `--strict` 로 degraded 도 실패 처리(알림 발송). 실패 시 GitHub 이메일.
+- **자동 모니터 + 아침 보고** `.github/workflows/health.yml` — **매일 08:30 KST**(cron `30 23 * * *` UTC) + 수동 실행. `--strict` 로 degraded 도 실패 처리.
+    - 알림은 두 겹: ① **텔레그램 아침 보고**(`scripts/health-report.mjs`) — 정상이어도 매일 한 통 보내는 **하트비트**(침묵이 정상인지 죽음인지 구별하기 위함). ② 실패 시 job exit 1 → **GitHub 이메일**(텔레그램이 막혀도 남는 백업 경로).
+    - 보고 채널을 앱의 Resend 가 아닌 텔레그램으로 둔 이유: **감시자가 감시 대상에 의존하면 대상이 죽을 때 보고도 침묵**한다.
+    - **on/off** — 저장소 변수 `HEALTH_REPORT` (코드 변경·재배포 불필요):
+        ```bash
+        gh variable set HEALTH_REPORT --body all    # 기본 — 정상·이상 매일 보고
+        gh variable set HEALTH_REPORT --body fail   # 이상일 때만 (정상은 침묵)
+        gh variable set HEALTH_REPORT --body off    # 보고 끔 (헬스체크·GitHub 실패 알림은 유지)
+        ```
+    - 필요한 secret: `TELEGRAM_BOT_TOKEN` · `TELEGRAM_CHAT_ID` (미설정이면 발송 없이 문안만 로그에 남김) · `HEALTH_CHECK_TOKEN`(deep 점검).
+    - GitHub cron 은 **정시를 보장하지 않음** — 08:30~08:50 도착은 정상.
 - **`supabase-keepalive.yml`**(월·목 핑)은 free-tier pause 방지용 — **끄지 말 것.**
 
 ---
