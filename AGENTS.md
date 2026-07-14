@@ -132,5 +132,6 @@ RLS 검증을 Doctor 가 아닌 e2e 로 둔 이유: 실제 로그인은 **부작
 | [codebase_guide.md](documents/codebase_guide.md)                   | 파일별 기술 역할 및 설계 가이드                                   |
 | [database_schema.md](documents/database_schema.md)                 | ERD, 테이블/필드 정의                                             |
 | [external_services_guide.md](documents/external_services_guide.md) | 외부 서비스 설정 및 장애 복구                                     |
+| [health_monitoring_guide.md](documents/health_monitoring_guide.md) | 아침 헬스체크·텔레그램 보고의 설계 개념 (도식 포함)               |
 | [test_strategy.md](documents/test_strategy.md)                     | 자동화 시나리오 및 수동 점검                                      |
 | [logging_guide.md](documents/logging_guide.md)                     | 모듈별 로그 위치 및 보안 가이드                                   |
