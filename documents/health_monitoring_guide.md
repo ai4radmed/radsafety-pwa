@@ -14,12 +14,13 @@
 
 시스템은 **세 개의 부품**으로 구성됩니다. 각 부품은 독립적으로 테스트·교체 가능하도록 역할이 분리되어 있습니다.
 
-| 부품              | 파일                                | 역할 (비유)                                                         |
-| ----------------- | ----------------------------------- | ------------------------------------------------------------------- |
-| **스케줄러·조립** | `.github/workflows/health.yml`      | 알람시계 + 지휘자 — 매일 08:30 KST 에 아래 둘을 순서대로 실행       |
-| **진찰**          | `scripts/check-production.mjs`      | 외부 방문 의사 — HTTP 로 앱을 두드려 보고 결과를 JSON 으로 기록     |
-| **보고**          | `scripts/health-report.mjs`         | 전령 — JSON 을 읽어 사람이 읽을 문안으로 만들어 텔레그램 발송       |
-| **자가진단 창구** | `src/pages/api/health.ts` (앱 내부) | 환자의 문진표 — 앱 스스로 내부 장기(설정·DB·스토리지)를 점검해 응답 |
+| 부품              | 파일                                 | 역할 (비유)                                                             |
+| ----------------- | ------------------------------------ | ----------------------------------------------------------------------- |
+| **스케줄러·조립** | `.github/workflows/health.yml`       | 알람시계 + 지휘자 — 매일 08:30 KST 에 아래 셋을 순서대로 실행           |
+| **진찰**          | `scripts/check-production.mjs`       | 외부 방문 의사 — HTTP 로 앱을 두드려 보고(인증서 만료 포함) JSON 기록   |
+| **브라우저 검진** | `tests/e2e/production-smoke.spec.ts` | 검안경 — HTTP 로 안 보이는 "JS 크래시 백지 화면"을 실제 브라우저로 확인 |
+| **보고**          | `scripts/health-report.mjs`          | 전령 — JSON + 스모크 결과를 사람이 읽을 문안으로 만들어 텔레그램 발송   |
+| **자가진단 창구** | `src/pages/api/health.ts` (앱 내부)  | 환자의 문진표 — 앱 스스로 내부 장기(설정·DB·스토리지)를 점검해 응답     |
 
 ```mermaid
 graph TD
@@ -40,10 +41,15 @@ graph TD
     DOCTOR -.-> APP
 
     CHECK --> JSON[("health-summary.json<br/>기계용 결과 기록")]:::gh
-    JSON --> REPORT["② 보고: health-report.mjs"]:::gh
+
+    WF --> SMOKE["② 브라우저 스모크: Playwright<br/>(홈·로그인 렌더·JS 크래시)"]:::gh
+    SMOKE -- "실제 브라우저 로드" --> APP
+
+    JSON --> REPORT["③ 보고: health-report.mjs"]:::gh
+    SMOKE -- "결과(SMOKE_OUTCOME)" --> REPORT
 
     REPORT -- "정상/이상 무관<br/>매일 발송(하트비트)" --> TG["📱 텔레그램<br/>Dr. Ben"]:::alert
-    WF -- "점검 실패 시<br/>job exit 1" --> MAIL["📧 GitHub 실패 이메일<br/>(백업 경로)"]:::fail
+    WF -- "점검·스모크 실패 시<br/>job exit 1" --> MAIL["📧 GitHub 실패 이메일<br/>(백업 경로)"]:::fail
 ```
 
 핵심 관찰 포인트:
@@ -71,6 +77,8 @@ sequenceDiagram
     App-->>CP: 6층 자가진단 JSON (status·checks[]·ts)
     CP->>CP: 통과/경고/실패 집계 → health-summary.json 저장
     Note over CP: 실패 있으면 exit 1<br/>(단, continue-on-error 로 job 은 계속)
+    GH->>App: 브라우저 스모크 — Playwright 로 홈·로그인 실제 로드<br/>(JS 크래시 감지 · 로그인 시도 없음)
+    Note over GH: 스모크도 실패를 삼키고<br/>결과만 SMOKE_OUTCOME 으로 보고에 전달
     GH->>HR: node scripts/health-report.mjs health-summary.json
     HR->>HR: JSON → 한국어 보고 문안 조립<br/>(HEALTH_REPORT 변수로 발송 여부 결정)
     HR->>TG: ✅ 정상 / ❌ 이상 감지 메시지
@@ -83,13 +91,13 @@ sequenceDiagram
 
 ---
 
-## 4. 무엇을 점검하는가 — 바깥 진찰 + 내부 문진
+## 4. 무엇을 점검하는가 — 바깥 진찰 + 내부 문진 + 브라우저 검진
 
-점검은 **관점이 다른 두 겹**입니다.
+점검은 **관점이 다른 세 겹**입니다.
 
 ### 4-1. 바깥에서 (check-production.mjs — 사용자 관점)
 
-실제 사용자가 겪는 경로를 브라우저 없이 순수 HTTP 로 재현합니다: HTTPS·HSTS, www→apex 리다이렉트, 홈·로그인·PWA manifest 200 응답, 보호 페이지의 로그인 리다이렉트, `/auth/confirm`·`/auth/callback` 의 SSR 생존(과거 실제 장애였던 **308 CDN 캐시 버그** 감지 포함), API 오류 처리(404 vs 500), 응답시간(1초 경고/3초 실패).
+실제 사용자가 겪는 경로를 브라우저 없이 순수 HTTP 로 재현합니다: HTTPS·HSTS, **TLS 인증서 만료 임박**(7일 이내 실패·21일 이내 경고 — Vercel 자동 갱신 실패의 조기 감지), www→apex 리다이렉트, 홈·로그인·PWA manifest 200 응답, 보호 페이지의 로그인 리다이렉트, `/auth/confirm`·`/auth/callback` 의 SSR 생존(과거 실제 장애였던 **308 CDN 캐시 버그** 감지 포함), API 오류 처리(404 vs 500), 응답시간(1초 경고/3초 실패).
 
 ### 4-2. 안에서 (/api/health — 요청이 흐르는 순서대로 6층)
 
@@ -115,6 +123,10 @@ graph LR
 - **deep**(`?deep=1`, admin 쿠키 또는 `x-health-token` 머신 인증): 전 층. 아침 점검은 secret `HEALTH_CHECK_TOKEN` 으로 deep 을 돕니다.
 - **상태 판정**: 핵심 층(①·③ DB) 실패 → `down`(503). 부가 층(④⑤ 등) 실패 → `degraded`(200). 아침 점검은 `--strict` 이므로 **degraded 도 실패로 승격**해 알림이 갑니다.
 - **부작용 0 원칙**: 점검은 읽기·설정 확인만 — 메일·푸시 발송, DB 쓰기 절대 금지. 아침마다 점검이 데이터를 오염시키면 안 되기 때문입니다.
+
+### 4-3. 브라우저로 (production-smoke — JS 크래시 검진)
+
+HTTP 점검은 "HTML 이 200 으로 왔다"까지만 봅니다. 그 HTML 의 JS 가 크래시해서 **화면이 하얗게 비는 장애는 HTTP 로는 안 보입니다.** 그래서 Playwright 가 실제 chromium 브라우저로 홈·로그인 화면을 열어 ① 핵심 UI 가 그려지는지 ② 미처리 JS 예외(`pageerror`)가 없는지 확인합니다. **부작용 0 원칙은 여기도 동일** — 공개 화면 열람만 하고, 로그인 시도·폼 제출은 하지 않습니다(프로덕션에 테스트 계정을 두지 않는 정책 유지). 명세: `.spec/tests/e2e/production-smoke.spec.md`.
 
 ---
 
@@ -166,7 +178,7 @@ graph TD
 ```
 ✅ radsafety.kr 정상
 2026-07-14 08:31 KST · v0.2.1 · deep
-점검 24건 모두 통과
+점검 24건 모두 통과 · 브라우저 스모크 통과
 ```
 
 **이상일 때:**
@@ -205,10 +217,11 @@ graph TD
 
 ## 8. 관련 파일 지도
 
-| 구분          | 경로                           | 내용                                            |
-| ------------- | ------------------------------ | ----------------------------------------------- |
-| 워크플로우    | `.github/workflows/health.yml` | cron·스텝 조립·알림 이중화 (주석에 운영법 포함) |
-| 진찰 스크립트 | `scripts/check-production.mjs` | 외부 HTTP 프로브 + 요약 JSON 생성               |
-| 보고 스크립트 | `scripts/health-report.mjs`    | 문안 조립·발송 (순수 함수 분리로 유닛테스트됨)  |
-| 엔드포인트    | `src/pages/api/health.ts`      | 명세: `.spec/src/pages/api/health.md`           |
-| 점검 로직     | `src/lib/health-checks.ts`     | 명세: `.spec/src/lib/health-checks.md`          |
+| 구분            | 경로                                 | 내용                                                |
+| --------------- | ------------------------------------ | --------------------------------------------------- |
+| 워크플로우      | `.github/workflows/health.yml`       | cron·스텝 조립·알림 이중화 (주석에 운영법 포함)     |
+| 진찰 스크립트   | `scripts/check-production.mjs`       | 외부 HTTP 프로브(인증서 만료 포함) + 요약 JSON 생성 |
+| 브라우저 스모크 | `tests/e2e/production-smoke.spec.ts` | 명세: `.spec/tests/e2e/production-smoke.spec.md`    |
+| 보고 스크립트   | `scripts/health-report.mjs`          | 문안 조립·발송 (순수 함수 분리로 유닛테스트됨)      |
+| 엔드포인트      | `src/pages/api/health.ts`            | 명세: `.spec/src/pages/api/health.md`               |
+| 점검 로직       | `src/lib/health-checks.ts`           | 명세: `.spec/src/lib/health-checks.md`              |

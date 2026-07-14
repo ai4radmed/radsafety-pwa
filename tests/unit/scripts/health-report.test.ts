@@ -81,6 +81,31 @@ describe('formatReport', () => {
         expect(formatReport(failSummary, { runUrl: url })).toContain(url);
         expect(formatReport(null, { runUrl: url })).toContain(url);
     });
+
+    it('스모크 통과 + 요약 정상이면 ✅ 에 스모크 통과를 표기한다', () => {
+        const text = formatReport(okSummary, { smoke: 'success' });
+        expect(text.startsWith('✅')).toBe(true);
+        expect(text).toContain('브라우저 스모크 통과');
+    });
+
+    it('스모크 실패면 요약이 정상이어도 ❌ 이상 감지로 승격한다', () => {
+        const text = formatReport(okSummary, { smoke: 'failure' });
+        expect(text.startsWith('❌')).toBe(true);
+        expect(text).toContain('실패 1건');
+        expect(text).toContain('브라우저 스모크');
+    });
+
+    it('스모크 실패는 기존 실패 목록에 합산된다', () => {
+        const text = formatReport(failSummary, { smoke: 'failure' });
+        expect(text).toContain('실패 3건');
+        expect(text).toContain('브라우저 스모크');
+        expect(text).toContain('[db] db-ping');
+    });
+
+    it('스모크 미주입(undefined)이면 문안에 스모크를 언급하지 않는다 (하위 호환)', () => {
+        expect(formatReport(okSummary)).not.toContain('스모크');
+        expect(formatReport(failSummary)).not.toContain('스모크');
+    });
 });
 
 describe('formatKst', () => {
@@ -101,6 +126,11 @@ describe('shouldSend', () => {
         expect(shouldSend(okSummary, 'fail')).toBe(false);
         expect(shouldSend(failSummary, 'fail')).toBe(true);
         expect(shouldSend(null, 'fail')).toBe(true);
+    });
+
+    it('fail 은 스모크 실패도 이상으로 취급한다', () => {
+        expect(shouldSend(okSummary, 'fail', 'failure')).toBe(true);
+        expect(shouldSend(okSummary, 'fail', 'success')).toBe(false);
     });
 
     it('all·미설정은 정상이어도 매일 보낸다 (하트비트)', () => {
