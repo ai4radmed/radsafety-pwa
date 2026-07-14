@@ -1,12 +1,29 @@
 name: Production Health Check
 
-# 매일 정시 자동 + 언제든 수동 실행 — 같은 스크립트(scripts/check-production.mjs)를 공유.
-# 실패(exit 1) 시 job 이 실패로 표시되고 GitHub 가 알림 이메일을 발송(사용자 알림 설정 기준).
+# 매일 아침 자동 + 언제든 수동 실행 — 같은 스크립트(scripts/check-production.mjs)를 공유.
+#
+# 두 겹의 알림:
+#   1) 아침 보고(텔레그램) — 정상이어도 매일 한 통. "조용함"이 정상인지 죽었는지 구별되게 하는 하트비트.
+#   2) 실패 시 job exit 1 → GitHub 알림 이메일(백업 경로. 텔레그램이 막혀도 남는다).
+#
+# 보고 on/off 는 저장소 변수 HEALTH_REPORT 로 (코드 변경·재배포 불필요):
+#   gh variable set HEALTH_REPORT --body all   # 기본 — 정상/이상 매일 보고
+#   gh variable set HEALTH_REPORT --body fail  # 이상일 때만 보고 (정상은 침묵)
+#   gh variable set HEALTH_REPORT --body off   # 보고 끔 (헬스체크·GitHub 실패 알림은 유지)
+#
+# 보고 시각을 바꾸려면 아래 cron 한 줄만 고친다(GitHub 은 cron 에 변수를 못 쓴다 — 리터럴만 허용).
+#   규칙: UTC = KST − 9시간. 분은 그대로.  형식: '<분> <시> * * *'
+#     08:30 KST → '30 23 * * *' (전날 23:30 UTC)   07:00 KST → '0 22 * * *'
+#     09:00 KST → '0 0 * * *'                      10:30 KST → '30 1 * * *'
+#   ※ 크론은 기본 브랜치(main)에서만 발화 → 변경은 main 에 머지돼야 적용된다.
+#   ※ GitHub cron 은 정시를 보장하지 않는다(부하 시 5~20분 지연은 정상). 분 단위 정밀도는 기대하지 말 것.
+#
+# 원할 때 같은 점검을 즉시 재실행:  gh workflow run health.yml   (또는 Actions 탭 "Run workflow")
+#   → 정시 실행과 완전히 동일한 경로(같은 스크립트·deep·strict)로 돌고 텔레그램 보고도 동일하게 온다.
 on:
     schedule:
-        # 00:00 UTC = 09:00 KST (Asia/Seoul). cron 은 UTC 기준.
-        - cron: '0 0 * * *'
-    workflow_dispatch: {} # Actions 탭 "Run workflow" 버튼 / gh workflow run health.yml
+        - cron: '30 23 * * *' # 08:30 KST — 위 변환표 참조
+    workflow_dispatch: {} # 수동 재실행(Actions 탭 버튼 / gh workflow run health.yml)
 
 # 동시 실행 방지(수동+정시 겹침).
 concurrency:
@@ -21,11 +38,36 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: 20
+
             # check-production.mjs 는 외부 의존성 없이 순수 node(global fetch)로 동작 → npm ci 불필요.
             # --strict: degraded 도 실패로 처리(부가 기능 이상도 알림).
+            # --summary: 결과를 JSON 으로 남겨 보고 스텝이 읽는다(콘솔 출력은 사람용, 파싱 대상 아님).
             # HEALTH_CHECK_TOKEN(secret): 설정 시 deep(?deep=1) 머신 인증 실행 → 스키마·Auth·Storage·기능까지.
             #   미설정이면 스크립트가 자동으로 shallow 로 폴백(빈 문자열).
+            #
+            # continue-on-error: 여기서 job 을 끊으면 "이상 감지" 보고가 발송되지 못한다.
+            # 실패는 마지막 스텝에서 다시 exit 1 로 표면화한다.
             - name: Doctor · 프로덕션 헬스체크 (deep · strict)
+              id: doctor
+              continue-on-error: true
               env:
                   HEALTH_CHECK_TOKEN: ${{ secrets.HEALTH_CHECK_TOKEN }}
-              run: node scripts/check-production.mjs https://radsafety.kr --strict
+              run: node scripts/check-production.mjs https://radsafety.kr --strict --summary=health-summary.json
+
+            # 아침 보고(텔레그램). 점검이 실패했어도(always) 보내야 "이상 감지"가 전달된다.
+            # 텔레그램 자격증명 미설정 시 스크립트가 문안만 출력하고 조용히 넘어간다.
+            - name: 아침 보고 (텔레그램)
+              if: always()
+              env:
+                  HEALTH_REPORT: ${{ vars.HEALTH_REPORT }}
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+                  GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: node scripts/health-report.mjs health-summary.json
+
+            # 점검이 실패였다면 job 도 실패로 — GitHub 이메일(백업 알림)과 빨간 배지를 유지한다.
+            - name: 점검 실패 표면화
+              if: steps.doctor.outcome == 'failure'
+              run: |
+                  echo "헬스체크 실패 — 위 Doctor 스텝 로그 참조"
+                  exit 1

@@ -22,8 +22,14 @@
  * - API 엔드포인트 응답 코드
  */
 
+import { writeFileSync } from 'node:fs';
+
 const BASE_URL = process.argv[2] || 'https://radsafety.kr';
 const WWW_URL = BASE_URL.replace('https://', 'https://www.');
+
+// --summary=<path>: 결과를 기계가 읽을 JSON 으로 남긴다(아침 보고 발송용).
+// 콘솔 출력은 사람용이라 파싱 대상이 아니므로, 보고 채널은 이 파일만 읽는다.
+const SUMMARY_PATH = (process.argv.find((a) => a.startsWith('--summary=')) || '').split('=')[1] || '';
 
 // 자동 모니터(GitHub Actions) 모드 —
 // --strict (또는 HEALTH_STRICT=1): degraded 도 실패(exit 1)로 처리해 알림이 가게 한다.
@@ -44,6 +50,12 @@ let passed = 0;
 let failed = 0;
 let warned = 0;
 
+// 보고 문안이 "무엇이" 깨졌는지 말할 수 있도록 라벨을 보존한다(집계 숫자만으론 부족).
+const failures = [];
+const warnings = [];
+// Doctor 응답에서 얻는 메타(보고 머리말용) — 점검 실패 시엔 비어 있을 수 있다.
+const doctorMeta = { version: null, mode: null };
+
 function ok(label, detail = '') {
     console.log(`  ${GREEN}✓${RESET} ${label}${detail ? ` ${YELLOW}(${detail})${RESET}` : ''}`);
     passed++;
@@ -52,11 +64,13 @@ function ok(label, detail = '') {
 function fail(label, detail = '') {
     console.log(`  ${RED}✗ ${label}${detail ? ` — ${detail}` : ''}${RESET}`);
     failed++;
+    failures.push({ label, detail });
 }
 
 function warn(label, detail = '') {
     console.log(`  ${YELLOW}⚠ ${label}${detail ? ` — ${detail}` : ''}${RESET}`);
     warned++;
+    warnings.push({ label, detail });
 }
 
 function section(title) {
@@ -313,6 +327,9 @@ async function checkDoctorHealth() {
         warn('Cache-Control no-store 아님 — 캐시 착시 위험', cacheControl || '(없음)');
     }
 
+    doctorMeta.version = body.version ?? null;
+    doctorMeta.mode = body.mode ?? null;
+
     // 전체 상태
     if (body.status === 'ok') {
         ok(`전체 status=ok`, `${body.mode} · v${body.version} · ${elapsed}ms`);
@@ -382,6 +399,34 @@ async function checkResponseTimes() {
 }
 
 // ──────────────────────────────────────────────────────────────
+// 결과 요약 파일 (아침 보고 발송용)
+// ──────────────────────────────────────────────────────────────
+
+function writeSummary() {
+    if (!SUMMARY_PATH) return;
+    const summary = {
+        ok: failed === 0,
+        baseUrl: BASE_URL,
+        checkedAt: new Date().toISOString(),
+        strict: STRICT,
+        deep: HEALTH_CHECK_TOKEN.length > 0,
+        passed,
+        warned,
+        failed,
+        failures,
+        warnings,
+        version: doctorMeta.version,
+        mode: doctorMeta.mode,
+    };
+    try {
+        writeFileSync(SUMMARY_PATH, JSON.stringify(summary, null, 2));
+    } catch (err) {
+        // 요약 저장 실패가 점검 결과(exit code)를 뒤집어선 안 된다 — 경고만 남기고 진행.
+        console.error(`${YELLOW}요약 파일 저장 실패: ${err.message}${RESET}`);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────
 // 메인 실행
 // ──────────────────────────────────────────────────────────────
 
@@ -406,6 +451,8 @@ async function main() {
     console.log(`  ${GREEN}통과: ${passed}건${RESET}`);
     if (warned > 0) console.log(`  ${YELLOW}경고: ${warned}건${RESET}`);
     if (failed > 0) console.log(`  ${RED}실패: ${failed}건${RESET}`);
+
+    writeSummary();
 
     if (failed > 0) {
         console.log(`\n${RED}${BOLD}⚠ 실패 항목이 있습니다. 배포 전 확인이 필요합니다.${RESET}`);
