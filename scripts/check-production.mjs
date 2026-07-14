@@ -57,25 +57,38 @@ const warnings = [];
 // Doctor 응답에서 얻는 메타(보고 머리말용) — 점검 실패 시엔 비어 있을 수 있다.
 const doctorMeta = { version: null, mode: null };
 
+// 섹션(점검 영역)별 집계 — 보고 문안이 "무엇을 점검했는지"를 영역별로 말할 수 있게 한다.
+// key 는 보고 스크립트(health-report.mjs)와의 계약이므로 함부로 바꾸지 말 것.
+let currentSectionKey = '';
+const sectionStats = {}; // key → { name, ok, warn, fail }
+
+// 정상일 때도 보고에 실을 구체 수치(인증서 잔여일·홈 응답속도 등).
+const highlights = {};
+
 function ok(label, detail = '') {
     console.log(`  ${GREEN}✓${RESET} ${label}${detail ? ` ${YELLOW}(${detail})${RESET}` : ''}`);
     passed++;
+    if (sectionStats[currentSectionKey]) sectionStats[currentSectionKey].ok++;
 }
 
 function fail(label, detail = '') {
     console.log(`  ${RED}✗ ${label}${detail ? ` — ${detail}` : ''}${RESET}`);
     failed++;
     failures.push({ label, detail });
+    if (sectionStats[currentSectionKey]) sectionStats[currentSectionKey].fail++;
 }
 
 function warn(label, detail = '') {
     console.log(`  ${YELLOW}⚠ ${label}${detail ? ` — ${detail}` : ''}${RESET}`);
     warned++;
     warnings.push({ label, detail });
+    if (sectionStats[currentSectionKey]) sectionStats[currentSectionKey].warn++;
 }
 
-function section(title) {
+function section(key, title) {
     console.log(`\n${BOLD}${CYAN}▶ ${title}${RESET}`);
+    currentSectionKey = key;
+    sectionStats[key] = { name: title, ok: 0, warn: 0, fail: 0 };
 }
 
 /**
@@ -120,7 +133,7 @@ async function fetchFollow(url) {
 // ──────────────────────────────────────────────────────────────
 
 async function checkHttps() {
-    section('HTTPS 및 도메인');
+    section('https', 'HTTPS 및 도메인');
 
     const res = await fetchFollow(BASE_URL);
     if (!res.ok) {
@@ -142,7 +155,7 @@ async function checkHttps() {
 }
 
 async function checkCertExpiry() {
-    section('TLS 인증서 만료');
+    section('cert', 'TLS 인증서 만료');
 
     // fetch 는 인증서 상세를 노출하지 않으므로 tls 소켓으로 직접 조회한다.
     // Vercel 이 인증서를 자동 갱신하지만, 갱신 실패는 만료 당일까지 겉으로 드러나지 않는다 —
@@ -176,6 +189,10 @@ async function checkCertExpiry() {
     const daysLeft = Math.floor((expiresAt.getTime() - Date.now()) / 86_400_000);
     const expiryStr = expiresAt.toISOString().slice(0, 10);
 
+    // 정상이어도 보고에 실을 수치 — "인증서 55일 남음"이 "통과 1건"보다 많은 것을 말해준다.
+    highlights.certDaysLeft = daysLeft;
+    highlights.certExpiry = expiryStr;
+
     if (daysLeft < 0) {
         fail(`인증서 만료됨 (${expiryStr})`, `${-daysLeft}일 경과`);
     } else if (daysLeft <= 7) {
@@ -188,7 +205,7 @@ async function checkCertExpiry() {
 }
 
 async function checkWwwRedirect() {
-    section('www → apex 리다이렉트');
+    section('www', 'www → apex 리다이렉트');
 
     const res = await fetchNoRedirect(WWW_URL);
     if (!res.ok) {
@@ -211,7 +228,7 @@ async function checkWwwRedirect() {
 }
 
 async function checkPublicPages() {
-    section('공개 페이지 HTTP 200 응답');
+    section('public', '공개 페이지 HTTP 200 응답');
 
     const pages = [
         { path: '/', name: '홈페이지' },
@@ -232,7 +249,7 @@ async function checkPublicPages() {
 }
 
 async function checkProtectedPages() {
-    section('보호 페이지 → 로그인 리다이렉트 (비로그인 HTTP)');
+    section('protected', '보호 페이지 → 로그인 리다이렉트 (비로그인 HTTP)');
 
     // 서버사이드 리다이렉트는 SSR 페이지만 가능
     // 클라이언트 가드 페이지는 서버에서 200을 응답 후 JS로 리다이렉트하므로
@@ -269,7 +286,7 @@ async function checkProtectedPages() {
 }
 
 async function checkAuthEndpoints() {
-    section('/auth 엔드포인트 SSR 동작 확인 (CDN 캐시 버그 감지)');
+    section('auth', '/auth 엔드포인트 SSR 동작 확인 (CDN 캐시 버그 감지)');
 
     // /auth/confirm — 308 + 12ms 이하이면 CDN 캐시 장애
     {
@@ -323,7 +340,7 @@ async function checkAuthEndpoints() {
 }
 
 async function checkApiEndpoints() {
-    section('API 엔드포인트 응답 확인');
+    section('api', 'API 엔드포인트 응답 확인');
 
     // /api/archives/[id] — 존재하지 않는 ID로 404 예상 (500이면 서버 에러)
     {
@@ -341,7 +358,7 @@ async function checkApiEndpoints() {
 }
 
 async function checkDoctorHealth() {
-    section('Doctor 헬스체크 (/api/health)');
+    section('doctor', 'Doctor 헬스체크 (/api/health)');
 
     // 토큰이 있으면 deep(?deep=1) 머신 인증으로 — 스키마·Auth·Storage·기능까지. 없으면 shallow.
     const deep = HEALTH_CHECK_TOKEN.length > 0;
@@ -422,7 +439,7 @@ async function checkDoctorHealth() {
 }
 
 async function checkResponseTimes() {
-    section('주요 페이지 응답시간 (체감 성능)');
+    section('speed', '주요 페이지 응답시간 (체감 성능)');
 
     const targets = [
         { path: '/', name: '홈페이지', warnMs: 1000, failMs: 3000 },
@@ -435,6 +452,7 @@ async function checkResponseTimes() {
             fail(`${name} 응답시간 측정 실패`, res.error);
             continue;
         }
+        if (path === '/') highlights.homeMs = res.elapsed; // 보고 문안용 체감 속도
         if (res.elapsed > failMs) {
             fail(`${name} 응답시간 ${res.elapsed}ms (${failMs}ms 초과)`, '서울 리전 확인 필요');
         } else if (res.elapsed > warnMs) {
@@ -462,6 +480,9 @@ function writeSummary() {
         failed,
         failures,
         warnings,
+        // 영역별 집계 + 구체 수치 — 보고 문안이 "N건 통과"를 넘어 영역별로 말할 수 있게.
+        sections: Object.entries(sectionStats).map(([key, s]) => ({ key, ...s })),
+        highlights,
         version: doctorMeta.version,
         mode: doctorMeta.mode,
     };
