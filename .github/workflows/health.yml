@@ -2,6 +2,9 @@ name: Production Health Check
 
 # 매일 아침 자동 + 언제든 수동 실행 — 같은 스크립트(scripts/check-production.mjs)를 공유.
 #
+# 점검은 두 겹: ① HTTP 점검(check-production.mjs — 인증서 만료 포함) ② 브라우저 스모크(Playwright —
+# HTTP 로는 안 보이는 JS 크래시 백지 화면 감지). 둘 다 부작용 0(로그인·발송·쓰기 없음).
+#
 # 두 겹의 알림:
 #   1) 아침 보고(텔레그램) — 정상이어도 매일 한 통. "조용함"이 정상인지 죽었는지 구별되게 하는 하트비트.
 #   2) 실패 시 job exit 1 → GitHub 알림 이메일(백업 경로. 텔레그램이 막혀도 남는다).
@@ -22,7 +25,7 @@ name: Production Health Check
 #   → 정시 실행과 완전히 동일한 경로(같은 스크립트·deep·strict)로 돌고 텔레그램 보고도 동일하게 온다.
 on:
     schedule:
-        - cron: '30 23 * * *' # 08:30 KST — 위 변환표 참조
+        - cron: '30 21 * * *' # 06:30 KST (전날 21:30 UTC) — 위 변환표 참조
     workflow_dispatch: {} # 수동 재실행(Actions 탭 버튼 / gh workflow run health.yml)
 
 # 동시 실행 방지(수동+정시 겹침).
@@ -33,6 +36,7 @@ concurrency:
 jobs:
     health:
         runs-on: ubuntu-latest
+        timeout-minutes: 15 # 스모크(브라우저) 포함해도 넉넉 — 행 걸림이 알림을 삼키지 않게
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -54,6 +58,18 @@ jobs:
                   HEALTH_CHECK_TOKEN: ${{ secrets.HEALTH_CHECK_TOKEN }}
               run: node scripts/check-production.mjs https://radsafety.kr --strict --summary=health-summary.json
 
+            # 브라우저 스모크 — HTTP 점검이 못 보는 "JS 크래시 백지 화면"을 감지한다.
+            # 로그인·발송 등 부작용 없음(공개 화면 열람만). 명세: .spec/tests/e2e/production-smoke.spec.md
+            # 이 스텝만 의존성 설치가 필요하다(Doctor 는 순수 node).
+            # continue-on-error: 실패해도 아침 보고가 발송되도록 삼키고, 마지막 스텝에서 표면화.
+            - name: 브라우저 스모크 (Playwright · 홈/로그인 렌더)
+              id: smoke
+              continue-on-error: true
+              run: |
+                  npm ci --legacy-peer-deps
+                  npx playwright install --with-deps chromium
+                  SMOKE_BASE_URL=https://radsafety.kr npx playwright test
+
             # 아침 보고(텔레그램). 점검이 실패했어도(always) 보내야 "이상 감지"가 전달된다.
             # 텔레그램 자격증명 미설정 시 스크립트가 문안만 출력하고 조용히 넘어간다.
             - name: 아침 보고 (텔레그램)
@@ -63,11 +79,12 @@ jobs:
                   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
                   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
                   GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                  SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
               run: node scripts/health-report.mjs health-summary.json
 
-            # 점검이 실패였다면 job 도 실패로 — GitHub 이메일(백업 알림)과 빨간 배지를 유지한다.
+            # 점검·스모크가 실패였다면 job 도 실패로 — GitHub 이메일(백업 알림)과 빨간 배지를 유지한다.
             - name: 점검 실패 표면화
-              if: steps.doctor.outcome == 'failure'
+              if: steps.doctor.outcome == 'failure' || steps.smoke.outcome == 'failure'
               run: |
-                  echo "헬스체크 실패 — 위 Doctor 스텝 로그 참조"
+                  echo "헬스체크 실패 — 위 Doctor/스모크 스텝 로그 참조"
                   exit 1
