@@ -21,6 +21,66 @@ import { readFileSync } from 'node:fs';
 
 const MAX_LISTED_FAILURES = 10;
 
+// 점검 영역(check-production.mjs 의 section key)을 초중급 눈높이 문구로 묶는다.
+// key 는 check-production.mjs 와의 계약 — 거기서 바뀌면 여기도 함께.
+const REPORT_GROUPS = [
+    { emoji: '🌐', title: '보안 접속·주소 연결', keys: ['https', 'www'] },
+    { emoji: '🔒', title: '보안 인증서', keys: ['cert'] },
+    { emoji: '📄', title: '홈·로그인 화면 응답', keys: ['public', 'speed'] },
+    { emoji: '🚧', title: '비로그인 접근 차단', keys: ['protected'] },
+    { emoji: '🔑', title: '로그인 처리 경로', keys: ['auth'] },
+    { emoji: '🔌', title: 'API 응답', keys: ['api'] },
+    { emoji: '🩺', title: '내부 자가진단(설정·DB·메일·푸시)', keys: ['doctor'] },
+];
+
+/**
+ * 영역별 상태 줄 생성 — "무엇을 확인했는지"를 사람 말로.
+ * summary.sections 가 없으면(구버전 요약) 빈 배열을 반환해 상위가 예전 문안으로 폴백한다.
+ */
+function sectionLines(summary, smoke) {
+    const sections = summary.sections || [];
+    if (!sections.length) return [];
+
+    const byKey = Object.fromEntries(sections.map((s) => [s.key, s]));
+    const covered = new Set();
+    const lines = [];
+    const h = summary.highlights || {};
+
+    for (const g of REPORT_GROUPS) {
+        const present = g.keys.filter((k) => byKey[k]);
+        if (!present.length) continue;
+        present.forEach((k) => covered.add(k));
+
+        const failN = present.reduce((n, k) => n + (byKey[k].fail || 0), 0);
+        const warnN = present.reduce((n, k) => n + (byKey[k].warn || 0), 0);
+        const status = failN > 0 ? `✗ 문제 ${failN}건` : warnN > 0 ? `정상 (경고 ${warnN}건)` : '정상';
+
+        // 정상이어도 의미 있는 수치는 함께 보여준다.
+        let extra = '';
+        if (g.keys.includes('cert') && h.certDaysLeft != null) {
+            extra = ` — ${h.certDaysLeft}일 남음(만료 ${h.certExpiry})`;
+        } else if (g.keys.includes('speed') && h.homeMs != null) {
+            const sec = h.homeMs / 1000;
+            extra = sec < 0.1 ? ' — 홈 0.1초 미만' : ` — 홈 ${sec.toFixed(1)}초`;
+        }
+
+        lines.push(`${g.emoji} ${g.title}: ${status}${extra}`);
+    }
+
+    // 그룹 매핑에 없는 새 영역이 생겨도 조용히 사라지지 않게 원래 이름으로 표기.
+    for (const s of sections) {
+        if (covered.has(s.key)) continue;
+        const status = s.fail > 0 ? `✗ 문제 ${s.fail}건` : '정상';
+        lines.push(`• ${s.name}: ${status}`);
+    }
+
+    if (smoke === 'success' || smoke === 'failure') {
+        lines.push(`🖥 실제 브라우저 화면(JS 오류): ${smoke === 'success' ? '정상' : '✗ 문제'}`);
+    }
+
+    return lines;
+}
+
 /**
  * 요약 JSON → 텔레그램 보고 문안(평문).
  * 순수 함수 — 네트워크·시간·환경에 의존하지 않는다(테스트 대상).
@@ -43,19 +103,27 @@ export function formatReport(summary, opts = {}) {
 
     const host = (summary.baseUrl || '').replace(/^https?:\/\//, '');
     const when = formatKst(summary.checkedAt);
-    const meta = [when, summary.version ? `v${summary.version}` : null, summary.deep ? 'deep' : 'shallow']
-        .filter(Boolean)
-        .join(' · ');
+    // deep/shallow 는 개발자 용어 — 받는 사람 눈높이로 풀어 쓴다.
+    const modeLabel = summary.deep ? '전체 점검' : '기본 점검';
+    const meta = [when, summary.version ? `v${summary.version}` : null, modeLabel].filter(Boolean).join(' · ');
 
     // 스모크 실패는 HTTP 점검이 전부 통과했어도 "이상"이다 — JS 크래시 백지 화면은 HTTP 로 안 보인다.
     const smokeFailed = opts.smoke === 'failure';
+    const areas = sectionLines(summary, opts.smoke);
 
     if (summary.ok && !smokeFailed) {
         lines.push(`✅ ${host} 정상`);
         lines.push(meta);
-        const warnNote = summary.warned > 0 ? ` · 경고 ${summary.warned}건` : '';
-        const smokeNote = opts.smoke === 'success' ? ' · 브라우저 스모크 통과' : '';
-        lines.push(`점검 ${summary.passed}건 모두 통과${warnNote}${smokeNote}`);
+        if (areas.length) {
+            lines.push('', ...areas, '');
+            const warnNote = summary.warned > 0 ? ` · 경고 ${summary.warned}건` : '';
+            lines.push(`세부 점검 총 ${summary.passed}건 통과${warnNote}`);
+        } else {
+            // 구버전 요약(영역 정보 없음) 폴백
+            const warnNote = summary.warned > 0 ? ` · 경고 ${summary.warned}건` : '';
+            const smokeNote = opts.smoke === 'success' ? ' · 브라우저 스모크 통과' : '';
+            lines.push(`점검 ${summary.passed}건 모두 통과${warnNote}${smokeNote}`);
+        }
         // 경고는 초록불을 붉게 만들진 않지만, 뭐가 걸렸는지는 보여준다.
         for (const w of summary.warnings || []) {
             lines.push(`⚠ ${w.label}${w.detail ? ` — ${w.detail}` : ''}`);
@@ -66,13 +134,18 @@ export function formatReport(summary, opts = {}) {
     const failedCount = summary.failed + (smokeFailed ? 1 : 0);
     lines.push(`❌ ${host} 이상 감지`);
     lines.push(meta);
-    lines.push(`실패 ${failedCount}건 / 통과 ${summary.passed}건`);
-    lines.push('');
+    lines.push(`문제 ${failedCount}건 / 통과 ${summary.passed}건`);
+    if (areas.length) {
+        // 영역 지도를 먼저 — 어디가 멀쩡하고 어디가 문제인지 한눈에.
+        lines.push('', ...areas, '', '문제 상세:');
+    } else {
+        lines.push('');
+    }
 
     const list = [
         ...(summary.failures || []),
         ...(smokeFailed
-            ? [{ label: '브라우저 스모크(홈·로그인 렌더·JS 에러)', detail: 'Playwright 실패 — 실행 로그 참조' }]
+            ? [{ label: '브라우저 화면 검사(홈·로그인 JS 오류)', detail: 'Playwright 실패 — 실행 로그 참조' }]
             : []),
     ];
     for (const f of list.slice(0, MAX_LISTED_FAILURES)) {
