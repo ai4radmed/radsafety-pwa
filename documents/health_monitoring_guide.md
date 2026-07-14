@@ -1,6 +1,6 @@
 # 아침 헬스체크·텔레그램 보고 개념 가이드
 
-> 이 문서는 **매일 아침 08:30(KST) 앱 전체의 정상작동을 자동 점검하여 텔레그램으로 보고하는 시스템**이 어떤 개념으로 설계·구현되었는지 설명합니다. 운영 명령어 치트시트는 [AGENTS.md §5](../AGENTS.md)에, 파일별 상세 명세는 `.spec/` 에 있으며, 이 문서는 **"왜 이렇게 만들었는가"의 큰 그림**을 담당합니다.
+> 이 문서는 **매일 아침 06:30(KST) 앱 전체의 정상작동을 자동 점검하여 텔레그램으로 보고하는 시스템**이 어떤 개념으로 설계·구현되었는지 설명합니다. 운영 명령어 치트시트는 [AGENTS.md §5](../AGENTS.md)에, 파일별 상세 명세는 `.spec/` 에 있으며, 이 문서는 **"왜 이렇게 만들었는가"의 큰 그림**을 담당합니다.
 
 ---
 
@@ -16,7 +16,7 @@
 
 | 부품              | 파일                                 | 역할 (비유)                                                             |
 | ----------------- | ------------------------------------ | ----------------------------------------------------------------------- |
-| **스케줄러·조립** | `.github/workflows/health.yml`       | 알람시계 + 지휘자 — 매일 08:30 KST 에 아래 셋을 순서대로 실행           |
+| **스케줄러·조립** | `.github/workflows/health.yml`       | 알람시계 + 지휘자 — 매일 06:30 KST 에 아래 셋을 순서대로 실행           |
 | **진찰**          | `scripts/check-production.mjs`       | 외부 방문 의사 — HTTP 로 앱을 두드려 보고(인증서 만료 포함) JSON 기록   |
 | **브라우저 검진** | `tests/e2e/production-smoke.spec.ts` | 검안경 — HTTP 로 안 보이는 "JS 크래시 백지 화면"을 실제 브라우저로 확인 |
 | **보고**          | `scripts/health-report.mjs`          | 전령 — JSON + 스모크 결과를 사람이 읽을 문안으로 만들어 텔레그램 발송   |
@@ -29,7 +29,7 @@ graph TD
     classDef alert fill:#fff3e0,stroke:#ffb74d,stroke-width:2px,color:#e65100;
     classDef fail fill:#ffebee,stroke:#e57373,stroke-width:2px,color:#b71c1c;
 
-    CRON([⏰ 매일 08:30 KST<br/>GitHub Actions cron]):::gh
+    CRON([⏰ 매일 06:30 KST<br/>GitHub Actions cron]):::gh
     MANUAL([🖱 수동 실행<br/>gh workflow run health.yml]):::gh
 
     CRON --> WF[health.yml 워크플로우]:::gh
@@ -70,7 +70,7 @@ sequenceDiagram
     participant HR as health-report.mjs
     participant TG as 텔레그램
 
-    Note over GH: 08:30 KST (cron '30 23 * * *' UTC)<br/>※ 부하 시 5~20분 지연은 정상
+    Note over GH: 06:30 KST (cron '30 21 * * *' UTC)<br/>※ 부하 시 5~20분 지연은 정상
     GH->>CP: node scripts/check-production.mjs --strict --summary
     CP->>App: HTTPS·리다이렉트·공개/보호 페이지·/auth·API 프로브
     CP->>App: GET /api/health?deep=1 (x-health-token 머신 인증)
@@ -177,7 +177,7 @@ graph TD
 
 ```
 ✅ radsafety.kr 정상
-2026-07-14 08:31 KST · v0.2.1 · deep
+2026-07-14 06:31 KST · v0.2.1 · deep
 점검 24건 모두 통과 · 브라우저 스모크 통과
 ```
 
@@ -185,7 +185,7 @@ graph TD
 
 ```
 ❌ radsafety.kr 이상 감지
-2026-07-14 08:31 KST · v0.2.1 · deep
+2026-07-14 06:31 KST · v0.2.1 · deep
 실패 2건 / 통과 22건
 
 • [3] db-ping — unreachable
