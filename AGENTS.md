@@ -92,6 +92,7 @@ npm run check:monthly              # 월간 수동 점검 위저드(사람 동�
 - **월간 수동 점검 위저드** `npm run check:monthly` — 아침 헬스체크(부작용 0)가 원리적으로 못 덮는 **실발송·실수신 경로**(OTP 메일, 카카오 OAuth, 푸시 실수신, 파일 실다운로드, Resend 실발송)를 사람 동석 반자동으로 점검. 명세: `.spec/tests/e2e/monthly-check.spec.md`.
     - 사람 개입은 3회(코드 입력·카카오 클릭·휴대폰 확인)뿐, 판정은 자동. 부작용은 전부 **실행자 본인 계정 한정**(`[월간점검]` 접두어) → 반복 실행 안전. **CI·cron 에 올리지 말 것**(사람 필요 + 자격증명 비저장 원칙).
     - `MONTHLY_EMAIL=me@example.com npm run check:monthly` 로 이메일 입력까지 자동화 가능.
+    - 테스트 의견 메일은 관리자 전원이 아닌 **개발자에게만** 간다 — `[월간점검]` 접두어 + 관리자 발신이면 `resolveFeedbackRecipients` 가 Vercel env `DEVELOPER_EMAILS`(서버 전용, 쉼표 구분)로 라우팅. 미설정 시 종전대로 관리자 전원.
     - **리마인더** `.github/workflows/monthly-reminder.yml` — 매월 1일 09:00 KST 텔레그램 한 통(점검 실행은 로컬에서). 수동 발화: `gh workflow run monthly-reminder.yml`. on/off: `gh variable set MONTHLY_REMINDER --body off`.
 - **`supabase-keepalive.yml`**(월·목 핑)은 free-tier pause 방지용 — **끄지 말 것.**
 
