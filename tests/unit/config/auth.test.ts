@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { getRole, getCertification, isAdmin, ADMIN_EMAILS, ROLES, CERTIFICATIONS } from '../../../src/config/auth';
+import {
+    getRole,
+    getCertification,
+    isAdmin,
+    resolveFeedbackRecipients,
+    ADMIN_EMAILS,
+    ROLES,
+    CERTIFICATIONS,
+} from '../../../src/config/auth';
 
 describe('getRole', () => {
     it('관리자 이메일은 admin 반환', () => {
@@ -74,5 +82,35 @@ describe('CERTIFICATIONS', () => {
         expect(CERTIFICATIONS.KSNMT).toBe('ksnmt');
         expect(CERTIFICATIONS.SPECIAL).toBe('special');
         expect(CERTIFICATIONS.NONE).toBe('none');
+    });
+});
+
+describe('resolveFeedbackRecipients', () => {
+    const devs = ['dev1@example.com', 'dev2@example.com'];
+    const adminSender = 'benkorea.ai@gmail.com'; // ADMIN_EMAILS 기본 포함
+
+    it('[월간점검] 제목 + 관리자 발신은 개발자 목록으로만 라우팅', () => {
+        const result = resolveFeedbackRecipients('[월간점검] 의견 발송 테스트', adminSender, devs);
+        expect(result).toEqual(devs);
+    });
+
+    it('[월간점검] 제목이라도 일반 사용자 발신은 관리자 전원에게', () => {
+        const result = resolveFeedbackRecipients('[월간점검] 흉내낸 제목', 'user@example.com', devs);
+        expect(result).toEqual(ADMIN_EMAILS);
+    });
+
+    it('일반 제목은 관리자 발신이어도 관리자 전원에게', () => {
+        const result = resolveFeedbackRecipients('로그인 오류 문의', adminSender, devs);
+        expect(result).toEqual(ADMIN_EMAILS);
+    });
+
+    it('개발자 목록이 비어 있으면 관리자 전원(안전 기본값)', () => {
+        const result = resolveFeedbackRecipients('[월간점검] 테스트', adminSender, []);
+        expect(result).toEqual(ADMIN_EMAILS);
+    });
+
+    it('접두어는 제목 시작 위치만 인정', () => {
+        const result = resolveFeedbackRecipients('의견 [월간점검] 아님', adminSender, devs);
+        expect(result).toEqual(ADMIN_EMAILS);
     });
 });
