@@ -32,6 +32,9 @@ test.describe('공개 페이지 렌더링 (비로그인)', () => {
         await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
         await expect(page.locator('#emailOtpEmail')).toBeVisible();
         await expect(page.locator('#emailOtpRequestBtn')).toBeVisible();
+        // 2단계(6자리 코드 입력)는 요청 전에는 숨겨져야 함 — author CSS 가 [hidden] 을
+        // 무력화해 항상 노출되던 회귀 방지 (EmailOtpForm 명세 핵심 규칙 4)
+        await expect(page.locator('#otpStep')).toBeHidden();
     });
 
     test('/guide — 비로그인 시 /login 리다이렉트 (설계 동작)', async ({ page }) => {
