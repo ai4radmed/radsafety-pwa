@@ -31,3 +31,4 @@ Astro server actions 진입점. `defineAction`으로 `saveFinding`, `deleteFindi
 2. sendVerificationCode: 코드 유효 10분, profiles에서 사용자 이름을 조회하여 이메일 개인화. 이메일 발송 실패 시 에러 처리.
 3. sendNotification: targetType별 profiles 필터(all/provider/verification_status/specific).
 4. sendFeedback: 이메일 실패해도 DB 저장 성공 시 성공 처리.
+5. sendFeedback 수신자: `resolveFeedbackRecipients(title, userEmail, DEVELOPER_EMAILS)` 로 결정. `DEVELOPER_EMAILS` 는 서버 전용 env(쉼표 구분, PUBLIC 아님)를 모듈 로드 시 파싱 — 테스트성 의견(`[월간점검]` + 관리자 발신)만 개발자 목록으로 라우팅되고, 미설정 시 종전대로 관리자 전원.

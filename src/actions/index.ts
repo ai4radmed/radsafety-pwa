@@ -2,11 +2,18 @@ import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 import { supabaseAnon, supabaseAdmin } from '../lib/supabase-server';
 import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
-import { ADMIN_EMAILS } from '../config/auth';
+import { resolveFeedbackRecipients } from '../config/auth';
 import { createLogger } from '../lib/logger';
 import { sendPushToUsers } from '../lib/push';
 
 const logger = createLogger('actions');
+
+// 서버 전용 env(쉼표 구분) — 테스트성 의견([월간점검] + 관리자 발신)의 수신자.
+// 미설정이면 resolveFeedbackRecipients 가 종전대로 관리자 전원에게 보낸다.
+const DEVELOPER_EMAILS = (import.meta.env.DEVELOPER_EMAILS || '')
+    .split(',')
+    .map((e: string) => e.trim())
+    .filter((e: string) => e.length > 0);
 
 export const server = {
     saveFinding: defineAction({
@@ -340,7 +347,7 @@ export const server = {
                 // Send email notification to admins
                 try {
                     await sendFeedbackEmail({
-                        adminEmails: ADMIN_EMAILS,
+                        adminEmails: resolveFeedbackRecipients(input.title, input.userEmail, DEVELOPER_EMAILS),
                         userName: input.userName,
                         userEmail: input.userEmail,
                         title: input.title,
