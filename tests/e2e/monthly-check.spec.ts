@@ -131,7 +131,13 @@ test('월간 수동 점검 위저드', async ({ browser }) => {
         } else {
             console.log('  ▶ 브라우저에서 이메일 주소를 입력하고 [이메일로 인증 코드 받기]를 눌러주세요.');
         }
-        await page.locator('#otpStep').waitFor({ state: 'visible', timeout: HUMAN_TIMEOUT });
+        // #otpStep 의 visible 여부는 신호로 못 쓴다([hidden] 상태에서도 CSS 에 따라 visible 판정될 수 있음).
+        // → "…로 인증 코드를 보냈습니다" 문안이 채워지는 시점을 이메일 제출 신호로 삼는다.
+        await page.waitForFunction(
+            () => document.getElementById('otpSentTo')?.textContent?.includes('인증 코드') ?? false,
+            undefined,
+            { timeout: HUMAN_TIMEOUT },
+        );
         if (!loginEmail) {
             // "user@example.com로 인증 코드를 보냈습니다." 문안에서 이메일 캡처 (④ 본인 검색에 사용)
             const sentTo = (await page.locator('#otpSentTo').textContent()) ?? '';

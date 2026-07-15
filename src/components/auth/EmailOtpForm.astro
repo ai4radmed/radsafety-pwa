@@ -37,6 +37,12 @@
         flex-direction: column;
         gap: 0.5rem;
     }
+    /* author 의 display:flex 가 UA 의 [hidden]{display:none} 을 이겨버리므로 명시적으로 복원 —
+       없으면 2단계(코드 입력)가 요청 전부터 노출된다 (명세 핵심 규칙 4) */
+    .email-form-wrap[hidden],
+    .otp-form-wrap[hidden] {
+        display: none;
+    }
     .email-form input {
         padding: 0.75rem;
         border: 1px solid #d1d5db;
