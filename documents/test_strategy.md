@@ -2,16 +2,17 @@
 
 ## 실행 명령어 요약
 
-| 명령어                          | 도구                          | 용도                   | 실행 시점        |
-| ------------------------------- | ----------------------------- | ---------------------- | ---------------- |
-| `npm run test:unit`             | Vitest                        | 단위 테스트            | 수시, CI         |
-| `npm run test:e2e`              | Playwright                    | E2E 테스트 (비로그인)  | 수시, CI         |
-| `npm run test:e2e:save-session` | Playwright (--headed)         | 세션 저장 (1회)        | 배포 후 최초 1회 |
-| `npm run test:e2e:auth`         | Playwright (세션 주입)        | E2E 테스트 (로그인 후) | 배포 후 로컬     |
-| `npm run check:production`      | Node.js HTTP 헬스체크         | 운영 서버 자동 점검    | 배포 후 즉시     |
-| `npm run test`                  | Vitest + ESLint + Astro Check | 전체 자동 검증         | PR, CI           |
-| `npm run check`                 | Astro Check                   | 타입 검사              | CI               |
-| `npm run lint`                  | ESLint                        | 코드 품질              | 커밋 시 (husky)  |
+| 명령어                          | 도구                          | 용도                    | 실행 시점        |
+| ------------------------------- | ----------------------------- | ----------------------- | ---------------- |
+| `npm run test:unit`             | Vitest                        | 단위 테스트             | 수시, CI         |
+| `npm run test:e2e`              | Playwright                    | E2E 테스트 (비로그인)   | 수시, CI         |
+| `npm run test:e2e:save-session` | Playwright (--headed)         | 세션 저장 (1회)         | 배포 후 최초 1회 |
+| `npm run test:e2e:auth`         | Playwright (세션 주입)        | E2E 테스트 (로그인 후)  | 배포 후 로컬     |
+| `npm run check:production`      | Node.js HTTP 헬스체크         | 운영 서버 자동 점검     | 배포 후 즉시     |
+| `npm run check:monthly`         | Playwright (--headed, 위저드) | 실발송·실수신 경로 점검 | 월 1회 + 원할 때 |
+| `npm run test`                  | Vitest + ESLint + Astro Check | 전체 자동 검증          | PR, CI           |
+| `npm run check`                 | Astro Check                   | 타입 검사               | CI               |
+| `npm run lint`                  | ESLint                        | 코드 품질               | 커밋 시 (husky)  |
 
 ---
 
@@ -196,6 +197,27 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 
 > 자동화된 항목은 `[자동화됨]`으로 표기. 수동으로 확인할 항목만 체크하면 됩니다.
 
+### 4-0. 월간 수동 점검 위저드 (`npm run check:monthly`)
+
+**명세**: `.spec/tests/e2e/monthly-check.spec.md` | **파일**: `tests/e2e/monthly-check.spec.ts`
+
+아침 헬스체크(부작용 0)가 원리적으로 못 덮는 **실발송·실수신 경로**를 사람 동석 반자동으로 점검합니다.
+headed 브라우저가 열리고 사람이 필요한 순간에만 멈춥니다 — 개입 3회(OTP 코드 입력, 카카오 클릭, 휴대폰 알림 확인), 총 약 3분.
+
+| 단계                     | 커버하는 수동 체크리스트 항목         | 사람 개입        |
+| ------------------------ | ------------------------------------- | ---------------- |
+| ① 이메일 OTP 로그인      | 4-2 이메일 OTP                        | 6자리 코드 입력  |
+| ② 자료실 파일 다운로드   | 4-3 파일 다운로드                     | 없음 (자동 판정) |
+| ③ 의견 보내기            | 4-3 의견 보내기 (Resend 실발송)       | 없음 (자동 판정) |
+| ④ 푸시 발송·실수신(본인) | 4-3 웹 푸시 알림 수신 + 4-4 알림 발송 | 휴대폰 확인 클릭 |
+| ⑤ 카카오 로그인          | 4-2 카카오 로그인                     | 카카오 버튼 클릭 |
+
+- 부작용은 전부 **실행자 본인 계정 한정**(`[월간점검]` 접두어) → 반복 실행 안전. 언제든, 몇 번이든 돌려도 됩니다.
+- 자격증명 비저장: 코드·카카오는 그 자리에서 입력, 세션 파일도 남기지 않음. **CI·cron 에 올리지 않습니다.**
+- `MONTHLY_EMAIL=me@example.com npm run check:monthly` → 이메일 입력까지 자동.
+- 리마인더: `.github/workflows/monthly-reminder.yml` 이 매월 1일 09:00 KST 텔레그램으로 점검일을 알립니다
+  (수동 발화 `gh workflow run monthly-reminder.yml`, 끄기 `gh variable set MONTHLY_REMINDER --body off`).
+
 ### 4-1. 비로그인 상태 (배포마다)
 
 - [x] ~~`/` 홈페이지 정상 렌더링~~ → **자동화됨** (`e2e/public-pages.spec.ts`)
@@ -208,8 +230,8 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 > **⚠️ 이메일 OTP는 로컬에서 테스트 불가** — Supabase Site URL이 `https://radsafety.kr`로
 > 고정되어 있어 OTP 이메일은 운영 서버 기준으로 발송됩니다. 반드시 `git push` 후 배포 완료 시점에 테스트하세요.
 
-- [ ] **카카오 로그인**: 카카오 로그인 → `/auth/callback` → `/mypage` 도착
-- [ ] **이메일 OTP** _(배포 후 운영에서만 테스트)_: 이메일 입력 → 6자리 코드 수신 → PWA 내 코드 입력 → `/mypage` 도착
+- [ ] **카카오 로그인**: 카카오 로그인 → `/auth/callback` → `/mypage` 도착 → **월간 위저드 ⑤** (4-0)
+- [ ] **이메일 OTP** _(배포 후 운영에서만 테스트)_: 이메일 입력 → 6자리 코드 수신 → PWA 내 코드 입력 → `/mypage` 도착 → **월간 위저드 ①** (4-0)
 - [x] ~~**로그아웃**: 사이드바 로그아웃 → 세션 초기화 → `/login` 이동~~ → **반자동화됨** (`e2e/authenticated-user.spec.ts`)
 
 ### 4-3. 일반 사용자 기능 (배포마다)
@@ -222,15 +244,15 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 - [x] ~~View Transitions 재방문: 자료실, 관리자 페이지~~ → **반자동화됨** (`authenticated-*.spec.ts`)
 - [x] ~~웹 푸시 구독 API 인증 검사~~ → **반자동화됨** (`authenticated-user.spec.ts`)
 - [ ] **이메일 인증 코드**: 마이페이지 → 코드 발송 → 수신 → 코드 입력 → 인증 상태 변경 _(이메일 수신 필요)_
-- [ ] **파일 다운로드**: 자료실 → 파일 다운로드 정상 (`/api/archives/[id]`) _(실제 파일 확인 필요)_
+- [ ] **파일 다운로드**: 자료실 → 파일 다운로드 정상 (`/api/archives/[id]`) _(실제 파일 확인 필요)_ → **월간 위저드 ②** (4-0)
 - [ ] **지적권고사례 CRUD**: 사례 등록 → 목록 반영, 수정, 삭제 _(DB 쓰기 작업)_
-- [ ] **의견 보내기**: 제목/내용 작성 → 전송 → 성공 메시지 _(실제 이메일 발송 확인)_
+- [ ] **의견 보내기**: 제목/내용 작성 → 전송 → 성공 메시지 _(실제 이메일 발송 확인)_ → **월간 위저드 ③** (4-0)
 - [x] ~~**설정 페이지 푸시 토글 UI**: 토글 스위치 표시, 상태 텍스트 초기화, 토글-상태 동기화~~ → **반자동화됨** (`authenticated-user.spec.ts`)
 - [ ] **웹 푸시 토글 ON**: 설정 페이지 → 푸시 알림 토글 켜기 → 브라우저 권한 팝업 → 허용 → "활성화됨" 표시 + Supabase `push_subscriptions` 레코드 확인 _(HTTPS 배포 환경에서만 가능)_
 - [ ] **웹 푸시 토글 OFF**: 푸시 알림 토글 끄기 → "알림을 받으려면 켜세요" 표시 + Supabase 레코드 삭제 확인
 - [ ] **웹 푸시 새로고침 후 상태 유지**: 토글 ON 후 페이지 새로고침 → 토글 checked 유지
 - [ ] **웹 푸시 권한 거부 시**: 토글 켜기 → 브라우저 팝업 거부 → 토글 자동 해제 + disabled + "차단됨" 표시
-- [ ] **웹 푸시 알림 수신**: 관리자 알림 발송 또는 인증 처리 후 기기 상단에 알림 팝업 표시 확인 _(실제 기기 확인 필요)_
+- [ ] **웹 푸시 알림 수신**: 관리자 알림 발송 또는 인증 처리 후 기기 상단에 알림 팝업 표시 확인 _(실제 기기 확인 필요)_ → **월간 위저드 ④** (4-0)
 - [ ] **모바일**: 하단 네비게이션 바 표시 및 동작
 
 ### 4-4. 관리자 기능 (기능 변경 시)

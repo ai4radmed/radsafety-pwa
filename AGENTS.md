@@ -70,6 +70,7 @@ npm run test:e2e         # playwright (RLS 포함)
 # 프로덕션 점검
 npm run check:production           # 전체 + Doctor 헬스체크
 curl -s https://radsafety.kr/api/health | jq   # 헬스만 빠르게
+npm run check:monthly              # 월간 수동 점검 위저드(사람 동석·headed, 실발송·실수신 경로)
 ```
 
 - **Doctor 헬스체크** `GET /api/health` — shallow(공개: 앱호스트·설정·DB핑·메타) / deep(`?deep=1`, admin 쿠키 또는 `x-health-token` 머신 인증: + Auth·Storage·스키마·resend·vapid·content).
@@ -88,6 +89,10 @@ curl -s https://radsafety.kr/api/health | jq   # 헬스만 빠르게
     - **원할 때 재실행**: `gh workflow run health.yml` (또는 Actions 탭 "Run workflow"). 정시 실행과 **동일한 경로**로 돌고 보고도 동일하게 발송된다.
     - **시각 변경**: `health.yml` 의 cron 한 줄 수정(GitHub 은 cron 에 변수를 못 씀). `UTC = KST − 9h`. **크론은 기본 브랜치(main)에서만 발화** → main 머지 후 적용.
     - GitHub cron 은 **정시를 보장하지 않음** — 06:30~06:50 도착은 정상. 분 단위 정밀도가 필요하면 Vercel Cron 으로 옮겨야 하나, 그러면 앱이 자기 자신을 감시하게 되어 앱 사망 시 보고도 침묵한다.
+- **월간 수동 점검 위저드** `npm run check:monthly` — 아침 헬스체크(부작용 0)가 원리적으로 못 덮는 **실발송·실수신 경로**(OTP 메일, 카카오 OAuth, 푸시 실수신, 파일 실다운로드, Resend 실발송)를 사람 동석 반자동으로 점검. 명세: `.spec/tests/e2e/monthly-check.spec.md`.
+    - 사람 개입은 3회(코드 입력·카카오 클릭·휴대폰 확인)뿐, 판정은 자동. 부작용은 전부 **실행자 본인 계정 한정**(`[월간점검]` 접두어) → 반복 실행 안전. **CI·cron 에 올리지 말 것**(사람 필요 + 자격증명 비저장 원칙).
+    - `MONTHLY_EMAIL=me@example.com npm run check:monthly` 로 이메일 입력까지 자동화 가능.
+    - **리마인더** `.github/workflows/monthly-reminder.yml` — 매월 1일 09:00 KST 텔레그램 한 통(점검 실행은 로컬에서). 수동 발화: `gh workflow run monthly-reminder.yml`. on/off: `gh variable set MONTHLY_REMINDER --body off`.
 - **`supabase-keepalive.yml`**(월·목 핑)은 free-tier pause 방지용 — **끄지 말 것.**
 
 ---
@@ -116,13 +121,14 @@ curl -s https://radsafety.kr/api/health | jq   # 헬스만 빠르게
 
 ### 헬스체크 · 모니터링 (코드 ↔ 명세)
 
-| 영역       | 코드                                                            | 명세                                       |
-| ---------- | --------------------------------------------------------------- | ------------------------------------------ |
-| 엔드포인트 | `src/pages/api/health.ts`                                       | `.spec/src/pages/api/health.md`            |
-| 점검 로직  | `src/lib/health-checks.ts`                                      | `.spec/src/lib/health-checks.md`           |
-| 모니터     | `scripts/check-production.mjs` · `.github/workflows/health.yml` | —                                          |
-| 스모크     | `tests/e2e/production-smoke.spec.ts`                            | `.spec/tests/e2e/production-smoke.spec.md` |
-| RLS 테스트 | `tests/e2e/rls-policies.spec.ts`                                | `.spec/tests/e2e/rls-policies.spec.md`     |
+| 영역       | 코드                                                                         | 명세                                       |
+| ---------- | ---------------------------------------------------------------------------- | ------------------------------------------ |
+| 엔드포인트 | `src/pages/api/health.ts`                                                    | `.spec/src/pages/api/health.md`            |
+| 점검 로직  | `src/lib/health-checks.ts`                                                   | `.spec/src/lib/health-checks.md`           |
+| 모니터     | `scripts/check-production.mjs` · `.github/workflows/health.yml`              | —                                          |
+| 스모크     | `tests/e2e/production-smoke.spec.ts`                                         | `.spec/tests/e2e/production-smoke.spec.md` |
+| RLS 테스트 | `tests/e2e/rls-policies.spec.ts`                                             | `.spec/tests/e2e/rls-policies.spec.md`     |
+| 월간 점검  | `tests/e2e/monthly-check.spec.ts` · `.github/workflows/monthly-reminder.yml` | `.spec/tests/e2e/monthly-check.spec.md`    |
 
 RLS 검증을 Doctor 가 아닌 e2e 로 둔 이유: 실제 로그인은 **부작용**이고 프로덕션 금지 자격증명이 필요하기 때문. CI 는 GitHub secret `DEV_TEST_USER_EMAIL` · `DEV_TEST_USER_PASSWORD` 로 실행.
 
