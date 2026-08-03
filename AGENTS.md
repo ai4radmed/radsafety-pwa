@@ -85,6 +85,7 @@ npm run check:monthly              # 월간 수동 점검 위저드(사람 동�
         gh variable set HEALTH_REPORT --body fail   # 이상일 때만 (정상은 침묵)
         gh variable set HEALTH_REPORT --body off    # 보고 끔 (헬스체크·GitHub 실패 알림은 유지)
         ```
+    - **항목 표기 방식** — 저장소 변수 `HEALTH_REPORT_STYLE`: `plain`(기본, 쉬운 말 한 줄) · `both`(기술 원문 + 쉬운 말 2줄) · `tech`(기술 원문 한 줄). 수동 실행은 `gh workflow run health.yml -f style=both` 로 한 번만 바꿔 볼 수 있다. 쉬운 말 사전은 `scripts/health-report.mjs` 에 있고, **사전에 없는 라벨은 원문 그대로** 나온다(점검 항목 신설 신호).
     - 필요한 secret: `TELEGRAM_BOT_TOKEN` · `TELEGRAM_CHAT_ID` (미설정이면 발송 없이 문안만 로그에 남김) · `HEALTH_CHECK_TOKEN`(deep 점검).
     - **원할 때 재실행**: `gh workflow run health.yml` (또는 Actions 탭 "Run workflow"). 정시 실행과 **동일한 경로**로 돌고 보고도 동일하게 발송된다.
     - **시각 변경**: `health.yml` 의 cron 한 줄 수정(GitHub 은 cron 에 변수를 못 씀). `UTC = KST − 9h`. **크론은 기본 브랜치(main)에서만 발화** → main 머지 후 적용.

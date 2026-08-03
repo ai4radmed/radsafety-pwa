@@ -21,6 +21,9 @@ import { readFileSync } from 'node:fs';
 
 const MAX_LISTED_FAILURES = 10;
 
+// 항목 줄 표기 방식. 저장소 변수 HEALTH_REPORT_STYLE 로 코드 변경 없이 바꾼다.
+const STYLES = new Set(['plain', 'both', 'tech']);
+
 // 상태 표식 — 이모지 없이 한 글자로. 항목 줄의 **맨 끝**에 붙어 눈이 한 열만 훑으면 되게 한다.
 const MARK = { ok: '[o]', warn: '[!]', fail: '[x]' };
 
@@ -35,6 +38,69 @@ const REPORT_GROUPS = [
     { title: 'API 응답', keys: ['api'] },
     { title: '내부 자가진단(설정·DB·메일·푸시)', keys: ['doctor'] },
 ];
+
+// ── 항목 라벨 쉬운 말 사전 ────────────────────────────────────────────────────
+//
+// check-production.mjs 의 라벨은 **콘솔(개발자)용**이라 `[4] schema`·`HSTS 헤더 존재` 처럼
+// 기술 용어 그대로다. 콘솔은 그게 맞다 — 고칠 대상은 라벨이 아니라 **보고 문안**이다.
+// 그래서 번역은 여기(보고 계층)에서만 하고, 점검 스크립트는 건드리지 않는다.
+//
+// ⚠️ 사전에 없는 라벨은 **원문 그대로** 나간다(조용히 사라지지 않게). 점검 항목이 새로
+//    생기면 여기 한 줄을 추가하면 된다 — 빠뜨려도 보고가 깨지진 않고 기술 용어로 보일 뿐이다.
+// ‼️ 서술문("…응답합니다")이 아니라 **명사형**으로 쓴다. 판정은 줄 끝의 표식이 진다 —
+//    "…화면이 그려졌습니다 [x]" 처럼 문장과 표식이 서로 반대말이 되는 일을 막는다.
+const PLAIN_EXACT = {
+    'HSTS 헤더 존재': '암호화 접속(https) 강제',
+    '홈페이지 (/)': '홈 화면 열림',
+    '로그인 페이지 (/login)': '로그인 화면 열림',
+    'PWA Manifest (/manifest.webmanifest)': '폰 홈화면 앱 설치 정보',
+    'Cache-Control: no-store': '점검 결과 캐시 안 함(매번 새로 확인)',
+    '전체 status=ok': '앱 자가진단 종합 판정',
+    '비밀값 미노출': '비밀번호·키 미노출',
+    'ts 신선 (요청 시각 근처)': '점검 응답 신선도(낡은 캐시 아님)',
+    '홈·로그인 화면 렌더링(JS 오류 감지)': '실제 브라우저로 연 홈·로그인 화면',
+};
+
+// Doctor 자가진단 항목은 `[층번호] 키` 형태 — 키로만 옮긴다.
+const PLAIN_DOCTOR = {
+    'app-host': '앱이 도는 서버',
+    config: '필수 환경설정 값',
+    'db-ping': '데이터베이스 응답',
+    'auth-reach': '로그인 서버 연결',
+    'storage-reach': '파일 저장소 연결',
+    schema: '데이터베이스 표 구조',
+    'resend-config': '메일 발송 설정',
+    'vapid-pair': '푸시 알림 키 짝',
+    meta: '앱 버전·배포 정보',
+    content: '안내 문서·자료 콘텐츠',
+};
+
+// 값이 매번 달라지는 라벨(주소·잔여일·응답시간…)은 규칙으로 옮긴다.
+const PLAIN_RULES = [
+    [/^\[\d\]\s+(\S+)$/, (m) => PLAIN_DOCTOR[m[1]]],
+    [/^https?:\/\/\S+\s+→\s+200 OK$/, () => '사이트 접속 응답'],
+    [/^www\s+→\s+\S+$/, () => 'www 주소 → 정식 주소 연결'],
+    [/^인증서 유효\s+—\s+(\d+)일 남음$/, (m) => `보안 인증서 유효 (${m[1]}일 남음)`],
+    [/^(\S+?)\s*응답시간\s+(\d+)ms$/, (m) => `${m[1]} 응답 ${(Number(m[2]) / 1000).toFixed(1)}초`],
+    [/^마이페이지\s+→/, () => '비로그인 시 마이페이지 내용 숨김'],
+    [/^알림\s+→/, () => '비로그인 시 알림 → 로그인 화면으로 보냄'],
+    [/^\/auth\/confirm\s+→/, () => '이메일 인증 링크 처리 경로'],
+    [/^\/auth\/callback\s+→/, () => '로그인 후 앱으로 복귀하는 경로'],
+    [/^\/api\/archives/, () => '자료실 조회 기능'],
+];
+
+/** 기술 라벨 → 쉬운 말. 사전·규칙에 없으면 null(원문을 쓰라는 뜻). */
+function plainLabel(label) {
+    if (PLAIN_EXACT[label]) return PLAIN_EXACT[label];
+    for (const [re, fn] of PLAIN_RULES) {
+        const m = label.match(re);
+        if (m) {
+            const out = fn(m);
+            if (out) return out;
+        }
+    }
+    return null;
+}
 
 /**
  * 요약 → 번호 매긴 그룹 트리.
@@ -122,10 +188,24 @@ function itemsOf(s) {
     return out;
 }
 
-/** 세부 항목 한 줄 — `1-1. 라벨 [o]`. 정상은 이름만(수치는 소음), 경고·실패는 사유까지. */
-function itemLine(it) {
+/**
+ * 세부 항목 줄. 정상은 이름만(수치는 소음), 경고·실패는 사유까지.
+ *
+ * style:
+ *   'plain'(기본) — 쉬운 말 한 줄.        `1-2. 접속이 항상 암호화(https)로 강제됩니다 [o]`
+ *   'both'        — 기술 원문 + 쉬운 말 2줄. 문제를 남에게 전달할 때 원문이 필요한 경우.
+ *   'tech'        — 기술 원문 한 줄(종전).
+ *
+ * 쉬운 말 사전에 없는 라벨은 어느 style 이든 원문으로 나온다 — 번역이 없다고 항목이 사라지면 안 된다.
+ */
+function itemLine(it, style = 'plain') {
+    const mark = MARK[it.status] || MARK.fail;
     const tail = it.status !== 'ok' && it.detail ? ` — ${it.detail}` : '';
-    return `${it.no}. ${it.label}${tail} ${MARK[it.status] || MARK.fail}`;
+    const plain = plainLabel(it.label);
+
+    if (style === 'tech' || !plain) return [`${it.no}. ${it.label}${tail} ${mark}`];
+    if (style === 'both') return [`${it.no}. ${it.label}${tail} ${mark}`, `      ${plain}`];
+    return [`${it.no}. ${plain}${tail} ${mark}`];
 }
 
 /**
@@ -133,7 +213,8 @@ function itemLine(it) {
  * 순수 함수 — 네트워크·시간·환경에 의존하지 않는다(테스트 대상).
  *
  * @param {object|null} summary  check-production.mjs 의 요약. null 이면 점검 실행 자체가 실패한 것.
- * @param {{ runUrl?: string, smoke?: 'success' | 'failure' }} [opts]
+ * @param {{ runUrl?: string, smoke?: 'success' | 'failure', style?: string }} [opts]
+ *   opts.style — 항목 표기 방식 'plain'(기본) | 'both' | 'tech'. 알 수 없는 값은 'plain'.
  *   opts.smoke — 브라우저 스모크(Playwright) 결과. HTTP 점검과 별도 스텝이므로 요약 JSON 밖에서 주입된다.
  *   undefined 는 "스모크를 돌리지 않았다"(구버전 워크플로·로컬 실행)로, 문안에 언급하지 않는다.
  */
@@ -178,9 +259,10 @@ export function formatReport(summary, opts = {}) {
     lines.push(headline(host, total, okCount, failN, warnN));
     lines.push(meta);
 
+    const style = STYLES.has(opts.style) ? opts.style : 'plain';
     for (const g of groups) {
         lines.push('', `${g.no}. ${g.title}${g.extra ? ` (${g.extra})` : ''}`);
-        for (const it of g.items) lines.push(itemLine(it));
+        for (const it of g.items) lines.push(...itemLine(it, style));
     }
 
     // 문제가 있으면 번호만 한 줄로 되짚는다 — 긴 목록에서 눈으로 [x] 를 찾지 않게.
@@ -284,7 +366,11 @@ async function main() {
         return;
     }
 
-    const text = formatReport(summary, { runUrl: process.env.GITHUB_RUN_URL, smoke });
+    const text = formatReport(summary, {
+        runUrl: process.env.GITHUB_RUN_URL,
+        smoke,
+        style: (process.env.HEALTH_REPORT_STYLE || '').toLowerCase(),
+    });
     console.log(text);
 
     const token = process.env.TELEGRAM_BOT_TOKEN;
