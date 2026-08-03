@@ -14,6 +14,12 @@ name: Production Health Check
 #   gh variable set HEALTH_REPORT --body fail  # 이상일 때만 보고 (정상은 침묵)
 #   gh variable set HEALTH_REPORT --body off   # 보고 끔 (헬스체크·GitHub 실패 알림은 유지)
 #
+# 항목 표기 방식은 저장소 변수 HEALTH_REPORT_STYLE 로 (기본 plain):
+#   gh variable set HEALTH_REPORT_STYLE --body plain  # 쉬운 말 한 줄 (기본)
+#   gh variable set HEALTH_REPORT_STYLE --body both   # 기술 원문 + 쉬운 말 2줄
+#   gh variable set HEALTH_REPORT_STYLE --body tech   # 기술 원문 한 줄
+#   ※ 수동 실행 때는 "Run workflow" 의 style 입력으로 한 번만 바꿔 볼 수도 있다.
+#
 # 보고 시각을 바꾸려면 아래 cron 한 줄만 고친다(GitHub 은 cron 에 변수를 못 쓴다 — 리터럴만 허용).
 #   규칙: UTC = KST − 9시간. 분은 그대로.  형식: '<분> <시> * * *'
 #     08:30 KST → '30 23 * * *' (전날 23:30 UTC)   07:00 KST → '0 22 * * *'
@@ -26,7 +32,14 @@ name: Production Health Check
 on:
     schedule:
         - cron: '30 21 * * *' # 06:30 KST (전날 21:30 UTC) — 위 변환표 참조
-    workflow_dispatch: {} # 수동 재실행(Actions 탭 버튼 / gh workflow run health.yml)
+    workflow_dispatch: # 수동 재실행(Actions 탭 버튼 / gh workflow run health.yml)
+        inputs:
+            style:
+                description: '항목 표기 방식 (비우면 저장소 변수 HEALTH_REPORT_STYLE)'
+                required: false
+                type: choice
+                default: ''
+                options: ['', 'plain', 'both', 'tech']
 
 # 동시 실행 방지(수동+정시 겹침).
 concurrency:
@@ -76,6 +89,8 @@ jobs:
               if: always()
               env:
                   HEALTH_REPORT: ${{ vars.HEALTH_REPORT }}
+                  # 수동 실행에서 고른 값이 우선, 비면 저장소 변수(정시 실행은 항상 이쪽).
+                  HEALTH_REPORT_STYLE: ${{ inputs.style || vars.HEALTH_REPORT_STYLE }}
                   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
                   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
                   GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
