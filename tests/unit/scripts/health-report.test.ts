@@ -146,12 +146,12 @@ describe('formatReport — 번호식 문안 (2026-08-03 개정)', () => {
     it('세부번호는 큰분류가 바뀌어도 이어서 증가하고, 마지막 번호가 총 항목 수와 같다', () => {
         const text = formatReport(richOk, { smoke: 'success' });
         expect(text).toContain('1. 보안 접속·주소 연결');
-        expect(text).toContain('1-1. https://radsafety.kr → 200 OK [o]');
-        expect(text).toContain('1-3. www → https://radsafety.kr/ [o]'); // https + www 가 한 큰분류
+        expect(text).toContain('1-1. 사이트 접속 응답 [o]');
+        expect(text).toContain('1-3. www 주소 → 정식 주소 연결 [o]'); // https + www 가 한 큰분류
         expect(text).toContain('2. 보안 인증서 (만료 2026-09-08)');
-        expect(text).toContain('2-4. 인증서 유효 — 55일 남음 [o]'); // 큰분류가 바뀌어도 세부번호 연속
+        expect(text).toContain('2-4. 보안 인증서 유효 (55일 남음) [o]'); // 큰분류가 바뀌어도 세부번호 연속
         expect(text).toContain('8. 실제 브라우저 화면');
-        expect(text).toContain('8-13. 홈·로그인 화면 렌더링(JS 오류 감지) [o]'); // 마지막 = 총 13개
+        expect(text).toContain('8-13. 실제 브라우저로 연 홈·로그인 화면 [o]'); // 마지막 = 총 13개
     });
 
     it('이모지·이모티콘을 쓰지 않는다', () => {
@@ -163,7 +163,7 @@ describe('formatReport — 번호식 문안 (2026-08-03 개정)', () => {
         const text = formatReport(richOk, { smoke: 'success' });
         expect(text).not.toContain('312ms'); // 정상 항목의 detail 은 소음
         const broken = withItemStatus('doctor', 'fail', '[3] db-ping', 'timeout 5000ms');
-        expect(formatReport(broken)).toContain('[3] db-ping — timeout 5000ms [x]');
+        expect(formatReport(broken)).toContain('데이터베이스 응답 — timeout 5000ms [x]');
     });
 
     it('문제가 있으면 머리줄이 건수와 정상수/총수를 말하고, 되짚기 줄이 번호를 가리킨다', () => {
@@ -266,11 +266,57 @@ describe('formatReport — 번호식 문안 (2026-08-03 개정)', () => {
     });
 });
 
+describe('formatReport — 항목 표기 방식 (style)', () => {
+    it('기본(plain)은 쉬운 말로 옮긴다 — 기술 용어를 그대로 내보내지 않는다', () => {
+        const text = formatReport(richOk);
+        expect(text).toContain('1-2. 암호화 접속(https) 강제 [o]');
+        expect(text).toContain('데이터베이스 응답 [o]'); // `[3] db-ping`
+        expect(text).not.toContain('HSTS');
+        expect(text).not.toContain('db-ping');
+    });
+
+    it('both 는 기술 원문 줄 아래 쉬운 말을 들여써 두 줄로 낸다', () => {
+        const text = formatReport(richOk, { style: 'both' });
+        expect(text).toContain('1-2. HSTS 헤더 존재 [o]\n      암호화 접속(https) 강제');
+    });
+
+    it('tech 는 종전대로 기술 원문 한 줄만 낸다', () => {
+        const text = formatReport(richOk, { style: 'tech' });
+        expect(text).toContain('1-2. HSTS 헤더 존재 [o]');
+        expect(text).not.toContain('암호화 접속');
+    });
+
+    it('알 수 없는 style 값은 기본(plain)으로 떨어진다', () => {
+        expect(formatReport(richOk, { style: 'zzz' })).toBe(formatReport(richOk));
+    });
+
+    it('사전에 없는 라벨은 어느 방식에서든 원문 그대로 나온다 (조용한 누락 방지)', () => {
+        const unknown = {
+            ...richOk,
+            sections: [
+                {
+                    key: 'https',
+                    name: 'HTTPS',
+                    ok: 1,
+                    warn: 0,
+                    fail: 0,
+                    items: [{ status: 'ok', label: '새로 생긴 점검 항목', detail: '' }],
+                },
+            ],
+        };
+        for (const style of ['plain', 'both', 'tech']) {
+            expect(formatReport(unknown, { style })).toContain('1-1. 새로 생긴 점검 항목 [o]');
+        }
+        // both 라도 번역이 없으면 군더더기 둘째 줄을 만들지 않는다.
+        expect(formatReport(unknown, { style: 'both' }).split('\n')).toHaveLength(5);
+    });
+});
+
 describe('formatReport — 브라우저 스모크 결합', () => {
     it('스모크 실패면 요약이 정상이어도 이상으로 승격한다', () => {
         const text = formatReport(richOk, { smoke: 'failure' });
         expect(text.split('\n')[0]).toBe('radsafety.kr 점검항목 문제 1건 (12/13 정상)');
-        expect(text).toContain('8-13. 홈·로그인 화면 렌더링(JS 오류 감지) — Playwright 실패, 실행 로그 참조 [x]');
+        expect(text).toContain('8-13. 실제 브라우저로 연 홈·로그인 화면 — Playwright 실패, 실행 로그 참조 [x]');
     });
 
     it('스모크 항목은 성패와 무관하게 1개다 (총 항목 수가 흔들리면 N/N 축이 무너진다)', () => {
