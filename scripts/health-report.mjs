@@ -21,82 +21,111 @@ import { readFileSync } from 'node:fs';
 
 const MAX_LISTED_FAILURES = 10;
 
+// 상태 표식 — 이모지 없이 한 글자로. 항목 줄의 **맨 끝**에 붙어 눈이 한 열만 훑으면 되게 한다.
+const MARK = { ok: '[o]', warn: '[!]', fail: '[x]' };
+
 // 점검 영역(check-production.mjs 의 section key)을 초중급 눈높이 문구로 묶는다.
 // key 는 check-production.mjs 와의 계약 — 거기서 바뀌면 여기도 함께.
 const REPORT_GROUPS = [
-    { emoji: '🌐', title: '보안 접속·주소 연결', keys: ['https', 'www'] },
-    { emoji: '🔒', title: '보안 인증서', keys: ['cert'] },
-    { emoji: '📄', title: '홈·로그인 화면 응답', keys: ['public', 'speed'] },
-    { emoji: '🚧', title: '비로그인 접근 차단', keys: ['protected'] },
-    { emoji: '🔑', title: '로그인 처리 경로', keys: ['auth'] },
-    { emoji: '🔌', title: 'API 응답', keys: ['api'] },
-    { emoji: '🩺', title: '내부 자가진단(설정·DB·메일·푸시)', keys: ['doctor'] },
+    { title: '보안 접속·주소 연결', keys: ['https', 'www'] },
+    { title: '보안 인증서', keys: ['cert'] },
+    { title: '홈·로그인 화면 응답', keys: ['public', 'speed'] },
+    { title: '비로그인 접근 차단', keys: ['protected'] },
+    { title: '로그인 처리 경로', keys: ['auth'] },
+    { title: 'API 응답', keys: ['api'] },
+    { title: '내부 자가진단(설정·DB·메일·푸시)', keys: ['doctor'] },
 ];
 
 /**
- * 영역별 상태 줄 생성 — "무엇을 확인했는지"를 사람 말로.
- * summary.sections 가 없으면(구버전 요약) 빈 배열을 반환해 상위가 예전 문안으로 폴백한다.
+ * 요약 → 번호 매긴 그룹 트리.
+ *
+ * 번호 규칙: 큰분류는 `1.` `2.` …, 세부항목은 `1-1.` `1-2.` `2-3.` … 으로
+ * **큰분류가 바뀌어도 세부번호는 이어서 증가**한다. 그래서 마지막 항목 번호 = 전체 항목 수이고,
+ * 머리줄의 `(28/28)` 과 같은 축을 쓴다 — 두 숫자가 어긋나면 그 자체가 버그 신호다.
+ *
+ * @returns {{groups: Array, total: number, okCount: number, problems: Array}}
+ *   groups 가 비면(구버전 요약 — sections·items 없음) 상위가 폴백 문안을 쓴다.
  */
-function sectionLines(summary, smoke) {
+function buildGroups(summary, smoke) {
     const sections = summary.sections || [];
-    if (!sections.length) return [];
-
     const byKey = Object.fromEntries(sections.map((s) => [s.key, s]));
     const covered = new Set();
-    const lines = [];
     const h = summary.highlights || {};
+    const groups = [];
+
+    const push = (title, extra, items) => {
+        if (!items.length) return;
+        groups.push({ title, extra, items });
+    };
 
     for (const g of REPORT_GROUPS) {
         const present = g.keys.filter((k) => byKey[k]);
         if (!present.length) continue;
         present.forEach((k) => covered.add(k));
 
-        const failN = present.reduce((n, k) => n + (byKey[k].fail || 0), 0);
-        const warnN = present.reduce((n, k) => n + (byKey[k].warn || 0), 0);
-        const status = failN > 0 ? `✗ 문제 ${failN}건` : warnN > 0 ? `정상 (경고 ${warnN}건)` : '정상';
+        // 큰분류 줄의 부가 수치는 **항목 라벨에 없는 것만** 싣는다.
+        // (잔여일·응답시간은 이미 항목 라벨에 있다 — 되풀이하면 줄만 길어진다.)
+        const extra = g.keys.includes('cert') && h.certExpiry ? `만료 ${h.certExpiry}` : '';
 
-        // 정상이어도 의미 있는 수치는 함께 보여준다.
-        let extra = '';
-        if (g.keys.includes('cert') && h.certDaysLeft != null) {
-            extra = ` — ${h.certDaysLeft}일 남음(만료 ${h.certExpiry})`;
-        } else if (g.keys.includes('speed') && h.homeMs != null) {
-            const sec = h.homeMs / 1000;
-            extra = sec < 0.1 ? ' — 홈 0.1초 미만' : ` — 홈 ${sec.toFixed(1)}초`;
-        }
-
-        lines.push(`${g.emoji} ${g.title}: ${status}${extra}`);
-        lines.push(...itemLines(present.flatMap((k) => byKey[k].items || [])));
+        push(
+            g.title,
+            extra,
+            present.flatMap((k) => itemsOf(byKey[k])),
+        );
     }
 
     // 그룹 매핑에 없는 새 영역이 생겨도 조용히 사라지지 않게 원래 이름으로 표기.
     for (const s of sections) {
         if (covered.has(s.key)) continue;
-        const status = s.fail > 0 ? `✗ 문제 ${s.fail}건` : '정상';
-        lines.push(`• ${s.name}: ${status}`);
-        lines.push(...itemLines(s.items || []));
+        push(s.name, '', itemsOf(s));
     }
 
+    // 브라우저 스모크는 별도 스텝(SMOKE_OUTCOME)이라 요약 JSON 밖에서 들어온다.
+    // 성패만 전달되므로 **항목은 하나** — 홈·로그인 중 어느 쪽이 깨졌는지 알 수 없다.
+    // 억지로 2개로 쪼개면 실패일 때 총 항목 수가 흔들려 (N/N) 축이 무너진다.
     if (smoke === 'success' || smoke === 'failure') {
-        lines.push(`🖥 실제 브라우저 화면(JS 오류): ${smoke === 'success' ? '정상' : '✗ 문제'}`);
-        // SMOKE_OUTCOME 은 성패만 전달하므로 항목명은 여기 고정 —
-        // tests/e2e/production-smoke.spec.ts 의 테스트 구성이 바뀌면 함께 갱신할 것.
-        if (smoke === 'success') {
-            lines.push('   ✓ 홈 화면 렌더링·JS 크래시 없음');
-            lines.push('   ✓ 로그인 화면 렌더링·JS 크래시 없음');
-        }
+        push('실제 브라우저 화면', '', [
+            {
+                status: smoke === 'success' ? 'ok' : 'fail',
+                label: '홈·로그인 화면 렌더링(JS 오류 감지)',
+                detail: smoke === 'success' ? '' : 'Playwright 실패, 실행 로그 참조',
+            },
+        ]);
     }
 
-    return lines;
+    // 번호 부여 + 집계. 세부번호는 그룹을 가로질러 하나의 흐름으로 증가한다.
+    let n = 0;
+    let okCount = 0;
+    const problems = [];
+    groups.forEach((g, gi) => {
+        g.no = gi + 1;
+        for (const it of g.items) {
+            it.no = `${g.no}-${++n}`;
+            if (it.status === 'ok') okCount++;
+            else problems.push(it);
+        }
+    });
+
+    return { groups, total: n, okCount, problems };
 }
 
-/** 영역 아래 세부 항목 줄 — 무엇을 확인했는지 항목명까지 보여준다(✓/⚠/✗). */
-function itemLines(items) {
-    return items.map((it) => {
-        const mark = it.status === 'ok' ? '✓' : it.status === 'warn' ? '⚠' : '✗';
-        // 정상 항목은 이름만(수치는 소음), 경고·실패는 사유(detail)까지.
-        const tail = it.status !== 'ok' && it.detail ? ` — ${it.detail}` : '';
-        return `   ${mark} ${it.label}${tail}`;
-    });
+/**
+ * 영역의 세부 항목 목록. items 가 없는 구버전 요약이면 집계 숫자로 대체 항목을 만든다 —
+ * 숫자만 있고 이름이 없다고 해서 조용히 사라지면 (N/N) 총합이 실제와 어긋난다.
+ */
+function itemsOf(s) {
+    if (s.items && s.items.length) return s.items;
+    const out = [];
+    if (s.fail > 0) out.push({ status: 'fail', label: `${s.name}`, detail: `문제 ${s.fail}건` });
+    if (s.warn > 0) out.push({ status: 'warn', label: `${s.name}`, detail: `경고 ${s.warn}건` });
+    if (s.ok > 0) out.push({ status: 'ok', label: `${s.name} ${s.ok}건`, detail: '' });
+    return out;
+}
+
+/** 세부 항목 한 줄 — `1-1. 라벨 [o]`. 정상은 이름만(수치는 소음), 경고·실패는 사유까지. */
+function itemLine(it) {
+    const tail = it.status !== 'ok' && it.detail ? ` — ${it.detail}` : '';
+    return `${it.no}. ${it.label}${tail} ${MARK[it.status] || MARK.fail}`;
 }
 
 /**
@@ -113,7 +142,7 @@ export function formatReport(summary, opts = {}) {
 
     // 요약이 없다 = 점검 스크립트가 요약을 남기기도 전에 죽었다. 정상으로 오인하면 안 된다.
     if (!summary) {
-        lines.push('❌ radsafety 점검 실행 자체 실패');
+        lines.push('radsafety.kr 점검 실행 자체 실패 [x]');
         lines.push('헬스체크 스크립트가 결과를 남기지 못했습니다(크래시·네트워크·CI 오류).');
         if (opts.runUrl) lines.push('', `실행 로그: ${opts.runUrl}`);
         return lines.join('\n');
@@ -125,57 +154,63 @@ export function formatReport(summary, opts = {}) {
     const modeLabel = summary.deep ? '전체 점검' : '기본 점검';
     const meta = [when, summary.version ? `v${summary.version}` : null, modeLabel].filter(Boolean).join(' · ');
 
-    // 스모크 실패는 HTTP 점검이 전부 통과했어도 "이상"이다 — JS 크래시 백지 화면은 HTTP 로 안 보인다.
-    const smokeFailed = opts.smoke === 'failure';
-    const areas = sectionLines(summary, opts.smoke);
+    const { groups, total, okCount, problems } = buildGroups(summary, opts.smoke);
 
-    if (summary.ok && !smokeFailed) {
-        lines.push(`✅ ${host} 정상`);
+    // 구버전 요약(영역·항목 정보 없음) 폴백 — 번호를 매길 대상이 없으므로 집계만 낸다.
+    if (!groups.length) {
+        const n = (summary.passed || 0) + (summary.warned || 0) + (summary.failed || 0);
+        lines.push(headline(host, n, summary.passed || 0, summary.failed || 0, summary.warned || 0));
         lines.push(meta);
-        if (areas.length) {
-            lines.push('', ...areas, '');
-            const warnNote = summary.warned > 0 ? ` · 경고 ${summary.warned}건` : '';
-            lines.push(`세부 점검 총 ${summary.passed}건 통과${warnNote}`);
-            // 경고 상세는 영역 안의 ⚠ 줄로 이미 표기됨 — 중복 나열하지 않는다.
-        } else {
-            // 구버전 요약(영역 정보 없음) 폴백
-            const warnNote = summary.warned > 0 ? ` · 경고 ${summary.warned}건` : '';
-            const smokeNote = opts.smoke === 'success' ? ' · 브라우저 스모크 통과' : '';
-            lines.push(`점검 ${summary.passed}건 모두 통과${warnNote}${smokeNote}`);
-            // 경고는 초록불을 붉게 만들진 않지만, 뭐가 걸렸는지는 보여준다.
-            for (const w of summary.warnings || []) {
-                lines.push(`⚠ ${w.label}${w.detail ? ` — ${w.detail}` : ''}`);
-            }
+        lines.push('', '세부 항목 정보 없음(구버전 요약)');
+        for (const f of (summary.failures || []).slice(0, MAX_LISTED_FAILURES)) {
+            lines.push(`${f.label}${f.detail ? ` — ${f.detail}` : ''} ${MARK.fail}`);
         }
+        for (const w of (summary.warnings || []).slice(0, MAX_LISTED_FAILURES)) {
+            lines.push(`${w.label}${w.detail ? ` — ${w.detail}` : ''} ${MARK.warn}`);
+        }
+        if (opts.runUrl && summary.failed > 0) lines.push('', `실행 로그: ${opts.runUrl}`);
         return lines.join('\n');
     }
 
-    const failedCount = summary.failed + (smokeFailed ? 1 : 0);
-    lines.push(`❌ ${host} 이상 감지`);
+    const failN = problems.filter((p) => p.status === 'fail').length;
+    const warnN = problems.filter((p) => p.status !== 'fail').length;
+
+    lines.push(headline(host, total, okCount, failN, warnN));
     lines.push(meta);
-    lines.push(`문제 ${failedCount}건 / 통과 ${summary.passed}건`);
-    if (areas.length) {
-        // 영역 지도를 먼저 — 어디가 멀쩡하고 어디가 문제인지 한눈에.
-        lines.push('', ...areas, '', '문제 상세:');
-    } else {
-        lines.push('');
+
+    for (const g of groups) {
+        lines.push('', `${g.no}. ${g.title}${g.extra ? ` (${g.extra})` : ''}`);
+        for (const it of g.items) lines.push(itemLine(it));
     }
 
-    const list = [
-        ...(summary.failures || []),
-        ...(smokeFailed
-            ? [{ label: '브라우저 화면 검사(홈·로그인 JS 오류)', detail: 'Playwright 실패 — 실행 로그 참조' }]
-            : []),
-    ];
-    for (const f of list.slice(0, MAX_LISTED_FAILURES)) {
-        lines.push(`• ${f.label}${f.detail ? ` — ${f.detail}` : ''}`);
-    }
-    if (list.length > MAX_LISTED_FAILURES) {
-        lines.push(`…외 ${list.length - MAX_LISTED_FAILURES}건`);
+    // 문제가 있으면 번호만 한 줄로 되짚는다 — 긴 목록에서 눈으로 [x] 를 찾지 않게.
+    if (problems.length) {
+        const ref = (st) =>
+            problems
+                .filter((p) => (st === 'fail' ? p.status === 'fail' : p.status !== 'fail'))
+                .slice(0, MAX_LISTED_FAILURES)
+                .map((p) => p.no)
+                .join(', ');
+        const parts = [];
+        if (failN) parts.push(`문제 ${ref('fail')}`);
+        if (warnN) parts.push(`경고 ${ref('warn')}`);
+        lines.push('', parts.join(' · '));
     }
 
-    if (opts.runUrl) lines.push('', `실행 로그: ${opts.runUrl}`);
+    if (opts.runUrl && failN > 0) lines.push('', `실행 로그: ${opts.runUrl}`);
     return lines.join('\n');
+}
+
+/**
+ * 머리줄 — 세부항목 총합 기준. "몇 개 중 몇 개가 정상인가" 한 줄로.
+ * 전부 정상일 때만 "모든 점검항목 정상" 이라고 말한다(경고 1건도 그 말을 쓰지 않는다).
+ */
+function headline(host, total, okCount, failN, warnN) {
+    if (!failN && !warnN) return `${host} 모든 점검항목 정상 (${total}/${total})`;
+    const parts = [];
+    if (failN) parts.push(`문제 ${failN}건`);
+    if (warnN) parts.push(`경고 ${warnN}건`);
+    return `${host} 점검항목 ${parts.join(' · ')} (${okCount}/${total} 정상)`;
 }
 
 /**
