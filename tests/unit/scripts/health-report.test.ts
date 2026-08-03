@@ -28,177 +28,308 @@ const failSummary = {
     ],
 };
 
-describe('formatReport', () => {
-    it('정상이면 ✅ 와 호스트·통과건수·버전을 보고한다', () => {
-        const text = formatReport(okSummary);
-        expect(text.startsWith('✅')).toBe(true);
-        expect(text).toContain('radsafety.kr 정상');
-        expect(text).toContain('24건 모두 통과');
-        expect(text).toContain('v0.2.1');
+/** 실제 요약과 같은 모양 — 영역마다 세부 항목(items)이 들어 있다. 총 12개 항목. */
+const sections = [
+    {
+        key: 'https',
+        name: 'HTTPS 및 도메인',
+        ok: 2,
+        warn: 0,
+        fail: 0,
+        items: [
+            { status: 'ok', label: 'https://radsafety.kr → 200 OK', detail: '312ms' },
+            { status: 'ok', label: 'HSTS 헤더 존재', detail: '' },
+        ],
+    },
+    {
+        key: 'cert',
+        name: 'TLS 인증서 만료',
+        ok: 1,
+        warn: 0,
+        fail: 0,
+        items: [{ status: 'ok', label: '인증서 유효 — 55일 남음', detail: '만료일 2026-09-08' }],
+    },
+    {
+        key: 'www',
+        name: 'www → apex 리다이렉트',
+        ok: 1,
+        warn: 0,
+        fail: 0,
+        items: [{ status: 'ok', label: 'www → https://radsafety.kr/', detail: '' }],
+    },
+    {
+        key: 'public',
+        name: '공개 페이지 HTTP 200 응답',
+        ok: 2,
+        warn: 0,
+        fail: 0,
+        items: [
+            { status: 'ok', label: '홈페이지 (/)', detail: '' },
+            { status: 'ok', label: '로그인 페이지 (/login)', detail: '' },
+        ],
+    },
+    {
+        key: 'protected',
+        name: '보호 페이지 → 로그인 리다이렉트 (비로그인 HTTP)',
+        ok: 1,
+        warn: 0,
+        fail: 0,
+        items: [{ status: 'ok', label: '알림 → /login 서버사이드 리다이렉트', detail: '' }],
+    },
+    {
+        key: 'auth',
+        name: '/auth 엔드포인트 SSR 동작 확인 (CDN 캐시 버그 감지)',
+        ok: 1,
+        warn: 0,
+        fail: 0,
+        items: [{ status: 'ok', label: '/auth/confirm → 302 SSR 정상', detail: '' }],
+    },
+    {
+        key: 'api',
+        name: 'API 엔드포인트 응답 확인',
+        ok: 1,
+        warn: 0,
+        fail: 0,
+        items: [{ status: 'ok', label: '/api/archives/[id] → 404', detail: '' }],
+    },
+    {
+        key: 'doctor',
+        name: 'Doctor 헬스체크 (/api/health)',
+        ok: 2,
+        warn: 0,
+        fail: 0,
+        items: [
+            { status: 'ok', label: 'Cache-Control: no-store', detail: '' },
+            { status: 'ok', label: '[3] db-ping', detail: '' },
+        ],
+    },
+    {
+        key: 'speed',
+        name: '주요 페이지 응답시간 (체감 성능)',
+        ok: 1,
+        warn: 0,
+        fail: 0,
+        items: [{ status: 'ok', label: '홈페이지 응답시간 38ms', detail: '' }],
+    },
+];
+const richOk = {
+    ...okSummary,
+    passed: 12,
+    sections,
+    highlights: { certDaysLeft: 55, certExpiry: '2026-09-08', homeMs: 420 },
+};
+
+/** 특정 영역의 항목 하나를 경고·실패로 바꾼 요약을 만든다. */
+function withItemStatus(key: string, status: 'warn' | 'fail', label: string, detail: string) {
+    return {
+        ...richOk,
+        ok: status === 'warn',
+        failed: status === 'fail' ? 1 : 0,
+        warned: status === 'warn' ? 1 : 0,
+        sections: sections.map((s) =>
+            s.key === key
+                ? { ...s, ok: s.ok - 1, [status]: 1, items: [{ status, label, detail }, ...s.items.slice(1)] }
+                : s,
+        ),
+    };
+}
+
+describe('formatReport — 번호식 문안 (2026-08-03 개정)', () => {
+    it('전부 정상이면 머리줄이 "모든 점검항목 정상 (N/N)" 이다', () => {
+        const text = formatReport(richOk, { smoke: 'success' });
+        // 12(HTTP 항목) + 1(브라우저 스모크) = 13
+        expect(text.split('\n')[0]).toBe('radsafety.kr 모든 점검항목 정상 (13/13)');
+        expect(text.split('\n')[1]).toContain('2026-07-14 08:30 KST');
+        expect(text.split('\n')[1]).toContain('v0.2.1');
     });
 
-    it('실패면 ❌ 와 실패 항목 라벨·detail 을 나열한다', () => {
-        const text = formatReport(failSummary);
-        expect(text.startsWith('❌')).toBe(true);
-        expect(text).toContain('문제 2건');
-        expect(text).toContain('[db] db-ping — timeout 5000ms');
-        expect(text).toContain('전체 status=degraded (strict)');
+    it('세부번호는 큰분류가 바뀌어도 이어서 증가하고, 마지막 번호가 총 항목 수와 같다', () => {
+        const text = formatReport(richOk, { smoke: 'success' });
+        expect(text).toContain('1. 보안 접속·주소 연결');
+        expect(text).toContain('1-1. 사이트 접속 응답 [o]');
+        expect(text).toContain('1-3. www 주소 → 정식 주소 연결 [o]'); // https + www 가 한 큰분류
+        expect(text).toContain('2. 보안 인증서 (만료 2026-09-08)');
+        expect(text).toContain('2-4. 보안 인증서 유효 (55일 남음) [o]'); // 큰분류가 바뀌어도 세부번호 연속
+        expect(text).toContain('8. 실제 브라우저 화면');
+        expect(text).toContain('8-13. 실제 브라우저로 연 홈·로그인 화면 [o]'); // 마지막 = 총 13개
     });
 
-    it('경고만 있으면 정상(✅)으로 보고하되 경고를 함께 표기한다', () => {
-        const text = formatReport({
-            ...okSummary,
-            warned: 1,
-            warnings: [{ label: 'ts 오래됨 — 캐시 의심', detail: '90s drift' }],
+    it('이모지·이모티콘을 쓰지 않는다', () => {
+        const text = formatReport(richOk, { smoke: 'success' });
+        expect(text).not.toMatch(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2714}\u{2717}\u{26A0}\u{2705}\u{274C}]/u);
+    });
+
+    it('정상 항목은 이름만, 경고·실패 항목만 사유를 이어 붙인다', () => {
+        const text = formatReport(richOk, { smoke: 'success' });
+        expect(text).not.toContain('312ms'); // 정상 항목의 detail 은 소음
+        const broken = withItemStatus('doctor', 'fail', '[3] db-ping', 'timeout 5000ms');
+        expect(formatReport(broken)).toContain('데이터베이스 응답 — timeout 5000ms [x]');
+    });
+
+    it('문제가 있으면 머리줄이 건수와 정상수/총수를 말하고, 되짚기 줄이 번호를 가리킨다', () => {
+        const text = formatReport(withItemStatus('doctor', 'fail', '[3] db-ping', 'timeout'), { smoke: 'success' });
+        expect(text.split('\n')[0]).toBe('radsafety.kr 점검항목 문제 1건 (12/13 정상)');
+        expect(text).toContain('문제 7-11'); // doctor 영역 첫 항목
+    });
+
+    it('경고만 있어도 "모든 점검항목 정상" 이라고 말하지 않는다', () => {
+        const text = formatReport(withItemStatus('cert', 'warn', '인증서 만료 18일 전', '추이 관찰'), {
+            smoke: 'success',
         });
-        expect(text.startsWith('✅')).toBe(true);
-        expect(text).toContain('경고 1건');
-        expect(text).toContain('ts 오래됨');
+        expect(text.split('\n')[0]).toBe('radsafety.kr 점검항목 경고 1건 (12/13 정상)');
+        expect(text).toContain('인증서 만료 18일 전 — 추이 관찰 [!]');
+        expect(text).toContain('경고 2-4');
     });
 
     it('시각을 KST 로 변환해 표기한다 (UTC 원문 노출 금지)', () => {
-        const text = formatReport(okSummary);
+        const text = formatReport(richOk);
         expect(text).toContain('2026-07-14 08:30 KST');
         expect(text).not.toContain('2026-07-13T23:30');
-    });
-
-    it('실패가 10건을 넘으면 10건까지만 나열하고 잔여를 요약한다', () => {
-        const many = Array.from({ length: 13 }, (_, i) => ({ label: `실패-${i}`, detail: '' }));
-        const text = formatReport({ ...failSummary, failed: 13, failures: many });
-        expect(text).toContain('실패-9');
-        expect(text).not.toContain('실패-10');
-        expect(text).toContain('…외 3건');
-    });
-
-    it('요약이 없으면(점검 실행 자체 실패) ❌ 로 보고한다 — 정상 오인 금지', () => {
-        const text = formatReport(null);
-        expect(text.startsWith('❌')).toBe(true);
-        expect(text).toContain('점검 실행 자체 실패');
-    });
-
-    it('runUrl 이 주어지면 실행 로그 링크를 포함한다', () => {
-        const url = 'https://github.com/ai4radmed/radsafety-pwa/actions/runs/1';
-        expect(formatReport(failSummary, { runUrl: url })).toContain(url);
-        expect(formatReport(null, { runUrl: url })).toContain(url);
-    });
-
-    it('스모크 통과 + 요약 정상이면 ✅ 에 스모크 통과를 표기한다', () => {
-        const text = formatReport(okSummary, { smoke: 'success' });
-        expect(text.startsWith('✅')).toBe(true);
-        expect(text).toContain('브라우저 스모크 통과');
-    });
-
-    it('스모크 실패면 요약이 정상이어도 ❌ 이상 감지로 승격한다', () => {
-        const text = formatReport(okSummary, { smoke: 'failure' });
-        expect(text.startsWith('❌')).toBe(true);
-        expect(text).toContain('문제 1건');
-        expect(text).toContain('브라우저 화면 검사');
-    });
-
-    it('스모크 실패는 기존 실패 목록에 합산된다', () => {
-        const text = formatReport(failSummary, { smoke: 'failure' });
-        expect(text).toContain('문제 3건');
-        expect(text).toContain('브라우저 화면 검사');
-        expect(text).toContain('[db] db-ping');
-    });
-
-    it('스모크 미주입(undefined)이면 문안에 스모크를 언급하지 않는다 (하위 호환)', () => {
-        expect(formatReport(okSummary)).not.toContain('스모크');
-        expect(formatReport(failSummary)).not.toContain('브라우저');
-    });
-});
-
-describe('formatReport — 영역별 문안 (sections 포함 요약)', () => {
-    const sections = [
-        { key: 'https', name: 'HTTPS 및 도메인', ok: 2, warn: 0, fail: 0 },
-        { key: 'cert', name: 'TLS 인증서 만료', ok: 1, warn: 0, fail: 0 },
-        { key: 'www', name: 'www → apex 리다이렉트', ok: 1, warn: 0, fail: 0 },
-        { key: 'public', name: '공개 페이지 HTTP 200 응답', ok: 3, warn: 0, fail: 0 },
-        { key: 'protected', name: '보호 페이지 → 로그인 리다이렉트 (비로그인 HTTP)', ok: 2, warn: 0, fail: 0 },
-        { key: 'auth', name: '/auth 엔드포인트 SSR 동작 확인 (CDN 캐시 버그 감지)', ok: 2, warn: 0, fail: 0 },
-        { key: 'api', name: 'API 엔드포인트 응답 확인', ok: 1, warn: 0, fail: 0 },
-        { key: 'doctor', name: 'Doctor 헬스체크 (/api/health)', ok: 10, warn: 0, fail: 0 },
-        { key: 'speed', name: '주요 페이지 응답시간 (체감 성능)', ok: 2, warn: 0, fail: 0 },
-    ];
-    const richOk = { ...okSummary, sections, highlights: { certDaysLeft: 55, certExpiry: '2026-09-08', homeMs: 420 } };
-
-    it('정상이면 영역별 상태 줄과 인증서·속도 수치를 사람 말로 보여준다', () => {
-        const text = formatReport(richOk, { smoke: 'success' });
-        expect(text.startsWith('✅')).toBe(true);
-        expect(text).toContain('🔒 보안 인증서: 정상 — 55일 남음(만료 2026-09-08)');
-        expect(text).toContain('📄 홈·로그인 화면 응답: 정상 — 홈 0.4초');
-        expect(text).toContain('🩺 내부 자가진단(설정·DB·메일·푸시): 정상');
-        expect(text).toContain('🖥 실제 브라우저 화면(JS 오류): 정상');
-        expect(text).toContain('세부 점검 총 24건 통과');
-        expect(text).not.toContain('deep'); // 개발자 용어 노출 금지
-    });
-
-    it('이상이면 영역 지도에서 문제 영역이 ✗ 로 표시되고 문제 상세가 이어진다', () => {
-        const broken = {
-            ...richOk,
-            ok: false,
-            failed: 1,
-            passed: 23,
-            failures: [{ label: '[db] db-ping', detail: 'timeout' }],
-            sections: sections.map((s) => (s.key === 'doctor' ? { ...s, fail: 1 } : s)),
-        };
-        const text = formatReport(broken, { smoke: 'success' });
-        expect(text.startsWith('❌')).toBe(true);
-        expect(text).toContain('🩺 내부 자가진단(설정·DB·메일·푸시): ✗ 문제 1건');
-        expect(text).toContain('🌐 보안 접속·주소 연결: 정상');
-        expect(text).toContain('문제 상세:');
-        expect(text).toContain('[db] db-ping — timeout');
-    });
-
-    it('영역 아래에 세부 항목명을 ✓/✗ 로 나열한다', () => {
-        const withItems = {
-            ...richOk,
-            sections: sections.map((s) =>
-                s.key === 'https'
-                    ? {
-                          ...s,
-                          items: [
-                              { status: 'ok', label: 'https://radsafety.kr → 200 OK', detail: '312ms' },
-                              { status: 'ok', label: 'HSTS 헤더 존재', detail: '' },
-                          ],
-                      }
-                    : s,
-            ),
-        };
-        const text = formatReport(withItems, { smoke: 'success' });
-        expect(text).toContain('   ✓ https://radsafety.kr → 200 OK');
-        expect(text).toContain('   ✓ HSTS 헤더 존재');
-        expect(text).toContain('   ✓ 홈 화면 렌더링·JS 크래시 없음');
-        expect(text).not.toContain('312ms'); // 정상 항목의 수치는 소음 — 이름만
-    });
-
-    it('경고·실패 항목은 사유(detail)까지 표기한다', () => {
-        const withFailItem = {
-            ...richOk,
-            ok: false,
-            failed: 1,
-            failures: [{ label: '인증서 만료 임박', detail: '5일 남음' }],
-            sections: sections.map((s) =>
-                s.key === 'cert'
-                    ? { ...s, fail: 1, items: [{ status: 'fail', label: '인증서 만료 임박', detail: '5일 남음' }] }
-                    : s,
-            ),
-        };
-        const text = formatReport(withFailItem);
-        expect(text).toContain('   ✗ 인증서 만료 임박 — 5일 남음');
-    });
-
-    it('그룹 매핑에 없는 새 영역도 원래 이름으로 표기된다 (조용한 누락 방지)', () => {
-        const withNew = {
-            ...richOk,
-            sections: [...sections, { key: 'new-area', name: '새 점검 영역', ok: 1, warn: 0, fail: 0 }],
-        };
-        expect(formatReport(withNew)).toContain('• 새 점검 영역: 정상');
     });
 
     it('전체 점검/기본 점검 라벨로 deep/shallow 를 풀어 쓴다', () => {
         expect(formatReport(richOk)).toContain('전체 점검');
         expect(formatReport({ ...richOk, deep: false })).toContain('기본 점검');
+        expect(formatReport(richOk)).not.toContain('deep'); // 개발자 용어 노출 금지
+    });
+
+    it('그룹 매핑에 없는 새 영역도 원래 이름의 큰분류로 이어진다 (조용한 누락 방지)', () => {
+        const withNew = {
+            ...richOk,
+            sections: [
+                ...sections,
+                {
+                    key: 'new-area',
+                    name: '새 점검 영역',
+                    ok: 1,
+                    warn: 0,
+                    fail: 0,
+                    items: [{ status: 'ok', label: '새 항목', detail: '' }],
+                },
+            ],
+        };
+        const text = formatReport(withNew);
+        expect(text).toContain('8. 새 점검 영역');
+        expect(text).toContain('8-13. 새 항목 [o]');
+    });
+
+    it('items 없는 구버전 영역도 집계 숫자로 항목을 합성해 총합에서 빠지지 않는다', () => {
+        const legacy = {
+            ...richOk,
+            sections: [{ key: 'https', name: 'HTTPS 및 도메인', ok: 2, warn: 0, fail: 0 }],
+        };
+        const text = formatReport(legacy);
+        expect(text.split('\n')[0]).toBe('radsafety.kr 모든 점검항목 정상 (1/1)');
+        expect(text).toContain('1-1. HTTPS 및 도메인 2건 [o]');
+    });
+
+    it('되짚기 줄의 번호는 10개까지만 싣는다 (메시지 길이 보호)', () => {
+        const many = Array.from({ length: 13 }, (_, i) => ({ status: 'fail', label: `실패-${i}`, detail: '' }));
+        const text = formatReport({
+            ...richOk,
+            ok: false,
+            failed: 13,
+            sections: [{ key: 'doctor', name: 'Doctor', ok: 0, warn: 0, fail: 13, items: many }],
+        });
+        expect(text).toContain('1-10.');
+        expect(text.split('\n').at(-1)).toBe('문제 1-1, 1-2, 1-3, 1-4, 1-5, 1-6, 1-7, 1-8, 1-9, 1-10');
+    });
+
+    it('sections 가 아예 없으면 머리줄 + 폴백 문구를 낸다 (구버전 요약)', () => {
+        const text = formatReport(okSummary);
+        expect(text.split('\n')[0]).toBe('radsafety.kr 모든 점검항목 정상 (24/24)');
+        expect(text).toContain('세부 항목 정보 없음');
+    });
+
+    it('요약이 없으면(점검 실행 자체 실패) 이상으로 보고한다 — 정상 오인 금지', () => {
+        const text = formatReport(null);
+        expect(text).toContain('점검 실행 자체 실패 [x]');
+        expect(text).not.toContain('정상');
+    });
+
+    it('runUrl 은 문제가 있을 때만 싣는다 (정상 보고엔 소음)', () => {
+        const url = 'https://github.com/ai4radmed/radsafety-pwa/actions/runs/1';
+        expect(formatReport(withItemStatus('doctor', 'fail', 'db-ping', 'timeout'), { runUrl: url })).toContain(url);
+        expect(formatReport(null, { runUrl: url })).toContain(url);
+        expect(formatReport(richOk, { runUrl: url })).not.toContain(url);
+    });
+
+    it('폴백 문안에서도 실패·경고 라벨을 표식과 함께 나열한다', () => {
+        const text = formatReport({
+            ...failSummary,
+            warned: 1,
+            warnings: [{ label: 'ts 오래됨 — 캐시 의심', detail: '90s drift' }],
+        });
+        expect(text.split('\n')[0]).toBe('radsafety.kr 점검항목 문제 2건 · 경고 1건 (22/25 정상)');
+        expect(text).toContain('[db] db-ping — timeout 5000ms [x]');
+        expect(text).toContain('ts 오래됨 — 캐시 의심 — 90s drift [!]');
+    });
+});
+
+describe('formatReport — 항목 표기 방식 (style)', () => {
+    it('기본(plain)은 쉬운 말로 옮긴다 — 기술 용어를 그대로 내보내지 않는다', () => {
+        const text = formatReport(richOk);
+        expect(text).toContain('1-2. 암호화 접속(https) 강제 [o]');
+        expect(text).toContain('데이터베이스 응답 [o]'); // `[3] db-ping`
+        expect(text).not.toContain('HSTS');
+        expect(text).not.toContain('db-ping');
+    });
+
+    it('both 는 기술 원문 줄 아래 쉬운 말을 들여써 두 줄로 낸다', () => {
+        const text = formatReport(richOk, { style: 'both' });
+        expect(text).toContain('1-2. HSTS 헤더 존재 [o]\n      암호화 접속(https) 강제');
+    });
+
+    it('tech 는 종전대로 기술 원문 한 줄만 낸다', () => {
+        const text = formatReport(richOk, { style: 'tech' });
+        expect(text).toContain('1-2. HSTS 헤더 존재 [o]');
+        expect(text).not.toContain('암호화 접속');
+    });
+
+    it('알 수 없는 style 값은 기본(plain)으로 떨어진다', () => {
+        expect(formatReport(richOk, { style: 'zzz' })).toBe(formatReport(richOk));
+    });
+
+    it('사전에 없는 라벨은 어느 방식에서든 원문 그대로 나온다 (조용한 누락 방지)', () => {
+        const unknown = {
+            ...richOk,
+            sections: [
+                {
+                    key: 'https',
+                    name: 'HTTPS',
+                    ok: 1,
+                    warn: 0,
+                    fail: 0,
+                    items: [{ status: 'ok', label: '새로 생긴 점검 항목', detail: '' }],
+                },
+            ],
+        };
+        for (const style of ['plain', 'both', 'tech']) {
+            expect(formatReport(unknown, { style })).toContain('1-1. 새로 생긴 점검 항목 [o]');
+        }
+        // both 라도 번역이 없으면 군더더기 둘째 줄을 만들지 않는다.
+        expect(formatReport(unknown, { style: 'both' }).split('\n')).toHaveLength(5);
+    });
+});
+
+describe('formatReport — 브라우저 스모크 결합', () => {
+    it('스모크 실패면 요약이 정상이어도 이상으로 승격한다', () => {
+        const text = formatReport(richOk, { smoke: 'failure' });
+        expect(text.split('\n')[0]).toBe('radsafety.kr 점검항목 문제 1건 (12/13 정상)');
+        expect(text).toContain('8-13. 실제 브라우저로 연 홈·로그인 화면 — Playwright 실패, 실행 로그 참조 [x]');
+    });
+
+    it('스모크 항목은 성패와 무관하게 1개다 (총 항목 수가 흔들리면 N/N 축이 무너진다)', () => {
+        const okText = formatReport(richOk, { smoke: 'success' });
+        const failText = formatReport(richOk, { smoke: 'failure' });
+        expect(okText).toContain('(13/13)');
+        expect(failText).toContain('(12/13 정상)');
+    });
+
+    it('스모크 미주입(undefined)이면 문안에 스모크를 언급하지 않는다 (하위 호환)', () => {
+        const text = formatReport(richOk);
+        expect(text).not.toContain('브라우저');
+        expect(text.split('\n')[0]).toBe('radsafety.kr 모든 점검항목 정상 (12/12)');
     });
 });
 
