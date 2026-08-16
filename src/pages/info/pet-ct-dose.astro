@@ -1,0 +1,69 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+
+const faq = [
+    {
+        q: 'PET-CT 건강검진의 방사선량은 얼마나 되나요?',
+        a: '건강검진 목적으로 PET-CT를 촬영하면, 검사받는 분들의 절반 정도가 약 7.9~11.6 mSv 사이의 방사선에 노출됩니다(중앙값 약 9.3 mSv). 이 수치는 대한핵의학회가 2024년 전국 병원을 대상으로 실시한 국가진단참고수준(DRL) 조사 결과를 근거로 합니다.',
+    },
+    {
+        q: '왜 사람마다 선량이 다른가요?',
+        a: 'PET 부분(방사성의약품)은 체중에 비례해 투여량을 정하기 때문에, 체중이 많이 나갈수록 선량도 늘어납니다. CT 부분은 병원이 사용하는 장비와 촬영 프로토콜에 따라 차이가 납니다. 이런 차이는 무언가를 숨기는 것이 아니라, 환자 개개인에게 맞춘 정상적인 진료 과정입니다.',
+    },
+    {
+        q: '병원이 지켜야 하는 상한 기준(DRL)이 있나요?',
+        a: '대한핵의학회는 병원들이 지켜야 할 선량 상한(진단참고수준)을 두고 있으며, 건강검진 목적 PET-CT는 이 상한을 약 13 mSv로 권고합니다. 장비나 촬영 조건에 따라 드물게 이보다 높은 값이 나올 수 있으나 이는 예외적인 경우이며, 학회는 전국 조사를 통해 이 기준을 지속적으로 관리·점검하고 있습니다.',
+    },
+];
+
+const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+};
+---
+
+<PublicLayout
+    title="PET-CT 건강검진 방사선량, 얼마나 될까요? - RadSafety"
+    description="대한핵의학회 2024년 국가진단참고수준(DRL) 조사 결과로 알아보는 PET-CT 건강검진 방사선량 범위."
+    jsonLd={jsonLd}
+>
+    <p><a href="/info">← 방사선안전 정보 목록</a></p>
+    <h1>PET-CT 건강검진, 방사선량은 얼마나 될까요?</h1>
+
+    {
+        faq.map((item) => (
+            <section class="faq-item">
+                <h2>{item.q}</h2>
+                <p>{item.a}</p>
+            </section>
+        ))
+    }
+
+    <p class="source">
+        근거: The 2024 National Diagnostic Reference Levels for Nuclear Medicine Imaging in Korea, <em
+            >Nuclear Medicine and Molecular Imaging</em
+        > (2025) 59:439-452.
+    </p>
+
+    <style>
+        .faq-item {
+            margin-bottom: 2rem;
+        }
+        .faq-item h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+        .source {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</PublicLayout>

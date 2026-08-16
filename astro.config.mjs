@@ -11,7 +11,7 @@ import remarkGfm from 'remark-gfm';
 
 // https://astro.build/config
 export default defineConfig({
-    site: 'https://ai4radmed.com',
+    site: 'https://radsafety.kr',
     base: '/',
     output: 'server',
     markdown: {
