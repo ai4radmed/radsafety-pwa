@@ -1,0 +1,131 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+
+const faq = [
+    {
+        q: 'PET-CT 건강검진의 방사선량은 얼마나 되나요?',
+        a: '건강검진 목적으로 PET-CT를 촬영하면, 검사받는 분들의 절반 정도가 약 7.9~11.6 mSv 사이의 방사선에 노출됩니다(중앙값 약 9.3 mSv). 이 수치는 대한핵의학회가 2024년 전국 병원을 대상으로 실시한 국가진단참고수준(DRL) 조사 결과를 근거로 합니다.',
+    },
+    {
+        q: '왜 사람마다 선량이 다른가요?',
+        a: 'PET 부분(방사성의약품)은 체중에 비례해 투여량을 정하기 때문에, 체중이 많이 나갈수록 선량도 늘어납니다. CT 부분은 병원이 사용하는 장비와 촬영 프로토콜에 따라 차이가 납니다. 이런 차이는 환자 개개인에게 맞춘 정상적인 진료 과정입니다.',
+    },
+    {
+        q: '병원이 지켜야 하는 상한 기준(DRL)이 있나요?',
+        a: '대한핵의학회는 병원들이 지켜야 할 선량 상한(진단참고수준)을 두고 있으며, 2024년 조사 결과 건강검진 목적 PET-CT의 선량 상한은 11.65 mSv로 나타났습니다. 장비나 촬영 조건에 따라 드물게 이보다 높은 값이 나올 수 있으나 이는 예외적인 경우이며, 학회는 전국 조사를 통해 이 기준을 지속적으로 관리·점검하고 있습니다.',
+    },
+    {
+        q: '2014년에 발표됐던 수치와 비교하면 어떤가요?',
+        a: '2014년 보건복지부·한국소비자원·대한핵의학회·대한영상의학회·대한병원협회·대한의사협회가 공동발표한 자료에서는 건강검진 PET-CT의 관찰된 방사선량 범위를 10~25 mSv로, 의료기관이 지켜야 할 권고 목표치를 "12 mSv 이하"로 제시한 바 있습니다. 2024년 조사 결과(11.65 mSv)는 당시 관찰범위의 상한(25 mSv)보다 크게 낮아졌고, 당시 권고 목표치 수준에 실질적으로 도달했습니다. 이러한 감소는 PET/CT 장비의 기술 발전(예: SiPM 기반 신형 장비 도입)에 따라 촬영에 필요한 방사선량이 줄어든 것으로 추정됩니다.',
+    },
+];
+
+const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+};
+---
+
+<PublicLayout
+    title="PET-CT 건강검진 방사선량, 얼마나 될까요? - RadSafety"
+    description="대한핵의학회 2024년 국가진단참고수준(DRL) 조사 결과로 알아보는 PET-CT 건강검진 방사선량(방사선노출량) 범위."
+    jsonLd={jsonLd}
+>
+    <p><a href="/info">← 방사선안전 정보 목록</a></p>
+    <h1>PET-CT 건강검진, 방사선량은 얼마나 될까요?</h1>
+
+    <p class="byline">
+        작성: 김병일 (핵의학 전문의) · 대한핵의학회 방사선안전위원회 위원 · 한국원자력의학원 원자력병원 핵의학과 2과장<br
+        />
+        게시일: 2026-08-16
+    </p>
+
+    <p class="purpose">
+        최근 핵의학영상검사의 이용이 증가하면서, 건강검진 목적의 PET/CT 방사선노출에 대한 SNS 자료들이 다수 유통되고
+        있습니다. 그러나 이러한 자료들 대부분은 출처를 밝히지 않거나, 2014년에 발표된 오래된 자료에 근거하고 있는 경우가
+        많습니다. 이에 전문가로서 최신 근거에 기반한 올바른 의학정보를 전달하고자 이 페이지를 작성하였습니다.
+    </p>
+
+    <div class="disclaimer">
+        <strong>※ 안내</strong> — 이 페이지의 수치는 2024년 국가진단참고수준 조사사업 결과를 그대로 반영한 것으로 정확성이
+        높습니다. 다만 <strong>아직 대한핵의학회의 정식 승인을 받기 전</strong>이므로, 대한핵의학회 산하
+        방사선안전위원회 위원 개인 자격으로 게시하는 것임을 밝혀 둡니다. 조만간 학회의 정식 승인을 받아 공식적으로
+        운영할 예정입니다.
+    </div>
+
+    {
+        faq.map((item) => (
+            <section class="faq-item">
+                <h2>{item.q}</h2>
+                <p>{item.a}</p>
+            </section>
+        ))
+    }
+
+    <p class="source">
+        근거 ①: The 2024 National Diagnostic Reference Levels for Nuclear Medicine Imaging in Korea, <em
+            >Nuclear Medicine and Molecular Imaging</em
+        > (2025) 59:439-452.
+        <a href="https://doi.org/10.1007/s13139-025-00930-4" target="_blank" rel="noopener noreferrer"
+            >논문 원문 보기(DOI)</a
+        ><br />
+        <span class="access-note">※ 학술지 원문은 기관·개인 구독 여부에 따라 일반인은 접속이 제한될 수 있습니다.</span
+        ><br /><br />
+        근거 ②: 보건복지부·한국소비자원·대한핵의학회 등 공동발표, "건강검진을 위해 PET-CT 찍으실 때 방사선 피폭정보 설명 듣고
+        결정하세요!" (2014-11-07).
+        <a
+            href="https://www.mohw.go.kr/board.es?mid=a10503010200&bid=0027&act=view&list_no=306309"
+            target="_blank"
+            rel="noopener noreferrer">보건복지부 공식 보도자료 보기</a
+        >
+    </p>
+
+    <style>
+        .byline {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .purpose {
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+        .disclaimer {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+        }
+        .faq-item {
+            margin-bottom: 2rem;
+        }
+        .faq-item h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+        .source {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        .source a {
+            color: var(--accent);
+        }
+        .access-note {
+            font-size: 0.8rem;
+        }
+    </style>
+</PublicLayout>
