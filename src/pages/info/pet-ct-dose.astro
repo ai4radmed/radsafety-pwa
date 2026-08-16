@@ -35,6 +35,18 @@ const jsonLd = {
     <p><a href="/info">← 방사선안전 정보 목록</a></p>
     <h1>PET-CT 건강검진, 방사선량은 얼마나 될까요?</h1>
 
+    <p class="byline">
+        작성: 김병일 (핵의학 전문의) · 대한핵의학회 방사선안전위원회 위원 · 한국원자력의학원 원자력병원 핵의학과 2과장<br
+        />
+        게시일: 2026-08-16
+    </p>
+
+    <div class="disclaimer">
+        <strong>※ 안내</strong> — 이 글은 대한핵의학회의 선량조사사업(2024년 국가진단참고수준 조사) 결과를 충실히 반영하고
+        있으나, <strong>아직 대한핵의학회의 정식 승인을 받은 공식 입장은 아닙니다.</strong> 방사선안전위원회 위원 개인의 의견임을
+        밝혀 둡니다.
+    </div>
+
     {
         faq.map((item) => (
             <section class="faq-item">
@@ -48,9 +60,29 @@ const jsonLd = {
         근거: The 2024 National Diagnostic Reference Levels for Nuclear Medicine Imaging in Korea, <em
             >Nuclear Medicine and Molecular Imaging</em
         > (2025) 59:439-452.
+        <a href="https://doi.org/10.1007/s13139-025-00930-4" target="_blank" rel="noopener noreferrer"
+            >논문 원문 보기(DOI)</a
+        ><br />
+        <span class="access-note">※ 학술지 원문은 기관·개인 구독 여부에 따라 일반인은 접속이 제한될 수 있습니다.</span>
     </p>
 
     <style>
+        .byline {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .disclaimer {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+        }
         .faq-item {
             margin-bottom: 2rem;
         }
@@ -64,6 +96,13 @@ const jsonLd = {
             border-top: 1px solid var(--border-color);
             color: var(--text-muted);
             font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        .source a {
+            color: var(--accent);
+        }
+        .access-note {
+            font-size: 0.8rem;
         }
     </style>
 </PublicLayout>
