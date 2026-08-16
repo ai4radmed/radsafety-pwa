@@ -67,6 +67,33 @@ const jsonLd = {
         ))
     }
 
+    <div class="evidence-tables">
+        <h2>원 논문 표 (건강검진 해당 행 강조)</h2>
+        <p class="evidence-note">
+            아래는 근거 논문의 원본 표를 그대로 인용한 것입니다. 노란색으로 표시한 행이 건강검진(Screening) 목적
+            PET-CT에 해당하는 수치입니다.
+        </p>
+        <figure>
+            <img
+                src="/images/info/table1-drl-screening.png"
+                alt="Table 1. DRLs for administered activities of PET radiopharmaceuticals — Screening 행 강조"
+                loading="lazy"
+            />
+            <figcaption>
+                Table 1 — PET 방사성의약품(FDG) 투여량 DRL. Screening 행: 체중당 5.00(conventional)/3.70(SiPM-based)
+                MBq/kg.
+            </figcaption>
+        </figure>
+        <figure>
+            <img
+                src="/images/info/table5-drl-screening.png"
+                alt="Table 5. DRLs for hybrid CT doses in PET/CT and SPECT/CT — Torso (screening) 행 강조"
+                loading="lazy"
+            />
+            <figcaption>Table 5 — PET/CT의 CT 선량 DRL. Torso(screening) 행: DLP DRL 326 mGy·cm(all 기준).</figcaption>
+        </figure>
+    </div>
+
     <p class="source">
         근거 ①: The 2024 National Diagnostic Reference Levels for Nuclear Medicine Imaging in Korea, <em
             >Nuclear Medicine and Molecular Imaging</em
@@ -112,6 +139,34 @@ const jsonLd = {
         .faq-item h2 {
             font-size: 1.1rem;
             color: var(--accent);
+        }
+        .evidence-tables {
+            margin: 2.5rem 0;
+        }
+        .evidence-tables h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+        .evidence-note {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        .evidence-tables figure {
+            margin: 0 0 2rem;
+        }
+        .evidence-tables img {
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .evidence-tables figcaption {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            line-height: 1.5;
         }
         .source {
             margin-top: 3rem;
