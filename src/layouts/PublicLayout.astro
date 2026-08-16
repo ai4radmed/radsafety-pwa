@@ -1,0 +1,68 @@
+---
+// 일반 대중 대상 공개 정보 페이지 전용 레이아웃.
+// DashboardLayout(회원용 앱 UI — 사이드바·로그인유도·PWA설치)과 의도적으로 분리한다.
+// 검색엔진·비로그인 방문자를 위한 가볍고 독립적인 페이지.
+import BaseHead from '../components/BaseHead.astro';
+
+interface Props {
+    title: string;
+    description: string;
+    jsonLd?: Record<string, unknown>;
+}
+
+const { title, description, jsonLd } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ko">
+    <head>
+        <BaseHead title={title} description={description} />
+        {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+        <style>
+            body {
+                margin: 0;
+                background-color: var(--bg-body);
+                color: var(--text-main);
+                min-height: 100vh;
+            }
+            .public-header {
+                border-bottom: 1px solid var(--border-color);
+                padding: 1rem 1.5rem;
+            }
+            .public-header a {
+                color: var(--text-main);
+                text-decoration: none;
+                font-weight: 700;
+                font-size: 1.1rem;
+            }
+            .public-main {
+                max-width: 760px;
+                margin: 0 auto;
+                padding: 2rem 1.5rem 4rem;
+                line-height: 1.7;
+            }
+            .public-footer {
+                border-top: 1px solid var(--border-color);
+                padding: 1.5rem;
+                text-align: center;
+                color: var(--text-muted);
+                font-size: 0.85rem;
+            }
+            .public-footer a {
+                color: var(--accent);
+            }
+        </style>
+    </head>
+    <body>
+        <header class="public-header">
+            <a href="/info">RadSafety — 방사선안전 정보</a>
+        </header>
+        <main class="public-main">
+            <slot />
+        </main>
+        <footer class="public-footer">
+            대한핵의학회 방사선안전위원회 자료 기반 ·
+            <a href="/info">일반인을 위한 방사선안전 정보</a>
+        </footer>
+    </body>
+</html>
