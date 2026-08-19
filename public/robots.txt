@@ -1,0 +1,51 @@
+# RadSafety (radsafety.kr) — robots.txt
+# 공개 정보 페이지(/info, /resources)는 모든 검색·AI 크롤러에 개방합니다.
+# 로그인·관리 기능(/admin, /auth, /api)은 크롤링 대상이 아닙니다.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /auth
+Disallow: /api
+
+# --- 생성형 AI / AI 검색 크롤러 명시적 허용 ---
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+Sitemap: https://radsafety.kr/sitemap-index.xml
