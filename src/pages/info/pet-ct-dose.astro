@@ -73,6 +73,7 @@ const jsonLd = {
             <strong>중앙값 [1사분위수–3사분위수]</strong> 형식으로 표시했습니다 — "중앙값"은 검사받은 사람들을 선량 순으로
             줄 세웠을 때 정확히 가운데 있는 사람의 값이고, [ ] 안의 두 숫자는 "중간 절반의 사람들이 실제로 겪는 범위"입니다.
         </p>
+        <p class="scroll-hint">↔ 표가 화면보다 넓습니다 — 좌우로 밀어서 보세요</p>
         <div class="table-scroll">
             <table>
                 <caption> * 평균체중 기준(남성 74kg · 여성 58kg, 질병관리청 국민건강영양조사 근사치) </caption>
@@ -117,6 +118,149 @@ const jsonLd = {
             Conventional(기존 광전자증배관) 방식보다 선량이 낮게 나타납니다. CT 부분은 원 논문이 성별을 구분해 발표하지
             않아 남녀 동일 값을 적용했습니다(다만 체구가 작을수록 CT 장비의 자동노출조절 기능으로 실제 선량이 더
             낮아지는 경향이 있어, 위 여성 CT 수치는 오히려 다소 보수적으로—높게—추정된 값일 수 있습니다).
+        </p>
+    </div>
+
+    <div class="natural-bg-compare">
+        <h2>자연방사선과 비교하면 어느 정도일까요?</h2>
+        <p>
+            우리는 평소에도 우주·땅·공기 중의 라돈 등에서 나오는 <strong>자연방사선</strong>을 계속 받고 있습니다.
+            원자력안전위원회가 2020년 발표한 공식 조사(아래 표)에 따르면, 한국인이 1년 동안 받는 자연방사선량은 평균
+            <strong>5.24 mSv</strong>입니다. 위에서 확인한 PET-CT 건강검진 선량(6~12 mSv)과 비교하면, <strong
+                >자연방사선의 약 1.1~2.3배</strong
+            > 수준입니다.
+        </p>
+        <p>
+            참고로 이전(2009년) 같은 조사에서는 자연방사선량이 3.08 mSv로 더 낮게 나타났었는데, 그 기준으로 계산하면
+            PET-CT 선량은 자연방사선의 <strong>약 2~4배</strong>가 됩니다. 두 배수가 다른 이유는 <strong
+                >실제 환경의 방사선이 늘어났기 때문이 아닙니다</strong
+            > — 자연방사선 중 라돈 성분을 mSv로 환산하는 국제 계산기준(선량환산계수)이 국제방사선방호위원회(ICRP)의 최신 권고에
+            따라 상향 조정되면서, 같은 라돈 농도라도 계산상의 유효선량이 더 크게 나온 것입니다(아래 표에서 라돈 항목만 2009년
+            1.27→2020년 3.11 mSv로 크게 늘고, 나머지 항목은 큰 변화가 없는 것이 그 증거입니다). 그래서 최신(2020년) 공식 수치
+            5.24 mSv를 기준으로 비교하는 것이 더 정확합니다.
+        </p>
+        <div class="table-scroll">
+            <table class="table9">
+                <caption> 표 9. 우리나라 국민의 연간 평균 유효선량(mSv) </caption>
+                <thead>
+                    <tr>
+                        <th scope="col" colspan="4">피폭원</th>
+                        <th scope="col">2020년</th>
+                        <th scope="col">2009년</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="rowgroup" rowspan="14">자연방사선</th>
+                        <th scope="rowgroup" rowspan="6">외부피폭</th>
+                        <th scope="rowgroup" rowspan="3">우주방사선</th>
+                        <th scope="row">지상</th>
+                        <td>0.24</td>
+                        <td>0.248</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">항공여행</th>
+                        <td>0.016</td>
+                        <td>0.007</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">부분합계</th>
+                        <td>0.256</td>
+                        <td>0.255</td>
+                    </tr>
+                    <tr>
+                        <th scope="rowgroup" rowspan="3">지각감마선</th>
+                        <th scope="row">실외</th>
+                        <td>0.13</td>
+                        <td>0.11</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">실내</th>
+                        <td>0.74</td>
+                        <td>0.93</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">부분합계</th>
+                        <td>0.87</td>
+                        <td>1.04</td>
+                    </tr>
+                    <tr>
+                        <th scope="rowgroup" rowspan="8">내부피폭</th>
+                        <th scope="rowgroup" rowspan="4">섭취</th>
+                        <th scope="row">⁴⁰K</th>
+                        <td>0.237</td>
+                        <td>0.17</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">우라늄 및 토륨계열</th>
+                        <td>0.256</td>
+                        <td>0.12</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">기타*</th>
+                        <td>0.01</td>
+                        <td>0.01</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">부분합계</th>
+                        <td>0.493</td>
+                        <td>0.29</td>
+                    </tr>
+                    <tr>
+                        <th scope="rowgroup" rowspan="4">흡입</th>
+                        <th scope="row">우라늄 및 토륨계열**</th>
+                        <td>0.006</td>
+                        <td>0.006</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">라돈</th>
+                        <td>3.11</td>
+                        <td>1.27</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">토론</th>
+                        <td>0.51</td>
+                        <td>0.129</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">부분합계</th>
+                        <td>3.62</td>
+                        <td>1.41</td>
+                    </tr>
+                    <tr class="subtotal">
+                        <th scope="row" colspan="3">자연방사선 전체합계</th>
+                        <td><strong>5.24</strong></td>
+                        <td><strong>3.08</strong></td>
+                    </tr>
+                    <tr>
+                        <th scope="rowgroup" rowspan="3">인공방사선</th>
+                        <th scope="row" colspan="2">의료상피폭</th>
+                        <td>2.05</td>
+                        <td>0.74</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" colspan="2">직무상피폭</th>
+                        <td>0.001</td>
+                        <td>0.002</td>
+                    </tr>
+                    <tr class="subtotal">
+                        <th scope="row" colspan="2">인공방사선 전체합계</th>
+                        <td><strong>2.05</strong></td>
+                        <td><strong>0.74</strong></td>
+                    </tr>
+                    <tr class="total">
+                        <th scope="row" colspan="3">총계</th>
+                        <td><strong>7.29</strong></td>
+                        <td><strong>3.82</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="evidence-note">
+            * 우주방사선에 의해 생성된 핵종으로 인한 피폭 포함. UNSCEAR 2000 값을 채택함. ** UNSCEAR 2000 값을 채택함.<br
+            />
+            근거: 원자력안전위원회, 「방사선 안전 규제 기술 개발 연구」 최종보고서(2020), &lt;대한민국 국민의 자연 및 인공
+            방사선 피폭량 조사&gt; 표 9.
         </p>
     </div>
 
@@ -225,7 +369,37 @@ const jsonLd = {
                 중앙값은 중앙값끼리)를 대응시켜 더했습니다. 개별 환자 원자료가 아닌 이 근사법을 썼음을 밝힙니다.
             </li>
             <li>체중 — 성인 평균체중은 국민건강영양조사 근사치(남성 약 74kg·여성 약 58kg)를 사용했습니다.</li>
+            <li>
+                자연방사선 비교값(5.24 mSv·3.08 mSv) — 원자력안전위원회, 「방사선 안전 규제 기술 개발 연구」
+                최종보고서(2020), &lt;대한민국 국민의 자연 및 인공 방사선 피폭량 조사&gt; 표 9.
+            </li>
         </ul>
+    </div>
+
+    <div class="glossary">
+        <h2>용어 안내 — 방사선 · 방사능 · 방사선량 · 방사선노출</h2>
+        <p>
+            이 페이지에서 쓰는 용어들은 뜻이 조금씩 다릅니다. 뉴스·SNS에서는 흔히 섞어 쓰지만, 정확히는 다음과 같습니다.
+        </p>
+        <dl>
+            <dt>방사선(Radiation)</dt>
+            <dd>원자핵 등에서 나오는 에너지의 흐름 그 자체(전자기파나 입자)를 말합니다.</dd>
+            <dt>방사능(Radioactivity)</dt>
+            <dd>
+                어떤 물질이 방사선을 내보내는 "능력·성질"을 말합니다. "이 물질에 방사능이 있다"는 그 물질이 방사선을 낼
+                수 있다는 뜻이고, 사람이 그 방사선에 노출되는 것과는 별개의 개념입니다.
+            </dd>
+            <dt>방사선량(Radiation Dose)</dt>
+            <dd>
+                몸이 실제로 받은 방사선의 양을 수치로 나타낸 것입니다. 이 페이지에서 쓰는 mSv(밀리시버트)가 그 단위이며,
+                "유효선량"은 신체 여러 부위가 받은 선량을 위험도까지 고려해 하나의 값으로 합친 것입니다.
+            </dd>
+            <dt>방사선노출(Radiation Exposure)</dt>
+            <dd>
+                몸이 방사선에 노출되는 상황·과정 자체를 가리키는 말로, 실무에서는 "방사선량"과 거의 같은 맥락으로
+                쓰입니다(예: "방사선노출량"은 "받은 방사선량"과 같은 뜻).
+            </dd>
+        </dl>
     </div>
 
     <style>
@@ -256,26 +430,82 @@ const jsonLd = {
             font-size: 1.1rem;
             color: var(--accent);
         }
-        .detail-table {
+        .detail-table,
+        .natural-bg-compare {
             margin: 2.5rem 0;
         }
         .detail-table h2,
         .how-calculated h2,
-        .calc-basis h2 {
+        .calc-basis h2,
+        .natural-bg-compare h2,
+        .glossary h2 {
             font-size: 1.1rem;
             color: var(--accent);
+        }
+        .natural-bg-compare p {
+            line-height: 1.7;
+            margin-bottom: 1.25rem;
+        }
+        .glossary {
+            margin: 3rem 0 1rem;
+        }
+        .glossary p {
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+        .glossary dl {
+            margin: 0;
+        }
+        .glossary dt {
+            font-weight: 700;
+            margin-top: 1rem;
+        }
+        .glossary dd {
+            margin: 0.25rem 0 0;
+            line-height: 1.6;
+            color: var(--text-muted);
         }
         .table-scroll {
             overflow-x: auto;
             margin: 1rem 0;
+            -webkit-overflow-scrolling: touch;
         }
-        .detail-table table {
+        .scroll-hint {
+            display: none;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin: 0.75rem 0 0.25rem;
+        }
+        @media (max-width: 600px) {
+            .scroll-hint {
+                display: block;
+            }
+            .detail-table table,
+            .natural-bg-compare table {
+                font-size: 0.8rem;
+                min-width: 420px;
+            }
+            .detail-table th,
+            .detail-table td,
+            .natural-bg-compare th,
+            .natural-bg-compare td {
+                padding: 0.4rem 0.45rem;
+            }
+            .calc-basis,
+            .evidence-note,
+            .source {
+                font-size: 0.8rem;
+            }
+        }
+        .detail-table table,
+        .natural-bg-compare table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
             min-width: 480px;
         }
-        .detail-table table caption {
+        .detail-table table caption,
+        .natural-bg-compare table caption {
             caption-side: bottom;
             text-align: left;
             font-size: 0.8rem;
@@ -283,16 +513,30 @@ const jsonLd = {
             padding-top: 0.5rem;
         }
         .detail-table th,
-        .detail-table td {
+        .detail-table td,
+        .natural-bg-compare th,
+        .natural-bg-compare td {
             border: 1px solid var(--border-color);
-            padding: 0.6rem 0.75rem;
+            padding: 0.5rem 0.65rem;
             text-align: left;
         }
-        .detail-table thead th {
+        .detail-table thead th,
+        .natural-bg-compare thead th {
             background: rgba(148, 163, 184, 0.1);
         }
-        .detail-table th[scope='row'] {
+        .detail-table th[scope='row'],
+        .natural-bg-compare th[scope='row'],
+        .natural-bg-compare th[scope='rowgroup'] {
             font-weight: 500;
+        }
+        .table9 tr.subtotal th,
+        .table9 tr.subtotal td {
+            background: rgba(148, 163, 184, 0.08);
+        }
+        .table9 tr.total th,
+        .table9 tr.total td {
+            background: rgba(59, 130, 246, 0.1);
+            font-weight: 700;
         }
         .how-calculated {
             margin: 2.5rem 0;
