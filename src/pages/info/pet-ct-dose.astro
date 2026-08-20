@@ -16,14 +16,37 @@ const faq = [
     },
 ];
 
+const videoId = 'QsEtfF1q8J8';
+
 const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faq.map((item) => ({
-        '@type': 'Question',
-        name: item.q,
-        acceptedAnswer: { '@type': 'Answer', text: item.a },
-    })),
+    '@graph': [
+        {
+            '@type': 'FAQPage',
+            mainEntity: faq.map((item) => ({
+                '@type': 'Question',
+                name: item.q,
+                acceptedAnswer: { '@type': 'Answer', text: item.a },
+            })),
+        },
+        {
+            '@type': 'VideoObject',
+            name: '건강검진 PET-CT 방사선 피폭, 자연방사선 1년치와 비교하면? | 2024 국가조사',
+            description:
+                '대한핵의학회 2024년 국가진단참고수준(DRL) 조사 결과를 근거로 건강검진 PET-CT의 방사선 피폭량(6~12 mSv)을 설명하고, 원자력안전위원회 2020년 공식 조사의 연간 자연방사선량(5.24 mSv)과 비교합니다.',
+            thumbnailUrl: [`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`],
+            uploadDate: '2026-08-20',
+            duration: 'PT5M21S',
+            embedUrl: `https://www.youtube.com/embed/${videoId}`,
+            contentUrl: `https://www.youtube.com/watch?v=${videoId}`,
+            inLanguage: 'ko',
+            author: {
+                '@type': 'Person',
+                name: '김병일',
+                jobTitle: '핵의학 전문의 · 대한핵의학회 방사선안전위원회 위원',
+            },
+        },
+    ],
 };
 ---
 
@@ -46,6 +69,20 @@ const jsonLd = {
         있습니다. 그러나 이러한 자료들 대부분은 출처를 밝히지 않거나, 2014년에 발표된 오래된 자료에 근거하고 있는 경우가
         많습니다. 이에 전문가로서 최신 근거에 기반한 올바른 의학정보를 전달하고자 이 페이지를 작성하였습니다.
     </p>
+
+    <section class="video-section">
+        <h2>영상으로 보기 (5분 21초)</h2>
+        <div class="video-frame">
+            <iframe
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title="건강검진 PET-CT 방사선 피폭, 자연방사선 1년치와 비교하면? | 2024 국가조사"
+                loading="lazy"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen></iframe>
+        </div>
+        <p class="video-note">이 페이지와 같은 내용을 슬라이드와 육성 설명으로 정리한 영상입니다. 자막이 제공됩니다.</p>
+    </section>
 
     <div class="disclaimer">
         <strong>※ 안내</strong> — 위 FAQ의 기본 수치는 대한핵의학회에서 2024년도 수행한 핵의학영상검사의 방사선노출량 전국단위조사(=국가진단참고수준
@@ -413,6 +450,34 @@ const jsonLd = {
         .purpose {
             line-height: 1.7;
             margin-bottom: 1.5rem;
+        }
+        .video-section {
+            margin-bottom: 2rem;
+        }
+        .video-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+        .video-frame {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+        .video-frame iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        .video-note {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-top: 0.6rem;
         }
         .disclaimer {
             background: rgba(245, 158, 11, 0.1);
