@@ -9,6 +9,27 @@ import vitePwa from '@vite-pwa/astro';
 import vercel from '@astrojs/vercel';
 import remarkGfm from 'remark-gfm';
 
+// 사이트맵에서 제외할 경로 — 검색에 노출할 "공개 문서"만 남긴다.
+// robots.txt 의 Disallow 와 같은 경계를 쓴다(사이트맵이 제출하는데 robots 가 막는
+// 모순된 신호를 피하기 위함).
+//
+// 2026-08-20: Search Console "페이지가 색인 생성되지 않음: 리디렉션이 포함된 페이지"
+// 원인 정리 중 발견. /notifications 는 미로그인 요청에 302 → /login 을 돌려주는데
+// 사이트맵이 이를 "색인해 달라"고 제출하고 있었다. /admin/* 은 robots.txt 가 막는데
+// 사이트맵은 제출하는 모순 상태였다.
+const SITEMAP_EXCLUDE_PREFIX = ['/admin/', '/auth/', '/api/'];
+const SITEMAP_EXCLUDE_EXACT = [
+    '/admin-guide/',
+    '/feedback/',
+    '/feedback-query/',
+    '/login/',
+    '/my-feedback/',
+    '/mypage/',
+    '/notifications/',
+    '/offline/',
+    '/settings/',
+];
+
 // https://astro.build/config
 export default defineConfig({
     site: 'https://radsafety.kr',
@@ -22,7 +43,15 @@ export default defineConfig({
         mdx({
             remarkPlugins: [remarkGfm],
         }),
-        sitemap(),
+        sitemap({
+            filter: (page) => {
+                const { pathname } = new URL(page);
+                return (
+                    !SITEMAP_EXCLUDE_PREFIX.some((prefix) => pathname.startsWith(prefix)) &&
+                    !SITEMAP_EXCLUDE_EXACT.includes(pathname)
+                );
+            },
+        }),
         {
             name: "disable-dev-toolbar",
             hooks: {
