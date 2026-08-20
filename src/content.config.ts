@@ -15,23 +15,6 @@ const inspection_prep = defineCollection({
     }),
 });
 
-const findings_recommendations = defineCollection({
-    // loader: glob(...) causes item.render is not a function. Revert to legacy type: 'content'.
-    type: 'content',
-    schema: z.object({
-        title: z.string(),
-        description: z.string().optional(),
-        category: z.string().optional(), // Make optional as we move to tags
-        tags: z.array(z.string()).optional(), // New: Multiple categories
-        inspectionYear: z.string().optional(), // New: Year string (e.g. "2024")
-        reference: z.array(z.string()).optional(),
-        severity: z.enum(['high', 'medium', 'low']).optional(),
-        date: z.coerce.date().optional(), // Keep for fallback sorting if needed
-        violationClause: z.string().optional(),
-        solution: z.string().optional(),
-    }),
-});
-
 const smart_resources = defineCollection({
     type: 'content',
     schema: z.object({
@@ -41,4 +24,4 @@ const smart_resources = defineCollection({
     }),
 });
 
-export const collections = { inspection_prep, findings_recommendations, smart_resources };
+export const collections = { inspection_prep, smart_resources };
