@@ -1,35 +1,6 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Icon from '../components/Icon.astro';
-import { getCollection } from 'astro:content';
-
-const staticFindings = await getCollection('findings_recommendations');
-
-// Normalize Data: Ensure tags exist
-const normalizedFindings = await Promise.all(
-    staticFindings.map(async (item) => {
-        const { Content } = await item.render();
-        let tags = item.data.tags || [];
-        // Fallback: Use category as a tag if tags are empty
-        if (tags.length === 0 && item.data.category) {
-            tags = [item.data.category];
-        }
-
-        let year = item.data.inspectionYear;
-        if (!year && item.data.date) {
-            year = new Date(item.data.date).getFullYear().toString();
-        }
-
-        return {
-            ...item,
-            Content,
-            normalized: {
-                tags,
-                year,
-            },
-        };
-    }),
-);
 
 // Tags List (Standardized)
 const AVAILABLE_TAGS = [
@@ -844,45 +815,7 @@ const AVAILABLE_TAGS = [
     </div>
 
     <div class="list-container" id="findingsGrid">
-        {/* Server Rendered Items */}
-        {
-            normalizedFindings.map((item) => {
-                const searchText =
-                    `${item.data.title} ${item.data.description} ${item.data.violationClause || ''} ${item.data.solution || ''}`.toLowerCase();
-                const tags = item.normalized.tags;
-                const year = item.normalized.year || '-';
-
-                return (
-                    <div
-                        class="finding-item"
-                        data-tags={JSON.stringify(tags)}
-                        data-search={searchText}
-                        data-id={item.id}
-                        data-title={item.data.title}
-                        data-year={year}
-                        data-content={JSON.stringify({
-                            title: item.data.title,
-                            tags: tags,
-                            year: year,
-                            description: item.data.description,
-                            violationClause: item.data.violationClause,
-                            solution: item.data.solution,
-                        })}
-                    >
-                        <div class="col-tags">
-                            {tags.map((t) => (
-                                <span class="tag-badge">{t}</span>
-                            ))}
-                        </div>
-                        <div class="col-title" title={item.data.description}>
-                            {item.data.title}
-                        </div>
-                        <div class="col-year">{year}</div>
-                        <div class="col-action">{/* Static items are read-only */}</div>
-                    </div>
-                );
-            })
-        }
+        {/* 항목은 Supabase `findings` 테이블에서 클라이언트 측으로 채운다. */}
     </div>
 
     {/* Registration Modal */}
