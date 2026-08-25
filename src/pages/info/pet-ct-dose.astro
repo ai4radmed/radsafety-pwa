@@ -101,62 +101,65 @@ const jsonLd = {
         ))
     }
 
-    <div class="detail-table">
-        <h2>성별 · 장비 종류별 상세 수치</h2>
-        <p class="evidence-note">
-            위 FAQ의 수치는 전체 평균적인 값입니다. 실제로는 <strong>체중(성별)</strong>과 <strong
-                >PET-CT 장비 종류(Conventional / SiPM 방식)</strong
-            >에 따라 선량이 달라집니다. 아래는 2024년 DRL 조사 원자료를 이용해 저희가 직접 계산한 값이며,
-            <strong>중앙값 [1사분위수–3사분위수]</strong> 형식으로 표시했습니다 — "중앙값"은 검사받은 사람들을 선량 순으로
-            줄 세웠을 때 정확히 가운데 있는 사람의 값이고, [ ] 안의 두 숫자는 "중간 절반의 사람들이 실제로 겪는 범위"입니다.
-        </p>
-        <p class="scroll-hint">↔ 표가 화면보다 넓습니다 — 좌우로 밀어서 보세요</p>
-        <div class="table-scroll">
-            <table>
-                <caption> * 평균체중 기준(남성 74kg · 여성 58kg, 질병관리청 국민건강영양조사 근사치) </caption>
-                <thead>
-                    <tr>
-                        <th scope="col">구분</th>
-                        <th scope="col">PET 부분 (mSv)</th>
-                        <th scope="col">CT 부분 (mSv)</th>
-                        <th scope="col">총 유효선량 (mSv)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <th scope="row">남성 · Conventional 장비</th>
-                        <td>5.72 [5.20–7.03]</td>
-                        <td>3.89 [3.02–5.00]</td>
-                        <td><strong>9.61 [8.22–12.03]</strong></td>
-                    </tr>
-                    <tr>
-                        <th scope="row">여성 · Conventional 장비</th>
-                        <td>4.49 [4.08–5.51]</td>
-                        <td>3.89 [3.02–5.00]</td>
-                        <td><strong>8.38 [7.10–10.51]</strong></td>
-                    </tr>
-                    <tr>
-                        <th scope="row">남성 · SiPM 장비</th>
-                        <td>4.16 [4.16–5.20]</td>
-                        <td>3.59 [2.90–4.53]</td>
-                        <td><strong>7.75 [7.06–9.73]</strong></td>
-                    </tr>
-                    <tr>
-                        <th scope="row">여성 · SiPM 장비</th>
-                        <td>3.26 [3.26–4.08]</td>
-                        <td>3.59 [2.90–4.53]</td>
-                        <td><strong>6.85 [6.16–8.61]</strong></td>
-                    </tr>
-                </tbody>
-            </table>
+    <details class="more-detail">
+        <summary>성별 · 장비 종류별 상세 수치 보기</summary>
+        <div class="detail-table">
+            <h2>성별 · 장비 종류별 상세 수치</h2>
+            <p class="evidence-note">
+                위 FAQ의 수치는 전체 평균적인 값입니다. 실제로는 <strong>체중(성별)</strong>과 <strong
+                    >PET-CT 장비 종류(Conventional / SiPM 방식)</strong
+                >에 따라 선량이 달라집니다. 아래는 2024년 DRL 조사 원자료를 이용해 저희가 직접 계산한 값이며,
+                <strong>중앙값 [1사분위수–3사분위수]</strong> 형식으로 표시했습니다 — "중앙값"은 검사받은 사람들을 선량 순으로
+                줄 세웠을 때 정확히 가운데 있는 사람의 값이고, [ ] 안의 두 숫자는 "중간 절반의 사람들이 실제로 겪는 범위"입니다.
+            </p>
+            <p class="scroll-hint">↔ 표가 화면보다 넓습니다 — 좌우로 밀어서 보세요</p>
+            <div class="table-scroll">
+                <table>
+                    <caption> * 평균체중 기준(남성 74kg · 여성 58kg, 질병관리청 국민건강영양조사 근사치) </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">구분</th>
+                            <th scope="col">PET 부분 (mSv)</th>
+                            <th scope="col">CT 부분 (mSv)</th>
+                            <th scope="col">총 유효선량 (mSv)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">남성 · Conventional 장비</th>
+                            <td>5.72 [5.20–7.03]</td>
+                            <td>3.89 [3.02–5.00]</td>
+                            <td><strong>9.61 [8.22–12.03]</strong></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">여성 · Conventional 장비</th>
+                            <td>4.49 [4.08–5.51]</td>
+                            <td>3.89 [3.02–5.00]</td>
+                            <td><strong>8.38 [7.10–10.51]</strong></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">남성 · SiPM 장비</th>
+                            <td>4.16 [4.16–5.20]</td>
+                            <td>3.59 [2.90–4.53]</td>
+                            <td><strong>7.75 [7.06–9.73]</strong></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">여성 · SiPM 장비</th>
+                            <td>3.26 [3.26–4.08]</td>
+                            <td>3.59 [2.90–4.53]</td>
+                            <td><strong>6.85 [6.16–8.61]</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="evidence-note">
+                SiPM(실리콘광증배관) 방식은 2019년 이후 도입된 신형 장비로, 같은 화질을 더 적은 방사선량으로 얻을 수
+                있어 Conventional(기존 광전자증배관) 방식보다 선량이 낮게 나타납니다. CT 부분은 원 논문이 성별을 구분해
+                발표하지 않아 남녀 동일 값을 적용했습니다(다만 체구가 작을수록 CT 장비의 자동노출조절 기능으로 실제
+                선량이 더 낮아지는 경향이 있어, 위 여성 CT 수치는 오히려 다소 보수적으로—높게—추정된 값일 수 있습니다).
+            </p>
         </div>
-        <p class="evidence-note">
-            SiPM(실리콘광증배관) 방식은 2019년 이후 도입된 신형 장비로, 같은 화질을 더 적은 방사선량으로 얻을 수 있어
-            Conventional(기존 광전자증배관) 방식보다 선량이 낮게 나타납니다. CT 부분은 원 논문이 성별을 구분해 발표하지
-            않아 남녀 동일 값을 적용했습니다(다만 체구가 작을수록 CT 장비의 자동노출조절 기능으로 실제 선량이 더
-            낮아지는 경향이 있어, 위 여성 CT 수치는 오히려 다소 보수적으로—높게—추정된 값일 수 있습니다).
-        </p>
-    </div>
+    </details>
 
     <div class="natural-bg-compare">
         <h2>자연방사선과 비교하면 어느 정도일까요?</h2>
@@ -301,69 +304,134 @@ const jsonLd = {
         </p>
     </div>
 
-    <div class="how-calculated">
-        <h2>유효선량은 어떻게 계산되나요?</h2>
-        <p>
-            PET-CT 검사 한 번의 총 방사선량("유효선량")은 <strong>PET 부분(몸속에서 나오는 방사선)</strong>과 <strong
-                >CT 부분(몸 밖에서 쏘는 방사선)</strong
-            >을 더해서 구합니다. 두 부분은 원리가 완전히 다르기 때문에 계산 방법도 다릅니다.
-        </p>
-        <ol class="calc-steps">
-            <li>
-                <strong>① PET 부분 — 주사한 방사성의약품의 양으로 계산</strong><br />
-                PET 검사를 위해 몸무게 1kg당 정해진 양의 방사성의약품(F-18 FDG)을 주사합니다. 이 "총 주사량(MBq)"에 국제방사선방호위원회(ICRP)가
-                정한 표준 환산값(1 MBq당 0.019 mSv)을 곱하면 PET 부분의 선량이 나옵니다. 체중이 많이 나갈수록 주사량도 늘어나므로,
-                <strong>몸무게가 클수록 PET 부분 선량도 커집니다.</strong>
-            </li>
-            <li>
-                <strong>② CT 부분 — 장비가 기록한 촬영 정보로 계산</strong><br />
-                CT 촬영이 끝나면 장비가 "선량-길이곱(DLP)"이라는 값을 자동으로 기록합니다(촬영 범위가 길수록, 몸이 두꺼울수록
-                커짐). 여기에 촬영 부위(가슴~골반 전신 촬영 기준 표준 환산값 mGy·cm당 0.015 mSv)를 곱하면 CT 부분의 선량이
-                나옵니다.
-            </li>
-            <li>
-                <strong>③ 두 값을 더해 총 유효선량 산출</strong><br />
-                PET 부분 + CT 부분 = 검사 한 번의 총 유효선량. 사람마다 이 값이 다른 이유는 ① 체중(PET 주사량 결정) ② 체형·병원
-                장비(CT 촬영량 결정) ③ PET-CT 장비의 세대(Conventional/SiPM, 신형일수록 낮음) — 세 가지가 개인마다 다르기
-                때문입니다. <strong
-                    >이건 병원의 실수나 과다촬영이 아니라, 정확한 진단을 위해 몸에 맞춰 조절되는 정상적인 과정입니다.</strong
-                >
-            </li>
-        </ol>
-        <p class="calc-note">
-            위 "성별 · 장비 종류별 상세 수치" 표는 이 계산법을 2024년 DRL 조사 원자료(Table 1의 체중당 FDG 투여량, Table
-            5의 CT DLP)에 실제로 적용해 저희가 직접 산출한 것입니다. <strong
-                >원 논문이 이 "총 유효선량" 표를 직접 발표한 것은 아니며</strong
-            >, 계산 과정과 출처는 아래 §근거에 전부 명시합니다.
-        </p>
-    </div>
+    <details class="more-detail">
+        <summary>유효선량 계산법 · 원 논문 표 · 계산 근거 · 용어 안내 더 보기</summary>
+        <div class="how-calculated">
+            <h2>유효선량은 어떻게 계산되나요?</h2>
+            <p>
+                PET-CT 검사 한 번의 총 방사선량("유효선량")은 <strong>PET 부분(몸속에서 나오는 방사선)</strong>과 <strong
+                    >CT 부분(몸 밖에서 쏘는 방사선)</strong
+                >을 더해서 구합니다. 두 부분은 원리가 완전히 다르기 때문에 계산 방법도 다릅니다.
+            </p>
+            <ol class="calc-steps">
+                <li>
+                    <strong>① PET 부분 — 주사한 방사성의약품의 양으로 계산</strong><br />
+                    PET 검사를 위해 몸무게 1kg당 정해진 양의 방사성의약품(F-18 FDG)을 주사합니다. 이 "총 주사량(MBq)"에 국제방사선방호위원회(ICRP)가
+                    정한 표준 환산값(1 MBq당 0.019 mSv)을 곱하면 PET 부분의 선량이 나옵니다. 체중이 많이 나갈수록 주사량도
+                    늘어나므로,
+                    <strong>몸무게가 클수록 PET 부분 선량도 커집니다.</strong>
+                </li>
+                <li>
+                    <strong>② CT 부분 — 장비가 기록한 촬영 정보로 계산</strong><br />
+                    CT 촬영이 끝나면 장비가 "선량-길이곱(DLP)"이라는 값을 자동으로 기록합니다(촬영 범위가 길수록, 몸이 두꺼울수록
+                    커짐). 여기에 촬영 부위(가슴~골반 전신 촬영 기준 표준 환산값 mGy·cm당 0.015 mSv)를 곱하면 CT 부분의 선량이
+                    나옵니다.
+                </li>
+                <li>
+                    <strong>③ 두 값을 더해 총 유효선량 산출</strong><br />
+                    PET 부분 + CT 부분 = 검사 한 번의 총 유효선량. 사람마다 이 값이 다른 이유는 ① 체중(PET 주사량 결정) ②
+                    체형·병원 장비(CT 촬영량 결정) ③ PET-CT 장비의 세대(Conventional/SiPM, 신형일수록 낮음) — 세 가지가 개인마다
+                    다르기 때문입니다. <strong
+                        >이건 병원의 실수나 과다촬영이 아니라, 정확한 진단을 위해 몸에 맞춰 조절되는 정상적인
+                        과정입니다.</strong
+                    >
+                </li>
+            </ol>
+            <p class="calc-note">
+                위 "성별 · 장비 종류별 상세 수치" 표는 이 계산법을 2024년 DRL 조사 원자료(Table 1의 체중당 FDG 투여량,
+                Table 5의 CT DLP)에 실제로 적용해 저희가 직접 산출한 것입니다. <strong
+                    >원 논문이 이 "총 유효선량" 표를 직접 발표한 것은 아니며</strong
+                >, 계산 과정과 출처는 아래 §근거에 전부 명시합니다.
+            </p>
+        </div>
 
-    <div class="evidence-tables">
-        <h2>원 논문 표 (건강검진 해당 행 강조)</h2>
-        <p class="evidence-note">
-            아래는 근거 논문의 원본 표를 그대로 인용한 것입니다. 노란색으로 표시한 행이 건강검진(Screening) 목적
-            PET-CT에 해당하는 수치입니다.
-        </p>
-        <figure>
-            <img
-                src="/images/info/table1-drl-screening.png"
-                alt="Table 1. DRLs for administered activities of PET radiopharmaceuticals — Screening 행 강조"
-                loading="lazy"
-            />
-            <figcaption>
-                Table 1 — PET 방사성의약품(FDG) 투여량 DRL. Screening 행: 체중당 5.00(conventional)/3.70(SiPM-based)
-                MBq/kg.
-            </figcaption>
-        </figure>
-        <figure>
-            <img
-                src="/images/info/table5-drl-screening.png"
-                alt="Table 5. DRLs for hybrid CT doses in PET/CT and SPECT/CT — Torso (screening) 행 강조"
-                loading="lazy"
-            />
-            <figcaption>Table 5 — PET/CT의 CT 선량 DRL. Torso(screening) 행: DLP DRL 326 mGy·cm(all 기준).</figcaption>
-        </figure>
-    </div>
+        <div class="evidence-tables">
+            <h2>원 논문 표 (건강검진 해당 행 강조)</h2>
+            <p class="evidence-note">
+                아래는 근거 논문의 원본 표를 그대로 인용한 것입니다. 노란색으로 표시한 행이 건강검진(Screening) 목적
+                PET-CT에 해당하는 수치입니다.
+            </p>
+            <figure>
+                <img
+                    src="/images/info/table1-drl-screening.png"
+                    alt="Table 1. DRLs for administered activities of PET radiopharmaceuticals — Screening 행 강조"
+                    loading="lazy"
+                />
+                <figcaption>
+                    Table 1 — PET 방사성의약품(FDG) 투여량 DRL. Screening 행: 체중당 5.00(conventional)/3.70(SiPM-based)
+                    MBq/kg.
+                </figcaption>
+            </figure>
+            <figure>
+                <img
+                    src="/images/info/table5-drl-screening.png"
+                    alt="Table 5. DRLs for hybrid CT doses in PET/CT and SPECT/CT — Torso (screening) 행 강조"
+                    loading="lazy"
+                />
+                <figcaption>
+                    Table 5 — PET/CT의 CT 선량 DRL. Torso(screening) 행: DLP DRL 326 mGy·cm(all 기준).
+                </figcaption>
+            </figure>
+        </div>
+
+        <div class="calc-basis">
+            <h2>"성별 · 장비 종류별 상세 수치" 계산 근거</h2>
+            <ul>
+                <li>
+                    PET 환산계수 0.019 mSv/MBq — International Commission on Radiological Protection, <em
+                        >ICRP Publication 128: Radiation Dose to Patients from Radiopharmaceuticals</em
+                    > (2015), F-18 FDG 성인 유효선량계수. 성별 구분 없는 단일값이며, 체중에 의한 차이는 투여량(MBq/kg × 체중)에서만
+                    반영됩니다.
+                </li>
+                <li>
+                    CT 환산계수(k-factor) 0.015 mSv·mGy⁻¹·cm⁻¹ — 전신(Torso, 목~골반) PET/CT 촬영 시 널리 쓰이는 표준
+                    환산값(유럽 방사선방호 가이드라인·미국의학물리학회(AAPM) 보고서 계열, 통상 0.014~0.017 범위).
+                </li>
+                <li>
+                    투여량·DLP 원자료 — 근거 ①(2025년 DRL 논문) Table 1(FDG, Screening 행)·Table 5(CT DLP,
+                    Torso-screening 행)의 체중당 투여량·DLP 수치(최소·1사분위수·중앙값·3사분위수·최대값 통계)를 그대로
+                    사용.
+                </li>
+                <li>
+                    합산 방법 — PET 부분과 CT 부분은 같은 환자에서 함께 발생하고 체구가 클수록 둘 다 커지는 경향(양의
+                    상관관계)이 있어, 같은 장비 계열(Conventional/SiPM) 안에서 같은 분위수(1사분위수는 1사분위수끼리,
+                    중앙값은 중앙값끼리)를 대응시켜 더했습니다. 개별 환자 원자료가 아닌 이 근사법을 썼음을 밝힙니다.
+                </li>
+                <li>체중 — 성인 평균체중은 국민건강영양조사 근사치(남성 약 74kg·여성 약 58kg)를 사용했습니다.</li>
+                <li>
+                    자연방사선 비교값(5.24 mSv·3.08 mSv) — 원자력안전위원회, 「방사선 안전 규제 기술 개발 연구」
+                    최종보고서(2020), &lt;대한민국 국민의 자연 및 인공 방사선 피폭량 조사&gt; 표 9.
+                </li>
+            </ul>
+        </div>
+
+        <div class="glossary">
+            <h2>용어 안내 — 방사선 · 방사능 · 방사선량 · 방사선노출</h2>
+            <p>
+                이 페이지에서 쓰는 용어들은 뜻이 조금씩 다릅니다. 뉴스·SNS에서는 흔히 섞어 쓰지만, 정확히는 다음과
+                같습니다.
+            </p>
+            <dl>
+                <dt>방사선(Radiation)</dt>
+                <dd>원자핵 등에서 나오는 에너지의 흐름 그 자체(전자기파나 입자)를 말합니다.</dd>
+                <dt>방사능(Radioactivity)</dt>
+                <dd>
+                    어떤 물질이 방사선을 내보내는 "능력·성질"을 말합니다. "이 물질에 방사능이 있다"는 그 물질이 방사선을
+                    낼 수 있다는 뜻이고, 사람이 그 방사선에 노출되는 것과는 별개의 개념입니다.
+                </dd>
+                <dt>방사선량(Radiation Dose)</dt>
+                <dd>
+                    몸이 실제로 받은 방사선의 양을 수치로 나타낸 것입니다. 이 페이지에서 쓰는 mSv(밀리시버트)가 그
+                    단위이며, "유효선량"은 신체 여러 부위가 받은 선량을 위험도까지 고려해 하나의 값으로 합친 것입니다.
+                </dd>
+                <dt>방사선노출(Radiation Exposure)</dt>
+                <dd>
+                    몸이 방사선에 노출되는 상황·과정 자체를 가리키는 말로, 실무에서는 "방사선량"과 거의 같은 맥락으로
+                    쓰입니다(예: "방사선노출량"은 "받은 방사선량"과 같은 뜻).
+                </dd>
+            </dl>
+        </div>
+    </details>
 
     <p class="source">
         근거 ①: The 2024 National Diagnostic Reference Levels for Nuclear Medicine Imaging in Korea, <em
@@ -382,62 +450,6 @@ const jsonLd = {
             rel="noopener noreferrer">보건복지부 공식 보도자료 보기</a
         >
     </p>
-
-    <div class="calc-basis">
-        <h2>"성별 · 장비 종류별 상세 수치" 계산 근거</h2>
-        <ul>
-            <li>
-                PET 환산계수 0.019 mSv/MBq — International Commission on Radiological Protection, <em
-                    >ICRP Publication 128: Radiation Dose to Patients from Radiopharmaceuticals</em
-                > (2015), F-18 FDG 성인 유효선량계수. 성별 구분 없는 단일값이며, 체중에 의한 차이는 투여량(MBq/kg × 체중)에서만
-                반영됩니다.
-            </li>
-            <li>
-                CT 환산계수(k-factor) 0.015 mSv·mGy⁻¹·cm⁻¹ — 전신(Torso, 목~골반) PET/CT 촬영 시 널리 쓰이는 표준
-                환산값(유럽 방사선방호 가이드라인·미국의학물리학회(AAPM) 보고서 계열, 통상 0.014~0.017 범위).
-            </li>
-            <li>
-                투여량·DLP 원자료 — 근거 ①(2025년 DRL 논문) Table 1(FDG, Screening 행)·Table 5(CT DLP, Torso-screening
-                행)의 체중당 투여량·DLP 수치(최소·1사분위수·중앙값·3사분위수·최대값 통계)를 그대로 사용.
-            </li>
-            <li>
-                합산 방법 — PET 부분과 CT 부분은 같은 환자에서 함께 발생하고 체구가 클수록 둘 다 커지는 경향(양의
-                상관관계)이 있어, 같은 장비 계열(Conventional/SiPM) 안에서 같은 분위수(1사분위수는 1사분위수끼리,
-                중앙값은 중앙값끼리)를 대응시켜 더했습니다. 개별 환자 원자료가 아닌 이 근사법을 썼음을 밝힙니다.
-            </li>
-            <li>체중 — 성인 평균체중은 국민건강영양조사 근사치(남성 약 74kg·여성 약 58kg)를 사용했습니다.</li>
-            <li>
-                자연방사선 비교값(5.24 mSv·3.08 mSv) — 원자력안전위원회, 「방사선 안전 규제 기술 개발 연구」
-                최종보고서(2020), &lt;대한민국 국민의 자연 및 인공 방사선 피폭량 조사&gt; 표 9.
-            </li>
-        </ul>
-    </div>
-
-    <div class="glossary">
-        <h2>용어 안내 — 방사선 · 방사능 · 방사선량 · 방사선노출</h2>
-        <p>
-            이 페이지에서 쓰는 용어들은 뜻이 조금씩 다릅니다. 뉴스·SNS에서는 흔히 섞어 쓰지만, 정확히는 다음과 같습니다.
-        </p>
-        <dl>
-            <dt>방사선(Radiation)</dt>
-            <dd>원자핵 등에서 나오는 에너지의 흐름 그 자체(전자기파나 입자)를 말합니다.</dd>
-            <dt>방사능(Radioactivity)</dt>
-            <dd>
-                어떤 물질이 방사선을 내보내는 "능력·성질"을 말합니다. "이 물질에 방사능이 있다"는 그 물질이 방사선을 낼
-                수 있다는 뜻이고, 사람이 그 방사선에 노출되는 것과는 별개의 개념입니다.
-            </dd>
-            <dt>방사선량(Radiation Dose)</dt>
-            <dd>
-                몸이 실제로 받은 방사선의 양을 수치로 나타낸 것입니다. 이 페이지에서 쓰는 mSv(밀리시버트)가 그 단위이며,
-                "유효선량"은 신체 여러 부위가 받은 선량을 위험도까지 고려해 하나의 값으로 합친 것입니다.
-            </dd>
-            <dt>방사선노출(Radiation Exposure)</dt>
-            <dd>
-                몸이 방사선에 노출되는 상황·과정 자체를 가리키는 말로, 실무에서는 "방사선량"과 거의 같은 맥락으로
-                쓰입니다(예: "방사선노출량"은 "받은 방사선량"과 같은 뜻).
-            </dd>
-        </dl>
-    </div>
 
     <style>
         .byline {
@@ -487,6 +499,41 @@ const jsonLd = {
             font-size: 0.9rem;
             line-height: 1.6;
             margin-bottom: 2.5rem;
+        }
+        .more-detail {
+            margin: 2.5rem 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0 1.25rem;
+        }
+        .more-detail > summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--accent);
+            padding: 1rem 0;
+            list-style: none;
+        }
+        .more-detail > summary::-webkit-details-marker {
+            display: none;
+        }
+        .more-detail > summary::before {
+            content: '▸ ';
+        }
+        .more-detail[open] > summary::before {
+            content: '▾ ';
+        }
+        .more-detail[open] > summary {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+        }
+        .more-detail > summary:hover {
+            text-decoration: underline;
+        }
+        .more-detail > div {
+            padding-bottom: 1.25rem;
+        }
+        .more-detail > div > h2:first-child {
+            margin-top: 0;
         }
         .faq-item {
             margin-bottom: 2rem;
