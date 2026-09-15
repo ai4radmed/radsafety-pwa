@@ -15,6 +15,23 @@ const DEVELOPER_EMAILS = (import.meta.env.DEVELOPER_EMAILS || '')
     .map((e: string) => e.trim())
     .filter((e: string) => e.length > 0);
 
+// Stage 1-A (username/password 로그인, privacy_redesign_plan.md 1단계) ─────────
+// auth.users.email 자리에는 실제 이메일 대신 `<username>@radsafety.invalid` 파생값만 넣는다.
+// .invalid 는 RFC 2606 예약 도메인 — 실발송 불가·실제 등록 불가. 미래에 진짜 이메일을
+// 보관하기로 하면 이 값만 교체하면 되고 로그인 코드는 그대로다.
+const USERNAME_REGEX = /^[a-z0-9_-]{3,20}$/;
+const usernameSchema = z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine((v) => USERNAME_REGEX.test(v), {
+        message: '아이디는 영문 소문자·숫자·_·- 만 사용해 3~20자로 입력하세요.',
+    });
+
+function fakeEmailFor(username: string): string {
+    return `${username}@radsafety.invalid`;
+}
+
 export const server = {
     saveFinding: defineAction({
         accept: 'form',
@@ -512,6 +529,120 @@ export const server = {
                 logger.error('인증 회수 중 오류 발생', { error });
                 throw error;
             }
+        },
+    }),
+
+    // Stage 1-A — username/password 회원가입. profiles.username 확정 후 auth.users
+    // 를 가짜 이메일로 생성한다. 클라이언트는 반환된 email 로 곧바로
+    // supabase.auth.signInWithPassword 를 호출해 세션을 연다(기존 개발자 로그인
+    // 경로와 동일 — login.astro 참조).
+    signUpWithUsername: defineAction({
+        input: z.object({
+            username: usernameSchema,
+            password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
+        }),
+        handler: async ({ username, password }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: existing, error: lookupError } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('username', username)
+                .maybeSingle();
+            if (lookupError) throw new Error(lookupError.message);
+            if (existing) throw new Error('이미 사용 중인 아이디입니다.');
+
+            const email = fakeEmailFor(username);
+            const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                email,
+                password,
+                email_confirm: true, // .invalid 도메인은 확인 메일을 받을 수 없으므로 즉시 확정 처리
+            });
+            if (createError || !created?.user) {
+                logger.error('username 회원가입: auth 계정 생성 실패', { error: createError });
+                throw new Error(createError?.message || '계정 생성에 실패했습니다.');
+            }
+
+            const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+                id: created.user.id,
+                username,
+                login_email: null,
+                nickname: null,
+                created_at: new Date().toISOString(),
+            });
+            if (profileError) {
+                // 고아 auth 계정 방지 — profiles insert 실패 시 방금 만든 계정을 되돌린다.
+                await supabaseAdmin.auth.admin.deleteUser(created.user.id);
+                logger.error('username 회원가입: profiles insert 실패, auth 계정 롤백', { error: profileError });
+                throw new Error(profileError.message);
+            }
+
+            return { success: true, email };
+        },
+    }),
+
+    // Stage 1-A — username → email 조회만 한다. 실제 인증(signInWithPassword)은
+    // 브라우저의 supabase 클라이언트가 이어서 수행 — 세션 쿠키가 정상 경로로 설정되도록.
+    // "아이디 없음"과 "비밀번호 오류"를 같은 문구로 묶어 아이디 존재 여부가 새지 않게 한다.
+    signInWithUsername: defineAction({
+        input: z.object({
+            username: usernameSchema,
+        }),
+        handler: async ({ username }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: profile, error: lookupError } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('username', username)
+                .maybeSingle();
+            if (lookupError) throw new Error(lookupError.message);
+            if (!profile) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+
+            const { data: userRes, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+            if (userError || !userRes?.user?.email) {
+                throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+            }
+
+            return { success: true, email: userRes.user.email };
+        },
+    }),
+
+    // Stage B (전환기간) 몫이지만 UI 없이도 재사용 가능하게 지금 만들어 둔다.
+    // 기존 이메일/카카오 사용자가 아이디를 정할 때 호출 — auth.users.email 을
+    // 가짜 이메일로 교체하고 login_email/nickname 을 비운다.
+    // userId 는 클라이언트가 넘긴다 — approveVerification 등 기존 관리자 액션과
+    // 동일한 관례(세션 기반 context 대신 명시적 id 전달).
+    claimUsername: defineAction({
+        input: z.object({
+            userId: z.string().uuid(),
+            username: usernameSchema,
+        }),
+        handler: async ({ userId, username }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: existing, error: lookupError } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('username', username)
+                .maybeSingle();
+            if (lookupError) throw new Error(lookupError.message);
+            if (existing && existing.id !== userId) throw new Error('이미 사용 중인 아이디입니다.');
+
+            const email = fakeEmailFor(username);
+            const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+                email,
+                email_confirm: true,
+            });
+            if (updateAuthError) throw new Error(updateAuthError.message);
+
+            const { error: profileError } = await supabaseAdmin
+                .from('profiles')
+                .update({ username, login_email: null, nickname: null })
+                .eq('id', userId);
+            if (profileError) throw new Error(profileError.message);
+
+            return { success: true, email };
         },
     }),
 };
