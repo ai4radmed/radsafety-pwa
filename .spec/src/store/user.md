@@ -14,11 +14,13 @@ Nanostores 기반 클라이언트 사용자 프로필 상태. `persistentMap`으
 
 ### userProfile 필드
 
-id, login_email, nickname, created_at, is_admin, provider, verification_date, verification_status, society, affiliation, department, real_name, society_email, license_type, is_safety_manager, safety_manager_start_year, safety_manager_end_year, classification, certification, has_radiation_license, radiation_license_type, users_licenses
+id, username, login_email, nickname, created_at, is_admin, provider, verification_date, verification_status, society, affiliation, department, real_name, society_email, license_type, is_safety_manager, safety_manager_start_year, safety_manager_end_year, classification, certification, has_radiation_license, radiation_license_type, users_licenses
+
+- `username`: Stage 1-A(`documents/privacy_redesign_plan.md` 1단계) — 아이디/비밀번호 로그인 사용자의 이름표. `profiles.username`을 그대로 반영. 미설정(카카오·전환 전 이메일 사용자)이면 빈 문자열.
 
 ### setUser 입력
 
-id, email, login_email?, provider, nickname?, created_at?, is_admin?, verification_date?, verification_status?, society?, affiliation?, department?, real_name?, society_email?, license_type?, is_safety_manager?, safety_manager_start_year?, safety_manager_end_year?, classification?, society_name?, licenses?, user_tier?, safety_manager_start_date?, safety_manager_end_date?, is_safety_practice_staff?, has_radiation_license?, radiation_license_type?
+id, email, username?, login_email?, provider, nickname?, created_at?, is_admin?, verification_date?, verification_status?, society?, affiliation?, department?, real_name?, society_email?, license_type?, is_safety_manager?, safety_manager_start_year?, safety_manager_end_year?, classification?, society_name?, licenses?, user_tier?, safety_manager_start_date?, safety_manager_end_date?, is_safety_practice_staff?, has_radiation_license?, radiation_license_type?
 
 ## 사이드 이펙트
 

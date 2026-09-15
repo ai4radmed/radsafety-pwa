@@ -15,8 +15,8 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
 2. **updateUserStore(session)**:
     - 세션 정보(email, id 등)를 기반으로 기본 유저 정보 설정.
     - `profiles` 테이블에서 상세 프로필 조회 (`maybeSingle`).
-    - **자가 치유 (Self-healing)**: 프로필이 없으면 기본 정보로 `profiles`에 자동 생성.
-    - 관리자 이메일 대조 (`isAdmin` 호출) 및 필요 시 DB `is_admin` 업데이트.
+    - **자가 치유 (Self-healing)**: 프로필이 없으면 기본 정보로 `profiles`에 자동 생성(`is_admin: false`로 시작).
+    - **관리자 판정 = `profiles.is_admin` 단일 기준** (Stage 1-A, `documents/privacy_redesign_plan.md` 1단계 — `PUBLIC_ADMIN_EMAILS`/`isAdmin()` 이메일 대조 폐지). username 로그인 사용자는 `auth.users.email`이 `<username>@radsafety.invalid` 가짜 값이라 이메일 대조가 원천적으로 성립하지 않음. 관리자 부여는 DB `profiles.is_admin` 직접 갱신으로만 이루어진다.
     - 최종 정보를 `setUser()`를 통해 전역 스토어에 저장.
     - 성공 시 `checkNotifications()` 및 `user:loggedin` 이벤트 발생.
     - `/login` 페이지에서 로그인 성공 시 `/mypage`로 리다이렉트.

@@ -1,6 +1,5 @@
 import { supabase } from './supabase-browser';
 import { setUser, clearUser } from '../store/user';
-import { isAdmin as checkIsAdmin } from '../config/auth';
 import { saveLastRoute } from './last-route';
 
 /**
@@ -48,8 +47,6 @@ async function updateUserStore(session: any) {
                 '',
         };
 
-        const userIsAdmin = checkIsAdmin(baseUser.login_email);
-
         try {
             const { data: profile, error } = await supabase
                 .from('profiles')
@@ -60,25 +57,22 @@ async function updateUserStore(session: any) {
             if (error) console.error('Profile Fetch Error:', error);
 
             if (profile) {
-                if (userIsAdmin && !profile.is_admin) {
-                    await supabase.from('profiles').update({ is_admin: true }).eq('id', session.user.id);
-                }
                 setUser({
                     ...baseUser,
                     ...profile,
                     nickname: profile.nickname || baseUser.nickname,
-                    is_admin: userIsAdmin,
+                    is_admin: !!profile.is_admin,
                     licenses: profile.licenses || [],
                 });
                 checkNotifications(session.user.id);
                 document.dispatchEvent(new CustomEvent('user:loggedin'));
             } else {
                 console.warn('No profile row. Attempting self-healing...');
-                await performSelfHealing(session.user.id, baseUser, userIsAdmin);
+                await performSelfHealing(session.user.id, baseUser);
             }
         } catch (err) {
             console.error('Unexpected Profile Error:', err);
-            setUser({ ...baseUser, is_admin: userIsAdmin });
+            setUser({ ...baseUser, is_admin: false });
         }
 
         if (currentPath === '/login') window.location.href = '/mypage';
@@ -91,13 +85,13 @@ async function updateUserStore(session: any) {
 /**
  * 프로필 누락 시 자동 생성 (자가 치유)
  */
-async function performSelfHealing(userId: string, baseUser: any, userIsAdmin: boolean) {
+async function performSelfHealing(userId: string, baseUser: any) {
     const newProfile = {
         id: userId,
         login_email: baseUser.login_email,
         nickname: baseUser.nickname,
         created_at: new Date().toISOString(),
-        is_admin: userIsAdmin,
+        is_admin: false,
     };
 
     const { error } = await supabase.from('profiles').insert(newProfile);
@@ -107,7 +101,7 @@ async function performSelfHealing(userId: string, baseUser: any, userIsAdmin: bo
         document.dispatchEvent(new CustomEvent('user:loggedin'));
     } else {
         console.error('Self-healing failed:', error);
-        setUser({ ...baseUser, is_admin: userIsAdmin });
+        setUser({ ...baseUser, is_admin: false });
     }
 }
 

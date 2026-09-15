@@ -3,6 +3,7 @@ import { getCertification } from '../config/auth';
 
 export const userProfile = persistentMap('userProfile', {
     id: '',
+    username: '', // Stage 1-A (privacy_redesign_plan.md 1단계) — 아이디/비밀번호 로그인
     login_email: '',
     nickname: '',
     created_at: '',
@@ -35,6 +36,7 @@ export const userProfile = persistentMap('userProfile', {
 export function setUser(user: {
     id: string;
     email: string;
+    username?: string;
     login_email?: string;
     provider: string;
     nickname?: string;
@@ -69,6 +71,7 @@ export function setUser(user: {
 }) {
     userProfile.set({
         id: user.id || '',
+        username: user.username || '',
         login_email: user.login_email || user.email || '',
         nickname: user.nickname || '',
         created_at: user.created_at || '',
@@ -102,6 +105,7 @@ export function setUser(user: {
 export function clearUser() {
     userProfile.set({
         id: '',
+        username: '',
         login_email: '',
         nickname: '',
         created_at: '',

@@ -33,6 +33,29 @@ describe('setUser', () => {
         expect(profile.login_email).toBe('actual@example.com');
     });
 
+    it('username이 매핑됨 (Stage 1-A)', () => {
+        setUser({
+            id: 'user-123',
+            email: 'gildong@radsafety.invalid',
+            provider: 'email',
+            username: 'gildong',
+        });
+
+        const profile = userProfile.get();
+        expect(profile.username).toBe('gildong');
+    });
+
+    it('username 미설정 시 빈 문자열', () => {
+        setUser({
+            id: 'user-123',
+            email: 'test@example.com',
+            provider: 'kakao',
+        });
+
+        const profile = userProfile.get();
+        expect(profile.username).toBe('');
+    });
+
     it('society_name 레거시 필드가 real_name으로 폴백', () => {
         setUser({
             id: 'user-123',
@@ -132,6 +155,7 @@ describe('clearUser', () => {
 
         const profile = userProfile.get();
         expect(profile.id).toBe('');
+        expect(profile.username).toBe('');
         expect(profile.login_email).toBe('');
         expect(profile.nickname).toBe('');
         expect(profile.is_admin).toBe('false');
