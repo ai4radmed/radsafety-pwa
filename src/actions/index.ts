@@ -690,4 +690,61 @@ export const server = {
             return { success: true, email };
         },
     }),
+
+    // Phase 3 (2계층+가입승인+제재 모델, KSNM 방안위 교육팀 합의 2026-09-10 승계) ──
+    // 가입 대기(status: 'pending') 계정을 관리자가 승인/거절. adminId 는 클라이언트가
+    // 넘기고 서버에서 profiles.is_admin 대조 — approveVerification 등 기존 관리자
+    // 액션과 동일한 관례.
+    approvePendingMember: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+        }),
+        handler: async ({ adminId, targetUserId }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: adminProfile, error: adminError } = await supabaseAdmin
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', adminId)
+                .single();
+            if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
+
+            const { error: updateError } = await supabaseAdmin
+                .from('profiles')
+                .update({ status: 'active' })
+                .eq('id', targetUserId);
+            if (updateError) throw new Error(updateError.message);
+
+            return { success: true };
+        },
+    }),
+
+    // 거절 = 'banned' 로 처리. profiles.status CHECK 제약이 pending/active/suspended/
+    // banned 넷뿐이라 "가입 자체가 거절됨"을 표현할 별도 상태가 없고, 재가입 신청은
+    // 새 계정(다른 username)으로 다시 하면 되므로 굳이 상태를 늘리지 않는다.
+    rejectPendingMember: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+        }),
+        handler: async ({ adminId, targetUserId }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: adminProfile, error: adminError } = await supabaseAdmin
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', adminId)
+                .single();
+            if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
+
+            const { error: updateError } = await supabaseAdmin
+                .from('profiles')
+                .update({ status: 'banned' })
+                .eq('id', targetUserId);
+            if (updateError) throw new Error(updateError.message);
+
+            return { success: true };
+        },
+    }),
 };
