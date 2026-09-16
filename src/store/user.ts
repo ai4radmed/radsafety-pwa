@@ -4,6 +4,7 @@ import { getCertification } from '../config/auth';
 export const userProfile = persistentMap('userProfile', {
     id: '',
     username: '', // Stage 1-A (privacy_redesign_plan.md 1단계) — 아이디/비밀번호 로그인
+    status: '', // Phase 2 (2단계 개정 — 2계층+가입승인+제재) — pending/active/suspended/banned
     login_email: '',
     nickname: '',
     created_at: '',
@@ -37,6 +38,7 @@ export function setUser(user: {
     id: string;
     email: string;
     username?: string;
+    status?: string;
     login_email?: string;
     provider: string;
     nickname?: string;
@@ -72,6 +74,7 @@ export function setUser(user: {
     userProfile.set({
         id: user.id || '',
         username: user.username || '',
+        status: user.status || '',
         login_email: user.login_email || user.email || '',
         nickname: user.nickname || '',
         created_at: user.created_at || '',
@@ -106,6 +109,7 @@ export function clearUser() {
     userProfile.set({
         id: '',
         username: '',
+        status: '',
         login_email: '',
         nickname: '',
         created_at: '',

@@ -115,6 +115,11 @@ async function performSelfHealing(userId: string, baseUser: any) {
         nickname: isKakao ? null : baseUser.nickname,
         created_at: new Date().toISOString(),
         is_admin: false,
+        // Phase 2 (2단계 개정 — 2계층+가입승인+제재) — 자가 치유는 오직 진짜 신규
+        // 계정에서만 일어난다(기존 사용자는 이미 profiles 행이 있어 이 함수 자체가
+        // 안 불림) — 그래서 여기서 만드는 행은 항상 관리자 승인 대기로 시작한다.
+        // 기존(마이그레이션 이전) 사용자는 컬럼 기본값 'active'를 그대로 유지.
+        status: 'pending',
     };
 
     // upsert(onConflict:'id') — signUpWithUsername 과 같은 이유(운영 DB의 auth.users →
