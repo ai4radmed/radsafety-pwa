@@ -291,22 +291,12 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                         <span id="userSocietyRole" class="info-value" style="font-size: 0.9rem;">...</span>
                     </div>
 
-                    <!-- Row 2: Email | Name -->
-                    <div class="info-row" style="border:none; padding: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">메일</span>
-                        <span
-                            id="userSocietyEmail"
-                            class="info-value"
-                            style="font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;"
-                            >...</span
-                        >
-                    </div>
-                    <div class="info-row" style="border:none; padding: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">이름</span>
-                        <span id="userRealName" class="info-value" style="font-size: 0.9rem;">...</span>
-                    </div>
-
-                    <!-- Row 3: Affiliation | Department -->
+                    <!-- Row 2: Affiliation | Department -->
+                    <!-- 실명·실제 이메일 표시는 여기서 제거함(Stage 1-A/B, 2026-09-16) —
+                         마이페이지 상단 카드가 이미 아이디로만 신원을 노출하도록 바뀌었는데,
+                         바로 아래서 실명·이메일을 다시 보여주면 그 취지가 무의미해진다.
+                         verification_status·인증요청 흐름 자체(underlying data)는 그대로 유지 —
+                         2단계에서 인증 체계 자체를 재설계할 때 정식으로 다룬다. -->
                     <div class="info-row" style="border:none; padding: 0; min-width: 0;">
                         <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">기관</span>
                         <span
@@ -787,9 +777,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                         document.getElementById('userSocietyName')!.textContent =
                             societyMap[currentUser.society] || currentUser.society || '-';
                         document.getElementById('userSocietyRole')!.textContent = currentUser.classification || '-';
-                        document.getElementById('userRealName')!.textContent = currentUser.real_name || '-';
-                        document.getElementById('userSocietyEmail')!.textContent =
-                            currentUser.society_email || currentUser.login_email || '-';
+                        // 실명·실제 이메일은 더 이상 표시하지 않는다(위 HTML 주석 참조).
                         document.getElementById('userAffiliation')!.textContent = currentUser.affiliation || '-';
                         document.getElementById('userDepartment')!.textContent = currentUser.department || '-';
                     }

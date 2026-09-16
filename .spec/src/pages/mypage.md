@@ -7,9 +7,10 @@
 ## 1단계 몫 — 상단 카드 (Stage 1-A, `documents/privacy_redesign_plan.md` §마이페이지)
 
 - **로그인 배지**: 카카오 / **아이디**(구 "이메일 로그인" 배지를 대체 — 내부적으로 이메일 OTP 사용자도 이 배지로 표시돼 "이메일" 개념이 UI에서 사라진다). `currentUser.provider === 'kakao'` 면 카카오 배지 우선(비밀번호를 정한 카카오 사용자도 동일).
-- **이름 표시**: `currentUser.username`이 있으면 `@username` 만 표시하고 이메일 자리는 비운다. 아직 username 을 정하지 않은 전환 전 사용자(기존 이메일/카카오)는 종전대로 `real_name`/`nickname` + `login_email` 을 보여준다 — 전환 안내 화면(Stage B)이 아직 없어 강제로 숨기면 식별 수단이 사라지기 때문.
+- **이름 표시**: `currentUser.username`이 있으면 `@username` 만 표시하고 이메일 자리는 비운다. **(Stage B, `/claim-username` 강제 게이트 도입 이후)** 로그인된 사용자는 항상 username 을 갖고 이 페이지에 도달한다 — username 없이는 auth-handler.ts 가 이 페이지 자체를 못 보게 `/claim-username`으로 돌려보낸다. `real_name`/`nickname` + `login_email` 폴백 분기는 그 게이트가 아직 없던 시절의 방어 코드로 남아 있을 뿐, 정상 경로에서는 도달하지 않는다.
 - ADMIN 배지·가입일 표시는 변경 없음.
-- 2단계 몫(카드 2·3 구성 변경, 컬럼 삭제, 인증요청 UI 제거)은 이 절 밖 — 아래 "핵심 규칙"·기존 인증요청 섹션은 2단계 전까지 현행 유지.
+- **(2026-09-16 추가) 카드 2("파일업로드 등 권한인증 및 소속정보")에서 실명·실제 이메일 표시 제거**: `#userRealName`·`#userSocietyEmail` 요소와 그 값 대입 코드를 삭제. 이유 — 카드 1이 이미 아이디로만 신원을 노출하도록 바뀌었는데, 바로 아래 카드에서 `real_name`/`society_email`(또는 `login_email` 폴백)을 다시 보여주면 그 취지가 무의미해진다. `학회`·`구분`·`기관`·`부서`는 개인 식별 정보가 아니라 소속 단위 정보라 유지. **인증요청 흐름 자체(모달·`verification_requests` insert·`society_email`/`real_name` 수집)는 이번엔 안 건드림** — 신청 시 실명·이메일을 입력받는 것 자체의 재설계는 2단계(`verification_status`→`can_publish` 전환) 몫.
+- 2단계 몫(카드 2·3 구성 변경, 컬럼 삭제, 인증요청 UI 자체의 제거)은 이 절 밖 — 위 표시 제거를 넘어선 구조 변경은 2단계 전까지 보류.
 
 ## Props
 
