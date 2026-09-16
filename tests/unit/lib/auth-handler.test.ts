@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { initAuthHandler } from '../../../src/lib/auth-handler';
-import { supabase } from '../../../src/lib/supabase-browser';
+import { supabase, forceClearSupabaseCookies } from '../../../src/lib/supabase-browser';
 import { setUser, clearUser } from '../../../src/store/user';
 
 // Mocking dependencies
@@ -23,6 +23,7 @@ vi.mock('../../../src/lib/supabase-browser', () => ({
             update: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ data: null, error: null })) })),
         })),
     },
+    forceClearSupabaseCookies: vi.fn(),
 }));
 
 vi.mock('../../../src/store/user', () => ({
@@ -58,6 +59,22 @@ describe('auth-handler', () => {
         expect(clearUser).toHaveBeenCalled();
         // /mypage는 보호된 페이지(publicPaths 아님)이므로 리다이렉트 발생
         expect(window.location.href).toBe('/login');
+    });
+
+    it('로그아웃 시 forceClearSupabaseCookies를 clearUser보다 먼저 호출한다', () => {
+        let authCallback: any;
+        (supabase.auth.onAuthStateChange as any).mockImplementation((cb: any) => {
+            authCallback = cb;
+        });
+        const callOrder: string[] = [];
+        (forceClearSupabaseCookies as any).mockImplementation(() => callOrder.push('forceClear'));
+        (clearUser as any).mockImplementation(() => callOrder.push('clearUser'));
+
+        initAuthHandler();
+        authCallback('SIGNED_OUT', null);
+
+        expect(forceClearSupabaseCookies).toHaveBeenCalled();
+        expect(callOrder).toEqual(['forceClear', 'clearUser']);
     });
 
     it('로그인 성공 시 프로필을 동기화하고 스토어를 업데이트한다', async () => {

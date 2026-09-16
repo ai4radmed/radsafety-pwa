@@ -1,4 +1,4 @@
-import { supabase } from './supabase-browser';
+import { supabase, forceClearSupabaseCookies } from './supabase-browser';
 import { setUser, clearUser } from '../store/user';
 import { saveLastRoute } from './last-route';
 
@@ -15,6 +15,9 @@ export function initAuthHandler() {
     supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth State Change:', event, session?.user?.email);
         if (event === 'SIGNED_OUT') {
+            // signOut() 이 세션 쿠키 조각 일부를 못 지우는 경우가 있어 방어적으로
+            // 직접 한 번 더 지운다(2026-09-16, .spec/src/lib/supabase-browser.md 참조).
+            forceClearSupabaseCookies();
             clearUser();
             handleRedirect(window.location.pathname, false);
         }
