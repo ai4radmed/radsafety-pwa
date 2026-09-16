@@ -35,7 +35,7 @@ describe('last-route', () => {
     });
 
     describe('saveLastRoute', () => {
-        it('제외 경로(/, /login, /auth)는 저장하지 않는다', () => {
+        it('제외 경로(/, /login, /auth, /claim-username, /admin)는 저장하지 않는다', () => {
             (window as any).location = { pathname: '/', search: '' };
             saveLastRoute();
             expect(storage['last_route']).toBeUndefined();
@@ -49,6 +49,16 @@ describe('last-route', () => {
             expect(storage['last_route']).toBeUndefined();
 
             (window as any).location = { pathname: '/claim-username', search: '' };
+            saveLastRoute();
+            expect(storage['last_route']).toBeUndefined();
+
+            // 2026-09-16: 관리자로 /admin/* 를 보던 중 다른 계정으로 가입/로그인하면
+            // goToLastRoute() 가 그 계정을 관리자 페이지로 보내버리는 버그 실측 → 수정.
+            (window as any).location = { pathname: '/admin', search: '' };
+            saveLastRoute();
+            expect(storage['last_route']).toBeUndefined();
+
+            (window as any).location = { pathname: '/admin/member-approval', search: '' };
             saveLastRoute();
             expect(storage['last_route']).toBeUndefined();
         });
