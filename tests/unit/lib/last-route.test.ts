@@ -47,6 +47,10 @@ describe('last-route', () => {
             (window as any).location = { pathname: '/auth/callback', search: '' };
             saveLastRoute();
             expect(storage['last_route']).toBeUndefined();
+
+            (window as any).location = { pathname: '/claim-username', search: '' };
+            saveLastRoute();
+            expect(storage['last_route']).toBeUndefined();
         });
 
         it('일반 경로(/mypage, /resources)는 저장한다', () => {
