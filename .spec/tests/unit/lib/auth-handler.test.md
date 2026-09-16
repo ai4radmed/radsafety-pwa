@@ -11,6 +11,8 @@
     - `supabase.auth.onAuthStateChange`가 등록되는지 확인.
     - `astro:page-load` 이벤트 리스너가 등록되는지 확인.
 
+1-1. **(2026-09-16) SIGNED_OUT 시 `forceClearSupabaseCookies()`가 `clearUser()`보다 먼저 호출되는지 확인** (호출 순서 검증).
+
 2. **updateUserStore (로그인 성공 시)**:
     - 세션 정보를 기반으로 `setUser()`가 올바르게 호출되는지 확인.
     - 프로필 존재 시 알림 체크가 실행되는지 확인.

@@ -200,4 +200,45 @@ describe('supabase-browser', () => {
             expect(cookieSetter).not.toHaveBeenCalled();
         });
     });
+
+    // 2026-09-16 버그 수정 — signOut() 이 세션 쿠키 조각 일부를 못 지워 로그아웃해도
+    // (새로고침해도) 로그인 상태가 유지되던 문제. 원인과 무관하게 sb- 쿠키를 직접 지운다.
+    describe('forceClearSupabaseCookies', () => {
+        let forceClearSupabaseCookies: () => void;
+
+        beforeEach(async () => {
+            localStorage.clear();
+            const mod = await import('../../../src/lib/supabase-browser');
+            forceClearSupabaseCookies = mod.forceClearSupabaseCookies;
+        });
+
+        it('document.cookie 의 sb- 접두사 쿠키를 전부 지운다(그 외는 건드리지 않는다)', () => {
+            mockParseCookieHeader.mockReturnValue([
+                { name: 'sb-token.0', value: 'v0' },
+                { name: 'sb-token.1', value: 'v1' },
+                { name: 'other', value: 'xyz' },
+            ]);
+            const cookieSetter = vi.fn();
+            Object.defineProperty(document, 'cookie', {
+                set: cookieSetter,
+                get: () => 'sb-token.0=v0; sb-token.1=v1; other=xyz',
+                configurable: true,
+            });
+
+            forceClearSupabaseCookies();
+
+            expect(cookieSetter).toHaveBeenCalledTimes(2);
+        });
+
+        it('localStorage 백업을 지우고 sb-signed-out 마커를 세운다', () => {
+            localStorage.setItem('sb-cookie-backup', 'stale');
+            mockParseCookieHeader.mockReturnValue([]);
+            Object.defineProperty(document, 'cookie', { set: vi.fn(), get: () => '', configurable: true });
+
+            forceClearSupabaseCookies();
+
+            expect(localStorage.getItem('sb-cookie-backup')).toBeNull();
+            expect(localStorage.getItem('sb-signed-out')).toBe('1');
+        });
+    });
 });

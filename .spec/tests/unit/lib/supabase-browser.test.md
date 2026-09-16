@@ -11,19 +11,21 @@ Vitest (단위)
 
 ## 검증 항목
 
-| describe            | it                                                                 | 검증 내용                                                                              |
-| ------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| supabase export     | supabase 객체가 export됨                                           | import { supabase } 시 truthy                                                          |
-| createBrowserClient | createBrowserClient가 올바른 옵션으로 호출됨                       | flowType: pkce, detectSessionInUrl: true, persistSession: true, autoRefreshToken: true |
-| createBrowserClient | url과 key가 문자열로 전달됨                                        | typeof url/key === 'string', length > 0                                                |
-| createBrowserClient | cookies 핸들러가 전달됨                                            | options.cookies.getAll, options.cookies.setAll이 함수                                  |
-| cookie backup       | getAll: sb- 쿠키가 있으면 document.cookie 그대로 반환              | localStorage 접근 없이 cookies 반환                                                    |
-| cookie backup       | getAll: sb- 쿠키 없으면 localStorage 백업에서 복원                 | localStorage에서 읽고 document.cookie에 재설정                                         |
-| cookie backup       | setAll: 쿠키 설정 후 sb- 쿠키를 localStorage에 백업                | document.cookie 설정 + localStorage.setItem 호출                                       |
-| cookie backup       | setAll: sb- 쿠키 없으면 localStorage 백업 삭제                     | localStorage.removeItem(COOKIE_BACKUP_KEY) 호출                                        |
-| cookie backup       | setAll: sb- 쿠키 없으면(로그아웃) sb-signed-out 마커를 세운다      | localStorage.setItem('sb-signed-out', '1') 호출                                        |
-| cookie backup       | setAll: sb- 쿠키 있으면(로그인 성공) sb-signed-out 마커를 해제한다 | localStorage.removeItem('sb-signed-out') 호출                                          |
-| cookie backup       | getAll: sb-signed-out 마커가 있으면 백업이 있어도 복원하지 않는다  | document.cookie 재설정 없음, 원래 쿠키만 반환                                          |
+| describe                  | it                                                                        | 검증 내용                                                                              |
+| ------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| supabase export           | supabase 객체가 export됨                                                  | import { supabase } 시 truthy                                                          |
+| createBrowserClient       | createBrowserClient가 올바른 옵션으로 호출됨                              | flowType: pkce, detectSessionInUrl: true, persistSession: true, autoRefreshToken: true |
+| createBrowserClient       | url과 key가 문자열로 전달됨                                               | typeof url/key === 'string', length > 0                                                |
+| createBrowserClient       | cookies 핸들러가 전달됨                                                   | options.cookies.getAll, options.cookies.setAll이 함수                                  |
+| cookie backup             | getAll: sb- 쿠키가 있으면 document.cookie 그대로 반환                     | localStorage 접근 없이 cookies 반환                                                    |
+| cookie backup             | getAll: sb- 쿠키 없으면 localStorage 백업에서 복원                        | localStorage에서 읽고 document.cookie에 재설정                                         |
+| cookie backup             | setAll: 쿠키 설정 후 sb- 쿠키를 localStorage에 백업                       | document.cookie 설정 + localStorage.setItem 호출                                       |
+| cookie backup             | setAll: sb- 쿠키 없으면 localStorage 백업 삭제                            | localStorage.removeItem(COOKIE_BACKUP_KEY) 호출                                        |
+| cookie backup             | setAll: sb- 쿠키 없으면(로그아웃) sb-signed-out 마커를 세운다             | localStorage.setItem('sb-signed-out', '1') 호출                                        |
+| cookie backup             | setAll: sb- 쿠키 있으면(로그인 성공) sb-signed-out 마커를 해제한다        | localStorage.removeItem('sb-signed-out') 호출                                          |
+| cookie backup             | getAll: sb-signed-out 마커가 있으면 백업이 있어도 복원하지 않는다         | document.cookie 재설정 없음, 원래 쿠키만 반환                                          |
+| forceClearSupabaseCookies | document.cookie 의 sb- 접두사 쿠키를 전부 지운다(그 외는 건드리지 않는다) | sb- 쿠키 개수만큼 document.cookie setter 호출                                          |
+| forceClearSupabaseCookies | localStorage 백업을 지우고 sb-signed-out 마커를 세운다                    | COOKIE_BACKUP_KEY 삭제, SIGNED_OUT_KEY='1'                                             |
 
 ## Mock/Setup
 

@@ -9,7 +9,7 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
 
 1. **initAuthHandler()**:
     - `supabase.auth.onAuthStateChange` 리스너 등록.
-    - `SIGNED_OUT` 이벤트 발생 시: `clearUser()` 호출 및 보호된 페이지인 경우 `/login` 리다이렉트.
+    - `SIGNED_OUT` 이벤트 발생 시: **`forceClearSupabaseCookies()`**(방어적 쿠키 강제 삭제, 2026-09-16 — `signOut()`이 세션 쿠키 조각 일부를 못 지우는 케이스 대응, `.spec/src/lib/supabase-browser.md` 규칙 6) → `clearUser()` 호출 → 보호된 페이지인 경우 `/login` 리다이렉트.
     - `astro:page-load` 이벤트 등록: 매 페이지 로드 시 `saveLastRoute()`(마지막 경로 저장), 이후 `updateUserStore` 실행.
 
 2. **updateUserStore(session)**:
