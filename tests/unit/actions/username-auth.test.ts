@@ -204,4 +204,37 @@ describe('server.claimUsername', () => {
             expect.objectContaining({ username: 'gildong', login_email: null, nickname: null }),
         );
     });
+
+    it('password 를 같이 주면 updateUserById 에 password 도 실린다 (Stage B, 이메일 OTP 출신 전환)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminUpdateUserById.mockResolvedValue({ error: null });
+
+        await (server.claimUsername as any)({ userId: USER_ID, username: 'gildong', password: 'longenough1' });
+
+        expect(mockAdminUpdateUserById).toHaveBeenCalledWith(
+            USER_ID,
+            expect.objectContaining({
+                email: 'gildong@radsafety.invalid',
+                email_confirm: true,
+                password: 'longenough1',
+            }),
+        );
+    });
+
+    it('password 없이 호출하면 updateUserById 에 password 필드가 없다 (카카오 — 선택 사항)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminUpdateUserById.mockResolvedValue({ error: null });
+
+        await (server.claimUsername as any)({ userId: USER_ID, username: 'gildong' });
+
+        const [, attrs] = mockAdminUpdateUserById.mock.calls[0];
+        expect(attrs).not.toHaveProperty('password');
+    });
+
+    it('8자 미만 password 는 거부', async () => {
+        await expect(
+            (server.claimUsername as any)({ userId: USER_ID, username: 'gildong', password: 'short' }),
+        ).rejects.toThrow();
+        expect(mockAdminUpdateUserById).not.toHaveBeenCalled();
+    });
 });

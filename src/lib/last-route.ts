@@ -6,7 +6,7 @@
 const KEY = 'last_route';
 const CHECKED_KEY = 'last_route_checked';
 
-const EXCLUDE_PREFIXES = ['/login', '/auth', '/offline', '/api'];
+const EXCLUDE_PREFIXES = ['/login', '/auth', '/offline', '/api', '/claim-username'];
 const EXCLUDE_EXACT = new Set(['/']);
 
 function isExcluded(path: string): boolean {

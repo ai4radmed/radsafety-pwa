@@ -615,17 +615,20 @@ export const server = {
         },
     }),
 
-    // Stage B (전환기간) 몫이지만 UI 없이도 재사용 가능하게 지금 만들어 둔다.
-    // 기존 이메일/카카오 사용자가 아이디를 정할 때 호출 — auth.users.email 을
-    // 가짜 이메일로 교체하고 login_email/nickname 을 비운다.
+    // Stage B (privacy_redesign_plan.md 전환기간) — 기존 이메일/카카오 사용자가
+    // 아이디를 정할 때 호출. auth.users.email 을 가짜 이메일로 교체하고
+    // login_email/nickname 을 비운다. password 는 선택 — 카카오 사용자는 생략 가능,
+    // 이메일 OTP 출신 사용자는 이 방법이 유일한 향후 로그인 수단이라 사실상 필수
+    // (강제 여부는 클라이언트 UI 판단, 서버는 optional 로만 받는다).
     // userId 는 클라이언트가 넘긴다 — approveVerification 등 기존 관리자 액션과
     // 동일한 관례(세션 기반 context 대신 명시적 id 전달).
     claimUsername: defineAction({
         input: z.object({
             userId: z.string().uuid(),
             username: usernameSchema,
+            password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.').optional(),
         }),
-        handler: async ({ userId, username }) => {
+        handler: async ({ userId, username, password }) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
 
             const { data: existing, error: lookupError } = await supabaseAdmin
@@ -640,6 +643,7 @@ export const server = {
             const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
                 email,
                 email_confirm: true,
+                ...(password ? { password } : {}),
             });
             if (updateAuthError) throw new Error(updateAuthError.message);
 

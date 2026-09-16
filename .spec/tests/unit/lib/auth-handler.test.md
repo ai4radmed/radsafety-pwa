@@ -19,8 +19,9 @@
     - **(Stage 1-A)** `profiles.is_admin`이 `true`면 로그인 이메일이 `<username>@radsafety.invalid`(관리자 목록에 없음)여도 `setUser`에 `is_admin: true`가 전달된다.
 
 3. **updateUserStore (프로필 부재 시 - Self-healing)**:
-    - 프로필이 없을 경우 `supabase.from('profiles').insert()`가 호출되는지 확인.
+    - 프로필이 없을 경우 `supabase.from('profiles').upsert(data, {onConflict:'id'})`가 호출되는지 확인(insert 아님 — Stage B, auth.users→profiles 자동생성 트리거 충돌 방지).
     - 삽입 성공 후 유저 정보가 정상적으로 스토어에 저장되는지 확인.
+    - **(Stage B)** provider가 `kakao`면 upsert 대상에 `nickname: null, login_email: null`이 포함되는지 확인. `email`(OTP) provider면 `login_email`이 세션 이메일 그대로 유지되는지 확인.
 
 4. **updateUserStore (비인증 접근 시)**:
     - 세션이 없을 경우 `clearUser()`가 호출되는지 확인.
@@ -28,6 +29,11 @@
 
 5. **checkNotifications**:
     - 알림 개수에 따라 `.global-noti-dot` 요소의 `display` 스타일이 변경되는지 확인.
+
+6. **(Stage B) 아이디 정하기 강제 게이트**:
+    - `profiles.username`이 없으면 현재 경로와 무관하게 `window.location.href`가 `/claim-username`으로 바뀌는지 확인.
+    - 이미 `/claim-username`에 있으면 리다이렉트하지 않는지(무한루프 방지) 확인.
+    - `username`이 있으면 게이트가 발동하지 않는지 확인.
 
 ## 핵심 규칙
 

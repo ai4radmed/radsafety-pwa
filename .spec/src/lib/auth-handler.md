@@ -20,6 +20,7 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
     - 최종 정보를 `setUser()`를 통해 전역 스토어에 저장.
     - 성공 시 `checkNotifications()` 및 `user:loggedin` 이벤트 발생.
     - `/login` 페이지에서 로그인 성공 시 `/mypage`로 리다이렉트.
+    - **(Stage B, 2026-09-16) 아이디 정하기 강제 게이트**: `profiles.username`이 없으면(자가 치유로 막 생긴 신규 계정 포함) 현재 경로가 `/claim-username`이 아닌 한 그 즉시 `/claim-username`으로 리다이렉트하고 나머지 로직(로그인 페이지 이동 등)은 실행하지 않는다. 신규·기존 계정을 구분하지 않는다 — Dr. Ben 결정: 배포 후 첫 접속 시 1회 강제 전환 + 화면 안내로 이유를 설명하는 쪽이 반복 알림·배너보다 사용자 친화적. 리다이렉트 목적지 상수는 `CLAIM_USERNAME_PATH`.
 
 3. **checkNotifications(userId)**:
     - `notifications` 테이블에서 `is_read: false`인 알림 개수 조회.
@@ -32,3 +33,5 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
     - 비인증 사용자가 보호된 페이지 접근 시 즉시 `/login` 리다이렉트.
 2. **중복 실행 방지**: `astro:page-load` 내에서만 초기화 및 동기화 수행 시 중복 호출 주의.
 3. **Optional Guard**: DOM 접근 (`.global-noti-dot`) 시 요소 존재 여부 필수 확인.
+4. **(Stage B) 자가 치유 시 카카오는 nickname·login_email 을 비운다** — provider가 `kakao`면 `newProfile.login_email`/`nickname`을 `null`로 강제(그 외 provider는 기존대로 `baseUser`값 사용). 이메일 OTP 사용자는 전환 전까지 `login_email`이 유일한 로그인 식별자라 그대로 유지해야 한다.
+5. **(Stage B) 자가 치유 profiles 쓰기는 `upsert(onConflict:'id')`** — `signUpWithUsername`과 같은 이유(운영 DB `auth.users`→`profiles` 자동생성 트리거, `.spec/src/actions/index.md` 규칙 10). 평범한 `insert`는 트리거가 이미 만든 행과 충돌해 자가 치유가 조용히 실패할 수 있다.
