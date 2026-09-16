@@ -22,28 +22,31 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 사용자 프로필 정보를 저장하며, `auth.users` 테이블과 1:1로 연결됩니다.
 
-| 필드명                      | 타입        | 설명                                                                                            | 기본값   |
-| :-------------------------- | :---------- | :---------------------------------------------------------------------------------------------- | :------- |
-| `id`                        | `uuid` (PK) | `auth.users.id` 참조 (외래키)                                                                   |          |
-| `nickname`                  | `text`      | 카카오 닉네임 (표시용)                                                                          |          |
-| `login_email`               | `text`      | 로그인 이메일 (auth.users.email 복사본)                                                         |          |
-| ~~`provider`~~              | ~~`text`~~  | ~~로그인 제공자 (`kakao`, `email` 등)~~ **실제 DB에 존재하지 않음 (문서 오류)**                 |          |
-| `created_at`                | `timestamp` | 프로필 생성 일시 (앱 가입일)                                                                    | `now()`  |
-| `is_admin`                  | `boolean`   | 관리자 여부                                                                                     | `false`  |
-| `verification_status`       | `text`      | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료) | `'none'` |
-| `verification_date`         | `timestamp` | 인증 (요청/완료) 일시                                                                           |          |
-| `society`                   | `text`      | 소속 학회 코드 (`nuclear_medicine`, `technology` 등)                                            |          |
-| `classification`            | `text`      | 직종 구분 (의사, 방사선사 등)                                                                   |          |
-| `society_email`             | `text`      | 학회/특별사용자 인증용 이메일                                                                   |          |
-| `real_name`                 | `text`      | 실명 (학회 인증 정보)                                                                           |          |
-| `affiliation`               | `text`      | 소속 기관                                                                                       |          |
-| `department`                | `text`      | 소속 부서                                                                                       |          |
-| `license_type`              | `text`      | 보유 면허 종류 (`none`, `supervisor`, `special`, `general`, `engineer`)                         |          |
-| `is_safety_manager`         | `boolean`   | 방사선안전관리자 여부                                                                           | `false`  |
-| `safety_manager_start_year` | `text`      | 안전관리자 업무 시작년도                                                                        |          |
-| `safety_manager_end_year`   | `text`      | 안전관리자 업무 종료년도                                                                        |          |
-| `email_verified`            | `boolean`   | society_email 검증 완료 여부                                                                    | `false`  |
-| `verification_method`       | `text`      | 이메일 검증 방법 (`login_email`, `otp`, `list`)                                                 |          |
+> ⚠️ **`auth.users` → `profiles` 자동생성 트리거 존재** (2026-09-16, Stage 1-A 프리뷰 테스트로 발견). `auth.users`에 새 행이 INSERT되면 `profiles`에도 빈 행(`id`만 채워진)이 자동으로 생긴다. 이 저장소의 `sql_query/*.sql`에는 정의가 없다 — 대시보드에서만 존재하는 것으로 추정. **이 테이블에 `id`로 새 행을 쓰는 코드는 반드시 `upsert(onConflict:'id')`를 쓸 것** — 평범한 `insert`는 `duplicate key value violates unique constraint "profiles_pkey"`로 매번 실패한다(`src/actions/index.ts`의 `signUpWithUsername`이 실제 사례, `.spec/src/actions/index.md` 규칙 10). 정확한 트리거 정의는 SQL Editor에서 `select pg_get_triggerdef(oid) from pg_trigger where tgrelid = 'auth.users'::regclass;`로 확인.
+
+| 필드명                      | 타입            | 설명                                                                                                                                                                        | 기본값   |
+| :-------------------------- | :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------- |
+| `id`                        | `uuid` (PK)     | `auth.users.id` 참조 (외래키)                                                                                                                                               |          |
+| `username`                  | `text` (UNIQUE) | 로그인 아이디 (영문 소문자·숫자·`_`·`-`, 3~20자). `sql_query/migrate_add_username.sql` (2026-09-15, Stage 1-A). `auth.users.email` 은 `<username>@radsafety.invalid` 파생값 | `NULL`   |
+| `nickname`                  | `text`          | 카카오 닉네임 (표시용) — Stage 1-A 부터 신규 카카오 가입 시 기록하지 않음(전환 완료 후 컬럼 삭제 예정, 2단계)                                                               |          |
+| `login_email`               | `text`          | 로그인 이메일 (auth.users.email 복사본)                                                                                                                                     |          |
+| ~~`provider`~~              | ~~`text`~~      | ~~로그인 제공자 (`kakao`, `email` 등)~~ **실제 DB에 존재하지 않음 (문서 오류)**                                                                                             |          |
+| `created_at`                | `timestamp`     | 프로필 생성 일시 (앱 가입일)                                                                                                                                                | `now()`  |
+| `is_admin`                  | `boolean`       | 관리자 여부                                                                                                                                                                 | `false`  |
+| `verification_status`       | `text`          | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료)                                                                             | `'none'` |
+| `verification_date`         | `timestamp`     | 인증 (요청/완료) 일시                                                                                                                                                       |          |
+| `society`                   | `text`          | 소속 학회 코드 (`nuclear_medicine`, `technology` 등)                                                                                                                        |          |
+| `classification`            | `text`          | 직종 구분 (의사, 방사선사 등)                                                                                                                                               |          |
+| `society_email`             | `text`          | 학회/특별사용자 인증용 이메일                                                                                                                                               |          |
+| `real_name`                 | `text`          | 실명 (학회 인증 정보)                                                                                                                                                       |          |
+| `affiliation`               | `text`          | 소속 기관                                                                                                                                                                   |          |
+| `department`                | `text`          | 소속 부서                                                                                                                                                                   |          |
+| `license_type`              | `text`          | 보유 면허 종류 (`none`, `supervisor`, `special`, `general`, `engineer`)                                                                                                     |          |
+| `is_safety_manager`         | `boolean`       | 방사선안전관리자 여부                                                                                                                                                       | `false`  |
+| `safety_manager_start_year` | `text`          | 안전관리자 업무 시작년도                                                                                                                                                    |          |
+| `safety_manager_end_year`   | `text`          | 안전관리자 업무 종료년도                                                                                                                                                    |          |
+| `email_verified`            | `boolean`       | society_email 검증 완료 여부                                                                                                                                                | `false`  |
+| `verification_method`       | `text`          | 이메일 검증 방법 (`login_email`, `otp`, `list`)                                                                                                                             |          |
 
 > **Note**: `verification_status`는 4단계로 구분됩니다:
 >

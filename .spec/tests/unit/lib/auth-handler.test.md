@@ -13,8 +13,10 @@
 
 2. **updateUserStore (로그인 성공 시)**:
     - 세션 정보를 기반으로 `setUser()`가 올바르게 호출되는지 확인.
-    - 프로필이 존재할 경우 DB `is_admin` 업데이트 및 알림 체크가 실행되는지 확인.
+    - 프로필 존재 시 알림 체크가 실행되는지 확인.
     - `/login` 페이지에서 로그인 성공 시 `/mypage`로 이동하는지 확인.
+    - **(Stage 1-A)** `is_admin`은 `profiles.is_admin` 단일 기준 — 이메일이 관리자 목록에 있어도 DB 값이 `false`면 `setUser`에 `is_admin: false`가 전달되고, `profiles` 테이블 `update`(이메일 대조 승격)는 더 이상 호출되지 않는다.
+    - **(Stage 1-A)** `profiles.is_admin`이 `true`면 로그인 이메일이 `<username>@radsafety.invalid`(관리자 목록에 없음)여도 `setUser`에 `is_admin: true`가 전달된다.
 
 3. **updateUserStore (프로필 부재 시 - Self-healing)**:
     - 프로필이 없을 경우 `supabase.from('profiles').insert()`가 호출되는지 확인.
@@ -29,6 +31,6 @@
 
 ## 핵심 규칙
 
-1. **Mocking**: `supabase-browser`, `nanostores`, `config/auth` 등을 필수 모킹.
+1. **Mocking**: `supabase-browser`, `nanostores` 등을 필수 모킹. `config/auth`는 Stage 1-A(2026-09) 이후 `auth-handler.ts`가 더 이상 import하지 않으므로 모킹 불필요.
 2. **Environment**: `jsdom` 환경에서 실행하여 `window.location`, `document` 조작 가능해야 함.
 3. **Async**: 비동기 함수(`.getSession`, `.from`)의 결과를 기다려 단언(assertion) 수행.

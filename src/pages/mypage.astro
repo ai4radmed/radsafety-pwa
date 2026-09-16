@@ -674,14 +674,21 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                     } else {
                         loginBadge.classList.remove('kakao-badge');
                         loginBadge.classList.add('email-badge');
-                        loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> <span>이메일 로그인 중</span>`;
+                        loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> <span>아이디 로그인 중</span>`;
                     }
                 }
 
+                // username 을 정한 사용자는 실명·이메일 대신 아이디만 노출(Stage 1-A, "이메일 개념 숨기기").
+                // 아직 username 이 없는 전환 전 사용자(기존 이메일/카카오)는 종전 표시를 유지한다(전환 화면 = Stage B, 미구현).
                 const nameEl = document.getElementById('userIdentityName');
                 const emailEl = document.getElementById('userIdentityEmail');
-                if (nameEl) nameEl.textContent = currentUser.real_name || currentUser.nickname || '이름 없음';
-                if (emailEl) emailEl.textContent = currentUser.login_email || '-';
+                if (currentUser.username) {
+                    if (nameEl) nameEl.textContent = `@${currentUser.username}`;
+                    if (emailEl) emailEl.textContent = '';
+                } else {
+                    if (nameEl) nameEl.textContent = currentUser.real_name || currentUser.nickname || '이름 없음';
+                    if (emailEl) emailEl.textContent = currentUser.login_email || '-';
+                }
 
                 // Joined At Format
                 const dateEl = document.getElementById('userJoinedAt');

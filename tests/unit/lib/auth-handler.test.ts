@@ -30,10 +30,6 @@ vi.mock('../../../src/store/user', () => ({
     clearUser: vi.fn(),
 }));
 
-vi.mock('../../../src/config/auth', () => ({
-    isAdmin: vi.fn((email) => email === 'admin@test.com'),
-}));
-
 describe('auth-handler', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -103,6 +99,60 @@ describe('auth-handler', () => {
                 nickname: 'TestUser',
             }),
         );
+    });
+
+    it('is_admin 은 profiles.is_admin 단일 기준 — 이메일이 관리자 목록에 있어도 DB 값이 false 면 false 다 (Stage 1-A)', async () => {
+        const mockSession = {
+            user: {
+                id: 'admin-by-email-only',
+                email: 'admin@test.com', // 과거였다면 PUBLIC_ADMIN_EMAILS 매치로 admin 취급됐을 값
+                created_at: '2023-01-01',
+                app_metadata: { provider: 'email' },
+            },
+        };
+        const mockProfile = { id: 'admin-by-email-only', nickname: 'NotAdmin', is_admin: false };
+
+        (supabase.from as any).mockReturnValue({
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+            update: vi.fn().mockReturnThis(),
+        });
+
+        initAuthHandler();
+        (supabase.auth.getSession as any).mockResolvedValue({ data: { session: mockSession } });
+        document.dispatchEvent(new CustomEvent('astro:page-load'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(setUser).toHaveBeenCalledWith(expect.objectContaining({ is_admin: false }));
+        // 더 이상 이메일 대조로 profiles.is_admin 을 승격 업데이트하지 않는다.
+        const fromResult = (supabase.from as any)();
+        expect(fromResult.update).not.toHaveBeenCalled();
+    });
+
+    it('is_admin 은 profiles.is_admin 이 true 면 이메일과 무관하게 true 다 (Stage 1-A, username 로그인 대비)', async () => {
+        const mockSession = {
+            user: {
+                id: 'username-admin',
+                email: 'someadmin@radsafety.invalid', // username 로그인 — 관리자 이메일 목록에 없음
+                created_at: '2023-01-01',
+                app_metadata: { provider: 'email' },
+            },
+        };
+        const mockProfile = { id: 'username-admin', username: 'someadmin', is_admin: true };
+
+        (supabase.from as any).mockReturnValue({
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+        });
+
+        initAuthHandler();
+        (supabase.auth.getSession as any).mockResolvedValue({ data: { session: mockSession } });
+        document.dispatchEvent(new CustomEvent('astro:page-load'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(setUser).toHaveBeenCalledWith(expect.objectContaining({ is_admin: true }));
     });
 
     it('프로필이 없을 경우 자가 치유(insert)를 시도한다', async () => {
