@@ -563,17 +563,24 @@ export const server = {
                 throw new Error(createError?.message || '계정 생성에 실패했습니다.');
             }
 
-            const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-                id: created.user.id,
-                username,
-                login_email: null,
-                nickname: null,
-                created_at: new Date().toISOString(),
-            });
+            // upsert(insert 아님) — auth.users 에 새 행이 생기면 profiles 에도 빈 행을 미리
+            // 만들어 두는 DB 트리거가 있어(2026-09-16 프리뷰 테스트로 확인), 그냥 insert 하면
+            // "duplicate key value violates unique constraint profiles_pkey" 로 매번 실패한다.
+            // id 로 onConflict 를 지정해 트리거가 만든 행이 있으면 덮어쓰고, 없으면 새로 만든다.
+            const { error: profileError } = await supabaseAdmin.from('profiles').upsert(
+                {
+                    id: created.user.id,
+                    username,
+                    login_email: null,
+                    nickname: null,
+                    created_at: new Date().toISOString(),
+                },
+                { onConflict: 'id' },
+            );
             if (profileError) {
-                // 고아 auth 계정 방지 — profiles insert 실패 시 방금 만든 계정을 되돌린다.
+                // 고아 auth 계정 방지 — profiles upsert 실패 시 방금 만든 계정을 되돌린다.
                 await supabaseAdmin.auth.admin.deleteUser(created.user.id);
-                logger.error('username 회원가입: profiles insert 실패, auth 계정 롤백', { error: profileError });
+                logger.error('username 회원가입: profiles upsert 실패, auth 계정 롤백', { error: profileError });
                 throw new Error(profileError.message);
             }
 

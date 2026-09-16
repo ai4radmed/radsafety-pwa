@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // (tests/unit/actions/index.test.ts 의 공유 모의는 auth.admin.* 를 다루지 않음).
 
 const mockProfilesSelect = vi.fn();
-const mockProfilesInsert = vi.fn();
+const mockProfilesUpsert = vi.fn();
 const mockProfilesUpdate = vi.fn();
 const mockAdminCreateUser = vi.fn();
 const mockAdminDeleteUser = vi.fn();
@@ -23,8 +23,10 @@ vi.mock('../../../src/lib/supabase-server', () => ({
                         maybeSingle: () => mockProfilesSelect(val),
                     }),
                 }),
-                insert: (data: unknown) => {
-                    mockProfilesInsert(data);
+                // signUpWithUsername 은 upsert(onConflict:'id') 를 쓴다 — 운영 DB의
+                // auth.users → profiles 자동생성 트리거와 충돌하지 않기 위해서(규칙 10 참조).
+                upsert: (data: unknown, opts?: unknown) => {
+                    mockProfilesUpsert(data, opts);
                     return Promise.resolve({ error: null });
                 },
                 update: (data: unknown) => {
@@ -67,7 +69,7 @@ const USER_ID = '123e4567-e89b-12d3-a456-426614174000';
 
 beforeEach(() => {
     mockProfilesSelect.mockReset();
-    mockProfilesInsert.mockReset();
+    mockProfilesUpsert.mockReset();
     mockProfilesUpdate.mockReset();
     mockAdminCreateUser.mockReset();
     mockAdminDeleteUser.mockReset();
@@ -92,7 +94,7 @@ describe('server.signUpWithUsername', () => {
         expect(mockAdminCreateUser).not.toHaveBeenCalled();
     });
 
-    it('정상 가입 — 가짜 이메일로 auth 계정 생성 후 profiles insert', async () => {
+    it('정상 가입 — 가짜 이메일로 auth 계정 생성 후 profiles upsert(onConflict: id)', async () => {
         mockProfilesSelect.mockResolvedValue({ data: null, error: null });
         mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
 
@@ -105,33 +107,36 @@ describe('server.signUpWithUsername', () => {
                 email_confirm: true,
             }),
         );
-        expect(mockProfilesInsert).toHaveBeenCalledWith(
+        // insert 가 아니라 upsert 여야 한다 — 운영 DB의 auth.users → profiles 자동생성
+        // 트리거와 충돌하지 않기 위해(2026-09-16 프리뷰 실측, .spec/src/actions/index.md 규칙 10).
+        expect(mockProfilesUpsert).toHaveBeenCalledWith(
             expect.objectContaining({ id: USER_ID, username: 'gildong', login_email: null, nickname: null }),
+            expect.objectContaining({ onConflict: 'id' }),
         );
         expect(result.data).toEqual({ success: true, email: 'gildong@radsafety.invalid' });
     });
 
-    it('auth 계정 생성 실패 시 profiles insert 호출 안 됨', async () => {
+    it('auth 계정 생성 실패 시 profiles upsert 호출 안 됨', async () => {
         mockProfilesSelect.mockResolvedValue({ data: null, error: null });
         mockAdminCreateUser.mockResolvedValue({ data: null, error: { message: 'boom' } });
 
         await expect(
             (server.signUpWithUsername as any)({ username: 'gildong', password: 'longenough1' }),
         ).rejects.toThrow('boom');
-        expect(mockProfilesInsert).not.toHaveBeenCalled();
+        expect(mockProfilesUpsert).not.toHaveBeenCalled();
     });
 
-    it('profiles insert 실패 시 방금 만든 auth 계정을 롤백(삭제)', async () => {
+    it('profiles upsert 실패 시 방금 만든 auth 계정을 롤백(삭제)', async () => {
         mockProfilesSelect.mockResolvedValue({ data: null, error: null });
         mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
-        // insert 자체는 항상 { error: null } 을 주는 공용 모의라, 이 케이스만 따로 override.
-        const failingInsert = vi.fn().mockResolvedValueOnce({ error: { message: 'db down' } });
-        // supabase-server 모의의 from().insert 를 이 테스트에서만 바꿔치기.
+        // upsert 자체는 항상 { error: null } 을 주는 공용 모의라, 이 케이스만 따로 override.
+        const failingUpsert = vi.fn().mockResolvedValueOnce({ error: { message: 'db down' } });
+        // supabase-server 모의의 from().upsert 를 이 테스트에서만 바꿔치기.
         const supa = await import('../../../src/lib/supabase-server');
         const original = (supa.supabaseAdmin as any).from;
         (supa.supabaseAdmin as any).from = (table: string) => {
             const base = original(table);
-            return { ...base, insert: failingInsert };
+            return { ...base, upsert: failingUpsert };
         };
 
         await expect(
