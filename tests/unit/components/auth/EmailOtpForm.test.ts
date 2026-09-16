@@ -39,6 +39,11 @@ describe('signInWithOtp', () => {
         expect(content).toContain('signInWithOtp');
         expect(content).not.toContain('emailRedirectTo');
     });
+
+    it('shouldCreateUser: false 여야 한다 (Stage C 준비 — 신규 이메일 가입 차단)', () => {
+        const content = fs.readFileSync(COMPONENT_PATH, 'utf-8');
+        expect(content).toMatch(/shouldCreateUser:\s*false/);
+    });
 });
 
 describe('verifyOtp', () => {

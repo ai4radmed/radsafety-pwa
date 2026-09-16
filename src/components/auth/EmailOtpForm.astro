@@ -114,11 +114,20 @@
         requestBtn.disabled = true;
         requestBtn.textContent = '전송 중...';
         try {
+            // Stage C 준비(privacy_redesign_plan.md) — 신규 이메일 가입을 막는다.
+            // 이미 등록된 이메일은 그대로 로그인·전환 가능, 처음 보는 이메일만 거절해
+            // "전환 안 된 계정" 목록이 더 늘어나지 않게 한다. 새로 시작하려는 사람은
+            // 카카오 또는 아이디 만들기로 유도(UsernamePasswordForm).
             const { error } = await supabase.auth.signInWithOtp({
                 email,
-                options: { shouldCreateUser: true },
+                options: { shouldCreateUser: false },
             });
-            if (error) throw error;
+            if (error) {
+                if (/not allowed/i.test(error.message)) {
+                    throw new Error('등록되지 않은 이메일입니다. 카카오 로그인이나 아이디 만들기를 이용해주세요.');
+                }
+                throw error;
+            }
             pendingEmail = email;
             if (otpSentTo) otpSentTo.textContent = `${email}로 인증 코드를 보냈습니다.`;
             emailStep?.setAttribute('hidden', '');

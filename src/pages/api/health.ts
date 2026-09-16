@@ -3,7 +3,6 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
-import { isAdmin } from '../../config/auth';
 import { runChecks, type CheckResult } from '../../lib/health-checks';
 import { APP_VERSION, APP_RELEASE_DATE } from '../../consts';
 import { createLogger } from '../../lib/logger';
@@ -58,7 +57,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         if (!user) {
             return jsonResponse({ error: '로그인이 필요합니다.' }, 401);
         }
-        if (!isAdmin(user.email ?? '')) {
+        // profiles.is_admin 단일 기준(Stage 1-A) — username 로그인 사용자는
+        // auth.users.email 이 <username>@radsafety.invalid 가짜 값이라
+        // 이메일 대조 방식은 원천적으로 성립하지 않는다.
+        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+        if (!profile?.is_admin) {
             return jsonResponse({ error: '관리자 권한이 필요합니다.' }, 403);
         }
     }
