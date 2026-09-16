@@ -1,5 +1,6 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
+import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
 ---
 
 <DashboardLayout title="아이디 정하기">
@@ -39,6 +40,21 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 1rem;
+        }
+        .new-member-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .society-select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: white;
+            color: inherit;
         }
         .claim-password-hint {
             font-size: 0.8rem;
@@ -106,6 +122,15 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                     minlength="8"
                     autocomplete="new-password"
                 />
+                <div id="newMemberFields" class="new-member-fields" hidden>
+                    <HospitalAutocomplete />
+                    <select id="societySelect" class="society-select">
+                        <option value="">소속학회 선택 (선택사항)</option>
+                        <option value="nuclear_medicine">대한핵의학회</option>
+                        <option value="technology">대한핵의학기술학회</option>
+                        <option value="none">비소속</option>
+                    </select>
+                </div>
                 <button type="submit" class="claim-submit-btn" id="claimSubmitBtn">완료하고 계속하기</button>
             </form>
             <p class="claim-msg" id="claimMsg" hidden></p>
@@ -125,9 +150,17 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         const submitBtn = document.getElementById('claimSubmitBtn') as HTMLButtonElement;
         const msgEl = document.getElementById('claimMsg') as HTMLParagraphElement;
         const logoutBtn = document.getElementById('claimLogoutBtn') as HTMLButtonElement;
+        const newMemberFields = document.getElementById('newMemberFields') as HTMLDivElement;
+        const hospitalIdInput = document.getElementById('hospitalId') as HTMLInputElement;
+        const societySelect = document.getElementById('societySelect') as HTMLSelectElement;
 
         const currentUser = userProfile.get();
         const isKakao = currentUser.provider === 'kakao';
+        // Phase 2 (2단계 개정 — 2계층+가입승인+제재) — 자가 치유로 막 생긴 진짜 신규
+        // 계정만 status 가 'pending'이다. 기존(전환 전) 사용자는 마이그레이션 기본값
+        // 'active'를 그대로 갖고 있어 이 필드를 안 본다 — 새 온보딩 질문을 안 늘린다.
+        const isNewMember = currentUser.status === 'pending';
+        if (isNewMember) newMemberFields.hidden = false;
 
         // 카카오는 비밀번호 선택(카카오로 계속 로그인 가능), 그 외(이메일 OTP 출신)는
         // 사실상 필수 — OTP 는 Stage C 에서 없어질 예정이라 비밀번호가 유일한 향후 로그인 수단.
@@ -165,6 +198,14 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                     userId: currentUser.id,
                     username,
                     ...(password ? { password } : {}),
+                    // Phase 2 — 신규(pending) 계정일 때만 보낸다. 필드 자체를 안 보내면
+                    // 서버가 기존 값을 안 건드린다(.spec/src/actions/index.md 규칙 11).
+                    ...(isNewMember
+                        ? {
+                              hospitalId: hospitalIdInput?.value || '',
+                              ...(societySelect?.value ? { society: societySelect.value } : {}),
+                          }
+                        : {}),
                 });
                 if (result.error) throw new Error(result.error.message);
 

@@ -24,6 +24,7 @@
     - 프로필이 없을 경우 `supabase.from('profiles').upsert(data, {onConflict:'id'})`가 호출되는지 확인(insert 아님 — Stage B, auth.users→profiles 자동생성 트리거 충돌 방지).
     - 삽입 성공 후 유저 정보가 정상적으로 스토어에 저장되는지 확인.
     - **(Stage B)** provider가 `kakao`면 upsert 대상에 `nickname: null, login_email: null`이 포함되는지 확인. `email`(OTP) provider면 `login_email`이 세션 이메일 그대로 유지되는지 확인.
+    - **(Phase 2)** upsert 대상에 항상 `status: 'pending'`이 포함되는지 확인 — 자가 치유는 신규 계정에서만 실행되므로 항상 대기 상태로 시작.
 
 4. **updateUserStore (비인증 접근 시)**:
     - 세션이 없을 경우 `clearUser()`가 호출되는지 확인.

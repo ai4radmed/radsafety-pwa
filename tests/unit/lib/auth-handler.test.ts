@@ -252,6 +252,25 @@ describe('auth-handler', () => {
         );
     });
 
+    it('자가 치유로 막 생긴 계정은 항상 status: pending 으로 시작한다 (Phase 2)', async () => {
+        const mockSession = { user: { id: 'pending-new-uid', email: 'pending@test.com' } };
+
+        (supabase.from as any).mockReturnValue({
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            upsert: vi.fn().mockResolvedValue({ error: null }),
+        });
+
+        initAuthHandler();
+        (supabase.auth.getSession as any).mockResolvedValue({ data: { session: mockSession } });
+        document.dispatchEvent(new CustomEvent('astro:page-load'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const { upsert } = (supabase.from as any)();
+        expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }), { onConflict: 'id' });
+    });
+
     describe('Stage B — 아이디 정하기 강제 게이트', () => {
         it('username 이 없으면 현재 경로와 무관하게 /claim-username 으로 보낸다', async () => {
             window.location = { pathname: '/resources', href: '' } as any;

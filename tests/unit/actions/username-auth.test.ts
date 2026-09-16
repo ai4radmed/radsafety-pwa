@@ -126,6 +126,49 @@ describe('server.signUpWithUsername', () => {
         expect(mockProfilesUpsert).not.toHaveBeenCalled();
     });
 
+    it('항상 status: pending 으로 가입한다 (Phase 2, 2단계 개정)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+
+        await (server.signUpWithUsername as any)({ username: 'gildong', password: 'longenough1' });
+
+        expect(mockProfilesUpsert).toHaveBeenCalledWith(
+            expect.objectContaining({ status: 'pending', hospital_id: null, society: null }),
+            expect.objectContaining({ onConflict: 'id' }),
+        );
+    });
+
+    it('유효한 hospitalId·society 를 그대로 저장한다 (Phase 2)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+
+        await (server.signUpWithUsername as any)({
+            username: 'gildong',
+            password: 'longenough1',
+            hospitalId: 'korea-institute-radiological-medical-sciences',
+            society: 'nuclear_medicine',
+        });
+
+        expect(mockProfilesUpsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                hospital_id: 'korea-institute-radiological-medical-sciences',
+                society: 'nuclear_medicine',
+            }),
+            expect.objectContaining({ onConflict: 'id' }),
+        );
+    });
+
+    it('존재하지 않는 hospitalId 는 거부한다 (Phase 2 — UI 우회·데이터 꼬임 방지)', async () => {
+        await expect(
+            (server.signUpWithUsername as any)({
+                username: 'gildong',
+                password: 'longenough1',
+                hospitalId: 'no-such-hospital',
+            }),
+        ).rejects.toThrow();
+        expect(mockAdminCreateUser).not.toHaveBeenCalled();
+    });
+
     it('profiles upsert 실패 시 방금 만든 auth 계정을 롤백(삭제)', async () => {
         mockProfilesSelect.mockResolvedValue({ data: null, error: null });
         mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
@@ -236,5 +279,35 @@ describe('server.claimUsername', () => {
             (server.claimUsername as any)({ userId: USER_ID, username: 'gildong', password: 'short' }),
         ).rejects.toThrow();
         expect(mockAdminUpdateUserById).not.toHaveBeenCalled();
+    });
+
+    it('hospitalId·society 를 주면 profiles 갱신에 포함된다 (Phase 2 — 신규 pending 계정 전환)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminUpdateUserById.mockResolvedValue({ error: null });
+
+        await (server.claimUsername as any)({
+            userId: USER_ID,
+            username: 'gildong',
+            hospitalId: 'korea-institute-radiological-medical-sciences',
+            society: 'technology',
+        });
+
+        expect(mockProfilesUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({
+                hospital_id: 'korea-institute-radiological-medical-sciences',
+                society: 'technology',
+            }),
+        );
+    });
+
+    it('hospitalId·society 를 안 주면 profiles 갱신에 그 키 자체가 없다 (Phase 2 — 기존 active 계정 전환 시 값을 안 건드림)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminUpdateUserById.mockResolvedValue({ error: null });
+
+        await (server.claimUsername as any)({ userId: USER_ID, username: 'gildong' });
+
+        const [updateArg] = mockProfilesUpdate.mock.calls[0];
+        expect(updateArg).not.toHaveProperty('hospital_id');
+        expect(updateArg).not.toHaveProperty('society');
     });
 });

@@ -15,7 +15,7 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
 2. **updateUserStore(session)**:
     - 세션 정보(email, id 등)를 기반으로 기본 유저 정보 설정.
     - `profiles` 테이블에서 상세 프로필 조회 (`maybeSingle`).
-    - **자가 치유 (Self-healing)**: 프로필이 없으면 기본 정보로 `profiles`에 자동 생성(`is_admin: false`로 시작).
+    - **자가 치유 (Self-healing)**: 프로필이 없으면 기본 정보로 `profiles`에 자동 생성(`is_admin: false`, **Phase 2부터 `status: 'pending'`**로 시작 — 규칙 6).
     - **관리자 판정 = `profiles.is_admin` 단일 기준** (Stage 1-A, `documents/privacy_redesign_plan.md` 1단계 — `PUBLIC_ADMIN_EMAILS`/`isAdmin()` 이메일 대조 폐지). username 로그인 사용자는 `auth.users.email`이 `<username>@radsafety.invalid` 가짜 값이라 이메일 대조가 원천적으로 성립하지 않음. 관리자 부여는 DB `profiles.is_admin` 직접 갱신으로만 이루어진다.
     - 최종 정보를 `setUser()`를 통해 전역 스토어에 저장.
     - 성공 시 `checkNotifications()` 및 `user:loggedin` 이벤트 발생.
@@ -35,3 +35,4 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
 3. **Optional Guard**: DOM 접근 (`.global-noti-dot`) 시 요소 존재 여부 필수 확인.
 4. **(Stage B) 자가 치유 시 카카오는 nickname·login_email 을 비운다** — provider가 `kakao`면 `newProfile.login_email`/`nickname`을 `null`로 강제(그 외 provider는 기존대로 `baseUser`값 사용). 이메일 OTP 사용자는 전환 전까지 `login_email`이 유일한 로그인 식별자라 그대로 유지해야 한다.
 5. **(Stage B) 자가 치유 profiles 쓰기는 `upsert(onConflict:'id')`** — `signUpWithUsername`과 같은 이유(운영 DB `auth.users`→`profiles` 자동생성 트리거, `.spec/src/actions/index.md` 규칙 10). 평범한 `insert`는 트리거가 이미 만든 행과 충돌해 자가 치유가 조용히 실패할 수 있다.
+6. **(Phase 2, 2단계 개정 — 2계층+가입승인+제재) 자가 치유는 항상 `status: 'pending'`으로 시작** — 자가 치유는 `profiles` 행이 아예 없을 때만 실행되므로, 이 함수가 실행됐다는 것 자체가 "진짜 신규 계정"이라는 뜻이다(기존 사용자는 이미 행이 있어 이 분기를 안 탄다). 기존(마이그레이션 이전) 사용자는 `sql_query/migrate_add_member_status_hospital.sql`의 컬럼 기본값 `'active'`를 그대로 유지 — 이 함수가 건드리지 않는다.

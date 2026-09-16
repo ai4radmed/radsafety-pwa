@@ -5,6 +5,7 @@ import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
 import { resolveFeedbackRecipients } from '../config/auth';
 import { createLogger } from '../lib/logger';
 import { sendPushToUsers } from '../lib/push';
+import { HOSPITALS } from '../data/hospitals';
 
 const logger = createLogger('actions');
 
@@ -31,6 +32,21 @@ const usernameSchema = z
 function fakeEmailFor(username: string): string {
     return `${username}@radsafety.invalid`;
 }
+
+// Phase 2 (2계층+가입승인+제재 모델, KSNM 방안위 교육팀 합의 2026-09-10 승계) ──────
+// 가입 시 소속기관·소속학회는 둘 다 선택 항목(자기 신고). hospitalId 는
+// HospitalAutocomplete.astro 가 목록에서 클릭 확정한 값만 보내므로, 알 수 없는
+// id 가 온다면 UI 우회나 데이터 꼬임 — 조용히 버리지 않고 명확히 거부한다.
+const hospitalIdSchema = z
+    .string()
+    .trim()
+    .refine((v) => v === '' || HOSPITALS.some((h) => h.id === v), {
+        message: '알 수 없는 소속기관입니다.',
+    })
+    .transform((v) => (v === '' ? null : v))
+    .optional();
+
+const societySchema = z.enum(['nuclear_medicine', 'technology', 'none']).optional();
 
 export const server = {
     saveFinding: defineAction({
@@ -540,8 +556,10 @@ export const server = {
         input: z.object({
             username: usernameSchema,
             password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
+            hospitalId: hospitalIdSchema,
+            society: societySchema,
         }),
-        handler: async ({ username, password }) => {
+        handler: async ({ username, password, hospitalId, society }) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
 
             const { data: existing, error: lookupError } = await supabaseAdmin
@@ -574,6 +592,11 @@ export const server = {
                     login_email: null,
                     nickname: null,
                     created_at: new Date().toISOString(),
+                    // Phase 2 — 신규 계정은 관리자 승인 전까지 대기. 소속기관·소속학회는
+                    // 자기 신고, 선택 항목(둘 다 비워도 가입 자체는 된다).
+                    status: 'pending',
+                    hospital_id: hospitalId ?? null,
+                    society: society ?? null,
                 },
                 { onConflict: 'id' },
             );
@@ -627,8 +650,10 @@ export const server = {
             userId: z.string().uuid(),
             username: usernameSchema,
             password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.').optional(),
+            hospitalId: hospitalIdSchema,
+            society: societySchema,
         }),
-        handler: async ({ userId, username, password }) => {
+        handler: async ({ userId, username, password, hospitalId, society }) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
 
             const { data: existing, error: lookupError } = await supabaseAdmin
@@ -647,9 +672,18 @@ export const server = {
             });
             if (updateAuthError) throw new Error(updateAuthError.message);
 
+            // hospitalId/society 는 신규(self-healing 으로 막 생긴 pending) 계정을 위한
+            // 필드라 클라이언트가 값을 안 보내면(기존 active 계정의 평범한 전환) 건드리지
+            // 않는다 — 스프레드로 undefined 인 키 자체를 아예 안 넣는다.
             const { error: profileError } = await supabaseAdmin
                 .from('profiles')
-                .update({ username, login_email: null, nickname: null })
+                .update({
+                    username,
+                    login_email: null,
+                    nickname: null,
+                    ...(hospitalId !== undefined ? { hospital_id: hospitalId } : {}),
+                    ...(society !== undefined ? { society } : {}),
+                })
                 .eq('id', userId);
             if (profileError) throw new Error(profileError.message);
 
