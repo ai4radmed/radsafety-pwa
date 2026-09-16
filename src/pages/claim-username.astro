@@ -46,6 +46,14 @@ import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
             flex-direction: column;
             gap: 0.5rem;
         }
+        /* author 의 display:flex 가 UA 의 [hidden]{display:none} 을 이겨버리므로 명시적으로
+           복원 — EmailOtpForm.astro 의 같은 함정(그쪽 명세 핵심 규칙 4). 없으면 기존
+           active 계정 전환에서도 소속기관·소속학회 입력란이 보여버려 "신규 pending
+           계정만 노출" 설계가 깨진다(2026-09-16 CI e2e 실패로 UsernamePasswordForm 쪽
+           동일 버그 발견 후 여기도 점검). */
+        .new-member-fields[hidden] {
+            display: none;
+        }
         .society-select {
             width: 100%;
             box-sizing: border-box;
