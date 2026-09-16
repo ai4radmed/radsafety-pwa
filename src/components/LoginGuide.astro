@@ -17,8 +17,13 @@
 <style>
     .login-guide {
         position: fixed;
-        /* Moved up to 60% to be slightly higher than 65% and avoid button hiding */
-        top: 60%;
+        /* top:60% 고정값은 로그인 폼이 자랄 때마다(Stage 1-A 에서 UsernamePasswordForm
+           추가 등) 버튼을 다시 가리는 문제가 반복됐다(2026-09-16, e2e
+           public-pages.spec.ts "이메일 미입력 → 폼 제출 차단" 이 이 배너에 가려
+           클릭 자체가 30초 타임아웃으로 실패하는 것으로 발견). 뷰포트 하단에
+           고정하면 폼 내용이 얼마나 길어지든 겹칠 일이 없다.
+        */
+        bottom: 1rem;
         left: 50%;
         transform: translateX(-50%);
         width: 90%;
@@ -29,8 +34,7 @@
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         z-index: 2000;
         padding: 1rem;
-        font-family:
-            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         text-align: left;
     }
 
@@ -67,29 +71,27 @@
 </style>
 
 <script>
-    document.addEventListener("astro:page-load", () => {
-        const guideBanner = document.getElementById("login-guide-banner");
-        const closeBtn = document.getElementById("guide-close-btn");
+    document.addEventListener('astro:page-load', () => {
+        const guideBanner = document.getElementById('login-guide-banner');
+        const closeBtn = document.getElementById('guide-close-btn');
 
         // Check if dismissed (Version 3 to force show)
-        const isDismissed = localStorage.getItem("login_guide_dismissed_v3");
+        const isDismissed = localStorage.getItem('login_guide_dismissed_v3');
 
         const path = window.location.pathname;
-        const shoudShow =
-            !isDismissed &&
-            (path.includes("/login") || path.includes("/mypage"));
+        const shoudShow = !isDismissed && (path.includes('/login') || path.includes('/mypage'));
 
-        console.log("LoginGuide Debug:", { path, isDismissed, shoudShow });
+        console.log('LoginGuide Debug:', { path, isDismissed, shoudShow });
 
         if (shoudShow && guideBanner) {
-            guideBanner.style.display = "block";
+            guideBanner.style.display = 'block';
         } else if (guideBanner) {
-            guideBanner.style.display = "none";
+            guideBanner.style.display = 'none';
         }
 
-        closeBtn?.addEventListener("click", () => {
-            if (guideBanner) guideBanner.style.display = "none";
-            localStorage.setItem("login_guide_dismissed_v3", "true");
+        closeBtn?.addEventListener('click', () => {
+            if (guideBanner) guideBanner.style.display = 'none';
+            localStorage.setItem('login_guide_dismissed_v3', 'true');
         });
     });
 </script>
