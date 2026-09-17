@@ -44,3 +44,4 @@ manuscripts/**/*.html
 manuscripts/**/*.docx
 manuscripts/**/*.tex
 manuscripts/**/index_files/
+.env*
