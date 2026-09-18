@@ -82,7 +82,9 @@ C 단계 직전에 DB 백업 1회(개인정보 포함 — 보관 기간·파기�
 
 **미전환 사용자 처리(C 단계)**: `username` 이 NULL 인 사용자는 이메일을 가짜 값(`u_<uuid앞8자>@radsafety.invalid`)으로 덮어쓰고 로그인 불가 상태로 둔다. 재가입 시 새 `auth.users.id` 가 생기므로 옛 글은 `user_id` 가 끊긴 채 남는다(`findings.user_id ON DELETE SET NULL` 과 같은 결과). `sql_query/migrate_finalize_username.sql`(2026-09-18 작성)이 이 처리와 `NOT NULL` 전환을 한 번에 한다 — Dr. Ben이 백업 후 수동 실행.
 
-> **진행 상태(2026-09-18)**: 코드(OTP UI 삭제·관련 테스트·문서)는 브랜치 `feature/stage-c-remove-otp-login`에서 완료돼 PR 리뷰 대기 중. DB 마이그레이션(`migrate_finalize_username.sql`)은 **아직 미실행** — 백업 후 Dr. Ben이 Supabase SQL Editor에서 직접 실행해야 한다. 코드가 먼저 배포돼도 문제없다(OTP UI가 없어지면 애초에 아무도 그 경로로 로그인을 시도할 수 없으므로, `username` 컬럼이 잠깐 더 nullable로 남아 있어도 안전).
+> **진행 상태(2026-09-18 저녁)**: Stage C 코드는 PR #54 로 `dev` 에 머지됐으나 **운영(`main`) 에는 배포하지 않았다.** 머지 후 C 절차(백업 → `migrate_finalize_username.sql`)를 실행하려다 확인한 사실 — `main` 은 09-03 이후 배포된 적이 없어 **A/B 자체가 운영에 나간 적이 없었다**(실사용자는 이메일 OTP 로만 로그인 중). 위 B 단계 개정의 전제("활성 사용자 대부분 전환 완료")는 그 시점엔 성립하지 않았다. 운영 DB 실측: 19명 중 `username IS NULL` 15명(카카오 7·이메일 8), 최근 90일 활성 2명.
+>
+> **조치**: 전체 백업 후, C 직전 시점(`5d81e71`, PR #53 머지 직후)만 `release/stage-ab` → `main`(PR #55) 으로 **운영 배포(2026-09-18 = B 단계 기산일)**. 로그인 페이지에 카카오·아이디/비밀번호·이메일 OTP 세 경로 확인, `check:production` 통과. **Stage C 운영 배포(`dev`→`main`) 와 `migrate_finalize_username.sql` 실행은 전환 기간 뒤(2026-10-02 이후) 로 보류** — 실행 전 `username IS NULL` 활성 사용자 재실측·백업 1회 더. 인계 노트: vault `handoff/2026-09-18_radsafety-1단계AB-운영배포-C보류.md`.
 >
 > **알려진 갭(범위 밖, 미해결)**: OTP 제거 후 카카오 미연동 순수 아이디/비밀번호 계정이 비밀번호를 잊으면 복구 수단이 없다(자체 비밀번호 재설정 플로우 없음). Dr. Ben 판단(2026-09-18) — 대부분 카카오 연동을 쓸 것으로 예상돼 지금은 알려진 리스크로 남기고 진행, 필요해지면 관리자 수동 재설정 액션 등을 별도로 추가한다.
 
