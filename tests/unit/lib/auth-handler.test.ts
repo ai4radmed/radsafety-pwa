@@ -224,11 +224,11 @@ describe('auth-handler', () => {
         );
     });
 
-    it('이메일(OTP) 자가 치유는 login_email 을 그대로 둔다 — 전환 전까지 유일한 로그인 식별자 (Stage B)', async () => {
+    it('카카오가 아닌 provider 로 자가 치유돼도 login_email·nickname 을 비운다 (Stage C — OTP 로그인 제거로 살려둘 로그인 경로 없음)', async () => {
         const mockSession = {
             user: {
-                id: 'otp-new-uid',
-                email: 'otp@test.com',
+                id: 'email-new-uid',
+                email: 'someone@test.com',
                 app_metadata: { provider: 'email' },
             },
         };
@@ -247,7 +247,7 @@ describe('auth-handler', () => {
 
         const { upsert } = (supabase.from as any)();
         expect(upsert).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'otp-new-uid', login_email: 'otp@test.com', provider: 'email' }),
+            expect.objectContaining({ id: 'email-new-uid', login_email: null, nickname: null, provider: 'email' }),
             { onConflict: 'id' },
         );
     });

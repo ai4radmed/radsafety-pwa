@@ -29,7 +29,7 @@
 [로컬] npm run check:production   ← 운영 서버 HTTP 헬스체크 (2분)
 [로컬] npm run test:e2e:auth      ← 로그인 후 기능 자동 점검 (세션 필요)
                       ↓
-[수동] 잔여 항목만 체크 (이메일 OTP 인증, 카카오 로그인 실제 확인)
+[수동] 잔여 항목만 체크 (카카오 로그인 실제 확인)
 ```
 
 ### 세션 최초 저장 (배포마다 세션 만료 시)
@@ -43,7 +43,7 @@ npm run test:e2e:save-session
 # → 로컬/Preview (PUBLIC_DEV_MODE=true + DEV_TEST_*_EMAIL/PASSWORD 설정):
 #     [개발자 모드] 버튼을 자동으로 클릭하여 로그인 → 완전 자동화
 # → Production 또는 환경변수 미설정:
-#     카카오 또는 이메일 OTP로 직접 로그인 → /mypage 도달 시 자동 저장
+#     카카오 또는 아이디/비밀번호로 직접 로그인 → /mypage 도달 시 자동 저장
 # → 일반 사용자·관리자 순서로 2회 실행
 
 # 3. 이후 반복 실행 (세션 유효한 동안)
@@ -140,11 +140,11 @@ Linux/WSL에서 `npx playwright install` 또는 `npm run test:e2e` 시 **Host sy
 | `e2e/navigation.spec.ts`                   | 주요 페이지 HTTP 200 응답                                                                                      | 완료 |
 | `e2e/pwa.spec.ts`                          | PWA manifest 검증, `sw-push.js` 서빙, `/api/push/subscribe·unsubscribe` 비로그인 401 및 빈 body 인증 우선 검사 | 완료 |
 | `e2e/auth-guard.spec.ts`                   | 비로그인 시 보호 페이지 15개 → /login 리다이렉트 자동 검증                                                     | 완료 |
-| `e2e/public-pages.spec.ts`                 | 홈/로그인 페이지 렌더링, 이메일 OTP 1단계 폼 UI 요소, 비로그인 리다이렉트                                      | 완료 |
+| `e2e/public-pages.spec.ts`                 | 홈/로그인 페이지 렌더링, 아이디/비밀번호 폼 UI 요소, 비로그인 리다이렉트                                       | 완료 |
 | `e2e/view-transitions.spec.ts`             | View Transitions 재방문 시 콘텐츠 렌더링 유지 (비인증 페이지)                                                  | 완료 |
 | `e2e/view-transitions-null-safety.spec.ts` | 비인증 페이지 전환 시 `console.error` 없음 (null 접근 TypeError 방지)                                          | 완료 |
 | `e2e/sidebar-flash.spec.ts`                | 사이드바 초기 상태 깜빡임 없음, 스테일 데이터 초기화 확인                                                      | 완료 |
-| `e2e/auth-callback.spec.ts`                | `/auth/confirm`, `/auth/callback` SSR 동작, CDN 308 캐시 감지                                                  | 완료 |
+| `e2e/auth-callback.spec.ts`                | `/auth/callback` SSR 동작, CDN 308 캐시 감지                                                                   | 완료 |
 | `e2e/offline.spec.ts`                      | `/offline` 페이지 렌더링, 링크, 오프라인 시뮬레이션 SW fallback                                                | 완료 |
 
 ### 2-2. 인증 후 E2E — 로컬 전용 (`npm run test:e2e:auth`)
@@ -170,16 +170,15 @@ Linux/WSL에서 `npx playwright install` 또는 `npm run test:e2e` 시 **Host sy
 
 배포 직후 브라우저 없이 HTTP 수준에서 자동 점검합니다.
 
-| 검증 항목            | 내용                                                   |
-| -------------------- | ------------------------------------------------------ |
-| HTTPS                | 도메인 접속, HSTS 헤더 존재 여부                       |
-| www 리다이렉트       | `www.radsafety.kr` → `radsafety.kr` (302/303, not 308) |
-| 공개 페이지          | `/`, `/login`, `/manifest.webmanifest` → 200           |
-| 보호 페이지          | `/notifications` → 302 서버사이드 리다이렉트           |
-| `/auth/confirm` SSR  | 308 CDN 캐시 버그 감지, 응답시간 측정                  |
-| `/auth/callback` SSR | SSR 동작 확인, Content-Type 검증                       |
-| API 엔드포인트       | `/api/archives/[id]` → 404 (서버 정상 응답)            |
-| 응답시간             | 홈/로그인 1초 이하 목표                                |
+| 검증 항목            | 내용                                                     |
+| -------------------- | -------------------------------------------------------- |
+| HTTPS                | 도메인 접속, HSTS 헤더 존재 여부                         |
+| www 리다이렉트       | `www.radsafety.kr` → `radsafety.kr` (302/303, not 308)   |
+| 공개 페이지          | `/`, `/login`, `/manifest.webmanifest` → 200             |
+| 보호 페이지          | `/notifications` → 302 서버사이드 리다이렉트             |
+| `/auth/callback` SSR | 308 CDN 캐시 버그 감지, SSR 동작 확인, Content-Type 검증 |
+| API 엔드포인트       | `/api/archives/[id]` → 404 (서버 정상 응답)              |
+| 응답시간             | 홈/로그인 1초 이하 목표                                  |
 
 ```bash
 # 운영 서버 대상
@@ -202,11 +201,11 @@ node scripts/check-production.mjs https://staging.radsafety.kr
 **명세**: `.spec/tests/e2e/monthly-check.spec.md` | **파일**: `tests/e2e/monthly-check.spec.ts`
 
 아침 헬스체크(부작용 0)가 원리적으로 못 덮는 **실발송·실수신 경로**를 사람 동석 반자동으로 점검합니다.
-headed 브라우저가 열리고 사람이 필요한 순간에만 멈춥니다 — 개입 3회(OTP 코드 입력, 카카오 클릭, 휴대폰 알림 확인), 총 약 3분.
+headed 브라우저가 열리고 사람이 필요한 순간에만 멈춥니다 — 개입 2회(카카오 클릭, 휴대폰 알림 확인), 총 약 2분(Stage C, 2026-09-18 — 이메일 OTP 로그인 제거로 코드 입력 1회가 사라짐).
 
 | 단계                     | 커버하는 수동 체크리스트 항목         | 사람 개입        |
 | ------------------------ | ------------------------------------- | ---------------- |
-| ① 이메일 OTP 로그인      | 4-2 이메일 OTP                        | 6자리 코드 입력  |
+| ① 아이디/비밀번호 로그인 | 4-2 아이디/비밀번호 로그인            | 없음 (자동 판정) |
 | ② 자료실 파일 다운로드   | 4-3 파일 다운로드                     | 없음 (자동 판정) |
 | ③ 의견 보내기            | 4-3 의견 보내기 (Resend 실발송)       | 없음 (자동 판정) |
 | ④ 푸시 발송·실수신(본인) | 4-3 웹 푸시 알림 수신 + 4-4 알림 발송 | 휴대폰 확인 클릭 |
@@ -214,8 +213,8 @@ headed 브라우저가 열리고 사람이 필요한 순간에만 멈춥니다 �
 
 - 부작용은 전부 **본인·개발자 한정** → 반복 실행 안전. 언제든, 몇 번이든 돌려도 됩니다.
   푸시·알림은 본인에게만, `[월간점검]` 의견 메일은 관리자 전원이 아닌 `DEVELOPER_EMAILS`(Vercel 서버 env)로만 발송됩니다.
-- 자격증명 비저장: 코드·카카오는 그 자리에서 입력, 세션 파일도 남기지 않음. **CI·cron 에 올리지 않습니다.**
-- `MONTHLY_EMAIL=me@example.com npm run check:monthly` → 이메일 입력까지 자동.
+- 자격증명 비저장: MONTHLY_USERNAME/PASSWORD 는 셸 환경변수로만, 카카오는 그 자리에서 입력, 세션 파일도 남기지 않음. **CI·cron 에 올리지 않습니다.**
+- `MONTHLY_USERNAME=me MONTHLY_PASSWORD=... npm run check:monthly` → 로그인까지 자동(운영 DB에 미리 만들어둔 전용 계정 필요).
 - 리마인더: `.github/workflows/monthly-reminder.yml` 이 매월 1일 09:00 KST 텔레그램으로 점검일을 알립니다
   (수동 발화 `gh workflow run monthly-reminder.yml`, 끄기 `gh variable set MONTHLY_REMINDER --body off`).
 
@@ -228,11 +227,8 @@ headed 브라우저가 열리고 사람이 필요한 순간에만 멈춥니다 �
 
 ### 4-2. 로그인/로그아웃 (배포마다)
 
-> **⚠️ 이메일 OTP는 로컬에서 테스트 불가** — Supabase Site URL이 `https://radsafety.kr`로
-> 고정되어 있어 OTP 이메일은 운영 서버 기준으로 발송됩니다. 반드시 `git push` 후 배포 완료 시점에 테스트하세요.
-
 - [ ] **카카오 로그인**: 카카오 로그인 → `/auth/callback` → `/mypage` 도착 → **월간 위저드 ⑤** (4-0)
-- [ ] **이메일 OTP** _(배포 후 운영에서만 테스트)_: 이메일 입력 → 6자리 코드 수신 → PWA 내 코드 입력 → `/mypage` 도착 → **월간 위저드 ①** (4-0)
+- [ ] **아이디/비밀번호 로그인**: 아이디·비밀번호 입력 → `/mypage` 도착 → **월간 위저드 ①** (4-0)
 - [x] ~~**로그아웃**: 사이드바 로그아웃 → 세션 초기화 → `/login` 이동~~ → **반자동화됨** (`e2e/authenticated-user.spec.ts`)
 
 ### 4-3. 일반 사용자 기능 (배포마다)
@@ -315,7 +311,7 @@ headed 브라우저가 열리고 사람이 필요한 순간에만 멈춥니다 �
 [로컬] npm run check:production   ← 운영 서버 HTTP 헬스체크
 [로컬] npm run test:e2e:auth      ← 인증 후 기능 검증 (세션 있는 경우)
   ↓
-[수동] 체크리스트 4-2 (카카오/이메일 OTP), 4-3 일부, 4-4 일부
+[수동] 체크리스트 4-2 (카카오/아이디·비밀번호), 4-3 일부, 4-4 일부
 ```
 
 ### 로컬 실행 명령어

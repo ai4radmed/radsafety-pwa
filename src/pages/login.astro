@@ -1,7 +1,6 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import LoginButton from '../components/auth/LoginButton.astro';
-import EmailOtpForm from '../components/auth/EmailOtpForm.astro';
 import UsernamePasswordForm from '../components/auth/UsernamePasswordForm.astro';
 
 const isDevMode = import.meta.env.PUBLIC_DEV_MODE === 'true';
@@ -97,10 +96,6 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
             <div class="divider">또는 아이디로 시작하기</div>
 
             <UsernamePasswordForm />
-
-            <div class="divider">또는 이메일 인증으로 시작하기</div>
-
-            <EmailOtpForm />
 
             {
                 isDevMode && (
