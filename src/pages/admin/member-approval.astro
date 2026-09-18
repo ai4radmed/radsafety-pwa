@@ -1,0 +1,242 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
+
+export const prerender = false;
+---
+
+<DashboardLayout title="가입 승인">
+    <div class="approval-container">
+        <div class="header">
+            <div class="page-title"><Icon name="user" size="24" /> 가입 승인</div>
+            <p class="subtitle">
+                새로 가입한 회원(대기 상태)을 검토하여 승인하거나 거절합니다. 승인 전까지는 지적사례 상세·자료실 업로드
+                등 회원 전용 기능을 쓸 수 없습니다.
+            </p>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h2 style="margin:0; font-size:1rem;">대기 중인 가입 신청 (<span id="pendingCount">0</span>명)</h2>
+            <button id="refreshBtn" class="btn-secondary">🔄 새로고침</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="pendingTable">
+                <thead>
+                    <th>아이디</th>
+                    <th>로그인 방식</th>
+                    <th>소속학회</th>
+                    <th>소속기관</th>
+                    <th>가입일</th>
+                    <th>처리</th>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" style="text-align:center;">데이터를 불러오는 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</DashboardLayout>
+
+<script>
+    import { userProfile } from '../../store/user';
+    import { supabase } from '../../lib/supabase-browser';
+    import { HOSPITALS } from '../../data/hospitals';
+
+    const SOCIETY_MAP: Record<string, string> = {
+        nuclear_medicine: '대한핵의학회',
+        technology: '대한핵의학기술학회',
+        none: '없음',
+    };
+
+    function hospitalName(hospitalId: string | null): string {
+        if (!hospitalId) return '-';
+        return HOSPITALS.find((h) => h.id === hospitalId)?.name || hospitalId;
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const currentUser = userProfile.get() as any;
+
+        // Guard: Admin only (비로그인은 DashboardLayout이 /login으로 리다이렉트)
+        if (!currentUser?.id) return;
+        if (currentUser.is_admin !== 'true') {
+            alert('관리자 권한이 필요합니다.');
+            window.location.href = '/mypage';
+            return;
+        }
+
+        const tbody = document.querySelector('#pendingTable tbody');
+        const countSpan = document.getElementById('pendingCount');
+        const refreshBtn = document.getElementById('refreshBtn') as HTMLButtonElement | null;
+
+        if (!tbody) return;
+
+        refreshBtn?.addEventListener('click', loadPending);
+        loadPending();
+
+        async function loadPending() {
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">로딩 중...</td></tr>';
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, username, provider, society, hospital_id, created_at')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패: ${error.message}</td></tr>`;
+                return;
+            }
+
+            renderTable(data || []);
+        }
+
+        function renderTable(rows: any[]) {
+            if (!tbody || !countSpan) return;
+
+            countSpan.textContent = String(rows.length);
+
+            if (rows.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="6" style="text-align:center;">대기 중인 가입 신청이 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            rows.forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>@${row.username || '(미설정)'}</td>
+                    <td>${row.provider === 'kakao' ? '카카오' : '아이디'}</td>
+                    <td>${SOCIETY_MAP[row.society] || row.society || '-'}</td>
+                    <td>${hospitalName(row.hospital_id)}</td>
+                    <td>${row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR') : '-'}</td>
+                    <td class="actions-cell">
+                        <button class="btn-approve" data-id="${row.id}">승인</button>
+                        <button class="btn-reject" data-id="${row.id}">거절</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            tbody.querySelectorAll('.btn-approve').forEach((btn) => {
+                btn.addEventListener('click', () => approve((btn as HTMLElement).dataset.id!));
+            });
+            tbody.querySelectorAll('.btn-reject').forEach((btn) => {
+                btn.addEventListener('click', () => reject((btn as HTMLElement).dataset.id!));
+            });
+        }
+
+        async function approve(targetUserId: string) {
+            if (!confirm('이 회원의 가입을 승인하시겠습니까?')) return;
+            try {
+                const { actions } = await import('astro:actions');
+                const result = await actions.approvePendingMember({
+                    adminId: currentUser.id,
+                    targetUserId,
+                });
+                if (result.error) throw new Error(result.error.message);
+                loadPending();
+            } catch (err) {
+                alert('❌ 승인 처리 중 오류: ' + (err as Error).message);
+            }
+        }
+
+        async function reject(targetUserId: string) {
+            if (!confirm('이 가입 신청을 거절하시겠습니까? 재가입하려면 새 아이디로 다시 가입해야 합니다.')) return;
+            try {
+                const { actions } = await import('astro:actions');
+                const result = await actions.rejectPendingMember({
+                    adminId: currentUser.id,
+                    targetUserId,
+                });
+                if (result.error) throw new Error(result.error.message);
+                loadPending();
+            } catch (err) {
+                alert('❌ 거절 처리 중 오류: ' + (err as Error).message);
+            }
+        }
+    });
+</script>
+
+<style>
+    .approval-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+    .header {
+        margin-bottom: 2rem;
+    }
+    .page-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .subtitle {
+        color: var(--text-muted);
+    }
+
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+
+    .table-wrapper {
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+    th,
+    td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    th {
+        background: rgba(255, 255, 255, 0.05);
+        position: sticky;
+        top: 0;
+        color: var(--text-muted);
+    }
+    .actions-cell {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .btn-approve,
+    .btn-reject {
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .btn-approve {
+        background: #10b981;
+        color: white;
+    }
+    .btn-reject {
+        background: #ef4444;
+        color: white;
+    }
+</style>

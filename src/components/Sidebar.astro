@@ -168,6 +168,14 @@ const { pathname } = Astro.url;
         >
             <span class="group-title" style="color:#ef4444;">관리자</span>
             <a
+                href="/admin/member-approval"
+                class={pathname.startsWith('/admin/member-approval') ? 'active' : ''}
+                aria-label="Member Approval"
+            >
+                <span class="icon"><Icon name="user" size="18" /></span>
+                <span class="link-text">가입 승인</span>
+            </a>
+            <a
                 href="/admin/members"
                 class={pathname.startsWith('/admin/members') ? 'active' : ''}
                 aria-label="Member List Registration"
