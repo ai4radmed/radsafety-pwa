@@ -54,6 +54,8 @@ import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
         .new-member-fields[hidden] {
             display: none;
         }
+        /* 배경·글자색은 global.css 의 select 다크 규칙 그대로(위 입력란과 동일 외관).
+           background:white + color:inherit 는 흰 배경에 밝은 글자가 얹혀 읽을 수 없었다. */
         .society-select {
             width: 100%;
             box-sizing: border-box;
@@ -61,8 +63,6 @@ import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
             border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 1rem;
-            background: white;
-            color: inherit;
         }
         .claim-password-hint {
             font-size: 0.8rem;
