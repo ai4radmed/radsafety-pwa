@@ -5,12 +5,17 @@ import type { Page, BrowserContext } from '@playwright/test';
  * 월간 수동 점검 위저드 (명세: .spec/tests/e2e/monthly-check.spec.md)
  *
  * 아침 헬스체크(부작용 0)가 원리적으로 못 덮는 "실제로 보내고 받는" 경로를
- * 사람 동석 하에 반자동으로 검증한다. 사람 개입은 코드 입력 1회 · 카카오 클릭 ·
- * 휴대폰 알림 확인뿐, 나머지 판정은 전부 자동.
+ * 사람 동석 하에 반자동으로 검증한다. 사람 개입은 카카오 클릭 · 휴대폰 알림
+ * 확인뿐(Stage C, 2026-09-18 — 이메일 OTP 로그인 제거로 코드 입력 1회가 사라짐),
+ * 나머지 판정은 전부 자동.
  *
  * 실행: npm run check:monthly
- *   (선택) MONTHLY_EMAIL=me@example.com npm run check:monthly  → 이메일 입력까지 자동
+ *   (선택) MONTHLY_USERNAME=me MONTHLY_PASSWORD=... npm run check:monthly  → 로그인까지 자동
  *   (선택) MONTHLY_BASE_URL=https://... → 대상 서버 변경 (기본 https://radsafety.kr)
+ *
+ * MONTHLY_USERNAME/MONTHLY_PASSWORD 는 운영 DB에 미리 만들어둔 전용 계정(아이디/비밀번호
+ * 방식, /login "아이디 만들기" 탭에서 1회 가입) 자격증명이다 — DEV_TEST_* 는 프리뷰·로컬
+ * 전용이라 프로덕션 점검에 재사용하지 않는다.
  *
  * 원칙:
  *  - 부작용은 전부 실행자 본인 계정 한정([월간점검] 접두어) → 반복 실행 안전.
@@ -117,36 +122,29 @@ test('월간 수동 점검 위저드', async ({ browser }) => {
     const page = await context.newPage();
     const dialogs = attachDialogCollector(page);
 
-    let loginEmail = process.env.MONTHLY_EMAIL?.trim() ?? '';
+    let loginUsername = process.env.MONTHLY_USERNAME?.trim() ?? '';
+    const loginPassword = process.env.MONTHLY_PASSWORD?.trim() ?? '';
     let loggedIn = false;
 
-    // ── ① 이메일 OTP 로그인 — Auth 메일 발송 → 실수신 → 세션 생성 전 구간 ──
-    await step('① 이메일 OTP 로그인', async () => {
+    // ── ① 아이디/비밀번호 로그인 (Stage C, 2026-09-18 — 이메일 OTP 로그인 제거로 대체) ──
+    await step('① 아이디/비밀번호 로그인', async () => {
         await page.goto('/login');
         await page.waitForLoadState('networkidle');
-        if (loginEmail) {
-            await page.fill('#emailOtpEmail', loginEmail);
-            await page.click('#emailOtpRequestBtn');
-            console.log(`  → ${loginEmail} 로 인증 코드 요청을 보냈습니다.`);
+        if (loginUsername && loginPassword) {
+            await page.fill('#usernameInput', loginUsername);
+            await page.fill('#passwordInput', loginPassword);
+            await page.click('#usernameAuthSubmitBtn');
+            console.log(`  → ${loginUsername} 로 로그인을 시도했습니다.`);
         } else {
-            console.log('  ▶ 브라우저에서 이메일 주소를 입력하고 [이메일로 인증 코드 받기]를 눌러주세요.');
+            console.log('  ▶ 브라우저에서 아이디·비밀번호를 입력하고 [로그인]을 눌러주세요.');
         }
-        // #otpStep 의 visible 여부는 신호로 못 쓴다([hidden] 상태에서도 CSS 에 따라 visible 판정될 수 있음).
-        // → "…로 인증 코드를 보냈습니다" 문안이 채워지는 시점을 이메일 제출 신호로 삼는다.
-        await page.waitForFunction(
-            () => document.getElementById('otpSentTo')?.textContent?.includes('인증 코드') ?? false,
-            undefined,
-            { timeout: HUMAN_TIMEOUT },
-        );
-        if (!loginEmail) {
-            // "user@example.com로 인증 코드를 보냈습니다." 문안에서 이메일 캡처 (④ 본인 검색에 사용)
-            const sentTo = (await page.locator('#otpSentTo').textContent()) ?? '';
-            loginEmail = sentTo.split('로 인증 코드')[0]?.trim() ?? '';
-        }
-        console.log('  ▶ 메일함의 6자리 코드를 입력하고 [인증하기]를 눌러주세요.');
         await page.waitForURL('**/mypage', { timeout: HUMAN_TIMEOUT });
+        if (!loginUsername) {
+            // 마이페이지 신원 카드에서 아이디 캡처 (④ 본인 검색에 사용)
+            loginUsername = ((await page.locator('#userIdentityName').textContent()) ?? '').trim();
+        }
         loggedIn = true;
-        return `로그인 성공 (${loginEmail || '이메일 캡처 실패'})`;
+        return `로그인 성공 (${loginUsername || '아이디 캡처 실패'})`;
     });
 
     // ── ② 자료실 파일 다운로드 — Storage 실파일 서빙 (사람 개입 0) ──
@@ -202,17 +200,17 @@ test('월간 수동 점검 위저드', async ({ browser }) => {
     // ── ④ 푸시 발송·실수신 — 관리자 알림 발송 화면으로 본인에게만 발송 ──
     await step('④ 푸시 발송·실수신 (본인 대상)', async () => {
         if (!loggedIn) throw new SkipStep('로그인 실패로 건너뜀');
-        if (!loginEmail) throw new SkipStep('로그인 이메일 캡처 실패 — 본인 검색 불가');
+        if (!loginUsername) throw new SkipStep('로그인 아이디 캡처 실패 — 본인 검색 불가');
         await page.goto('/admin/send-notification');
         await page.waitForLoadState('networkidle');
         if (!page.url().includes('/admin/send-notification')) throw new SkipStep('관리자 권한 없음');
 
         await page.check('input[name="targetType"][value="specific"]');
-        await page.fill('#userSearch', loginEmail);
+        await page.fill('#userSearch', loginUsername);
         const firstItem = page.locator('#userDropdown .user-item').first();
         await firstItem.waitFor({ state: 'visible', timeout: 15000 });
         if (((await firstItem.textContent()) ?? '').includes('검색 결과가 없습니다')) {
-            throw new Error(`본인 계정 검색 실패 (${loginEmail})`);
+            throw new Error(`본인 계정 검색 실패 (${loginUsername})`);
         }
         await firstItem.click();
         await page.locator('#selectedUser .selected-user').waitFor({ state: 'visible', timeout: 5000 });

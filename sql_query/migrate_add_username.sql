@@ -6,6 +6,10 @@
 -- not yet written) will set NOT NULL once the transition window closes.
 --
 -- Idempotent — safe to re-run.
+--
+-- Stage C follow-up: sql_query/migrate_finalize_username.sql (written 2026-09-18,
+-- Dr. Ben to run manually after backup) sets username NOT NULL once the transition
+-- window closes.
 
 BEGIN;
 

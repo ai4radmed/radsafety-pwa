@@ -40,9 +40,9 @@ test.describe('프로덕션 스모크', () => {
 
         await page.goto('/login', { waitUntil: 'load' });
 
-        // 이메일 OTP 1단계 폼 — 입력·제출은 하지 않는다(부작용 0)
-        await expect(page.locator('#emailOtpRequestForm')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('#emailOtpEmail')).toBeVisible();
+        // 아이디/비밀번호 폼 — 입력·제출은 하지 않는다(부작용 0)
+        await expect(page.locator('#usernameAuthForm')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('#usernameInput')).toBeVisible();
 
         expect(pageErrors, `브라우저 미처리 예외 발생: ${pageErrors.join(' | ')}`).toEqual([]);
     });

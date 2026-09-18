@@ -296,36 +296,8 @@ async function checkProtectedPages() {
 async function checkAuthEndpoints() {
     section('auth', '/auth 엔드포인트 SSR 동작 확인 (CDN 캐시 버그 감지)');
 
-    // /auth/confirm — 308 + 12ms 이하이면 CDN 캐시 장애
-    {
-        const res = await fetchNoRedirect(`${BASE_URL}/auth/confirm`);
-        if (!res.ok) {
-            fail('/auth/confirm 접속 실패', res.error);
-        } else if (res.status === 308) {
-            fail(
-                '/auth/confirm → 308 영구 리다이렉트 감지!',
-                `CDN 캐시 장애 가능성. 빈 커밋 push로 해결. 응답시간: ${res.elapsed}ms`,
-            );
-        } else if ([302, 303, 307, 200].includes(res.status)) {
-            const isLikelyCached = res.elapsed < 20;
-            if (isLikelyCached && res.status !== 200) {
-                warn(
-                    `/auth/confirm → ${res.status} 응답시간 ${res.elapsed}ms (매우 빠름 — CDN 캐시 의심)`,
-                    '정상이라면 서버 처리로 100ms 이상 소요',
-                );
-            } else {
-                ok(`/auth/confirm → ${res.status} SSR 정상`, `${res.elapsed}ms`);
-            }
-        } else {
-            warn(`/auth/confirm → ${res.status} 예외`, `${res.elapsed}ms`);
-        }
-
-        // Content-Type 확인
-        const ct = res.headers['content-type'] || '';
-        if (ct.includes('application/json')) {
-            fail('/auth/confirm Content-Type이 JSON — prerender 문제 가능성');
-        }
-    }
+    // /auth/confirm 은 Stage C(이메일 OTP 로그인 제거, privacy_redesign_plan.md 1단계)로
+    // 삭제됨 — 아래 /auth/callback 이 같은 CDN 308 캐시 패턴을 계속 감지한다.
 
     // /auth/callback — 파라미터 없으면 /login 리다이렉트
     {

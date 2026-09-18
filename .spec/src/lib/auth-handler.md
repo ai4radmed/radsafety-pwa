@@ -33,6 +33,6 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
     - 비인증 사용자가 보호된 페이지 접근 시 즉시 `/login` 리다이렉트.
 2. **중복 실행 방지**: `astro:page-load` 내에서만 초기화 및 동기화 수행 시 중복 호출 주의.
 3. **Optional Guard**: DOM 접근 (`.global-noti-dot`) 시 요소 존재 여부 필수 확인.
-4. **(Stage B) 자가 치유 시 카카오는 nickname·login_email 을 비운다** — provider가 `kakao`면 `newProfile.login_email`/`nickname`을 `null`로 강제(그 외 provider는 기존대로 `baseUser`값 사용). 이메일 OTP 사용자는 전환 전까지 `login_email`이 유일한 로그인 식별자라 그대로 유지해야 한다.
+4. **(Stage C, 2026-09-18) 자가 치유는 provider 와 무관하게 nickname·login_email 을 비운다** — 이메일 OTP 로그인이 제거돼 `login_email`을 살려둘 로그인 경로가 더 이상 없다(`documents/privacy_redesign_plan.md` 1단계 C). Stage B 때는 카카오만 비우고 이메일 OTP 출신은 유지했으나, 지금은 항상 `null`.
 5. **(Stage B) 자가 치유 profiles 쓰기는 `upsert(onConflict:'id')`** — `signUpWithUsername`과 같은 이유(운영 DB `auth.users`→`profiles` 자동생성 트리거, `.spec/src/actions/index.md` 규칙 10). 평범한 `insert`는 트리거가 이미 만든 행과 충돌해 자가 치유가 조용히 실패할 수 있다.
 6. **(Phase 2, 2단계 개정 — 2계층+가입승인+제재) 자가 치유는 항상 `status: 'pending'`으로 시작** — 자가 치유는 `profiles` 행이 아예 없을 때만 실행되므로, 이 함수가 실행됐다는 것 자체가 "진짜 신규 계정"이라는 뜻이다(기존 사용자는 이미 행이 있어 이 분기를 안 탄다). 기존(마이그레이션 이전) 사용자는 `sql_query/migrate_add_member_status_hospital.sql`의 컬럼 기본값 `'active'`를 그대로 유지 — 이 함수가 건드리지 않는다.

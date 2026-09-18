@@ -436,8 +436,10 @@ import Icon from '../../components/Icon.astro';
                 searchTimeout = window.setTimeout(async () => {
                     const { data: users } = await supabase
                         .from('profiles')
-                        .select('id, real_name, login_email, society_email')
-                        .or(`real_name.ilike.%${query}%,login_email.ilike.%${query}%,society_email.ilike.%${query}%`)
+                        .select('id, real_name, username, login_email, society_email')
+                        .or(
+                            `real_name.ilike.%${query}%,username.ilike.%${query}%,login_email.ilike.%${query}%,society_email.ilike.%${query}%`,
+                        )
                         .limit(10);
 
                     if (users && users.length > 0 && userDropdown) {
@@ -445,8 +447,8 @@ import Icon from '../../components/Icon.astro';
                             .map(
                                 (u) => `
                             <div class="user-item" data-id="${u.id}">
-                                <div style="font-weight: 600;">${u.real_name || '이름 없음'}</div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);">${u.login_email || u.society_email || '-'}</div>
+                                <div style="font-weight: 600;">${u.real_name || u.username || '이름 없음'}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">${u.username || u.login_email || u.society_email || '-'}</div>
                             </div>
                         `,
                             )
