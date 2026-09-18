@@ -11,7 +11,8 @@
 // 소속란에서 **병원급 기관명만** 추출·정규화한 목록을 씨앗으로 쓴다. 개인 식별정보는
 // 일절 가져오지 않았고 기관명만 남겼다. 제외한 것 — 의원·내과·클리닉·PET센터 등
 // 의원급, 요양병원, 연구기관·재단·보건소·군부대·대학원, 해외 기관, 재직 상태값
-// (퇴직·별세·휴직·공보의 등). 표기는 통용명으로 정규화(예: 「전남의대 화순전남대병원」
+// (퇴직·별세·휴직·공보의 등). 단 핵의학 전문 의원급 2곳(나비편한샘의원·염하용PET센터)
+// 은 Dr. Ben 지정으로 포함. 표기는 통용명으로 정규화(예: 「전남의대 화순전남대병원」
 // → 「화순전남대학교병원」, 「마산삼성병원」→「삼성창원병원」, 「경희의료원」→
 // 「경희대학교병원」). 학회 공개 기관회원 명단을 확보하면 그 기준으로 보정한다.
 //
@@ -57,6 +58,7 @@ export const HOSPITALS: Hospital[] = [
     { id: 'gunpo-g-sam-hospital', name: '군포지샘병원' },
     { id: 'bongseng-memorial-hospital', name: '김원묵기념봉생병원' },
     { id: 'gimpo-woori-hospital', name: '김포우리병원' },
+    { id: 'nabi-pyeonhansaem-clinic', name: '나비편한샘의원(나비샘연합의원)' },
     { id: 'nowon-eulji-univ-hospital', name: '노원을지대학교병원' },
     { id: 'dankook-univ-hospital', name: '단국대학교병원' },
     { id: 'daegu-catholic-univ-hospital', name: '대구가톨릭대학교병원' },
@@ -99,6 +101,7 @@ export const HOSPITALS: Hospital[] = [
     { id: 'pusan-national-univ-yangsan-hospital', name: '양산부산대학교병원' },
     { id: 'h-plus-yangji-hospital', name: '에이치플러스 양지병원' },
     { id: 'yeouido-st-marys-hospital', name: '여의도성모병원' },
+    { id: 'yeom-ha-yong-pet-center', name: '염하용PET센터' },
     { id: 'yeungnam-univ-hospital', name: '영남대학교병원' },
     { id: 'yongin-severance-hospital', name: '용인세브란스병원' },
     { id: 'ulsan-univ-hospital', name: '울산대학교병원' },
