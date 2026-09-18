@@ -83,6 +83,14 @@ describe('last-route', () => {
             storage['last_route'] = JSON.stringify({ path: '/notifications' });
             expect(getLastRoute()?.path).toBe('/notifications');
         });
+
+        it('제외 규칙 이전에 저장된 /admin/* 값은 null 반환 + 저장소에서 제거', () => {
+            // 2026-09-18 운영 실측: /admin 제외(PR #53) 배포 전 localStorage 에 남아 있던
+            // /admin/verification-requests 가 신규 가입 직후 그대로 복원됨.
+            storage['last_route'] = JSON.stringify({ path: '/admin/verification-requests' });
+            expect(getLastRoute()).toBeNull();
+            expect(storage['last_route']).toBeUndefined();
+        });
     });
 
     describe('restoreLastRouteIfNeeded', () => {
