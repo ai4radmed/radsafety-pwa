@@ -110,7 +110,13 @@ describe('server.signUpWithUsername', () => {
         // insert 가 아니라 upsert 여야 한다 — 운영 DB의 auth.users → profiles 자동생성
         // 트리거와 충돌하지 않기 위해(2026-09-16 프리뷰 실측, .spec/src/actions/index.md 규칙 10).
         expect(mockProfilesUpsert).toHaveBeenCalledWith(
-            expect.objectContaining({ id: USER_ID, username: 'gildong', login_email: null, nickname: null }),
+            expect.objectContaining({
+                id: USER_ID,
+                username: 'gildong',
+                login_email: null,
+                nickname: null,
+                provider: 'email',
+            }),
             expect.objectContaining({ onConflict: 'id' }),
         );
         expect(result.data).toEqual({ success: true, email: 'gildong@radsafety.invalid' });

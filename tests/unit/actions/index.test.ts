@@ -204,6 +204,53 @@ describe('admin.verification', () => {
     });
 });
 
+describe('admin.memberApproval (Phase 3)', () => {
+    const adminId = '123e4567-e89b-12d3-a456-426614174000';
+    const targetUserId = '123e4567-e89b-12d3-a456-426614174001';
+
+    beforeEach(() => {
+        mockAdminFrom.mockClear();
+        mockAdminUpdate.mockClear();
+        mockAdminEq.mockClear();
+        mockAdminSingle.mockClear();
+    });
+
+    it('필수 액션들이 export됨', () => {
+        expect(server).toHaveProperty('approvePendingMember');
+        expect(server).toHaveProperty('rejectPendingMember');
+    });
+
+    it('approvePendingMember: 관리자가 아니면 에러', async () => {
+        mockAdminSingle.mockResolvedValue({ data: { is_admin: false }, error: null });
+        await expect((server.approvePendingMember as any)({ adminId, targetUserId })).rejects.toThrow(
+            '관리자 권한이 필요합니다.',
+        );
+    });
+
+    it('approvePendingMember: 관리자인 경우 status를 active로 변경', async () => {
+        mockAdminSingle.mockResolvedValue({ data: { is_admin: true }, error: null });
+        const res = await (server.approvePendingMember as any)({ adminId, targetUserId });
+        expect(res.data).toEqual({ success: true });
+        expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { status: 'active' });
+        expect(mockAdminEq).toHaveBeenCalledWith('profiles', 'id', targetUserId);
+    });
+
+    it('rejectPendingMember: 관리자가 아니면 에러', async () => {
+        mockAdminSingle.mockResolvedValue({ data: { is_admin: false }, error: null });
+        await expect((server.rejectPendingMember as any)({ adminId, targetUserId })).rejects.toThrow(
+            '관리자 권한이 필요합니다.',
+        );
+    });
+
+    it('rejectPendingMember: 관리자인 경우 status를 banned로 변경', async () => {
+        mockAdminSingle.mockResolvedValue({ data: { is_admin: true }, error: null });
+        const res = await (server.rejectPendingMember as any)({ adminId, targetUserId });
+        expect(res.data).toEqual({ success: true });
+        expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { status: 'banned' });
+        expect(mockAdminEq).toHaveBeenCalledWith('profiles', 'id', targetUserId);
+    });
+});
+
 describe('server.sendVerificationCode', () => {
     const email = 'user@test.com';
     const userId = '123e4567-e89b-12d3-a456-426614174001';

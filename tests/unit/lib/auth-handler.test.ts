@@ -219,7 +219,7 @@ describe('auth-handler', () => {
 
         const { upsert } = (supabase.from as any)();
         expect(upsert).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'kakao-new-uid', nickname: null, login_email: null }),
+            expect.objectContaining({ id: 'kakao-new-uid', nickname: null, login_email: null, provider: 'kakao' }),
             { onConflict: 'id' },
         );
     });
@@ -247,7 +247,7 @@ describe('auth-handler', () => {
 
         const { upsert } = (supabase.from as any)();
         expect(upsert).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'email-new-uid', login_email: null, nickname: null }),
+            expect.objectContaining({ id: 'email-new-uid', login_email: null, nickname: null, provider: 'email' }),
             { onConflict: 'id' },
         );
     });

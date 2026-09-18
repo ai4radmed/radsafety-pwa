@@ -106,11 +106,15 @@ async function updateUserStore(session: any) {
 async function performSelfHealing(userId: string, baseUser: any) {
     // Stage C — 이메일 OTP 로그인이 사라져 login_email 을 살려둘 로그인 경로가
     // 더 이상 없다(privacy_redesign_plan.md 1단계 C). 신규 계정은 provider 와
-    // 무관하게 항상 nickname·login_email 을 비운다.
+    // 무관하게 항상 nickname·login_email 을 비운다. provider 자체는 계속 기록한다 —
+    // 관리자가 다른 사용자의 로그인 방식을 보는 유일한 영속 경로
+    // (profiles.provider, sql_query/migrate_add_profile_provider.sql).
+    const isKakao = baseUser.provider === 'kakao';
     const newProfile = {
         id: userId,
         login_email: null,
         nickname: null,
+        provider: isKakao ? 'kakao' : 'email',
         created_at: new Date().toISOString(),
         is_admin: false,
         // Phase 2 (2단계 개정 — 2계층+가입승인+제재) — 자가 치유는 오직 진짜 신규
