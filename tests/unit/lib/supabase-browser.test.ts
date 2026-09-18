@@ -63,6 +63,7 @@ describe('supabase-browser', () => {
         let cookies: { getAll: () => any; setAll: (c: any) => void };
 
         beforeEach(async () => {
+            localStorage.clear();
             await import('../../../src/lib/supabase-browser');
             cookies = mockCreateBrowserClient.mock.calls[0][2].cookies;
         });
@@ -88,8 +89,11 @@ describe('supabase-browser', () => {
                 { name: 'sb-token.0', value: 'chunk0' },
                 { name: 'sb-token.1', value: 'chunk1' },
             ];
+            // Storage.prototype 스파이 대신 실제 localStorage 에 써 둔다 — 이 describe
+            // 안의 여러 테스트가 getItem/setItem/removeItem 을 번갈아 스파이할 때
+            // vi.restoreAllMocks() 가 되돌리지 못하는 상호작용이 있었다(2026-09-16 확인).
+            localStorage.setItem('sb-cookie-backup', JSON.stringify(backup));
             mockParseCookieHeader.mockReturnValue(noCookies);
-            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(backup));
             const cookieSetter = vi.fn();
             Object.defineProperty(document, 'cookie', {
                 set: cookieSetter,
@@ -101,7 +105,6 @@ describe('supabase-browser', () => {
 
             expect(result).toEqual([...noCookies, ...backup]);
             expect(cookieSetter).toHaveBeenCalledTimes(2);
-            vi.restoreAllMocks();
         });
 
         it('setAll: 쿠키 설정 후 sb- 쿠키를 localStorage에 백업', () => {
@@ -119,35 +122,123 @@ describe('supabase-browser', () => {
                 { name: 'sb-token.0', value: 'v0' },
                 { name: 'sb-token.1', value: 'v1' },
             ]);
-            const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
             cookies.setAll(cookiesToSet);
 
             expect(cookieSetter).toHaveBeenCalledTimes(2);
-            expect(setItemSpy).toHaveBeenCalledWith(
-                'sb-cookie-backup',
+            expect(localStorage.getItem('sb-cookie-backup')).toBe(
                 JSON.stringify([
                     { name: 'sb-token.0', value: 'v0' },
                     { name: 'sb-token.1', value: 'v1' },
                 ]),
             );
-            vi.restoreAllMocks();
         });
 
         it('setAll: sb- 쿠키 없으면 localStorage 백업 삭제', () => {
+            localStorage.setItem('sb-cookie-backup', 'stale'); // 이전 로그인이 남긴 백업을 재현
+            Object.defineProperty(document, 'cookie', {
+                set: vi.fn(),
+                get: () => '',
+                configurable: true,
+            });
+            mockParseCookieHeader.mockReturnValue([]);
+
+            cookies.setAll([{ name: 'sb-token', value: '', options: { maxAge: 0 } }]);
+
+            expect(localStorage.getItem('sb-cookie-backup')).toBeNull();
+        });
+
+        // 2026-09-16 버그 수정 — 로그아웃 후 /login 재방문 시 자동 재로그인되던 문제.
+        // getAll()이 "쿠키가 없다"만으로 iOS 소실과 방금 로그아웃을 구분 못 해
+        // 백업에서 옛 세션을 되살렸다. SIGNED_OUT_KEY 마커로 구분한다.
+        // (아래 3개 테스트는 Storage.prototype 스파이 대신 실제 localStorage 읽기/쓰기로
+        // 검증한다 — 이 파일에서 여러 테스트가 Storage.prototype.setItem/removeItem을
+        // 연달아 스파이할 때 스파이 호출 카운트가 유실되는 vitest/jsdom 상호작용이
+        // 있었고, 실제 상태 검증이 더 견고하다.)
+        it('setAll: sb- 쿠키 없으면(로그아웃) sb-signed-out 마커를 세운다', () => {
+            Object.defineProperty(document, 'cookie', {
+                set: vi.fn(),
+                get: () => '',
+                configurable: true,
+            });
+            mockParseCookieHeader.mockReturnValue([]);
+
+            cookies.setAll([{ name: 'sb-token', value: '', options: { maxAge: 0 } }]);
+
+            expect(localStorage.getItem('sb-signed-out')).toBe('1');
+        });
+
+        it('setAll: sb- 쿠키 있으면(로그인 성공) sb-signed-out 마커를 해제한다', () => {
+            localStorage.setItem('sb-signed-out', '1'); // 로그아웃 상태였다고 가정
+            Object.defineProperty(document, 'cookie', {
+                set: vi.fn(),
+                get: () => 'sb-token=v0',
+                configurable: true,
+            });
+            mockParseCookieHeader.mockReturnValue([{ name: 'sb-token', value: 'v0' }]);
+
+            cookies.setAll([{ name: 'sb-token', value: 'v0', options: { path: '/' } }]);
+
+            expect(localStorage.getItem('sb-signed-out')).toBeNull();
+        });
+
+        it('getAll: sb-signed-out 마커가 있으면 백업이 있어도 복원하지 않는다 (로그아웃 직후 재로그인 방지)', () => {
+            localStorage.setItem('sb-signed-out', '1');
+            localStorage.setItem('sb-cookie-backup', JSON.stringify([{ name: 'sb-token', value: 'stale-session' }]));
+            const noCookies = [{ name: 'other', value: 'xyz' }];
+            mockParseCookieHeader.mockReturnValue(noCookies);
             const cookieSetter = vi.fn();
             Object.defineProperty(document, 'cookie', {
                 set: cookieSetter,
                 get: () => '',
                 configurable: true,
             });
+
+            const result = cookies.getAll();
+
+            expect(result).toEqual(noCookies);
+            expect(cookieSetter).not.toHaveBeenCalled();
+        });
+    });
+
+    // 2026-09-16 버그 수정 — signOut() 이 세션 쿠키 조각 일부를 못 지워 로그아웃해도
+    // (새로고침해도) 로그인 상태가 유지되던 문제. 원인과 무관하게 sb- 쿠키를 직접 지운다.
+    describe('forceClearSupabaseCookies', () => {
+        let forceClearSupabaseCookies: () => void;
+
+        beforeEach(async () => {
+            localStorage.clear();
+            const mod = await import('../../../src/lib/supabase-browser');
+            forceClearSupabaseCookies = mod.forceClearSupabaseCookies;
+        });
+
+        it('document.cookie 의 sb- 접두사 쿠키를 전부 지운다(그 외는 건드리지 않는다)', () => {
+            mockParseCookieHeader.mockReturnValue([
+                { name: 'sb-token.0', value: 'v0' },
+                { name: 'sb-token.1', value: 'v1' },
+                { name: 'other', value: 'xyz' },
+            ]);
+            const cookieSetter = vi.fn();
+            Object.defineProperty(document, 'cookie', {
+                set: cookieSetter,
+                get: () => 'sb-token.0=v0; sb-token.1=v1; other=xyz',
+                configurable: true,
+            });
+
+            forceClearSupabaseCookies();
+
+            expect(cookieSetter).toHaveBeenCalledTimes(2);
+        });
+
+        it('localStorage 백업을 지우고 sb-signed-out 마커를 세운다', () => {
+            localStorage.setItem('sb-cookie-backup', 'stale');
             mockParseCookieHeader.mockReturnValue([]);
-            const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+            Object.defineProperty(document, 'cookie', { set: vi.fn(), get: () => '', configurable: true });
 
-            cookies.setAll([{ name: 'sb-token', value: '', options: { maxAge: 0 } }]);
+            forceClearSupabaseCookies();
 
-            expect(removeItemSpy).toHaveBeenCalledWith('sb-cookie-backup');
-            vi.restoreAllMocks();
+            expect(localStorage.getItem('sb-cookie-backup')).toBeNull();
+            expect(localStorage.getItem('sb-signed-out')).toBe('1');
         });
     });
 });

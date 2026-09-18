@@ -1,0 +1,106 @@
+---
+// 소속기관 자동완성 콤보박스. 명세: .spec/src/components/HospitalAutocomplete.md
+// Phase 2 (documents/privacy_redesign_plan.md 2단계 개정 — 2계층+가입승인+제재).
+// 180개(예정) 항목을 네이티브 <select>로 두면 모바일에서 스크롤 지옥이라
+// 타이핑하면 필터링되는 콤보박스로 대체(Dr. Ben 2026-09-16 요청).
+---
+
+<div class="hospital-autocomplete">
+    <input
+        type="text"
+        id="hospitalQuery"
+        class="hospital-query-input"
+        placeholder="소속기관 검색 (선택사항)"
+        autocomplete="off"
+    />
+    <input type="hidden" id="hospitalId" name="hospitalId" />
+    <ul id="hospitalOptions" class="hospital-options" hidden></ul>
+</div>
+
+<style>
+    .hospital-autocomplete {
+        position: relative;
+    }
+    .hospital-query-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    .hospital-options {
+        position: absolute;
+        z-index: 20;
+        top: calc(100% + 2px);
+        left: 0;
+        right: 0;
+        max-height: 12rem;
+        overflow-y: auto;
+        margin: 0;
+        padding: 0.25rem 0;
+        list-style: none;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .hospital-options li {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+    .hospital-options li:hover,
+    .hospital-options li:active {
+        background: #f3f4f6;
+    }
+</style>
+
+<script>
+    import { HOSPITALS } from '../data/hospitals';
+
+    const queryInput = document.getElementById('hospitalQuery') as HTMLInputElement;
+    const hiddenInput = document.getElementById('hospitalId') as HTMLInputElement;
+    const optionsList = document.getElementById('hospitalOptions') as HTMLUListElement;
+
+    const active = HOSPITALS.filter((h) => !h.retired);
+
+    function renderOptions(query: string) {
+        optionsList.innerHTML = '';
+        if (!query) {
+            optionsList.hidden = true;
+            return;
+        }
+        const matches = active.filter((h) => h.name.includes(query)).slice(0, 8);
+        if (matches.length === 0) {
+            optionsList.hidden = true;
+            return;
+        }
+        matches.forEach((h) => {
+            const li = document.createElement('li');
+            li.textContent = h.name;
+            // mousedown(클릭)이 input의 blur 보다 먼저 처리되도록 — blur 핸들러가
+            // 목록을 먼저 숨겨버리면 클릭이 무효화된다.
+            li.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                queryInput.value = h.name;
+                hiddenInput.value = h.id;
+                optionsList.hidden = true;
+            });
+            optionsList.appendChild(li);
+        });
+        optionsList.hidden = false;
+    }
+
+    queryInput?.addEventListener('input', () => {
+        // 직접 타이핑하면 이전에 선택했던 값은 무효 — 목록에서 다시 골라야 확정된다.
+        hiddenInput.value = '';
+        renderOptions(queryInput.value.trim());
+    });
+
+    queryInput?.addEventListener('blur', () => {
+        setTimeout(() => {
+            optionsList.hidden = true;
+        }, 150);
+    });
+</script>

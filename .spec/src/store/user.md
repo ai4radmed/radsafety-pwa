@@ -14,11 +14,14 @@ Nanostores 기반 클라이언트 사용자 프로필 상태. `persistentMap`으
 
 ### userProfile 필드
 
-id, login_email, nickname, created_at, is_admin, provider, verification_date, verification_status, society, affiliation, department, real_name, society_email, license_type, is_safety_manager, safety_manager_start_year, safety_manager_end_year, classification, certification, has_radiation_license, radiation_license_type, users_licenses
+id, username, status, login_email, nickname, created_at, is_admin, provider, verification_date, verification_status, society, affiliation, department, real_name, society_email, license_type, is_safety_manager, safety_manager_start_year, safety_manager_end_year, classification, certification, has_radiation_license, radiation_license_type, users_licenses
+
+- `username`: Stage 1-A(`documents/privacy_redesign_plan.md` 1단계) — 아이디/비밀번호 로그인 사용자의 이름표. `profiles.username`을 그대로 반영. 미설정(카카오·전환 전 이메일 사용자)이면 빈 문자열.
+- `status`: Phase 2(2단계 개정 — 2계층+가입승인+제재, `sql_query/migrate_add_member_status_hospital.sql`) — `profiles.status`를 그대로 반영(`pending`/`active`/`suspended`/`banned`). `/claim-username`이 이 값으로 "신규 가입자인지"(pending) "기존 전환 대상인지"(active) 판정해 소속기관·소속학회 입력란 노출 여부를 정한다.
 
 ### setUser 입력
 
-id, email, login_email?, provider, nickname?, created_at?, is_admin?, verification_date?, verification_status?, society?, affiliation?, department?, real_name?, society_email?, license_type?, is_safety_manager?, safety_manager_start_year?, safety_manager_end_year?, classification?, society_name?, licenses?, user_tier?, safety_manager_start_date?, safety_manager_end_date?, is_safety_practice_staff?, has_radiation_license?, radiation_license_type?
+id, email, username?, status?, login_email?, provider, nickname?, created_at?, is_admin?, verification_date?, verification_status?, society?, affiliation?, department?, real_name?, society_email?, license_type?, is_safety_manager?, safety_manager_start_year?, safety_manager_end_year?, classification?, society_name?, licenses?, user_tier?, safety_manager_start_date?, safety_manager_end_date?, is_safety_practice_staff?, has_radiation_license?, radiation_license_type?
 
 ## 사이드 이펙트
 

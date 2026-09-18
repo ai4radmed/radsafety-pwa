@@ -5,6 +5,7 @@ import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
 import { resolveFeedbackRecipients } from '../config/auth';
 import { createLogger } from '../lib/logger';
 import { sendPushToUsers } from '../lib/push';
+import { HOSPITALS } from '../data/hospitals';
 
 const logger = createLogger('actions');
 
@@ -14,6 +15,38 @@ const DEVELOPER_EMAILS = (import.meta.env.DEVELOPER_EMAILS || '')
     .split(',')
     .map((e: string) => e.trim())
     .filter((e: string) => e.length > 0);
+
+// Stage 1-A (username/password 로그인, privacy_redesign_plan.md 1단계) ─────────
+// auth.users.email 자리에는 실제 이메일 대신 `<username>@radsafety.invalid` 파생값만 넣는다.
+// .invalid 는 RFC 2606 예약 도메인 — 실발송 불가·실제 등록 불가. 미래에 진짜 이메일을
+// 보관하기로 하면 이 값만 교체하면 되고 로그인 코드는 그대로다.
+const USERNAME_REGEX = /^[a-z0-9_-]{3,20}$/;
+const usernameSchema = z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine((v) => USERNAME_REGEX.test(v), {
+        message: '아이디는 영문 소문자·숫자·_·- 만 사용해 3~20자로 입력하세요.',
+    });
+
+function fakeEmailFor(username: string): string {
+    return `${username}@radsafety.invalid`;
+}
+
+// Phase 2 (2계층+가입승인+제재 모델, KSNM 방안위 교육팀 합의 2026-09-10 승계) ──────
+// 가입 시 소속기관·소속학회는 둘 다 선택 항목(자기 신고). hospitalId 는
+// HospitalAutocomplete.astro 가 목록에서 클릭 확정한 값만 보내므로, 알 수 없는
+// id 가 온다면 UI 우회나 데이터 꼬임 — 조용히 버리지 않고 명확히 거부한다.
+const hospitalIdSchema = z
+    .string()
+    .trim()
+    .refine((v) => v === '' || HOSPITALS.some((h) => h.id === v), {
+        message: '알 수 없는 소속기관입니다.',
+    })
+    .transform((v) => (v === '' ? null : v))
+    .optional();
+
+const societySchema = z.enum(['nuclear_medicine', 'technology', 'none']).optional();
 
 export const server = {
     saveFinding: defineAction({
@@ -512,6 +545,207 @@ export const server = {
                 logger.error('인증 회수 중 오류 발생', { error });
                 throw error;
             }
+        },
+    }),
+
+    // Stage 1-A — username/password 회원가입. profiles.username 확정 후 auth.users
+    // 를 가짜 이메일로 생성한다. 클라이언트는 반환된 email 로 곧바로
+    // supabase.auth.signInWithPassword 를 호출해 세션을 연다(기존 개발자 로그인
+    // 경로와 동일 — login.astro 참조).
+    signUpWithUsername: defineAction({
+        input: z.object({
+            username: usernameSchema,
+            password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
+            hospitalId: hospitalIdSchema,
+            society: societySchema,
+        }),
+        handler: async ({ username, password, hospitalId, society }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: existing, error: lookupError } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('username', username)
+                .maybeSingle();
+            if (lookupError) throw new Error(lookupError.message);
+            if (existing) throw new Error('이미 사용 중인 아이디입니다.');
+
+            const email = fakeEmailFor(username);
+            const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                email,
+                password,
+                email_confirm: true, // .invalid 도메인은 확인 메일을 받을 수 없으므로 즉시 확정 처리
+            });
+            if (createError || !created?.user) {
+                logger.error('username 회원가입: auth 계정 생성 실패', { error: createError });
+                throw new Error(createError?.message || '계정 생성에 실패했습니다.');
+            }
+
+            // upsert(insert 아님) — auth.users 에 새 행이 생기면 profiles 에도 빈 행을 미리
+            // 만들어 두는 DB 트리거가 있어(2026-09-16 프리뷰 테스트로 확인), 그냥 insert 하면
+            // "duplicate key value violates unique constraint profiles_pkey" 로 매번 실패한다.
+            // id 로 onConflict 를 지정해 트리거가 만든 행이 있으면 덮어쓰고, 없으면 새로 만든다.
+            const { error: profileError } = await supabaseAdmin.from('profiles').upsert(
+                {
+                    id: created.user.id,
+                    username,
+                    login_email: null,
+                    nickname: null,
+                    provider: 'email',
+                    created_at: new Date().toISOString(),
+                    // Phase 2 — 신규 계정은 관리자 승인 전까지 대기. 소속기관·소속학회는
+                    // 자기 신고, 선택 항목(둘 다 비워도 가입 자체는 된다).
+                    status: 'pending',
+                    hospital_id: hospitalId ?? null,
+                    society: society ?? null,
+                },
+                { onConflict: 'id' },
+            );
+            if (profileError) {
+                // 고아 auth 계정 방지 — profiles upsert 실패 시 방금 만든 계정을 되돌린다.
+                await supabaseAdmin.auth.admin.deleteUser(created.user.id);
+                logger.error('username 회원가입: profiles upsert 실패, auth 계정 롤백', { error: profileError });
+                throw new Error(profileError.message);
+            }
+
+            return { success: true, email };
+        },
+    }),
+
+    // Stage 1-A — username → email 조회만 한다. 실제 인증(signInWithPassword)은
+    // 브라우저의 supabase 클라이언트가 이어서 수행 — 세션 쿠키가 정상 경로로 설정되도록.
+    // "아이디 없음"과 "비밀번호 오류"를 같은 문구로 묶어 아이디 존재 여부가 새지 않게 한다.
+    signInWithUsername: defineAction({
+        input: z.object({
+            username: usernameSchema,
+        }),
+        handler: async ({ username }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: profile, error: lookupError } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('username', username)
+                .maybeSingle();
+            if (lookupError) throw new Error(lookupError.message);
+            if (!profile) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+
+            const { data: userRes, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+            if (userError || !userRes?.user?.email) {
+                throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+            }
+
+            return { success: true, email: userRes.user.email };
+        },
+    }),
+
+    // Stage B (privacy_redesign_plan.md 전환기간) — 기존 이메일/카카오 사용자가
+    // 아이디를 정할 때 호출. auth.users.email 을 가짜 이메일로 교체하고
+    // login_email/nickname 을 비운다. password 는 선택 — 카카오 사용자는 생략 가능,
+    // 이메일 OTP 출신 사용자는 이 방법이 유일한 향후 로그인 수단이라 사실상 필수
+    // (강제 여부는 클라이언트 UI 판단, 서버는 optional 로만 받는다).
+    // userId 는 클라이언트가 넘긴다 — approveVerification 등 기존 관리자 액션과
+    // 동일한 관례(세션 기반 context 대신 명시적 id 전달).
+    claimUsername: defineAction({
+        input: z.object({
+            userId: z.string().uuid(),
+            username: usernameSchema,
+            password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.').optional(),
+            hospitalId: hospitalIdSchema,
+            society: societySchema,
+        }),
+        handler: async ({ userId, username, password, hospitalId, society }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: existing, error: lookupError } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('username', username)
+                .maybeSingle();
+            if (lookupError) throw new Error(lookupError.message);
+            if (existing && existing.id !== userId) throw new Error('이미 사용 중인 아이디입니다.');
+
+            const email = fakeEmailFor(username);
+            const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+                email,
+                email_confirm: true,
+                ...(password ? { password } : {}),
+            });
+            if (updateAuthError) throw new Error(updateAuthError.message);
+
+            // hospitalId/society 는 신규(self-healing 으로 막 생긴 pending) 계정을 위한
+            // 필드라 클라이언트가 값을 안 보내면(기존 active 계정의 평범한 전환) 건드리지
+            // 않는다 — 스프레드로 undefined 인 키 자체를 아예 안 넣는다.
+            const { error: profileError } = await supabaseAdmin
+                .from('profiles')
+                .update({
+                    username,
+                    login_email: null,
+                    nickname: null,
+                    ...(hospitalId !== undefined ? { hospital_id: hospitalId } : {}),
+                    ...(society !== undefined ? { society } : {}),
+                })
+                .eq('id', userId);
+            if (profileError) throw new Error(profileError.message);
+
+            return { success: true, email };
+        },
+    }),
+
+    // Phase 3 (2계층+가입승인+제재 모델, KSNM 방안위 교육팀 합의 2026-09-10 승계) ──
+    // 가입 대기(status: 'pending') 계정을 관리자가 승인/거절. adminId 는 클라이언트가
+    // 넘기고 서버에서 profiles.is_admin 대조 — approveVerification 등 기존 관리자
+    // 액션과 동일한 관례.
+    approvePendingMember: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+        }),
+        handler: async ({ adminId, targetUserId }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: adminProfile, error: adminError } = await supabaseAdmin
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', adminId)
+                .single();
+            if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
+
+            const { error: updateError } = await supabaseAdmin
+                .from('profiles')
+                .update({ status: 'active' })
+                .eq('id', targetUserId);
+            if (updateError) throw new Error(updateError.message);
+
+            return { success: true };
+        },
+    }),
+
+    // 거절 = 'banned' 로 처리. profiles.status CHECK 제약이 pending/active/suspended/
+    // banned 넷뿐이라 "가입 자체가 거절됨"을 표현할 별도 상태가 없고, 재가입 신청은
+    // 새 계정(다른 username)으로 다시 하면 되므로 굳이 상태를 늘리지 않는다.
+    rejectPendingMember: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+        }),
+        handler: async ({ adminId, targetUserId }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: adminProfile, error: adminError } = await supabaseAdmin
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', adminId)
+                .single();
+            if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
+
+            const { error: updateError } = await supabaseAdmin
+                .from('profiles')
+                .update({ status: 'banned' })
+                .eq('id', targetUserId);
+            if (updateError) throw new Error(updateError.message);
+
+            return { success: true };
         },
     }),
 };

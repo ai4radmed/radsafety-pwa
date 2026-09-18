@@ -280,46 +280,24 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                 id="societyInfoContent"
                 style="display:none; margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed #e5e7eb;"
             >
-                <div style="display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 0.2rem 0.5rem;">
-                    <!-- Row 1: Society | Classification -->
-                    <div class="info-row" style="border:none; padding: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">학회</span>
-                        <span id="userSocietyName" class="info-value" style="font-size: 0.9rem;">...</span>
-                    </div>
-                    <div class="info-row" style="border:none; padding: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">구분</span>
-                        <span id="userSocietyRole" class="info-value" style="font-size: 0.9rem;">...</span>
-                    </div>
-
-                    <!-- Row 2: Email | Name -->
-                    <div class="info-row" style="border:none; padding: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">메일</span>
-                        <span
-                            id="userSocietyEmail"
-                            class="info-value"
-                            style="font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;"
-                            >...</span
-                        >
-                    </div>
-                    <div class="info-row" style="border:none; padding: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">이름</span>
-                        <span id="userRealName" class="info-value" style="font-size: 0.9rem;">...</span>
-                    </div>
-
-                    <!-- Row 3: Affiliation | Department -->
-                    <div class="info-row" style="border:none; padding: 0; min-width: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">기관</span>
-                        <span
-                            id="userAffiliation"
-                            class="info-value"
-                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-size: 0.9rem;"
-                            >...</span
-                        >
-                    </div>
-                    <div class="info-row" style="border:none; padding: 0;">
-                        <span class="info-label" style="min-width: 30px; font-size: 0.85rem;">부서</span>
-                        <span id="userDepartment" class="info-value" style="font-size: 0.9rem;">...</span>
-                    </div>
+                <!-- 실명·이메일·구분·부서 표시는 여기서 전부 제거함(Stage 1-A/B, 2026-09-16;
+                     구분·부서 추가 제거는 2026-09-16 재검토) — 2026-09-10 KSNM 방안위 교육팀
+                     합의(회의록: 앱은 실명·이메일·명부를 갖지 않는다, 가입 시 소속기관·소속학회만
+                     수집)에 따라 학회·기관 외의 신원 관련 세부정보는 마이페이지에 노출하지 않는다.
+                     verification_status·인증요청 흐름 자체(underlying data)는 그대로 유지 —
+                     2단계에서 인증 체계 자체를 재설계할 때 정식으로 다룬다. -->
+                <div class="info-row">
+                    <span class="info-label">학회</span>
+                    <span id="userSocietyName" class="info-value">...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">기관</span>
+                    <span
+                        id="userAffiliation"
+                        class="info-value"
+                        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;"
+                        >...</span
+                    >
                 </div>
             </div>
         </div>
@@ -674,14 +652,21 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                     } else {
                         loginBadge.classList.remove('kakao-badge');
                         loginBadge.classList.add('email-badge');
-                        loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> <span>이메일 로그인 중</span>`;
+                        loginBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> <span>아이디 로그인 중</span>`;
                     }
                 }
 
+                // username 을 정한 사용자는 실명·이메일 대신 아이디만 노출(Stage 1-A, "이메일 개념 숨기기").
+                // 아직 username 이 없는 전환 전 사용자(기존 이메일/카카오)는 종전 표시를 유지한다(전환 화면 = Stage B, 미구현).
                 const nameEl = document.getElementById('userIdentityName');
                 const emailEl = document.getElementById('userIdentityEmail');
-                if (nameEl) nameEl.textContent = currentUser.real_name || currentUser.nickname || '이름 없음';
-                if (emailEl) emailEl.textContent = currentUser.login_email || '-';
+                if (currentUser.username) {
+                    if (nameEl) nameEl.textContent = `@${currentUser.username}`;
+                    if (emailEl) emailEl.textContent = '';
+                } else {
+                    if (nameEl) nameEl.textContent = currentUser.real_name || currentUser.nickname || '이름 없음';
+                    if (emailEl) emailEl.textContent = currentUser.login_email || '-';
+                }
 
                 // Joined At Format
                 const dateEl = document.getElementById('userJoinedAt');
@@ -779,12 +764,8 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                         };
                         document.getElementById('userSocietyName')!.textContent =
                             societyMap[currentUser.society] || currentUser.society || '-';
-                        document.getElementById('userSocietyRole')!.textContent = currentUser.classification || '-';
-                        document.getElementById('userRealName')!.textContent = currentUser.real_name || '-';
-                        document.getElementById('userSocietyEmail')!.textContent =
-                            currentUser.society_email || currentUser.login_email || '-';
+                        // 실명·실제 이메일·구분·부서는 더 이상 표시하지 않는다(위 HTML 주석 참조).
                         document.getElementById('userAffiliation')!.textContent = currentUser.affiliation || '-';
-                        document.getElementById('userDepartment')!.textContent = currentUser.department || '-';
                     }
                 }
 

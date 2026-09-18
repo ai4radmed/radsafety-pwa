@@ -1,7 +1,11 @@
-import { supabase } from './supabase-browser';
+import { supabase, forceClearSupabaseCookies } from './supabase-browser';
 import { setUser, clearUser } from '../store/user';
-import { isAdmin as checkIsAdmin } from '../config/auth';
 import { saveLastRoute } from './last-route';
+
+// Stage B (privacy_redesign_plan.md 전환기간) — username 없는 계정은 어디를 가려 해도
+// 먼저 여기부터 거쳐야 한다. 신규·기존 구분 없음(Dr. Ben 2026-09-16 결정: 배포 후 첫 접속
+// 시 1회 강제 전환 + 화면 안내로 설명, 반복 알림·배너 인프라는 두지 않는다).
+const CLAIM_USERNAME_PATH = '/claim-username';
 
 /**
  * 초기 인증 및 페이지 로드 핸들러 초기화
@@ -11,6 +15,9 @@ export function initAuthHandler() {
     supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth State Change:', event, session?.user?.email);
         if (event === 'SIGNED_OUT') {
+            // signOut() 이 세션 쿠키 조각 일부를 못 지우는 경우가 있어 방어적으로
+            // 직접 한 번 더 지운다(2026-09-16, .spec/src/lib/supabase-browser.md 참조).
+            forceClearSupabaseCookies();
             clearUser();
             handleRedirect(window.location.pathname, false);
         }
@@ -48,7 +55,7 @@ async function updateUserStore(session: any) {
                 '',
         };
 
-        const userIsAdmin = checkIsAdmin(baseUser.login_email);
+        let username: string | null = null;
 
         try {
             const { data: profile, error } = await supabase
@@ -60,25 +67,30 @@ async function updateUserStore(session: any) {
             if (error) console.error('Profile Fetch Error:', error);
 
             if (profile) {
-                if (userIsAdmin && !profile.is_admin) {
-                    await supabase.from('profiles').update({ is_admin: true }).eq('id', session.user.id);
-                }
+                username = profile.username || null;
                 setUser({
                     ...baseUser,
                     ...profile,
                     nickname: profile.nickname || baseUser.nickname,
-                    is_admin: userIsAdmin,
+                    is_admin: !!profile.is_admin,
                     licenses: profile.licenses || [],
                 });
                 checkNotifications(session.user.id);
                 document.dispatchEvent(new CustomEvent('user:loggedin'));
             } else {
                 console.warn('No profile row. Attempting self-healing...');
-                await performSelfHealing(session.user.id, baseUser, userIsAdmin);
+                await performSelfHealing(session.user.id, baseUser);
             }
         } catch (err) {
             console.error('Unexpected Profile Error:', err);
-            setUser({ ...baseUser, is_admin: userIsAdmin });
+            setUser({ ...baseUser, is_admin: false });
+        }
+
+        // Stage B — username 없으면 어디를 가려 했든 먼저 아이디 정하기로 보낸다.
+        // self-healing 으로 막 생긴 계정(새 카카오 가입)도 username 이 없어 여기 걸린다.
+        if (!username && currentPath !== CLAIM_USERNAME_PATH) {
+            window.location.href = CLAIM_USERNAME_PATH;
+            return;
         }
 
         if (currentPath === '/login') window.location.href = '/mypage';
@@ -91,23 +103,37 @@ async function updateUserStore(session: any) {
 /**
  * 프로필 누락 시 자동 생성 (자가 치유)
  */
-async function performSelfHealing(userId: string, baseUser: any, userIsAdmin: boolean) {
+async function performSelfHealing(userId: string, baseUser: any) {
+    // Stage B — 카카오 신규가입은 nickname·login_email 을 애초에 안 남긴다
+    // (privacy_redesign_plan.md 카카오 로그인 흐름: "콜백에서 nickname/email 복사만 제거").
+    // 이메일 OTP 사용자는 login_email 이 지금 유일한 로그인 식별자라 그대로 둔다
+    // (전환 전까지는 그대로 작동해야 하므로 — 마이그레이션 단계 B "기존 로그인: 그대로 작동").
+    const isKakao = baseUser.provider === 'kakao';
     const newProfile = {
         id: userId,
-        login_email: baseUser.login_email,
-        nickname: baseUser.nickname,
+        login_email: isKakao ? null : baseUser.login_email,
+        nickname: isKakao ? null : baseUser.nickname,
+        provider: isKakao ? 'kakao' : 'email',
         created_at: new Date().toISOString(),
-        is_admin: userIsAdmin,
+        is_admin: false,
+        // Phase 2 (2단계 개정 — 2계층+가입승인+제재) — 자가 치유는 오직 진짜 신규
+        // 계정에서만 일어난다(기존 사용자는 이미 profiles 행이 있어 이 함수 자체가
+        // 안 불림) — 그래서 여기서 만드는 행은 항상 관리자 승인 대기로 시작한다.
+        // 기존(마이그레이션 이전) 사용자는 컬럼 기본값 'active'를 그대로 유지.
+        status: 'pending',
     };
 
-    const { error } = await supabase.from('profiles').insert(newProfile);
+    // upsert(onConflict:'id') — signUpWithUsername 과 같은 이유(운영 DB의 auth.users →
+    // profiles 자동생성 트리거, .spec/src/actions/index.md 규칙 10). 여기서도 평범한
+    // insert 를 쓰면 트리거가 먼저 만든 행과 충돌해 자가 치유가 조용히 실패할 수 있다.
+    const { error } = await supabase.from('profiles').upsert(newProfile, { onConflict: 'id' });
     if (!error) {
         setUser({ ...baseUser, ...newProfile, licenses: [] });
         checkNotifications(userId);
         document.dispatchEvent(new CustomEvent('user:loggedin'));
     } else {
         console.error('Self-healing failed:', error);
-        setUser({ ...baseUser, is_admin: userIsAdmin });
+        setUser({ ...baseUser, is_admin: false });
     }
 }
 
