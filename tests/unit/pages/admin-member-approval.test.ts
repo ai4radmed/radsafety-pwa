@@ -32,4 +32,22 @@ describe('admin/member-approval.astro', () => {
     it('빈 목록 안내 문구가 있다', () => {
         expect(source).toContain('대기 중인 가입 신청이 없습니다.');
     });
+
+    // 기관 등록 요청(2026-09-19)
+    it('기관 등록 요청 목록 — hospital_request 가 남은 행 전부를 회원 상태와 무관하게 조회', () => {
+        expect(source).toContain(".not('hospital_request', 'is', null)");
+        expect(source).toContain('처리할 기관 등록 요청이 없습니다.');
+    });
+
+    it('등록·거절 모두 resolveHospitalRequest 액션을 호출한다', () => {
+        expect(source).toContain('actions.resolveHospitalRequest');
+    });
+
+    it("등록 선택지에서 'other' 와 retired 항목을 제외한다", () => {
+        expect(source).toContain("!h.retired && h.id !== 'other'");
+    });
+
+    it('요청 기관명은 이스케이프해서 렌더한다', () => {
+        expect(source).toContain('escapeHtml(row.hospital_request)');
+    });
 });

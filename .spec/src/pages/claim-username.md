@@ -22,7 +22,7 @@ Stage B(`documents/privacy_redesign_plan.md` 전환기간) 강제 중간 페이�
 4. **완료해도 세션 재로그인 불필요** — `claimUsername`은 `auth.users.email`/`password`만 바꾸고 기존 access token은 그대로 유효하다. 리다이렉트(전체 페이지 이동)가 다음 `astro:page-load`에서 새 `profiles.username`을 다시 읽어 게이트를 통과시킨다.
 5. **로그아웃 도피구**: "지금은 로그아웃할게요" 버튼은 항상 노출 — 강제 전환이라도 로그인 자체는 언제든 빠져나갈 수 있어야 한다(아이디 설정을 건너뛰는 게 아니라 세션을 끊는 것).
 6. 이 페이지 자체는 `auth-handler.ts`의 게이트 로직에서 제외 대상(`CLAIM_USERNAME_PATH`)이라 무한 리다이렉트 없음.
-7. **(Phase 2, 2단계 개정 — 2계층+가입승인+제재)** `userProfile.get().status === 'pending'`인 경우에만 `#newMemberFields`(소속기관 `HospitalAutocomplete` + 소속학회 `#societySelect`)를 노출한다 — 자가 치유로 막 생긴 진짜 신규 계정만 `pending`이고, 기존(전환 전) 사용자는 마이그레이션 기본값 `active`를 그대로 갖고 있어 이 온보딩 질문을 안 받는다. 제출 시에도 `isNewMember`일 때만 `hospitalId`/`society`를 `claimUsername`에 실어 보낸다(필드 자체를 안 보내면 서버가 기존 값을 안 건드림).
+7. **(Phase 2, 2단계 개정 — 2계층+가입승인+제재)** `userProfile.get().status === 'pending'`인 경우에만 `#newMemberFields`(소속기관 `HospitalAutocomplete` + 소속학회 `#societySelect`)를 노출한다 — 자가 치유로 막 생긴 진짜 신규 계정만 `pending`이고, 기존(전환 전) 사용자는 마이그레이션 기본값 `active`를 그대로 갖고 있어 이 온보딩 질문을 안 받는다. 제출 시에도 `isNewMember`일 때만 `hospitalId`/`society`를 `claimUsername`에 실어 보낸다(필드 자체를 안 보내면 서버가 기존 값을 안 건드림). `hospitalRequest`(목록에서 확정하지 않은 타이핑 텍스트, 2026-09-19)도 같은 조건에서 값이 있을 때만 보낸다 — 서버가 `기타` + 등록 요청으로 저장(`.spec/src/components/HospitalAutocomplete.md` 규칙 3-1).
 
 ## 관련 자산
 
