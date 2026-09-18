@@ -591,6 +591,7 @@ export const server = {
                     username,
                     login_email: null,
                     nickname: null,
+                    provider: 'email',
                     created_at: new Date().toISOString(),
                     // Phase 2 — 신규 계정은 관리자 승인 전까지 대기. 소속기관·소속학회는
                     // 자기 신고, 선택 항목(둘 다 비워도 가입 자체는 된다).

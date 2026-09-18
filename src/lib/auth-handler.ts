@@ -113,6 +113,7 @@ async function performSelfHealing(userId: string, baseUser: any) {
         id: userId,
         login_email: isKakao ? null : baseUser.login_email,
         nickname: isKakao ? null : baseUser.nickname,
+        provider: isKakao ? 'kakao' : 'email',
         created_at: new Date().toISOString(),
         is_admin: false,
         // Phase 2 (2단계 개정 — 2계층+가입승인+제재) — 자가 치유는 오직 진짜 신규

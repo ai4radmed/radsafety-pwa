@@ -19,7 +19,7 @@ Phase 3(2계층+가입승인+제재 모델, `documents/privacy_redesign_plan.md`
 
 1. **접근 제어**: `is_admin` 권한이 있는 사용자만 접근 가능. 비로그인은 DashboardLayout 가드가 `/login`으로 리다이렉트. 로그인했지만 비관리자는 alert 후 `/mypage`로 리다이렉트 (verification-requests.astro와 동일 관례).
 2. **동적 렌더링**: `export const prerender = false`.
-3. **목록 조회**: `profiles.status = 'pending'` 인 행만 `created_at` 오름차순(먼저 가입한 순)으로 표시. 컬럼 — 아이디(`username`), 로그인 방식(`provider === 'kakao'` ? 카카오 : 아이디), 소속학회(`society` → 한글명 매핑, 없으면 '없음'/'-'), 소속기관(`hospital_id` → `HOSPITALS`(`src/data/hospitals.ts`)에서 이름 조회, 못 찾으면 id 그대로 표시), 가입일.
+3. **목록 조회**: `profiles.status = 'pending'` 인 행만 `created_at` 오름차순(먼저 가입한 순)으로 표시. 컬럼 — 아이디(`username`), 로그인 방식(`provider === 'kakao'` ? 카카오 : 아이디), 소속학회(`society` → 한글명 매핑, 없으면 '없음'/'-'), 소속기관(`hospital_id` → `HOSPITALS`(`src/data/hospitals.ts`)에서 이름 조회, 못 찾으면 id 그대로 표시), 가입일. `profiles.provider` 컬럼은 이 화면과 같은 PR에서 처음 select 됐으나 DB에 신설되지 않은 채 배포돼 "column profiles.provider does not exist" 로드 실패를 냈다(2026-09-18 프리뷰 실측) — `sql_query/migrate_add_profile_provider.sql`로 수리.
 4. **승인**: `승인` 버튼 → `confirm()` → `approvePendingMember({ adminId, targetUserId })` → 성공 시 목록 새로고침(해당 행이 사라짐, `status`가 `active`로 바뀌었으므로).
 5. **거절**: `거절` 버튼 → `confirm()`(재가입 안내 문구 포함) → `rejectPendingMember({ adminId, targetUserId })` → 성공 시 목록 새로고침. `status`는 `banned`로 처리 — 스키마에 "가입 거절" 전용 상태가 없어 기존 4개 값 중 재사용(재가입은 새 계정으로).
 6. **빈 목록**: "대기 중인 가입 신청이 없습니다." 안내 문구.
