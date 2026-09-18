@@ -160,6 +160,7 @@ import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
         const logoutBtn = document.getElementById('claimLogoutBtn') as HTMLButtonElement;
         const newMemberFields = document.getElementById('newMemberFields') as HTMLDivElement;
         const hospitalIdInput = document.getElementById('hospitalId') as HTMLInputElement;
+        const hospitalRequestInput = document.getElementById('hospitalRequest') as HTMLInputElement;
         const societySelect = document.getElementById('societySelect') as HTMLSelectElement;
 
         const currentUser = userProfile.get();
@@ -211,6 +212,7 @@ import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
                     ...(isNewMember
                         ? {
                               hospitalId: hospitalIdInput?.value || '',
+                              ...(hospitalRequestInput?.value ? { hospitalRequest: hospitalRequestInput.value } : {}),
                               ...(societySelect?.value ? { society: societySelect.value } : {}),
                           }
                         : {}),
