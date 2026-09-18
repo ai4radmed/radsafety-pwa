@@ -31,7 +31,13 @@ export function getLastRoute(): { path: string } | null {
         const raw = localStorage.getItem(KEY);
         if (!raw) return null;
         const data = JSON.parse(raw) as { path?: string };
-        return typeof data?.path === 'string' ? { path: data.path } : null;
+        if (typeof data?.path !== 'string') return null;
+        // 제외 규칙이 추가되기 전에 저장된 값(예: /admin/*)이 남아 있을 수 있어 읽을 때도 거른다.
+        if (isExcluded(data.path)) {
+            localStorage.removeItem(KEY);
+            return null;
+        }
+        return { path: data.path };
     } catch {
         return null;
     }

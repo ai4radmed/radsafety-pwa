@@ -12,7 +12,7 @@
 
 - `astro:actions`의 `signUpWithUsername`(가입 모드) / `signInWithUsername`(로그인 모드) 호출 — 서버가 `<username>@radsafety.invalid` 파생 이메일을 조회/생성해 반환.
 - 반환된 email로 브라우저 `supabase.auth.signInWithPassword({ email, password })` 호출 — 세션 쿠키는 이 호출이 설정한다(서버 액션은 쿠키를 만지지 않음, `.spec/src/actions/index.md` 규칙 8 참조).
-- 성공 시 `../../lib/last-route`의 `getLastRoute()`로 이동 경로 결정(없으면 `/mypage`).
+- 성공 시 이동: **로그인 모드**는 `../../lib/last-route`의 `getLastRoute()`로 경로 결정(없으면 `/mypage`), **가입 모드**는 항상 `/mypage`(2026-09-18) — 새 계정에는 돌아갈 마지막 경로가 없고, 저장돼 있는 값은 같은 브라우저의 이전 계정(관리자 등)이 남긴 것이라 그리로 보내면 안 된다.
 
 ## 핵심 규칙
 
