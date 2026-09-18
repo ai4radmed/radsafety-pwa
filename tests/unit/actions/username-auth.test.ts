@@ -21,6 +21,7 @@ vi.mock('../../../src/lib/supabase-server', () => ({
                 select: (_cols?: string) => ({
                     eq: (_col: string, val: string) => ({
                         maybeSingle: () => mockProfilesSelect(val),
+                        single: () => mockProfilesSelect(val),
                     }),
                 }),
                 // signUpWithUsername 은 upsert(onConflict:'id') 를 쓴다 — 운영 DB의
@@ -55,6 +56,13 @@ vi.mock('../../../src/lib/push', () => ({
     sendPushToUsers: vi.fn(),
 }));
 
+const mockCreateNotification = vi.fn();
+const mockCreateBulkNotifications = vi.fn();
+vi.mock('../../../src/lib/notification-helper', () => ({
+    createNotification: (data: unknown) => mockCreateNotification(data),
+    createBulkNotifications: (ids: unknown, data: unknown) => mockCreateBulkNotifications(ids, data),
+}));
+
 vi.mock('../../../src/config/auth', () => ({
     resolveFeedbackRecipients: vi.fn(),
 }));
@@ -75,6 +83,8 @@ beforeEach(() => {
     mockAdminDeleteUser.mockReset();
     mockAdminGetUserById.mockReset();
     mockAdminUpdateUserById.mockReset();
+    mockCreateNotification.mockReset();
+    mockCreateBulkNotifications.mockReset();
 });
 
 describe('server.signUpWithUsername', () => {
@@ -170,6 +180,55 @@ describe('server.signUpWithUsername', () => {
                 username: 'gildong',
                 password: 'longenough1',
                 hospitalId: 'no-such-hospital',
+            }),
+        ).rejects.toThrow();
+        expect(mockAdminCreateUser).not.toHaveBeenCalled();
+    });
+
+    // 기관 등록 요청(2026-09-19) — 목록에 없는 기관은 hospital_id='other' + hospital_request 로 진행.
+    it('hospitalRequest 만 주면 hospital_id=other + hospital_request 로 가입한다', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+
+        await (server.signUpWithUsername as any)({
+            username: 'gildong',
+            password: 'longenough1',
+            hospitalId: '',
+            hospitalRequest: '  새로운병원 ',
+        });
+
+        expect(mockProfilesUpsert).toHaveBeenCalledWith(
+            expect.objectContaining({ hospital_id: 'other', hospital_request: '새로운병원' }),
+            expect.objectContaining({ onConflict: 'id' }),
+        );
+    });
+
+    it('hospitalId 를 확정했으면 hospitalRequest 는 무시된다(hospital_request=null)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+
+        await (server.signUpWithUsername as any)({
+            username: 'gildong',
+            password: 'longenough1',
+            hospitalId: 'korea-institute-radiological-medical-sciences',
+            hospitalRequest: '한국원자력',
+        });
+
+        expect(mockProfilesUpsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                hospital_id: 'korea-institute-radiological-medical-sciences',
+                hospital_request: null,
+            }),
+            expect.objectContaining({ onConflict: 'id' }),
+        );
+    });
+
+    it('60자 초과 hospitalRequest 는 거부', async () => {
+        await expect(
+            (server.signUpWithUsername as any)({
+                username: 'gildong',
+                password: 'longenough1',
+                hospitalRequest: 'x'.repeat(61),
             }),
         ).rejects.toThrow();
         expect(mockAdminCreateUser).not.toHaveBeenCalled();
@@ -314,6 +373,98 @@ describe('server.claimUsername', () => {
 
         const [updateArg] = mockProfilesUpdate.mock.calls[0];
         expect(updateArg).not.toHaveProperty('hospital_id');
+        expect(updateArg).not.toHaveProperty('hospital_request');
         expect(updateArg).not.toHaveProperty('society');
+    });
+
+    it('hospitalRequest 를 주면(목록에 없는 기관) hospital_id=other + hospital_request 로 갱신', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminUpdateUserById.mockResolvedValue({ error: null });
+
+        await (server.claimUsername as any)({
+            userId: USER_ID,
+            username: 'gildong',
+            hospitalId: '',
+            hospitalRequest: '새로운병원',
+        });
+
+        expect(mockProfilesUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({ hospital_id: 'other', hospital_request: '새로운병원' }),
+        );
+    });
+});
+
+describe('server.resolveHospitalRequest', () => {
+    const ADMIN_ID = '223e4567-e89b-12d3-a456-426614174000';
+
+    it('관리자가 아니면 거부', async () => {
+        mockProfilesSelect.mockResolvedValueOnce({ data: { is_admin: false }, error: null });
+        await expect(
+            (server.resolveHospitalRequest as any)({ adminId: ADMIN_ID, targetUserId: USER_ID }),
+        ).rejects.toThrow('관리자 권한이 필요합니다.');
+        expect(mockProfilesUpdate).not.toHaveBeenCalled();
+    });
+
+    it("'other' 나 목록에 없는 hospitalId 는 거부", async () => {
+        await expect(
+            (server.resolveHospitalRequest as any)({ adminId: ADMIN_ID, targetUserId: USER_ID, hospitalId: 'other' }),
+        ).rejects.toThrow();
+        await expect(
+            (server.resolveHospitalRequest as any)({
+                adminId: ADMIN_ID,
+                targetUserId: USER_ID,
+                hospitalId: 'no-such-hospital',
+            }),
+        ).rejects.toThrow();
+    });
+
+    it('확정 — hospital_id 갱신 + hospital_request 비움 + 가입자 알림', async () => {
+        mockProfilesSelect
+            .mockResolvedValueOnce({ data: { is_admin: true }, error: null })
+            .mockResolvedValueOnce({ data: { hospital_request: '새로운병원' }, error: null });
+
+        const result = await (server.resolveHospitalRequest as any)({
+            adminId: ADMIN_ID,
+            targetUserId: USER_ID,
+            hospitalId: 'korea-institute-radiological-medical-sciences',
+        });
+
+        expect(mockProfilesUpdate).toHaveBeenCalledWith({
+            hospital_request: null,
+            hospital_id: 'korea-institute-radiological-medical-sciences',
+        });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({
+                userId: USER_ID,
+                senderId: ADMIN_ID,
+                type: 'system_notice',
+                message: expect.stringContaining('한국원자력의학원'),
+            }),
+        );
+        expect(result.data).toEqual({ success: true, hospitalId: 'korea-institute-radiological-medical-sciences' });
+    });
+
+    it('거절(hospitalId 없음) — hospital_request 만 비우고 소속은 건드리지 않음 + 알림', async () => {
+        mockProfilesSelect
+            .mockResolvedValueOnce({ data: { is_admin: true }, error: null })
+            .mockResolvedValueOnce({ data: { hospital_request: '새로운병원' }, error: null });
+
+        const result = await (server.resolveHospitalRequest as any)({ adminId: ADMIN_ID, targetUserId: USER_ID });
+
+        expect(mockProfilesUpdate).toHaveBeenCalledWith({ hospital_request: null });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: USER_ID, message: expect.stringContaining('기타') }),
+        );
+        expect(result.data).toEqual({ success: true, hospitalId: null });
+    });
+
+    it('알림 실패는 처리 결과를 바꾸지 않는다', async () => {
+        mockProfilesSelect
+            .mockResolvedValueOnce({ data: { is_admin: true }, error: null })
+            .mockResolvedValueOnce({ data: { hospital_request: '새로운병원' }, error: null });
+        mockCreateNotification.mockRejectedValueOnce(new Error('push down'));
+
+        const result = await (server.resolveHospitalRequest as any)({ adminId: ADMIN_ID, targetUserId: USER_ID });
+        expect(result.data).toEqual({ success: true, hospitalId: null });
     });
 });

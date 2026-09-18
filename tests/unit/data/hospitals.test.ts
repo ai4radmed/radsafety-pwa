@@ -26,4 +26,22 @@ describe('hospitals', () => {
     it("'other'(기타) 항목이 항상 존재", () => {
         expect(HOSPITALS.some((h) => h.id === 'other')).toBe(true);
     });
+
+    it('중복된 name이 없어야 함 (표기만 다른 같은 기관 방지)', () => {
+        const names = HOSPITALS.map((h) => h.name.replace(/\s+/g, ''));
+        expect(names.length).toBe(new Set(names).size);
+    });
+
+    it('시드 시절부터 있던 id는 유지된다 (profiles.hospital_id 참조 보존)', () => {
+        [
+            'korea-institute-radiological-medical-sciences',
+            'dongnam-institute-radiological-medical-sciences',
+            'daegu-catholic-univ-hospital',
+            'sejong-chungnam-univ-hospital',
+            'yongin-severance-hospital',
+            'dong-a-univ-hospital',
+            'eunpyeong-st-marys-hospital',
+            'chonnam-national-univ-hospital',
+        ].forEach((id) => expect(HOSPITALS.some((h) => h.id === id)).toBe(true));
+    });
 });

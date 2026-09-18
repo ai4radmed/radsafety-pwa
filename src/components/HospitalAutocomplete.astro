@@ -14,7 +14,12 @@
         autocomplete="off"
     />
     <input type="hidden" id="hospitalId" name="hospitalId" />
+    <input type="hidden" id="hospitalRequest" name="hospitalRequest" />
     <ul id="hospitalOptions" class="hospital-options" hidden></ul>
+    <p id="hospitalNoMatchHint" class="hospital-hint" hidden>
+        목록에 없는 기관이에요. 이대로 진행하면 소속은 <strong>기타</strong>로 등록되고, 입력하신 기관명이 관리자에게
+        등록 요청으로 전달됩니다(등록되면 알림으로 알려드려요).
+    </p>
 </div>
 
 <style>
@@ -55,6 +60,13 @@
     .hospital-options li:active {
         background: #f3f4f6;
     }
+    .hospital-hint {
+        margin: 0.35rem 0 0;
+        font-size: 0.8rem;
+        line-height: 1.4;
+        color: #9ca3af;
+        text-align: left;
+    }
 </style>
 
 <script>
@@ -62,17 +74,22 @@
 
     const queryInput = document.getElementById('hospitalQuery') as HTMLInputElement;
     const hiddenInput = document.getElementById('hospitalId') as HTMLInputElement;
+    const requestInput = document.getElementById('hospitalRequest') as HTMLInputElement;
     const optionsList = document.getElementById('hospitalOptions') as HTMLUListElement;
+    const noMatchHint = document.getElementById('hospitalNoMatchHint') as HTMLParagraphElement;
 
-    const active = HOSPITALS.filter((h) => !h.retired);
+    // 'other'(기타)는 검색 후보에서 뺀다 — 목록에 없는 기관은 아래 요청 경로로 흡수된다.
+    const active = HOSPITALS.filter((h) => !h.retired && h.id !== 'other');
 
     function renderOptions(query: string) {
         optionsList.innerHTML = '';
         if (!query) {
             optionsList.hidden = true;
+            noMatchHint.hidden = true;
             return;
         }
         const matches = active.filter((h) => h.name.includes(query)).slice(0, 8);
+        noMatchHint.hidden = matches.length !== 0;
         if (matches.length === 0) {
             optionsList.hidden = true;
             return;
@@ -86,7 +103,9 @@
                 e.preventDefault();
                 queryInput.value = h.name;
                 hiddenInput.value = h.id;
+                requestInput.value = '';
                 optionsList.hidden = true;
+                noMatchHint.hidden = true;
             });
             optionsList.appendChild(li);
         });
@@ -95,8 +114,11 @@
 
     queryInput?.addEventListener('input', () => {
         // 직접 타이핑하면 이전에 선택했던 값은 무효 — 목록에서 다시 골라야 확정된다.
+        // 확정하지 않은 타이핑 텍스트는 그대로 "등록 요청"이 된다(2026-09-19).
         hiddenInput.value = '';
-        renderOptions(queryInput.value.trim());
+        const query = queryInput.value.trim();
+        requestInput.value = query;
+        renderOptions(query);
     });
 
     queryInput?.addEventListener('blur', () => {

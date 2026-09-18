@@ -37,6 +37,32 @@ export const prerender = false;
                 </tbody>
             </table>
         </div>
+
+        <div class="section-head">
+            <h2 style="margin:0; font-size:1rem;">기관 등록 요청 (<span id="requestCount">0</span>건)</h2>
+            <p class="section-hint">
+                목록에 없는 기관을 적은 가입자는 소속이 <strong>기타</strong>로 들어옵니다. 중복·적절성을 검토한 뒤
+                <code>src/data/hospitals.ts</code>에 추가·배포하고, 아래에서 그 기관을 골라 <strong>등록</strong>하면
+                가입자의 소속이 바뀌고 알림이 갑니다. 부적절하면 <strong>거절</strong>(소속은 기타 유지).
+            </p>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="requestTable">
+                <thead>
+                    <th>아이디</th>
+                    <th>요청 기관명</th>
+                    <th>회원 상태</th>
+                    <th>가입일</th>
+                    <th>처리</th>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" style="text-align:center;">데이터를 불러오는 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </DashboardLayout>
 
@@ -51,10 +77,33 @@ export const prerender = false;
         none: '없음',
     };
 
+    const STATUS_MAP: Record<string, string> = {
+        pending: '승인 대기',
+        active: '정상',
+        suspended: '정지',
+        banned: '탈퇴처리',
+    };
+
+    function escapeHtml(s: string): string {
+        return s.replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+        );
+    }
+
     function hospitalName(hospitalId: string | null): string {
         if (!hospitalId) return '-';
         return HOSPITALS.find((h) => h.id === hospitalId)?.name || hospitalId;
     }
+
+    // 요청이 걸린 행은 소속기관 칸에 요청 기관명을 같이 보여준다.
+    function hospitalCell(row: { hospital_id: string | null; hospital_request: string | null }): string {
+        const base = hospitalName(row.hospital_id);
+        if (!row.hospital_request) return base;
+        return `${base} <span class="badge-request">🆕 요청: ${escapeHtml(row.hospital_request)}</span>`;
+    }
+
+    const selectableHospitals = HOSPITALS.filter((h) => !h.retired && h.id !== 'other');
 
     document.addEventListener('astro:page-load', () => {
         const currentUser = userProfile.get() as any;
@@ -69,12 +118,19 @@ export const prerender = false;
 
         const tbody = document.querySelector('#pendingTable tbody');
         const countSpan = document.getElementById('pendingCount');
+        const requestBody = document.querySelector('#requestTable tbody');
+        const requestCountSpan = document.getElementById('requestCount');
         const refreshBtn = document.getElementById('refreshBtn') as HTMLButtonElement | null;
 
-        if (!tbody) return;
+        if (!tbody || !requestBody) return;
 
-        refreshBtn?.addEventListener('click', loadPending);
-        loadPending();
+        refreshBtn?.addEventListener('click', loadAll);
+        loadAll();
+
+        function loadAll() {
+            loadPending();
+            loadRequests();
+        }
 
         async function loadPending() {
             if (!tbody) return;
@@ -82,7 +138,7 @@ export const prerender = false;
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('id, username, provider, society, hospital_id, created_at')
+                .select('id, username, provider, society, hospital_id, hospital_request, created_at')
                 .eq('status', 'pending')
                 .order('created_at', { ascending: true });
 
@@ -113,7 +169,7 @@ export const prerender = false;
                     <td>@${row.username || '(미설정)'}</td>
                     <td>${row.provider === 'kakao' ? '카카오' : '아이디'}</td>
                     <td>${SOCIETY_MAP[row.society] || row.society || '-'}</td>
-                    <td>${hospitalName(row.hospital_id)}</td>
+                    <td>${hospitalCell(row)}</td>
                     <td>${row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR') : '-'}</td>
                     <td class="actions-cell">
                         <button class="btn-approve" data-id="${row.id}">승인</button>
@@ -131,6 +187,74 @@ export const prerender = false;
             });
         }
 
+        // 기관 등록 요청은 회원 상태와 무관하게 hospital_request 가 남아 있는 전부 —
+        // 가입 승인이 먼저 끝나 위 표에서 사라져도 요청은 여기 남는다.
+        async function loadRequests() {
+            if (!requestBody) return;
+            requestBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">로딩 중...</td></tr>';
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, username, hospital_id, hospital_request, status, created_at')
+                .not('hospital_request', 'is', null)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error(error);
+                requestBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">로드 실패: ${error.message}</td></tr>`;
+                return;
+            }
+
+            renderRequests(data || []);
+        }
+
+        function renderRequests(rows: any[]) {
+            if (!requestBody || !requestCountSpan) return;
+
+            requestCountSpan.textContent = String(rows.length);
+
+            if (rows.length === 0) {
+                requestBody.innerHTML =
+                    '<tr><td colspan="5" style="text-align:center;">처리할 기관 등록 요청이 없습니다.</td></tr>';
+                return;
+            }
+
+            const options = selectableHospitals
+                .map((h) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`)
+                .join('');
+
+            requestBody.innerHTML = '';
+            rows.forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>@${row.username || '(미설정)'}</td>
+                    <td><strong>${escapeHtml(row.hospital_request)}</strong></td>
+                    <td>${STATUS_MAP[row.status] || row.status || '-'}</td>
+                    <td>${row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR') : '-'}</td>
+                    <td class="actions-cell">
+                        <select class="request-select" data-id="${row.id}">
+                            <option value="">등록할 기관 선택…</option>
+                            ${options}
+                        </select>
+                        <button class="btn-approve btn-resolve" data-id="${row.id}">등록</button>
+                        <button class="btn-reject btn-decline" data-id="${row.id}">거절</button>
+                    </td>
+                `;
+                requestBody.appendChild(tr);
+            });
+
+            requestBody.querySelectorAll('.btn-resolve').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = (btn as HTMLElement).dataset.id!;
+                    const select = requestBody!.querySelector(`.request-select[data-id="${id}"]`) as HTMLSelectElement;
+                    resolveRequest(id, select?.value || '');
+                });
+            });
+            requestBody.querySelectorAll('.btn-decline').forEach((btn) => {
+                btn.addEventListener('click', () => declineRequest((btn as HTMLElement).dataset.id!));
+            });
+        }
+
         async function approve(targetUserId: string) {
             if (!confirm('이 회원의 가입을 승인하시겠습니까?')) return;
             try {
@@ -140,7 +264,7 @@ export const prerender = false;
                     targetUserId,
                 });
                 if (result.error) throw new Error(result.error.message);
-                loadPending();
+                loadAll();
             } catch (err) {
                 alert('❌ 승인 처리 중 오류: ' + (err as Error).message);
             }
@@ -155,9 +279,48 @@ export const prerender = false;
                     targetUserId,
                 });
                 if (result.error) throw new Error(result.error.message);
-                loadPending();
+                loadAll();
             } catch (err) {
                 alert('❌ 거절 처리 중 오류: ' + (err as Error).message);
+            }
+        }
+
+        async function resolveRequest(targetUserId: string, hospitalId: string) {
+            if (!hospitalId) {
+                alert(
+                    '등록할 기관을 먼저 선택하세요. 목록에 없으면 src/data/hospitals.ts 에 추가·배포한 뒤 다시 시도합니다.',
+                );
+                return;
+            }
+            const name = hospitalName(hospitalId);
+            if (!confirm(`이 회원의 소속기관을 「${name}」(으)로 등록하시겠습니까? 회원에게 알림이 갑니다.`)) return;
+            try {
+                const { actions } = await import('astro:actions');
+                const result = await actions.resolveHospitalRequest({
+                    adminId: currentUser.id,
+                    targetUserId,
+                    hospitalId,
+                });
+                if (result.error) throw new Error(result.error.message);
+                loadAll();
+            } catch (err) {
+                alert('❌ 기관 등록 처리 중 오류: ' + (err as Error).message);
+            }
+        }
+
+        async function declineRequest(targetUserId: string) {
+            if (!confirm('이 기관 등록 요청을 거절하시겠습니까? 회원의 소속은 「기타」로 유지되고 알림이 갑니다.'))
+                return;
+            try {
+                const { actions } = await import('astro:actions');
+                const result = await actions.resolveHospitalRequest({
+                    adminId: currentUser.id,
+                    targetUserId,
+                });
+                if (result.error) throw new Error(result.error.message);
+                loadAll();
+            } catch (err) {
+                alert('❌ 요청 거절 처리 중 오류: ' + (err as Error).message);
             }
         }
     });
@@ -183,6 +346,18 @@ export const prerender = false;
     }
     .subtitle {
         color: var(--text-muted);
+    }
+    .section-head {
+        margin: 2rem 0 1rem;
+    }
+    .section-hint {
+        margin: 0.4rem 0 0;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+    .section-hint code {
+        font-size: 0.8rem;
     }
 
     .btn-secondary {
@@ -221,6 +396,8 @@ export const prerender = false;
     .actions-cell {
         display: flex;
         gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
     }
     .btn-approve,
     .btn-reject {
@@ -238,5 +415,21 @@ export const prerender = false;
     .btn-reject {
         background: #ef4444;
         color: white;
+    }
+    :global(.badge-request) {
+        display: inline-block;
+        margin-left: 0.4rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.18);
+        color: #f59e0b;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    :global(.request-select) {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.85rem;
+        max-width: 16rem;
     }
 </style>

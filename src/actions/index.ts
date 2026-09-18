@@ -5,6 +5,7 @@ import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
 import { resolveFeedbackRecipients } from '../config/auth';
 import { createLogger } from '../lib/logger';
 import { sendPushToUsers } from '../lib/push';
+import { createNotification, createBulkNotifications } from '../lib/notification-helper';
 import { HOSPITALS } from '../data/hospitals';
 
 const logger = createLogger('actions');
@@ -47,6 +48,39 @@ const hospitalIdSchema = z
     .optional();
 
 const societySchema = z.enum(['nuclear_medicine', 'technology', 'none']).optional();
+
+// 목록에 없는 기관(2026-09-19, Dr. Ben) — 가입자는 타이핑한 기관명 그대로 두고 그냥 진행한다:
+// hospital_id 는 'other', 입력값은 hospital_request 에 남겨 관리자 검토 대상으로.
+// 관리자가 hospitals.ts 에 추가·배포한 뒤 resolveHospitalRequest 로 실제 id 를 채운다.
+const hospitalRequestSchema = z.string().trim().max(60, '기관명은 60자 이내로 입력하세요.').optional();
+
+function resolveHospitalFields(hospitalId: string | null | undefined, hospitalRequest: string | undefined) {
+    const request = hospitalId ? null : hospitalRequest || null;
+    return {
+        hospital_id: hospitalId ?? (request ? 'other' : null),
+        hospital_request: request,
+    };
+}
+
+// 알림 실패가 가입을 막으면 안 되므로 여기서 삼킨다(경고 로그만).
+async function notifyAdminsOfHospitalRequest(username: string, request: string) {
+    if (!supabaseAdmin) return;
+    try {
+        const { data: admins } = await supabaseAdmin.from('profiles').select('id').eq('is_admin', true);
+        const ids = (admins ?? []).map((a: { id: string }) => a.id);
+        if (ids.length === 0) return;
+        await createBulkNotifications(ids, {
+            type: 'system_notice',
+            title: '🏥 회원기관 등록 요청',
+            message: `@${username} 님이 목록에 없는 기관 "${request}"의 등록을 요청했습니다. 중복·적절성을 검토해 주세요.`,
+            link: '/admin/member-approval',
+            actionLabel: '검토하기',
+            actionUrl: '/admin/member-approval',
+        });
+    } catch (error) {
+        logger.warn('기관 등록 요청 관리자 알림 실패(가입은 정상 처리)', { error });
+    }
+}
 
 export const server = {
     saveFinding: defineAction({
@@ -557,9 +591,10 @@ export const server = {
             username: usernameSchema,
             password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
             hospitalId: hospitalIdSchema,
+            hospitalRequest: hospitalRequestSchema,
             society: societySchema,
         }),
-        handler: async ({ username, password, hospitalId, society }) => {
+        handler: async ({ username, password, hospitalId, hospitalRequest, society }) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
 
             const { data: existing, error: lookupError } = await supabaseAdmin
@@ -570,6 +605,7 @@ export const server = {
             if (lookupError) throw new Error(lookupError.message);
             if (existing) throw new Error('이미 사용 중인 아이디입니다.');
 
+            const hospitalFields = resolveHospitalFields(hospitalId, hospitalRequest);
             const email = fakeEmailFor(username);
             const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
                 email,
@@ -596,7 +632,7 @@ export const server = {
                     // Phase 2 — 신규 계정은 관리자 승인 전까지 대기. 소속기관·소속학회는
                     // 자기 신고, 선택 항목(둘 다 비워도 가입 자체는 된다).
                     status: 'pending',
-                    hospital_id: hospitalId ?? null,
+                    ...hospitalFields,
                     society: society ?? null,
                 },
                 { onConflict: 'id' },
@@ -606,6 +642,10 @@ export const server = {
                 await supabaseAdmin.auth.admin.deleteUser(created.user.id);
                 logger.error('username 회원가입: profiles upsert 실패, auth 계정 롤백', { error: profileError });
                 throw new Error(profileError.message);
+            }
+
+            if (hospitalFields.hospital_request) {
+                await notifyAdminsOfHospitalRequest(username, hospitalFields.hospital_request);
             }
 
             return { success: true, email };
@@ -652,9 +692,10 @@ export const server = {
             username: usernameSchema,
             password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.').optional(),
             hospitalId: hospitalIdSchema,
+            hospitalRequest: hospitalRequestSchema,
             society: societySchema,
         }),
-        handler: async ({ userId, username, password, hospitalId, society }) => {
+        handler: async ({ userId, username, password, hospitalId, hospitalRequest, society }) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
 
             const { data: existing, error: lookupError } = await supabaseAdmin
@@ -676,17 +717,23 @@ export const server = {
             // hospitalId/society 는 신규(self-healing 으로 막 생긴 pending) 계정을 위한
             // 필드라 클라이언트가 값을 안 보내면(기존 active 계정의 평범한 전환) 건드리지
             // 않는다 — 스프레드로 undefined 인 키 자체를 아예 안 넣는다.
+            const hospitalFieldsSent = hospitalId !== undefined || hospitalRequest !== undefined;
+            const hospitalFields = hospitalFieldsSent ? resolveHospitalFields(hospitalId, hospitalRequest) : null;
             const { error: profileError } = await supabaseAdmin
                 .from('profiles')
                 .update({
                     username,
                     login_email: null,
                     nickname: null,
-                    ...(hospitalId !== undefined ? { hospital_id: hospitalId } : {}),
+                    ...(hospitalFields ?? {}),
                     ...(society !== undefined ? { society } : {}),
                 })
                 .eq('id', userId);
             if (profileError) throw new Error(profileError.message);
+
+            if (hospitalFields?.hospital_request) {
+                await notifyAdminsOfHospitalRequest(username, hospitalFields.hospital_request);
+            }
 
             return { success: true, email };
         },
@@ -746,6 +793,66 @@ export const server = {
             if (updateError) throw new Error(updateError.message);
 
             return { success: true };
+        },
+    }),
+
+    // 기관 등록 요청 처리(2026-09-19, Dr. Ben). hospitalId 를 주면 그 기관으로 확정(관리자가
+    // hospitals.ts 에 추가·배포한 뒤 고른 값), 안 주면 거절 — 소속은 '기타' 유지. 어느 쪽이든
+    // hospital_request 를 비워 검토 목록에서 내리고 가입자에게 결과 알림 1건.
+    resolveHospitalRequest: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+            hospitalId: z
+                .string()
+                .refine((v) => v !== 'other' && HOSPITALS.some((h) => h.id === v), {
+                    message: '알 수 없는 소속기관입니다.',
+                })
+                .optional(),
+        }),
+        handler: async ({ adminId, targetUserId, hospitalId }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+
+            const { data: adminProfile, error: adminError } = await supabaseAdmin
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', adminId)
+                .single();
+            if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
+
+            const { data: target, error: targetError } = await supabaseAdmin
+                .from('profiles')
+                .select('hospital_request')
+                .eq('id', targetUserId)
+                .single();
+            if (targetError || !target) throw new Error('대상 회원을 찾을 수 없습니다.');
+            const requested = (target.hospital_request as string | null) ?? '';
+
+            const { error: updateError } = await supabaseAdmin
+                .from('profiles')
+                .update({ hospital_request: null, ...(hospitalId ? { hospital_id: hospitalId } : {}) })
+                .eq('id', targetUserId);
+            if (updateError) throw new Error(updateError.message);
+
+            const hospitalName = hospitalId ? (HOSPITALS.find((h) => h.id === hospitalId)?.name ?? hospitalId) : null;
+            try {
+                await createNotification({
+                    type: 'system_notice',
+                    userId: targetUserId,
+                    senderId: adminId,
+                    title: hospitalId ? '🏥 소속기관이 등록되었습니다' : '🏥 기관 등록 요청 결과',
+                    message: hospitalId
+                        ? `요청하신 "${requested}"이(가) 회원기관 목록에 등록되어 소속기관이 「${hospitalName}」(으)로 설정되었습니다.`
+                        : `요청하신 "${requested}"은(는) 회원기관 목록에 등록되지 않았습니다. 소속기관은 '기타'로 유지됩니다.`,
+                    link: '/mypage',
+                    actionLabel: '마이페이지',
+                    actionUrl: '/mypage',
+                });
+            } catch (error) {
+                logger.warn('기관 등록 요청 처리 알림 실패(처리는 완료)', { error });
+            }
+
+            return { success: true, hospitalId: hospitalId ?? null };
         },
     }),
 };
