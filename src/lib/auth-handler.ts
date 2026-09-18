@@ -104,15 +104,16 @@ async function updateUserStore(session: any) {
  * 프로필 누락 시 자동 생성 (자가 치유)
  */
 async function performSelfHealing(userId: string, baseUser: any) {
-    // Stage B — 카카오 신규가입은 nickname·login_email 을 애초에 안 남긴다
-    // (privacy_redesign_plan.md 카카오 로그인 흐름: "콜백에서 nickname/email 복사만 제거").
-    // 이메일 OTP 사용자는 login_email 이 지금 유일한 로그인 식별자라 그대로 둔다
-    // (전환 전까지는 그대로 작동해야 하므로 — 마이그레이션 단계 B "기존 로그인: 그대로 작동").
+    // Stage C — 이메일 OTP 로그인이 사라져 login_email 을 살려둘 로그인 경로가
+    // 더 이상 없다(privacy_redesign_plan.md 1단계 C). 신규 계정은 provider 와
+    // 무관하게 항상 nickname·login_email 을 비운다. provider 자체는 계속 기록한다 —
+    // 관리자가 다른 사용자의 로그인 방식을 보는 유일한 영속 경로
+    // (profiles.provider, sql_query/migrate_add_profile_provider.sql).
     const isKakao = baseUser.provider === 'kakao';
     const newProfile = {
         id: userId,
-        login_email: isKakao ? null : baseUser.login_email,
-        nickname: isKakao ? null : baseUser.nickname,
+        login_email: null,
+        nickname: null,
         provider: isKakao ? 'kakao' : 'email',
         created_at: new Date().toISOString(),
         is_admin: false,

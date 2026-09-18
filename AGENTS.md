@@ -90,9 +90,9 @@ npm run check:monthly              # 월간 수동 점검 위저드(사람 동�
     - **원할 때 재실행**: `gh workflow run health.yml` (또는 Actions 탭 "Run workflow"). 정시 실행과 **동일한 경로**로 돌고 보고도 동일하게 발송된다.
     - **시각 변경**: `health.yml` 의 cron 한 줄 수정(GitHub 은 cron 에 변수를 못 씀). `UTC = KST − 9h`. **크론은 기본 브랜치(main)에서만 발화** → main 머지 후 적용.
     - GitHub cron 은 **정시를 보장하지 않음** — 06:30~06:50 도착은 정상. 분 단위 정밀도가 필요하면 Vercel Cron 으로 옮겨야 하나, 그러면 앱이 자기 자신을 감시하게 되어 앱 사망 시 보고도 침묵한다.
-- **월간 수동 점검 위저드** `npm run check:monthly` — 아침 헬스체크(부작용 0)가 원리적으로 못 덮는 **실발송·실수신 경로**(OTP 메일, 카카오 OAuth, 푸시 실수신, 파일 실다운로드, Resend 실발송)를 사람 동석 반자동으로 점검. 명세: `.spec/tests/e2e/monthly-check.spec.md`.
-    - 사람 개입은 3회(코드 입력·카카오 클릭·휴대폰 확인)뿐, 판정은 자동. 부작용은 전부 **실행자 본인 계정 한정**(`[월간점검]` 접두어) → 반복 실행 안전. **CI·cron 에 올리지 말 것**(사람 필요 + 자격증명 비저장 원칙).
-    - `MONTHLY_EMAIL=me@example.com npm run check:monthly` 로 이메일 입력까지 자동화 가능.
+- **월간 수동 점검 위저드** `npm run check:monthly` — 아침 헬스체크(부작용 0)가 원리적으로 못 덮는 **실발송·실수신 경로**(카카오 OAuth, 푸시 실수신, 파일 실다운로드, Resend 실발송)를 사람 동석 반자동으로 점검. 명세: `.spec/tests/e2e/monthly-check.spec.md`.
+    - 사람 개입은 2회(카카오 클릭·휴대폰 확인)뿐, 판정은 자동(Stage C, 2026-09-18 — 이메일 OTP 로그인 제거로 코드 입력 1회가 사라짐). 부작용은 전부 **실행자 본인 계정 한정**(`[월간점검]` 접두어) → 반복 실행 안전. **CI·cron 에 올리지 말 것**(사람 필요 + 자격증명 비저장 원칙).
+    - `MONTHLY_USERNAME=me MONTHLY_PASSWORD=... npm run check:monthly` 로 로그인까지 자동화 가능 — 운영 DB에 미리 만들어둔 아이디/비밀번호 전용 계정 필요(`DEV_TEST_*` 재사용 금지, 프리뷰·로컬 전용).
     - 테스트 의견 메일은 관리자 전원이 아닌 **개발자에게만** 간다 — `[월간점검]` 접두어 + 관리자 발신이면 `resolveFeedbackRecipients` 가 Vercel env `DEVELOPER_EMAILS`(서버 전용, 쉼표 구분)로 라우팅. 미설정 시 종전대로 관리자 전원.
     - **리마인더** `.github/workflows/monthly-reminder.yml` — 매월 1일 09:00 KST 텔레그램 한 통(점검 실행은 로컬에서). 수동 발화: `gh workflow run monthly-reminder.yml`. on/off: `gh variable set MONTHLY_REMINDER --body off`.
 - **`supabase-keepalive.yml`**(월·목 핑)은 free-tier pause 방지용 — **끄지 말 것.**
@@ -115,7 +115,7 @@ npm run check:monthly              # 월간 수동 점검 위저드(사람 동�
 - **DB 관리**: 스키마 변경은 `sql_query/rebuild_all_tables.sql`에 통합 (멱등성 보장).
 - **로깅**: JSON 구조화 로그, 민감 정보 노출 금지, `PUBLIC_LOG_LEVEL`로 제어.
 - **Slug**: `documents/resource_slugs.md`에 등록 후 사용, 한 번 설정된 Slug는 변경 금지.
-- **PWA 및 인증**: 주요 페이지는 캐시를 통한 읽기 전용 오프라인 지원. iOS PWA(Safari 샌드박스)의 세션 단절 한계를 피하기 위해 **인증 시 화면 전환(Redirect)이 발생하는 매직링크 URL 클릭이나 OAuth Redirect를 지양하고, 6자리 숫자(OTP) 입력 등 PWA 내부에서 세션을 유지하는 방식을 우선 구현**합니다.
+- **PWA 및 인증**: 주요 페이지는 캐시를 통한 읽기 전용 오프라인 지원. iOS PWA(Safari 샌드박스)의 세션 단절 한계를 피하기 위해 **인증 시 화면 전환(Redirect)이 발생하는 매직링크 URL 클릭이나 OAuth Redirect를 지양하고, 아이디/비밀번호 폼 제출 등 PWA 내부에서 세션을 유지하는 방식을 우선 구현**합니다(이메일 6자리 OTP가 이 역할을 하던 시절도 있었으나 Stage C, 2026-09-18로 제거 — `documents/privacy_redesign_plan.md` 1단계).
 
 ---
 

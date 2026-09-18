@@ -23,18 +23,18 @@ test.describe('공개 페이지 렌더링 (비로그인)', () => {
         await expect(links.first()).toBeVisible();
     });
 
-    test('로그인 페이지(/login) — 카카오 버튼 및 이메일 OTP 폼 존재', async ({ page }) => {
+    test('로그인 페이지(/login) — 카카오 버튼 및 아이디/비밀번호 폼 존재', async ({ page }) => {
         await page.goto('/login');
         // 카카오 로그인 버튼
         const kakaoBtn = page.locator('a[href*="kakao"], button:has-text("카카오")');
         await expect(kakaoBtn.first()).toBeVisible();
-        // 이메일 OTP 1단계 폼 (이메일 입력 → 인증 코드 받기)
-        await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
-        await expect(page.locator('#emailOtpEmail')).toBeVisible();
-        await expect(page.locator('#emailOtpRequestBtn')).toBeVisible();
-        // 2단계(6자리 코드 입력)는 요청 전에는 숨겨져야 함 — author CSS 가 [hidden] 을
-        // 무력화해 항상 노출되던 회귀 방지 (EmailOtpForm 명세 핵심 규칙 4)
-        await expect(page.locator('#otpStep')).toBeHidden();
+        // 아이디/비밀번호 폼 (UsernamePasswordForm, Stage 1-A)
+        await expect(page.locator('#usernameAuthForm')).toBeVisible();
+        await expect(page.locator('#usernameInput')).toBeVisible();
+        await expect(page.locator('#usernameAuthSubmitBtn')).toBeVisible();
+        // 회원가입 전용 필드(소속기관·소속학회)는 로그인 탭에서는 숨겨져야 함 — author CSS 가
+        // [hidden] 을 무력화해 항상 노출되던 회귀 방지 (UsernamePasswordForm 명세 참조)
+        await expect(page.locator('#signupOnlyFields')).toBeHidden();
     });
 
     test('/guide — 비로그인 시 /login 리다이렉트 (설계 동작)', async ({ page }) => {
@@ -61,17 +61,19 @@ test.describe('로그인 페이지 UI 상세', () => {
         await page.goto('/login');
     });
 
-    test('이메일 입력 → 버튼 클릭 가능 상태', async ({ page }) => {
-        const input = page.locator('#emailOtpEmail');
-        const button = page.locator('#emailOtpRequestBtn');
-        await expect(input).toBeEnabled();
+    test('아이디·비밀번호 입력란 → 클릭 가능 상태', async ({ page }) => {
+        const usernameInput = page.locator('#usernameInput');
+        const passwordInput = page.locator('#passwordInput');
+        const button = page.locator('#usernameAuthSubmitBtn');
+        await expect(usernameInput).toBeEnabled();
+        await expect(passwordInput).toBeEnabled();
         await expect(button).toBeEnabled();
     });
 
-    test('이메일 미입력 → 폼 제출 차단 (HTML validation)', async ({ page }) => {
-        const button = page.locator('#emailOtpRequestBtn');
+    test('아이디·비밀번호 미입력 → 폼 제출 차단 (HTML validation)', async ({ page }) => {
+        const button = page.locator('#usernameAuthSubmitBtn');
         await button.click();
-        // 이메일 미입력 시 브라우저 validation으로 제출 안 됨 → URL 유지
+        // 미입력 시 브라우저 validation으로 제출 안 됨 → URL 유지
         await page.waitForTimeout(300);
         expect(page.url()).toContain('/login');
     });
@@ -132,9 +134,9 @@ test.describe('개발자 모드 패널 (PUBLIC_DEV_MODE)', () => {
         await page.goto('/login');
         await page.waitForLoadState('networkidle');
 
-        // 일반 로그인 UI(이메일 OTP 1단계)는 항상 존재해야 함
-        await expect(page.locator('#emailOtpRequestForm')).toBeVisible();
-        await expect(page.locator('#emailOtpEmail')).toBeVisible();
+        // 일반 로그인 UI(아이디/비밀번호)는 항상 존재해야 함
+        await expect(page.locator('#usernameAuthForm')).toBeVisible();
+        await expect(page.locator('#usernameInput')).toBeVisible();
 
         // 개발자 모드 패널 유무와 무관하게 카카오 버튼도 존재
         const kakaoBtn = page.locator('a[href*="kakao"], button:has-text("카카오")');

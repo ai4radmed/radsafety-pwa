@@ -2,7 +2,7 @@
 
 ## 역할 요약
 
-아이디/비밀번호 회원가입·로그인 폼. `login.astro`에 카카오·이메일 OTP와 병존한다(Stage 1-A, `documents/privacy_redesign_plan.md` 1단계 — 마이그레이션 단계 A: "더하기").
+아이디/비밀번호 회원가입·로그인 폼. `login.astro`에 카카오와 병존한다. 도입 당시(Stage 1-A)는 이메일 OTP와도 병존했으나, OTP는 Stage C(2026-09-18)로 제거돼 지금은 카카오 외 유일한 로그인 경로다(`documents/privacy_redesign_plan.md` 1단계).
 
 ## Props
 
@@ -12,7 +12,7 @@
 
 - `astro:actions`의 `signUpWithUsername`(가입 모드) / `signInWithUsername`(로그인 모드) 호출 — 서버가 `<username>@radsafety.invalid` 파생 이메일을 조회/생성해 반환.
 - 반환된 email로 브라우저 `supabase.auth.signInWithPassword({ email, password })` 호출 — 세션 쿠키는 이 호출이 설정한다(서버 액션은 쿠키를 만지지 않음, `.spec/src/actions/index.md` 규칙 8 참조).
-- 성공 시 `../../lib/last-route`의 `getLastRoute()`로 이동 경로 결정(없으면 `/mypage`) — `EmailOtpForm.astro`와 동일 관례.
+- 성공 시 `../../lib/last-route`의 `getLastRoute()`로 이동 경로 결정(없으면 `/mypage`).
 
 ## 핵심 규칙
 
@@ -28,4 +28,3 @@
 ## 관련 자산
 
 - 서버 액션: `src/actions/index.ts` (`signUpWithUsername`, `signInWithUsername`) — `.spec/src/actions/index.md`
-- 스타일·구조 참조 패턴: `src/components/auth/EmailOtpForm.astro` (2단계 폼 전환 대신, 이 컴포넌트는 탭 전환 방식)

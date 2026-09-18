@@ -10,7 +10,7 @@ Stage 1-A(username/password 로그인, `documents/privacy_redesign_plan.md` 1단
 
 ## 사이드 이펙트
 
-- `public.profiles`에 `username text` 컬럼 추가(전환 기간 중 `NULL` 허용 — Stage C에서 `NOT NULL`로 조일 예정, 해당 마이그레이션은 아직 미작성).
+- `public.profiles`에 `username text` 컬럼 추가(전환 기간 중 `NULL` 허용 — Stage C `migrate_finalize_username.sql`(2026-09-18 작성, `.spec/sql_query/migrate_finalize_username.md`)이 `NOT NULL`로 조인다, Dr. Ben 수동 실행 대기).
 - `profiles_username_key` UNIQUE 제약 추가.
 - `profiles_username_format_check` CHECK 제약 추가 — `username IS NULL OR username ~ '^[a-z0-9_-]{3,20}$'`.
 - 기존 행에는 영향 없음(`username`은 전부 `NULL`로 시작).

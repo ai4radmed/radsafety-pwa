@@ -22,4 +22,4 @@ Vitest (단위, 파일 소스 읽기 기반 — Supabase/astro:content 모킹 �
 
 ## 기존 테스트 참조
 
-- tests/unit/components/auth/EmailOtpForm.test.ts (파일·소스 검증 패턴)
+- tests/unit/pages/prerender-check.test.ts (파일·소스 검증 패턴)
