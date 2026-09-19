@@ -37,6 +37,15 @@ test.describe('공개 페이지 렌더링 (비로그인)', () => {
         await expect(page.locator('#signupOnlyFields')).toBeHidden();
     });
 
+    test('/privacy — 개인정보처리방침이 비로그인에도 열리고 로그인 페이지에서 링크된다', async ({ page }) => {
+        await page.goto('/privacy');
+        await page.waitForLoadState('networkidle');
+        expect(page.url()).toContain('/privacy');
+        await expect(page.locator('h1')).toHaveText('개인정보처리방침');
+        await page.goto('/login');
+        await expect(page.locator('a[href="/privacy"]').first()).toBeVisible();
+    });
+
     test('/guide — 비로그인도 열린다 (공개 계층)', async ({ page }) => {
         await page.goto('/guide');
         await page.waitForLoadState('networkidle');

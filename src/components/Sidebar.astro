@@ -248,6 +248,7 @@ const { pathname } = Astro.url;
 
     <div class="sidebar-footer">
         <span class="version">RadSafety v{APP_VERSION} · {APP_RELEASE_DATE}</span>
+        <a href="/privacy" class="footer-link link-text" aria-label="Privacy Policy">개인정보처리방침</a>
     </div>
 </aside>
 
@@ -413,6 +414,13 @@ const { pathname } = Astro.url;
     }
 
     /* Link Text Label */
+    .footer-link {
+        display: block;
+        font-size: 0.7rem;
+        color: #6b7280;
+        text-decoration: underline;
+        margin-top: 0.25rem;
+    }
     .link-text {
         opacity: 0;
         transition: opacity 0.2s;

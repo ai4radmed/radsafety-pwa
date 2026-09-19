@@ -145,6 +145,7 @@ function handleRedirect(path: string, isLoggedIn: boolean) {
         '/guide',
         '/settings',
         '/offline',
+        '/privacy',
     ];
     const isPublic = publicPaths.some((p) => path === p || (p !== '/' && path.startsWith(p)));
 
