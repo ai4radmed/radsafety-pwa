@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  * 수동 체크리스트 3-1, 3-2 항목을 자동화합니다.
  *
  * 참고:
- * publicPaths = ['/', '/login'] — 나머지 페이지는 로그인 필요 (비로그인 시 /login 리다이렉트)
+ * 2계층(공개/회원, 2026-09-19): 홈·수검준비·지적권고사례(목록)·자료실(다운로드)·이용안내·설정은 비로그인도 접근.
  */
 
 test.describe('공개 페이지 렌더링 (비로그인)', () => {
@@ -37,22 +37,43 @@ test.describe('공개 페이지 렌더링 (비로그인)', () => {
         await expect(page.locator('#signupOnlyFields')).toBeHidden();
     });
 
-    test('/guide — 비로그인 시 /login 리다이렉트 (설계 동작)', async ({ page }) => {
+    test('/guide — 비로그인도 열린다 (공개 계층)', async ({ page }) => {
         await page.goto('/guide');
-        await page.waitForURL('**/login', { timeout: 5000 });
-        expect(page.url()).toContain('/login');
+        await page.waitForLoadState('networkidle');
+        expect(page.url()).toContain('/guide');
     });
 
-    test('/inspection-prep — 비로그인 시 /login 리다이렉트 (설계 동작)', async ({ page }) => {
+    test('/inspection-prep — 비로그인도 열린다 (공개 계층)', async ({ page }) => {
         await page.goto('/inspection-prep');
-        await page.waitForURL('**/login', { timeout: 5000 });
-        expect(page.url()).toContain('/login');
+        await page.waitForLoadState('networkidle');
+        expect(page.url()).toContain('/inspection-prep');
     });
 
-    test('/resources — 비로그인 시 /login 리다이렉트 (설계 동작)', async ({ page }) => {
+    test('/resources — 비로그인도 목록이 열리고 업로드 버튼은 없다', async ({ page }) => {
         await page.goto('/resources');
-        await page.waitForURL('**/login', { timeout: 5000 });
-        expect(page.url()).toContain('/login');
+        await page.waitForLoadState('networkidle');
+        expect(page.url()).toContain('/resources');
+        await expect(page.locator('#openModalBtn')).toBeHidden();
+    });
+
+    test('/findings-recommendations — 비로그인은 목록만: 카드 클릭 시 회원 전용 안내(confirm) 후 상세는 열리지 않는다', async ({
+        page,
+    }) => {
+        await page.goto('/findings-recommendations');
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('#registerBtn')).toBeHidden();
+        const card = page.locator('.finding-item').first();
+        if ((await card.count()) === 0) test.skip(true, '정적 사례 없음');
+        let dialogText = '';
+        page.once('dialog', async (d) => {
+            dialogText = d.message();
+            await d.dismiss();
+        });
+        await card.click();
+        expect(dialogText).toContain('회원 전용');
+        await expect(page.locator('#detailModal')).not.toHaveClass(/open/);
+        // 비가입자에게는 사용자 메뉴가 없다
+        await expect(page.locator('#userNavGroup a[href="/mypage"]')).toBeHidden();
     });
 });
 

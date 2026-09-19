@@ -52,24 +52,24 @@ test.describe('/offline 페이지', () => {
         await expect(retryBtn).toContainText('다시 시도');
     });
 
-    test('/offline 페이지 — 수검준비 링크 클릭 시 인증 필요로 /login 리다이렉트', async ({ page }) => {
+    test('/offline 페이지 — 수검준비 링크 클릭 시 공개 페이지로 이동 (2계층, 비로그인도 열림)', async ({ page }) => {
         await page.goto('/offline');
         await page.waitForLoadState('networkidle');
 
         await page.locator('a[href="/inspection-prep"]').click();
-        // 인증이 필요한 페이지이므로 /login으로 리다이렉트됨
-        await page.waitForURL('**/login');
-        await expect(page).toHaveURL(/\/login/);
+        await page.waitForURL('**/inspection-prep**');
+        await expect(page).toHaveURL(/\/inspection-prep/);
     });
 
-    test('/offline 페이지 — 지적권고사례 링크 클릭 시 인증 필요로 /login 리다이렉트', async ({ page }) => {
+    test('/offline 페이지 — 지적권고사례 링크 클릭 시 공개 페이지로 이동 (목록은 비로그인도 열림)', async ({
+        page,
+    }) => {
         await page.goto('/offline');
         await page.waitForLoadState('networkidle');
 
         await page.locator('a[href="/findings-recommendations"]').click();
-        // 인증이 필요한 페이지이므로 /login으로 리다이렉트됨
-        await page.waitForURL('**/login');
-        await expect(page).toHaveURL(/\/login/);
+        await page.waitForURL('**/findings-recommendations**');
+        await expect(page).toHaveURL(/\/findings-recommendations/);
     });
 });
 

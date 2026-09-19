@@ -12,7 +12,7 @@ const navItems = [
         icon: 'alert-circle' as const,
     },
     { name: '자료실', path: '/resources', icon: 'folder' as const },
-    { name: '의견보내기', path: '/feedback', icon: 'mail' as const },
+    { name: '의견보내기', path: '/feedback', icon: 'mail' as const, memberOnly: true },
 ];
 
 const isActive = (path: string) => {
@@ -24,7 +24,11 @@ const isActive = (path: string) => {
 <nav class="mobile-bottom-nav">
     {
         navItems.map((item) => (
-            <a href={item.path} class={`nav-item ${isActive(item.path) ? 'active' : ''}`}>
+            <a
+                href={item.path}
+                class={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                data-member-only={item.memberOnly ? '' : undefined}
+            >
                 <div class="icon-container">
                     <Icon name={item.icon} size="24" />
                 </div>

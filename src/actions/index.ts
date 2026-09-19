@@ -707,9 +707,11 @@ export const server = {
                 .single();
             if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
 
+            // 가입 승인 = 게시 권한(Dr. Ben 2026-09-19): 관리자가 이미 사람을 검토했으므로 첫 제출을 또 검토하지
+            // 않는다. can_publish 는 이후 제재(회수) 도구로만 쓰인다.
             const { error: updateError } = await supabaseAdmin
                 .from('profiles')
-                .update({ status: 'active' })
+                .update({ status: 'active', can_publish: true })
                 .eq('id', targetUserId);
             if (updateError) throw new Error(updateError.message);
 

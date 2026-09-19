@@ -50,19 +50,19 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 지적 및 권고 사례 데이터를 저장합니다.
 
-| 필드명             | 타입        | 설명                                                                                                                |
-| :----------------- | :---------- | :------------------------------------------------------------------------------------------------------------------ |
-| `id`               | `uuid` (PK) | 고유 식별자                                                                                                         |
-| `title`            | `text`      | 사례 제목                                                                                                           |
-| `finding_type`     | `text`      | 구분 (`지적`, `권고`)                                                                                               |
-| `tags`             | `text[]`    | 태그/카테고리 배열                                                                                                  |
-| `year`             | `text`      | 수검 년도                                                                                                           |
-| `description`      | `text`      | 상세 내용                                                                                                           |
-| `violation_clause` | `text`      | 관련 법령 조항                                                                                                      |
-| `solution`         | `text`      | 조치 방안                                                                                                           |
-| `created_at`       | `timestamp` | 생성 일시                                                                                                           |
-| `user_id`          | `uuid`      | 작성자 ID (`auth.users.id` 참조, `ON DELETE SET NULL`로 탈퇴 시에도 데이터 보존)                                    |
-| `status`           | `text`      | `pending`/`published`/`rejected`(2-1). 트리거 `findings_enforce_status`가 정함. pending은 작성자·관리자만 조회(RLS) |
+| 필드명             | 타입        | 설명                                                                                                                                                                                                                                                                                |
+| :----------------- | :---------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | `uuid` (PK) | 고유 식별자                                                                                                                                                                                                                                                                         |
+| `title`            | `text`      | 사례 제목                                                                                                                                                                                                                                                                           |
+| `finding_type`     | `text`      | 구분 (`지적`, `권고`)                                                                                                                                                                                                                                                               |
+| `tags`             | `text[]`    | 태그/카테고리 배열                                                                                                                                                                                                                                                                  |
+| `year`             | `text`      | 수검 년도                                                                                                                                                                                                                                                                           |
+| `description`      | `text`      | 상세 내용                                                                                                                                                                                                                                                                           |
+| `violation_clause` | `text`      | 관련 법령 조항                                                                                                                                                                                                                                                                      |
+| `solution`         | `text`      | 조치 방안                                                                                                                                                                                                                                                                           |
+| `created_at`       | `timestamp` | 생성 일시                                                                                                                                                                                                                                                                           |
+| `user_id`          | `uuid`      | 작성자 ID (`auth.users.id` 참조, `ON DELETE SET NULL`로 탈퇴 시에도 데이터 보존)                                                                                                                                                                                                    |
+| `status`           | `text`      | `pending`/`published`/`rejected`(2-1). 트리거 `findings_enforce_status`가 정함. pending은 작성자·관리자만 조회(RLS). **anon(비가입자)은 열 단위 GRANT로 `id,title,finding_type,tags,year,created_at,status,user_id`만**, published 행만(`migrate_public_tier_read.sql`, 2026-09-19) |
 
 ### 3. `archives`
 
