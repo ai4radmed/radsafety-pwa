@@ -33,7 +33,8 @@ describe('2-1 업로드 권한 게이트', () => {
 
     it('자료실: 파일 규칙(20MB·허용 형식·매크로/실행파일 차단) + 저작권·개인정보 확인란', () => {
         expect(resources).toContain('20 * 1024 * 1024');
-        expect(resources).toContain("'docm', 'xlsm', 'pptm', 'exe'");
+        // prettier 가 배열을 여러 줄로 재배치하므로 토큰 단위로 확인
+        for (const ext of ["'docm'", "'xlsm'", "'pptm'", "'exe'"]) expect(resources).toContain(ext);
         expect(resources).toContain('id="writeConsent"');
         expect(resources).toContain('validateUploadFile(file)');
     });
