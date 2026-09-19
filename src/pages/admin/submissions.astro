@@ -82,15 +82,17 @@ export const prerender = false;
 
         async function load() {
             tbody!.innerHTML = '<tr><td colspan="5" style="text-align:center;">로딩 중...</td></tr>';
+            // findings.user_id 는 auth.users 를 참조해(profiles 아님) PostgREST 조인이 불가 — 두 표 모두
+            // user_id 만 받고 제출자 프로필은 따로 한 번 조회해 합친다.
             const [archives, findings] = await Promise.all([
                 supabase
                     .from('archives')
-                    .select('id, title, created_at, file_url, file_bucket, slug, profiles(username, reject_count)')
+                    .select('id, title, created_at, file_url, file_bucket, slug, user_id')
                     .eq('status', 'pending')
                     .order('created_at', { ascending: true }),
                 supabase
                     .from('findings')
-                    .select('id, title, created_at, profiles:user_id(username, reject_count)')
+                    .select('id, title, created_at, user_id')
                     .eq('status', 'pending')
                     .order('created_at', { ascending: true }),
             ]);
@@ -99,14 +101,33 @@ export const prerender = false;
                 tbody!.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">로드 실패: ${escapeHtml(err.message)}</td></tr>`;
                 return;
             }
+            const userIds = Array.from(
+                new Set(
+                    [...((archives.data || []) as any[]), ...((findings.data || []) as any[])]
+                        .map((r) => r.user_id)
+                        .filter((id): id is string => Boolean(id)),
+                ),
+            );
+            const profileMap = new Map<string, { username: string | null; reject_count: number }>();
+            if (userIds.length > 0) {
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, username, reject_count')
+                    .in('id', userIds);
+                (profiles || []).forEach((p: any) =>
+                    profileMap.set(p.id, { username: p.username ?? null, reject_count: p.reject_count ?? 0 }),
+                );
+            }
+            const submitter = (userId: string | null) =>
+                (userId && profileMap.get(userId)) || { username: null, reject_count: 0 };
+
             const rows: Row[] = [
                 ...((archives.data || []) as any[]).map((a) => ({
                     kind: 'archive' as const,
                     id: a.id,
                     title: a.title,
                     created_at: a.created_at,
-                    username: a.profiles?.username ?? null,
-                    reject_count: a.profiles?.reject_count ?? 0,
+                    ...submitter(a.user_id),
                     file_url: a.file_url,
                     file_bucket: a.file_bucket,
                     link: `/resources?slug=${encodeURIComponent(a.slug || '')}`,
@@ -116,8 +137,7 @@ export const prerender = false;
                     id: f.id,
                     title: f.title,
                     created_at: f.created_at,
-                    username: f.profiles?.username ?? null,
-                    reject_count: f.profiles?.reject_count ?? 0,
+                    ...submitter(f.user_id),
                     link: '/findings-recommendations',
                 })),
             ].sort((a, b) => a.created_at.localeCompare(b.created_at));

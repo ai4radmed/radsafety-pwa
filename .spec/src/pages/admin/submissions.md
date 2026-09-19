@@ -10,7 +10,7 @@
 
 ## 사이드 이펙트
 
-- `archives`·`findings` select(`status='pending'`, 작성자 `profiles(username, reject_count)` 조인). 비공개 버킷 파일은 `createSignedUrl`(10분)로 열람.
+- `archives`·`findings` select(`status='pending'`, `user_id` 포함) + 제출자 `profiles(id, username, reject_count)` 별도 `in()` 조회 후 합침 — `findings.user_id`는 `auth.users` 참조(`profiles` FK 아님)라 PostgREST 조인이 불가(2026-09-19 운영 실측 "Could not find a relationship between 'findings' and 'user_id'"). 비공개 버킷 파일은 `createSignedUrl`(10분)로 열람.
 - `actions.reviewSubmission({ adminId, kind, id, decision, reason? })` 호출.
 
 ## 핵심 규칙
