@@ -79,6 +79,15 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
         .sns-buttons {
             margin-top: 1rem;
         }
+        .privacy-link {
+            margin: 0.75rem 0 0;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+        .privacy-link a {
+            color: #6b7280;
+            text-decoration: underline;
+        }
         .member-only-hint {
             margin: 0 0 0.75rem;
             padding: 0.6rem 0.8rem;
@@ -116,6 +125,11 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
             <div class="divider">또는 아이디로 시작하기</div>
 
             <UsernamePasswordForm />
+
+            <p class="privacy-link">
+                가입·로그인하면 <a href="/privacy">개인정보처리방침</a>에 동의하는 것으로 봅니다. 앱은 실명·이메일을
+                보관하지 않습니다.
+            </p>
 
             {
                 isDevMode && (
@@ -202,9 +216,11 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
                     provider: provider,
                     options: {
                         redirectTo: `${window.location.origin}/auth/callback`,
-                        // Force override scope using queryParams (Supabase sometimes ignores 'scopes' prop)
+                        // 동의 항목 최소화(1단계 완료 기준, 2026-09-20): 닉네임은 요청하지 않는다. 이메일은
+                        // Supabase 가 계정 생성에 요구해 남기되, 첫 접속 게이트(claimUsername)가 곧바로
+                        // <username>@radsafety.invalid 로 교체하므로 앱에는 보관되지 않는다.
                         queryParams: {
-                            scope: 'account_email,profile_nickname', // Request Email explicitly!
+                            scope: 'account_email',
                         },
                     },
                 });
