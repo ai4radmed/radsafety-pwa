@@ -49,6 +49,8 @@ export function setUser(user: {
     verification_status?: string;
 
     society?: string;
+    hospital_id?: string | null;
+    hospital_request?: string | null;
     affiliation?: string;
     department?: string;
     real_name?: string;

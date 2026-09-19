@@ -35,4 +35,14 @@ describe('mypage 카드 2 — 실명·이메일·구분·부서 미표시', () =
         expect(content).toContain('id="userSocietyName"');
         expect(content).toContain('id="userAffiliation"');
     });
+
+    // 2026-09-19: 카드 1에 소속기관·소속학회 표시(신규 가입자에게 소속이 어디에도 안 보이던 공백).
+    it('카드 1에 소속기관·소속학회를 표시하고, 커스텀 기관(c-)은 hospitals_custom 에서 이름을 찾는다', () => {
+        const content = fs.readFileSync(PAGE_PATH, 'utf-8');
+        expect(content).toContain('id="userHospitalName"');
+        expect(content).toContain('id="userSocietyShort"');
+        expect(content).toContain("from '../data/hospitals'");
+        expect(content).toContain(".from('hospitals_custom')");
+        expect(content).toContain('등록 요청 중');
+    });
 });
