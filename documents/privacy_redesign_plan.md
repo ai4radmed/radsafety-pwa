@@ -403,7 +403,7 @@ bulletins
 
 `src/data/resources.ts` 에 두 항목 추가: **방사선규제해석 SOS**, **이용자지원간행물**. 정확한 URL·인용 범위는 vault 노트 후속 행동대로 KINS 확인 후 기입. 공수 1시간. K-1 통보 메일에 함께 문의한다.
 
-> **진행 상태(2026-09-20)**: `src/data/resources.ts`는 더 이상 화면에 쓰이지 않아(자료실은 DB `archives`) **공개 페이지 `/kins`**(`src/pages/kins.astro`) + 홈 카드 + 이용안내 §11로 구현. 항목 3개: 방사선규제해석 SOS·이용자지원간행물(둘 다 RASIS 메인 링크 + 경로 안내 — RASIS 메뉴가 JS 호출이라 직접 주소 없음, headless 실측)·원안위 보도자료(권고 4번, 직접 URL). 직접 URL·인용 범위 확인 + K-1 연계 예고 + RASIS 마스킹 누락 알림을 담은 메일 초안을 박병현 실장 앞으로 작성(draft-only, 발송은 Dr. Ben).
+> **진행 상태(2026-09-20)**: `src/data/resources.ts`는 더 이상 화면에 쓰이지 않아(자료실은 DB `archives`) **공개 페이지 `/kins`**(`src/pages/kins.astro`) + 홈 카드 + 이용안내 §11로 구현. 항목 3개: 방사선규제해석 SOS·이용자지원간행물(둘 다 RASIS 메인 링크 + 경로 안내 — RASIS 메뉴가 JS 호출이라 직접 주소 없음, headless 실측)·원안위 보도자료(권고 4번, 직접 URL). KINS 확인 메일은 **불필요**(링크 게재는 KINS가 7/2 협의에서 먼저 제안한 사항 — Dr. Ben 2026-09-20). 직접 URL은 향후 접촉 시 확인.
 
 ---
 
