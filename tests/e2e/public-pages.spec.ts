@@ -46,6 +46,15 @@ test.describe('공개 페이지 렌더링 (비로그인)', () => {
         await expect(page.locator('a[href="/privacy"]').first()).toBeVisible();
     });
 
+    test('/kins — KINS 공식 자원 링크 3건이 비로그인에도 열린다 (K-2)', async ({ page }) => {
+        await page.goto('/kins');
+        await page.waitForLoadState('networkidle');
+        expect(page.url()).toContain('/kins');
+        await expect(page.locator('.link-card')).toHaveCount(3);
+        await expect(page.locator('.link-card[href^="https://rasis.kins.re.kr"]')).toHaveCount(2);
+        await expect(page.locator('.link-card[href*="nssc.go.kr"]')).toHaveCount(1);
+    });
+
     test('/guide — 비로그인도 열린다 (공개 계층)', async ({ page }) => {
         await page.goto('/guide');
         await page.waitForLoadState('networkidle');

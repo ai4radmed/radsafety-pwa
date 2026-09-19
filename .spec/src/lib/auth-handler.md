@@ -29,7 +29,7 @@ Supabase 인증 상태 변경 감지, 프로필 동기화, 알림 체크 및 권
 ## 핵심 규칙
 
 1. **보안 가드 (Auth Guard)**:
-    - `publicPaths`(2계층 공개 계층, 2026-09-19): `['/', '/login', '/info', '/inspection-prep', '/findings-recommendations', '/resources', '/guide', '/settings', '/offline', '/privacy']` — 접두 매칭. 회원 전용 = 사용자 메뉴(`/mypage`·`/notifications`·`/feedback`·`/my-feedback`·`/feedback-query`·`/claim-username`)와 `/admin/*`.
+    - `publicPaths`(2계층 공개 계층, 2026-09-19): `['/', '/login', '/info', '/inspection-prep', '/findings-recommendations', '/resources', '/guide', '/settings', '/offline', '/privacy', '/kins']` — 접두 매칭. 회원 전용 = 사용자 메뉴(`/mypage`·`/notifications`·`/feedback`·`/my-feedback`·`/feedback-query`·`/claim-username`)와 `/admin/*`.
     - 비인증 사용자가 회원 전용 페이지 접근 시 `/login?from=<경로>` 로 리다이렉트 — 로그인 페이지가 `from` 을 보고 "회원 전용 메뉴" 안내(`#memberOnlyHint`)를 띄운다. 세부 권한(사례 본문 차단·업로드 차단)은 각 페이지 + RLS/열 권한(`sql_query/migrate_public_tier_read.sql`) 담당.
 2. **중복 실행 방지**: `astro:page-load` 내에서만 초기화 및 동기화 수행 시 중복 호출 주의.
 3. **Optional Guard**: DOM 접근 (`.global-noti-dot`) 시 요소 존재 여부 필수 확인.
