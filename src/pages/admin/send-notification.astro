@@ -280,20 +280,6 @@ import Icon from '../../components/Icon.astro';
                     </div>
 
                     <label class="radio-option">
-                        <input type="radio" name="targetType" value="verification_status" />
-                        <span class="radio-label">인증 상태별</span>
-                    </label>
-                    <div id="verificationOptions" class="sub-options">
-                        <select id="verificationSelect" class="form-select">
-                            <option value="verified">최종 인증 완료</option>
-                            <option value="temp_verified">임시 인증 (승인 대기)</option>
-                            <option value="list">명부 인증</option>
-                            <option value="none">미인증</option>
-                        </select>
-                        <div class="help-text">선택된 인증 상태의 사용자에게만 발송됩니다.</div>
-                    </div>
-
-                    <label class="radio-option">
                         <input type="radio" name="targetType" value="specific" />
                         <span class="radio-label">특정 사용자</span>
                     </label>
@@ -410,8 +396,6 @@ import Icon from '../../components/Icon.astro';
                     // Show selected sub-option
                     if (target === 'provider') {
                         document.getElementById('providerOptions')?.classList.add('active');
-                    } else if (target === 'verification_status') {
-                        document.getElementById('verificationOptions')?.classList.add('active');
                     } else if (target === 'specific') {
                         document.getElementById('specificOptions')?.classList.add('active');
                     }
@@ -436,10 +420,8 @@ import Icon from '../../components/Icon.astro';
                 searchTimeout = window.setTimeout(async () => {
                     const { data: users } = await supabase
                         .from('profiles')
-                        .select('id, real_name, username, login_email, society_email')
-                        .or(
-                            `real_name.ilike.%${query}%,username.ilike.%${query}%,login_email.ilike.%${query}%,society_email.ilike.%${query}%`,
-                        )
+                        .select('id, username')
+                        .ilike('username', `%${query}%`)
                         .limit(10);
 
                     if (users && users.length > 0 && userDropdown) {
@@ -447,8 +429,7 @@ import Icon from '../../components/Icon.astro';
                             .map(
                                 (u) => `
                             <div class="user-item" data-id="${u.id}">
-                                <div style="font-weight: 600;">${u.real_name || u.username || '이름 없음'}</div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);">${u.username || u.login_email || u.society_email || '-'}</div>
+                                <div style="font-weight: 600;">@${u.username || '(미설정)'}</div>
                             </div>
                         `,
                             )
@@ -533,10 +514,6 @@ import Icon from '../../components/Icon.astro';
                     // Add target-specific fields
                     if (targetType === 'provider') {
                         input.provider = (document.getElementById('providerSelect') as HTMLSelectElement).value;
-                    } else if (targetType === 'verification_status') {
-                        input.verificationStatus = (
-                            document.getElementById('verificationSelect') as HTMLSelectElement
-                        ).value;
                     } else if (targetType === 'specific') {
                         input.specificUserId = selectedUserId;
                     }
@@ -546,7 +523,7 @@ import Icon from '../../components/Icon.astro';
                     if (error) throw error;
 
                     alert(`✅ ${data.message}`);
-                    window.location.href = '/admin/verification-requests';
+                    window.location.href = '/admin/members';
                 } catch (err) {
                     console.error('Send notification error:', err);
                     alert('❌ 알림 발송 실패: ' + (err as Error).message);

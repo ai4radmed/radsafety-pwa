@@ -204,6 +204,8 @@ storage
 
 **동반 변경**: `src/pages/admin/members.astro` 가 학회·실명·이메일을 표시 중 → `username`·기관·소속학회·업로드 권한·반려 횟수 표로 교체. `src/lib/admin/verification-controller.ts`·`admin/verification-requests.astro` 는 삭제.
 
+> **진행 상태(2026-09-19, 2-2 실행)**: 위 확정안대로 구현. **삭제** — 마이페이지 인증요청 UI·모달·카드 3(안전관리면허·방안관리자), `admin/verification-requests`+`verification-controller`+컴포넌트, `admin/members`(엑셀 명부 업로드 → **회원 목록**으로 교체), 인증 액션 5개(`sendVerificationCode`·`verifyEmailCode`·`approve/reject/revokeVerification`), 알림 발송의 "인증 상태별" 대상·실명/이메일 검색, 등록자 표시의 `real_name`/`nickname`(→ `@username`), `auth-handler`/가입·전환 액션의 `login_email`/`nickname` 쓰기. **DB** — `sql_query/migrate_drop_legacy_profile_columns.sql`: 테이블 3개(`allowed_members`·`verification_requests`·`email_verification_codes`) + `profiles` 컬럼 14개 삭제(위 목록 중 `verification_status` 제외). **카드 2** = "소속 정보"(기관 자동완성·소속학회·저장, `updateAffiliation`). **미완(2-1 몫)**: `verification_status` 컬럼과 업로드 게이트(`canUpload` + `archives` INSERT RLS)는 `can_publish` 로 교체할 때까지 유지 — 지금 지우면 업로드가 막힌다. 카드 2 "업로드 권한" 행·회원 목록의 "업로드 권한·반려 횟수" 열도 그때. Dr. Ben 승인(2026-09-19): `allowed_members` 데이터 삭제·알파테스터 개인정보 삭제 OK, 백업 `radsafety_20260919_pre-2-2.dump`.
+
 ### 2-3. 회원기관 목록 — 앱 설정 파일 + 추가 요청 (확정 2026-09-08)
 
 - 목록은 DB 테이블이 아니라 **앱 설정 파일**로 제공한다: `src/data/hospitals.ts` (`src/data/resources.ts` 와 같은 자리). 항목은 `{ id, name, region? }`. 변경은 코드 수정 → PR → 배포(변경 빈도가 낮아 배포 비용이 문제되지 않고, 이력이 git 에 남는다).

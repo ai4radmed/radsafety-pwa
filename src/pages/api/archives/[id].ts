@@ -24,7 +24,7 @@ export const GET: APIRoute = async ({ params }) => {
         .select(
             `
             id, title, category, content_html, file_url, author, created_at,
-            profiles (real_name, nickname)
+            profiles (username)
         `,
         )
         .eq('id', id)
@@ -46,12 +46,12 @@ export const GET: APIRoute = async ({ params }) => {
     }
 
     // Determine Display Author
-    // Priority: Explicit author field > Profile real_name > Profile nickname > "관리자"
-    const profile = data.profiles as unknown as { real_name: string; nickname: string } | null;
+    // Priority: Explicit author field > Profile username > "관리자" (2-2: 실명·닉네임 미보관)
+    const profile = data.profiles as unknown as { username: string | null } | null;
 
     let profileName = null;
-    if (profile) {
-        profileName = profile.real_name || profile.nickname;
+    if (profile?.username) {
+        profileName = `@${profile.username}`;
     }
 
     const displayAuthor = data.author || profileName || '관리자';

@@ -23,7 +23,7 @@ const REQUIRED_PAGE_LOAD_FILES = [
     'pages/notifications.astro',
     'pages/my-feedback.astro',
     'pages/admin/members.astro',
-    'pages/admin/verification-requests.astro',
+    'pages/admin/member-approval.astro',
     'pages/admin/glossary.astro',
     'pages/admin/feedback.astro',
     'pages/admin/send-notification.astro',

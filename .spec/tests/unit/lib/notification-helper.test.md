@@ -11,15 +11,14 @@ Vitest (단위)
 
 ## 검증 항목
 
-| describe                               | it                                                     | 검증 내용       |
-| -------------------------------------- | ------------------------------------------------------ | --------------- |
-| NotificationData 타입                  | type, userId, title, message 필수                      | 인터페이스 검증 |
-| createNotification                     | supabaseAdmin.from insert 호출                         | mock 검증       |
-| createNotification                     | sendPushToUser 호출 (실패해도 완료)                    | .catch 패턴     |
-| getUserIdsByFilter                     | targetType specific 시 specificUserId 반환             | 특정 사용자     |
-| getUserIdsByFilter                     | targetType all 시 profiles select                      | 전체 조회       |
-| createVerificationRejectedNotification | createNotification 호출하여 verification_rejected 타입 | mock 검증       |
-| createBulkNotifications                | 여러 userId에 insert 호출                              | mock 검증       |
+| describe                | it                                         | 검증 내용       |
+| ----------------------- | ------------------------------------------ | --------------- |
+| NotificationData 타입   | type, userId, title, message 필수          | 인터페이스 검증 |
+| createNotification      | supabaseAdmin.from insert 호출             | mock 검증       |
+| createNotification      | sendPushToUser 호출 (실패해도 완료)        | .catch 패턴     |
+| getUserIdsByFilter      | targetType specific 시 specificUserId 반환 | 특정 사용자     |
+| getUserIdsByFilter      | targetType all 시 profiles select          | 전체 조회       |
+| createBulkNotifications | 여러 userId에 insert 호출                  | mock 검증       |
 
 ## Mock/Setup
 
@@ -29,3 +28,7 @@ Vitest (단위)
 ## 유지보수 목적
 
 - 알림 생성 로직 변경 시 회귀 방지
+
+## 이력
+
+- 2026-09-19: 2-2 — `createVerificationApproved/RejectedNotification` 테스트 삭제(함수 삭제).

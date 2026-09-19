@@ -1,490 +1,169 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Icon from '../../components/Icon.astro';
+
+// 회원 목록(관리자). 명세: .spec/src/pages/admin/members.md
+// 2단계 2-2(2026-09-19): 옛 "회원명부 등록"(엑셀 → allowed_members)을 대체. 명부는 앱이 갖지 않는다.
+export const prerender = false;
 ---
 
-<DashboardLayout title="회원명부 등록">
-    <div class="admin-container">
+<DashboardLayout title="회원 목록">
+    <div class="members-container">
         <div class="header">
-            <div class="page-title"><Icon name="clipboard" size="24" /> 회원명부 등록 (Excel)</div>
-            <p class="subtitle">학회 회원명부 엑셀 파일을 업로드하여 허용 목록(Whitelist)에 등록합니다.</p>
+            <div class="page-title"><Icon name="clipboard" size="24" /> 회원 목록</div>
+            <p class="subtitle">
+                아이디·소속기관·소속학회·회원 상태만 봅니다(실명·이메일은 앱이 보관하지 않습니다). 가입 승인·거절과 기관
+                등록 요청 처리는 <a href="/admin/member-approval">가입 승인</a>에서 합니다.
+            </p>
         </div>
 
-        <!-- Society Selection -->
-        <div class="society-selector">
-            <label class="radio-label">
-                <input type="radio" name="society" value="nuclear_medicine" checked />
-                <span>대한핵의학회</span>
-            </label>
-            <label class="radio-label">
-                <input type="radio" name="society" value="technology" />
-                <span>대한핵의학기술학회</span>
-            </label>
+        <div class="toolbar">
+            <input type="search" id="memberSearch" placeholder="아이디 검색" autocomplete="off" />
+            <select id="statusFilter">
+                <option value="">전체 상태</option>
+                <option value="active">정상</option>
+                <option value="pending">승인 대기</option>
+                <option value="suspended">정지</option>
+                <option value="banned">탈퇴처리</option>
+            </select>
+            <span id="memberCount" class="count">0명</span>
+            <button id="refreshBtn" class="btn-secondary">🔄 새로고침</button>
         </div>
 
-        <!-- Drop Zone -->
-        <div id="dropZone" class="drop-zone">
-            <Icon name="download" size="48" class="upload-icon" />
-            <p class="drop-text">엑셀 파일(.xlsx, .xls)을 이곳에 드래그하거나 클릭하세요.</p>
-            <input type="file" id="fileInput" accept=".xlsx, .xls" hidden />
-        </div>
-
-        <!-- Preview Table -->
-        <div id="previewSection" class="preview-section" style="display: none;">
-            <div class="preview-header">
-                <h3>미리보기 (<span id="rowCount">0</span>명)</h3>
-                <div class="actions">
-                    <button id="cancelBtn" class="btn-secondary">취소</button>
-                    <button id="uploadBtn" class="btn-primary">DB에 저장하기</button>
-                </div>
-            </div>
-            <div class="table-wrapper">
-                <table id="previewTable">
-                    <thead>
-                        <th>학회</th>
-                        <th>구분</th>
-                        <th>이름</th>
-                        <th>이메일</th>
-                        <th>기관</th>
-                        <th>부서</th>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-        <div style="margin-top:1rem; text-align:right;">
-            <button
-                id="resetBtn"
-                style="background:none; border:1px solid #ff4444; color:#ff4444; padding:0.5rem 1rem; border-radius:6px; cursor:pointer; font-size:0.9rem;"
-            >
-                ⚠️ 명단 전체 초기화
-            </button>
-        </div>
-        <!-- Current DB Members Section -->
-        <div class="db-section" style="margin-top: 3rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
-            <h2>현재 등록된 회원명부 (<span id="dbCount">0</span>명)</h2>
-            <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
-                <input
-                    type="text"
-                    id="dbSearch"
-                    placeholder="이름 또는 이메일 검색..."
-                    style="padding:0.5rem; border:1px solid var(--border-color); border-radius:6px; width:300px;"
-                />
-                <button id="refreshDbBtn" class="btn-secondary">🔄 새로고침</button>
-            </div>
-            <div class="table-wrapper">
-                <table id="dbTable">
-                    <thead>
-                        <th>학회</th>
-                        <th>구분</th>
-                        <th>이름</th>
-                        <th>이메일</th>
-                        <th>기관</th>
-                        <th>부서</th>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="6" style="text-align:center;">데이터를 불러오는 중...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-wrapper">
+            <table id="membersTable">
+                <thead>
+                    <th>아이디</th>
+                    <th>로그인</th>
+                    <th>소속기관</th>
+                    <th>소속학회</th>
+                    <th>상태</th>
+                    <th>가입일</th>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" style="text-align:center;">데이터를 불러오는 중...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </DashboardLayout>
 
-<!-- Admin Guard Script -->
 <script>
     import { userProfile } from '../../store/user';
     import { supabase } from '../../lib/supabase-browser';
-    import * as XLSX from 'xlsx';
+    import { HOSPITALS, type Hospital } from '../../data/hospitals';
 
-    // --- NEW: DB Member List Logic (Variables) ---
-    // These need to be re-queried on page load
-    let dbTableBody: Element | null,
-        dbCountSpan: HTMLElement | null,
-        dbSearchInput: HTMLElement | null,
-        refreshDbBtn: HTMLButtonElement | null;
-    let allMembers: any[] = [];
-    let parsedMemberData: any[] = []; // Use local variable instead of window to avoid conflicts
+    const SOCIETY_MAP: Record<string, string> = {
+        nuclear_medicine: '대한핵의학회',
+        technology: '대한핵의학기술학회',
+        none: '비소속',
+    };
+    const STATUS_MAP: Record<string, string> = {
+        pending: '승인 대기',
+        active: '정상',
+        suspended: '정지',
+        banned: '탈퇴처리',
+    };
 
-    // --- Page Load Handler ---
+    function escapeHtml(s: string): string {
+        return s.replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+        );
+    }
+
+    let allHospitals: Hospital[] = [...HOSPITALS];
+
+    function hospitalCell(row: { hospital_id: string | null; hospital_request: string | null }): string {
+        const base = row.hospital_id
+            ? allHospitals.find((h) => h.id === row.hospital_id)?.name || row.hospital_id
+            : '-';
+        return row.hospital_request
+            ? `${escapeHtml(base)} <span class="badge-request">🆕 요청: ${escapeHtml(row.hospital_request)}</span>`
+            : escapeHtml(base);
+    }
+
     document.addEventListener('astro:page-load', () => {
-        // A. Guard Clause for Admin
-        const user = userProfile.get() as any;
-        if (user.is_admin !== 'true') {
-            // alert("관리자 권한이 필요합니다."); // Optional: too annoying?
-            // window.location.href = "/";
-            // Check again inside specific actions if needed, or rely on RLS.
-            // But layout might render briefly.
-            // Ideally this check happens in server side (frontmatter) but we are SPA-ish.
+        const currentUser = userProfile.get() as any;
+        if (!currentUser?.id) return;
+        if (currentUser.is_admin !== 'true') {
+            alert('관리자 권한이 필요합니다.');
+            window.location.href = '/mypage';
+            return;
         }
 
-        // B. Element Bindings
-        dbTableBody = document.querySelector('#dbTable tbody');
-        dbCountSpan = document.getElementById('dbCount');
-        dbSearchInput = document.getElementById('dbSearch');
-        refreshDbBtn = document.getElementById('refreshDbBtn') as HTMLButtonElement | null;
+        const tbody = document.querySelector('#membersTable tbody');
+        const countEl = document.getElementById('memberCount');
+        const searchInput = document.getElementById('memberSearch') as HTMLInputElement | null;
+        const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement | null;
+        const refreshBtn = document.getElementById('refreshBtn') as HTMLButtonElement | null;
+        if (!tbody) return;
 
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const previewSection = document.getElementById('previewSection');
-        const tableBody = document.querySelector('#previewTable tbody');
-        const rowCountSpan = document.getElementById('rowCount');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
+        let rows: any[] = [];
 
-        // If elements are missing (e.g. user navigated away), stop.
-        if (!dropZone || !dbTableBody) return;
-
-        // C. Fetch Initial DB Data
-        fetchMembers();
-
-        // D. Prevent Default Drag Behaviors (Global)
-        // We add this to document, but we should be careful about duplicates if we navigate back/forth.
-        // A simple way is to remove before add, or just add once.
-        // But astro:page-load fires every time.
-        // To be safe, we can use a named function or just rely on the fact that these are cheap lightweight handlers.
-        // Better: Add to window/document only if not already added?
-        // Or simpler: Just add them, but maybe clean up on 'astro:before-preparation'?
-        // For now, let's keep it simple. Browsers handle multiple preventDefaults fine.
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
-            document.addEventListener(eventName, preventDefaults, false);
-        });
-
-        // E. Event Listeners
-
-        // 1. DB Search & Refresh
-        if (dbSearchInput) dbSearchInput.addEventListener('input', handleSearch);
-        if (refreshDbBtn) refreshDbBtn.addEventListener('click', fetchMembers);
-
-        // 2. Drop Zone Events
-        if (dropZone) {
-            dropZone.addEventListener('click', () => fileInput && fileInput.click());
-
-            ['dragenter', 'dragover'].forEach((eventName) => {
-                dropZone.addEventListener(eventName, highlight, false);
-            });
-            ['dragleave', 'drop'].forEach((eventName) => {
-                dropZone.addEventListener(eventName, unhighlight, false);
-            });
-
-            dropZone.addEventListener('drop', handleDrop, false);
-        }
-
-        if (fileInput) fileInput.addEventListener('change', handleFileSelect);
-        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
-        if (resetBtn) resetBtn.addEventListener('click', handleReset);
-        if (uploadBtn) uploadBtn.addEventListener('click', handleUpload);
-
-        // --- Functions defined inside to capture closure variables (elements) ---
-
-        function preventDefaults(e: Event) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function highlight(e: Event) {
-            preventDefaults(e); // Ensure default is prevented
-            dropZone!.classList.add('drag-over');
-        }
-
-        function unhighlight(e: Event) {
-            preventDefaults(e);
-            dropZone!.classList.remove('drag-over');
-        }
-
-        function handleDrop(e: DragEvent) {
-            unhighlight(e); // Remove highlight
-            const dt = e.dataTransfer!;
-            const files = dt.files;
-            if (files.length) handleFile(files[0]);
-        }
-
-        function handleFileSelect(e: Event) {
-            const input = e.target as HTMLInputElement;
-            if (input.files!.length) handleFile(input.files![0]);
-        }
-
-        function handleFile(file: File) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = new Uint8Array(e.target!.result as ArrayBuffer);
-                    const workbook = XLSX.read(data, { type: 'array' });
-
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                    renderTable(jsonData);
-                } catch (err) {
-                    console.error('Excel Read Error:', err);
-                    alert('파일을 읽는 중 오류가 발생했습니다.\n' + (err instanceof Error ? err.message : String(err)));
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function handleSearch(e: Event) {
-            const keyword = (e.target as HTMLInputElement).value.toLowerCase();
-            const filtered = allMembers.filter(
-                (m) =>
-                    (m.real_name && m.real_name.toLowerCase().includes(keyword)) ||
-                    (m.society_email && m.society_email.toLowerCase().includes(keyword)),
-            );
-            renderDbTable(filtered);
-        }
-
-        async function fetchMembers() {
-            if (refreshDbBtn) {
-                refreshDbBtn.disabled = true;
-                refreshDbBtn.textContent = '로딩 중...';
+        async function load() {
+            tbody!.innerHTML = '<tr><td colspan="6" style="text-align:center;">로딩 중...</td></tr>';
+            try {
+                const { data: custom } = await supabase.from('hospitals_custom').select('id, name');
+                allHospitals = [...HOSPITALS, ...((custom as Hospital[] | null) ?? [])];
+            } catch {
+                allHospitals = [...HOSPITALS];
             }
-
             const { data, error } = await supabase
-                .from('allowed_members')
-                .select('*')
+                .from('profiles')
+                .select('id, username, provider, status, society, hospital_id, hospital_request, is_admin, created_at')
                 .order('created_at', { ascending: false });
-
             if (error) {
-                console.error(error);
-                alert('DB 목록을 불러오지 못했습니다: ' + error.message);
-                if (dbTableBody)
-                    dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패</td></tr>`;
-            } else {
-                allMembers = data || [];
-                renderDbTable(allMembers);
-            }
-
-            if (refreshDbBtn) {
-                refreshDbBtn.disabled = false;
-                refreshDbBtn.textContent = '🔄 새로고침';
-            }
-        }
-
-        function renderDbTable(list: any[]) {
-            if (!dbCountSpan || !dbTableBody) return;
-
-            dbCountSpan.textContent = String(list.length);
-            dbTableBody.innerHTML = '';
-
-            if (list.length === 0) {
-                dbTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">등록된 회원이 없습니다.</td></tr>`;
+                tbody!.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패: ${escapeHtml(error.message)}</td></tr>`;
                 return;
             }
-
-            list.slice(0, 100).forEach((row) => {
-                const tr = document.createElement('tr');
-                const societyName =
-                    row.society === 'nuclear_medicine'
-                        ? '대한핵의학회'
-                        : row.society === 'technology'
-                          ? '대한핵의학기술학회'
-                          : row.society || '-';
-                tr.innerHTML = `
-                    <td>${societyName}</td>
-                    <td>${row.classification || '-'}</td>
-                    <td>${row.real_name || '-'}</td>
-                    <td>${row.society_email || '-'}</td>
-                    <td>${row.affiliation || '-'}</td>
-                    <td>${row.department || '-'}</td>
-                `;
-                dbTableBody!.appendChild(tr);
-            });
-
-            if (list.length > 100) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="6" style="text-align:center; color:#888;">...외 ${list.length - 100}명 (검색하여 확인하세요)</td>`;
-                dbTableBody!.appendChild(tr);
-            }
+            rows = data || [];
+            render();
         }
 
-        function renderTable(data: any[]) {
-            console.log('Raw Excel Data:', data);
-
-            // Get default society selection
-            const selectedSocietyEl = document.querySelector(
-                'input[name="society"]:checked',
-            ) as HTMLInputElement | null;
-            const selectedSociety = selectedSocietyEl ? selectedSocietyEl.value : 'nuclear_medicine';
-
-            const processedData = data.map((row) => {
-                // Reuse existing findValue logic
-                const name = (findValue(row, ['이름', 'name', '성명', 'membername', 'user']) || '-').toString().trim();
-                const email = (findValue(row, ['이메일', 'email', 'e-mail', 'mail', '전자우편', '계정']) || '-')
-                    .toString()
-                    .trim();
-                const affiliation = (
-                    findValue(row, [
-                        '근무기관명',
-                        '근무기관',
-                        '기관',
-                        '소속',
-                        'affiliation',
-                        'organization',
-                        'org',
-                        'company',
-                        'institution',
-                        'hospital',
-                        'workplace',
-                    ]) || '-'
-                )
-                    .toString()
-                    .trim();
-                const department = (findValue(row, ['소속 부서', '부서', '과', 'department', 'dept', 'part']) || '-')
-                    .toString()
-                    .trim();
-                const classification = (
-                    findValue(row, ['직종', '구분', 'classification', 'role', 'job', 'position', 'grade']) || '-'
-                )
-                    .toString()
-                    .trim();
-
-                const societyRaw = findValue(row, ['소속학회', 'division', 'society', '학회', 'type']) || '';
-                let society = selectedSociety;
-
-                if (societyRaw) {
-                    const normalizedParams = societyRaw
-                        .toString()
-                        .trim()
-                        .replace(/[\s|_]/g, '');
-                    if (
-                        ['대한핵의학회', '핵의학회', 'nuclear_medicine', '의사', 'prof'].some((k) =>
-                            normalizedParams.includes(k),
-                        )
-                    ) {
-                        society = 'nuclear_medicine';
-                    } else if (
-                        ['대한핵의학기술학회', '핵의학기술학회', '기술학회', 'technology', 'tech'].some((k) =>
-                            normalizedParams.includes(k),
-                        )
-                    ) {
-                        society = 'technology';
-                    }
-                }
-
-                const societyDisplay = society === 'nuclear_medicine' ? '대한핵의학회' : '대한핵의학기술학회';
-                return { name, email, affiliation, department, classification, society, societyDisplay };
-            });
-
-            parsedMemberData = processedData; // Update closure variable
-
-            if (tableBody) {
-                tableBody.innerHTML = '';
-                processedData.forEach((row) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${row.societyDisplay}</td>
-                        <td>${row.classification}</td>
-                        <td>${row.name}</td>
-                        <td>${row.email}</td>
-                        <td>${row.affiliation}</td>
-                        <td>${row.department}</td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-            }
-
-            if (rowCountSpan) rowCountSpan.textContent = String(data.length);
-            if (previewSection) previewSection.style.display = 'block';
-            if (dropZone) dropZone.style.display = 'none';
-        }
-
-        function handleCancel() {
-            if (previewSection) previewSection.style.display = 'none';
-            if (dropZone) dropZone.style.display = 'flex';
-            if (fileInput) (fileInput as HTMLInputElement).value = '';
-            if (tableBody) tableBody.innerHTML = '';
-            parsedMemberData = [];
-        }
-
-        async function handleReset() {
-            if (confirm('정말로 모든 명단 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
-                const { error } = await supabase.from('allowed_members').delete().neq('society_email', '');
-                if (error) {
-                    alert('삭제 실패: ' + error.message);
-                } else {
-                    alert('모든 데이터가 초기화되었습니다.');
-                    fetchMembers(); // Reload instead of refresh to keep SPA feel
-                }
-            }
-        }
-
-        async function handleUpload() {
-            if (!parsedMemberData || parsedMemberData.length === 0) {
-                alert('등록할 데이터가 없습니다.');
-                return;
-            }
-
-            const dataToUpload = parsedMemberData
-                .map((row) => ({
-                    real_name: row.name !== '-' ? row.name : null,
-                    society_email: row.email !== '-' ? row.email : null,
-                    affiliation: row.affiliation !== '-' ? row.affiliation : null,
-                    department: row.department !== '-' ? row.department : null,
-                    classification: row.classification !== '-' ? row.classification : null,
-                    society: row.society,
-                }))
-                .filter((r) => r.society_email && r.society_email.includes('@'));
-
-            if (dataToUpload.length === 0) {
-                alert('유효한 이메일이 포함된 데이터가 없습니다.');
-                return;
-            }
-
-            const uniqueData = Array.from(
-                dataToUpload.reduce((map, item) => map.set(item.society_email, item), new Map()).values(),
+        function render() {
+            const keyword = (searchInput?.value || '').trim().toLowerCase();
+            const status = statusFilter?.value || '';
+            const filtered = rows.filter(
+                (r) =>
+                    (!keyword || (r.username || '').toLowerCase().includes(keyword)) &&
+                    (!status || r.status === status),
             );
-
-            if (confirm(`${uniqueData.length}명의 회원을 DB에 등록하시겠습니까?\n(중복된 이메일은 업데이트됩니다)`)) {
-                const { error } = await supabase
-                    .from('allowed_members')
-                    .upsert(uniqueData, { onConflict: 'society_email' });
-
-                if (error) {
-                    console.error(error);
-                    alert('업로드 실패:\n' + error.message);
-                } else {
-                    alert('✅ 성공적으로 등록되었습니다!');
-                    // Clean up and refresh
-                    handleCancel();
-                    fetchMembers();
-                }
+            if (countEl) countEl.textContent = `${filtered.length}명`;
+            if (filtered.length === 0) {
+                tbody!.innerHTML = '<tr><td colspan="6" style="text-align:center;">표시할 회원이 없습니다.</td></tr>';
+                return;
             }
+            tbody!.innerHTML = filtered
+                .map(
+                    (r) => `
+                <tr>
+                    <td>@${escapeHtml(r.username || '(미설정)')}${r.is_admin ? ' <span class="badge-admin">ADMIN</span>' : ''}</td>
+                    <td>${r.provider === 'kakao' ? '카카오' : '아이디'}</td>
+                    <td>${hospitalCell(r)}</td>
+                    <td>${SOCIETY_MAP[r.society] || '-'}</td>
+                    <td>${STATUS_MAP[r.status] || escapeHtml(r.status || '-')}</td>
+                    <td>${r.created_at ? new Date(r.created_at).toLocaleDateString('ko-KR') : '-'}</td>
+                </tr>`,
+                )
+                .join('');
         }
 
-        // Helper function (same as before)
-        function findValue(row: Record<string, any>, possibleKeys: string[]) {
-            const rowKeys = Object.keys(row);
-            for (const key of possibleKeys) {
-                if (row[key] !== undefined) return row[key];
-            }
-            const normalizedKeys = rowKeys.reduce((acc: Record<string, string>, k) => {
-                const norm = k
-                    .toString()
-                    .toLowerCase()
-                    .replace(/[\s\-_.]/g, '');
-                acc[norm] = k;
-                return acc;
-            }, {});
-            for (const key of possibleKeys) {
-                const normSearch = key.toLowerCase().replace(/[\s\-_.]/g, '');
-                if (normalizedKeys[normSearch]) return row[normalizedKeys[normSearch]];
-                const partialMatch = Object.keys(normalizedKeys).find((nk) => nk.includes(normSearch));
-                if (partialMatch) return row[normalizedKeys[partialMatch]];
-            }
-            return null;
-        }
-    }); // End of astro:page-load
+        searchInput?.addEventListener('input', render);
+        statusFilter?.addEventListener('change', render);
+        refreshBtn?.addEventListener('click', load);
+        load();
+    });
 </script>
 
 <style>
-    .admin-container {
-        max-width: 900px;
+    .members-container {
+        max-width: 1000px;
         margin: 0 auto;
         padding: 2rem 0;
     }
     .header {
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
     .page-title {
         font-size: 1rem;
@@ -497,84 +176,24 @@ import Icon from '../../components/Icon.astro';
     }
     .subtitle {
         color: var(--text-muted);
+        line-height: 1.5;
     }
-
-    .society-selector {
+    .toolbar {
         display: flex;
-        justify-content: center;
-        gap: 2rem;
-        margin-bottom: 1.5rem;
-        background: var(--bg-card);
-        padding: 1rem;
-        border-radius: 12px;
-        border: 1px solid var(--border-color);
-    }
-    .radio-label {
-        display: flex;
-        align-items: center;
         gap: 0.5rem;
-        cursor: pointer;
-        font-size: 1.1rem;
-        font-weight: 500;
-    }
-    .radio-label input[type='radio'] {
-        width: 1.2rem;
-        height: 1.2rem;
-        accent-color: var(--accent);
-    }
-
-    .drop-zone {
-        border: 3px dashed var(--border-color);
-        border-radius: 12px;
-        padding: 4rem 2rem;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: var(--bg-card);
-        display: flex;
-        flex-direction: column;
         align-items: center;
-        gap: 1rem;
-    }
-    .drop-zone:hover,
-    .drop-zone.drag-over {
-        border-color: var(--accent);
-        background: rgba(37, 99, 235, 0.05); /* Slight accent tint */
-    }
-    .upload-icon {
-        color: var(--text-muted);
-    }
-    .drop-text {
-        color: var(--text-muted);
-        font-size: 1.1rem;
-    }
-
-    .preview-section {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 1.5rem;
-    }
-    .preview-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-wrap: wrap;
         margin-bottom: 1rem;
     }
-    .actions {
-        display: flex;
-        gap: 0.5rem;
+    .toolbar input,
+    .toolbar select {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.9rem;
     }
-
-    .btn-primary {
-        background: var(--accent);
-        color: white;
-        border: none;
-        padding: 0.4rem 1rem;
-        border-radius: 6px;
-        font-weight: 600;
+    .count {
+        color: var(--text-muted);
         font-size: 0.85rem;
-        cursor: pointer;
+        margin-left: auto;
     }
     .btn-secondary {
         background: transparent;
@@ -585,28 +204,48 @@ import Icon from '../../components/Icon.astro';
         font-size: 0.85rem;
         cursor: pointer;
     }
-
     .table-wrapper {
-        max-height: 400px;
-        overflow-y: auto;
+        max-height: 70vh;
+        overflow: auto;
         border: 1px solid var(--border-color);
         border-radius: 6px;
     }
     table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
     th,
     td {
-        padding: 0.75rem 1rem;
+        padding: 0.6rem 0.9rem;
         text-align: left;
         border-bottom: 1px solid var(--border-color);
+        white-space: nowrap;
     }
     th {
         background: rgba(255, 255, 255, 0.05);
         position: sticky;
         top: 0;
         color: var(--text-muted);
+    }
+    :global(.badge-request) {
+        display: inline-block;
+        margin-left: 0.4rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.18);
+        color: #f59e0b;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    :global(.badge-admin) {
+        display: inline-block;
+        margin-left: 0.3rem;
+        padding: 0.05rem 0.4rem;
+        border-radius: 999px;
+        background: #ef4444;
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
     }
 </style>
