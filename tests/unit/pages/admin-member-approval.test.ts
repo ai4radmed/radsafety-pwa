@@ -26,7 +26,7 @@ describe('admin/member-approval.astro', () => {
 
     it('소속기관 표시에 HOSPITALS 목록을 사용한다', () => {
         expect(source).toContain("from '../../data/hospitals'");
-        expect(source).toContain('HOSPITALS.find');
+        expect(source).toContain('allHospitals.find');
     });
 
     it('빈 목록 안내 문구가 있다', () => {
@@ -39,11 +39,17 @@ describe('admin/member-approval.astro', () => {
         expect(source).toContain('처리할 기관 등록 요청이 없습니다.');
     });
 
-    it('등록·거절 모두 resolveHospitalRequest 액션을 호출한다', () => {
+    it('등록은 registerHospitalFromRequest, 합치기·거절은 resolveHospitalRequest 액션을 호출한다', () => {
+        expect(source).toContain('actions.registerHospitalFromRequest');
         expect(source).toContain('actions.resolveHospitalRequest');
     });
 
-    it("등록 선택지에서 'other' 와 retired 항목을 제외한다", () => {
+    it('기관 표시·합치기 후보는 정적 목록 + hospitals_custom 합집합을 본다', () => {
+        expect(source).toContain(".from('hospitals_custom')");
+        expect(source).toContain('[...HOSPITALS, ...');
+    });
+
+    it("합치기 선택지에서 'other' 와 retired 항목을 제외한다", () => {
         expect(source).toContain("!h.retired && h.id !== 'other'");
     });
 

@@ -141,6 +141,20 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 | `approved_at`         | `timestamp` | 인증 승인 일시                               |
 | `rejected_at`         | `timestamp` | 인증 취소 일시                               |
 
+### 5-1. `hospitals_custom` (2026-09-19)
+
+관리자가 가입승인 화면에서 **배포 없이** 등록한 회원기관. 정적 목록 `src/data/hospitals.ts`와 합쳐서 하나의 목록처럼 쓰인다(`src/lib/hospitals.ts`). `sql_query/migrate_add_hospitals_custom.sql`.
+
+| 필드명       | 타입          | 설명                                                                                                                    | 기본값  |
+| :----------- | :------------ | :---------------------------------------------------------------------------------------------------------------------- | :------ |
+| `id`         | `text` (PK)   | `'c-' + sha256(공백제거·소문자 name)[:10]` — 이름에서 결정적으로 도출, slug 규칙. `profiles.hospital_id`가 이 값을 저장 |         |
+| `name`       | `text`        | 기관명(관리자가 요청 기관명을 그대로 또는 고쳐서 등록)                                                                  |         |
+| `created_by` | `uuid` (FK)   | 등록한 관리자 (`profiles.id`, ON DELETE SET NULL)                                                                       |         |
+| `created_at` | `timestamptz` | 등록 일시                                                                                                               | `now()` |
+| `retired`    | `boolean`     | 폐업·통합 시 자동완성에서 제외(행은 유지)                                                                               | `false` |
+
+RLS: SELECT는 전원(`anon` 포함 — 로그인 전 가입 폼 자동완성이 읽음), 쓰기는 서비스 롤(서버 액션 `registerHospitalFromRequest`)만.
+
 ### 6. `notifications`
 
 사용자 알림 메시지를 저장합니다.

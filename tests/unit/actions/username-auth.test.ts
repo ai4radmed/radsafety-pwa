@@ -11,11 +11,27 @@ const mockAdminCreateUser = vi.fn();
 const mockAdminDeleteUser = vi.fn();
 const mockAdminGetUserById = vi.fn();
 const mockAdminUpdateUserById = vi.fn();
+const mockCustomSelect = vi.fn();
+const mockCustomUpsert = vi.fn();
 
 vi.mock('../../../src/lib/supabase-server', () => ({
     supabaseAnon: {},
     supabaseAdmin: {
         from: (table: string) => {
+            // hospitals_custom — 관리자가 화면에서 등록한 기관(2026-09-19). 기본은 "없음".
+            if (table === 'hospitals_custom') {
+                return {
+                    select: (_cols?: string) => ({
+                        eq: (_col: string, val: string) => ({
+                            maybeSingle: () => mockCustomSelect(val),
+                        }),
+                    }),
+                    upsert: (data: unknown, opts?: unknown) => {
+                        mockCustomUpsert(data, opts);
+                        return Promise.resolve({ error: null });
+                    },
+                };
+            }
             if (table !== 'profiles') throw new Error(`unexpected table: ${table}`);
             return {
                 select: (_cols?: string) => ({
@@ -85,6 +101,9 @@ beforeEach(() => {
     mockAdminUpdateUserById.mockReset();
     mockCreateNotification.mockReset();
     mockCreateBulkNotifications.mockReset();
+    mockCustomSelect.mockReset();
+    mockCustomSelect.mockResolvedValue({ data: null });
+    mockCustomUpsert.mockReset();
 });
 
 describe('server.signUpWithUsername', () => {
@@ -181,8 +200,26 @@ describe('server.signUpWithUsername', () => {
                 password: 'longenough1',
                 hospitalId: 'no-such-hospital',
             }),
-        ).rejects.toThrow();
+        ).rejects.toThrow('알 수 없는 소속기관입니다.');
         expect(mockAdminCreateUser).not.toHaveBeenCalled();
+    });
+
+    it('관리자가 등록한 커스텀 기관 id(c-…)는 hospitals_custom 에 있으면 통과한다 (2026-09-19)', async () => {
+        mockProfilesSelect.mockResolvedValue({ data: null, error: null });
+        mockAdminCreateUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+        mockCustomSelect.mockResolvedValue({ data: { id: 'c-0123456789' } });
+
+        await (server.signUpWithUsername as any)({
+            username: 'gildong',
+            password: 'longenough1',
+            hospitalId: 'c-0123456789',
+        });
+
+        expect(mockCustomSelect).toHaveBeenCalledWith('c-0123456789');
+        expect(mockProfilesUpsert).toHaveBeenCalledWith(
+            expect.objectContaining({ hospital_id: 'c-0123456789', hospital_request: null }),
+            expect.objectContaining({ onConflict: 'id' }),
+        );
     });
 
     // 기관 등록 요청(2026-09-19) — 목록에 없는 기관은 hospital_id='other' + hospital_request 로 진행.
@@ -408,14 +445,16 @@ describe('server.resolveHospitalRequest', () => {
     it("'other' 나 목록에 없는 hospitalId 는 거부", async () => {
         await expect(
             (server.resolveHospitalRequest as any)({ adminId: ADMIN_ID, targetUserId: USER_ID, hospitalId: 'other' }),
-        ).rejects.toThrow();
+        ).rejects.toThrow('알 수 없는 소속기관입니다.');
+        mockProfilesSelect.mockResolvedValueOnce({ data: { is_admin: true }, error: null });
         await expect(
             (server.resolveHospitalRequest as any)({
                 adminId: ADMIN_ID,
                 targetUserId: USER_ID,
                 hospitalId: 'no-such-hospital',
             }),
-        ).rejects.toThrow();
+        ).rejects.toThrow('알 수 없는 소속기관입니다.');
+        expect(mockProfilesUpdate).not.toHaveBeenCalled();
     });
 
     it('확정 — hospital_id 갱신 + hospital_request 비움 + 가입자 알림', async () => {
@@ -466,5 +505,80 @@ describe('server.resolveHospitalRequest', () => {
 
         const result = await (server.resolveHospitalRequest as any)({ adminId: ADMIN_ID, targetUserId: USER_ID });
         expect(result.data).toEqual({ success: true, hospitalId: null });
+    });
+});
+
+describe('server.registerHospitalFromRequest', () => {
+    const ADMIN_ID = '223e4567-e89b-12d3-a456-426614174000';
+
+    it('관리자가 아니면 거부', async () => {
+        mockProfilesSelect.mockResolvedValueOnce({ data: { is_admin: false }, error: null });
+        await expect(
+            (server.registerHospitalFromRequest as any)({
+                adminId: ADMIN_ID,
+                targetUserId: USER_ID,
+                name: '테스트병원',
+            }),
+        ).rejects.toThrow('관리자 권한이 필요합니다.');
+        expect(mockCustomUpsert).not.toHaveBeenCalled();
+    });
+
+    it('2자 미만·60자 초과 이름은 거부', async () => {
+        await expect(
+            (server.registerHospitalFromRequest as any)({ adminId: ADMIN_ID, targetUserId: USER_ID, name: '병' }),
+        ).rejects.toThrow();
+        await expect(
+            (server.registerHospitalFromRequest as any)({
+                adminId: ADMIN_ID,
+                targetUserId: USER_ID,
+                name: 'x'.repeat(61),
+            }),
+        ).rejects.toThrow();
+    });
+
+    it('새 이름 — hospitals_custom upsert(결정적 c- id) + 소속 변경 + 요청 비움 + 알림, created:true', async () => {
+        mockProfilesSelect
+            .mockResolvedValueOnce({ data: { is_admin: true }, error: null })
+            .mockResolvedValueOnce({ data: { hospital_request: '테스트' }, error: null });
+
+        const result = await (server.registerHospitalFromRequest as any)({
+            adminId: ADMIN_ID,
+            targetUserId: USER_ID,
+            name: '테스트병원',
+        });
+
+        const [row, opts] = mockCustomUpsert.mock.calls[0];
+        expect(row).toEqual(expect.objectContaining({ name: '테스트병원', created_by: ADMIN_ID }));
+        expect(row.id).toMatch(/^c-[a-f0-9]{10}$/);
+        expect(opts).toEqual(expect.objectContaining({ onConflict: 'id' }));
+        expect(mockProfilesUpdate).toHaveBeenCalledWith({ hospital_request: null, hospital_id: row.id });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: USER_ID, message: expect.stringContaining('테스트병원') }),
+        );
+        expect(result.data).toEqual({ success: true, hospitalId: row.id, name: '테스트병원', created: true });
+    });
+
+    it('정적 목록과 표기만 다른 이름은 새로 만들지 않고 그 기관으로 합친다, created:false', async () => {
+        mockProfilesSelect
+            .mockResolvedValueOnce({ data: { is_admin: true }, error: null })
+            .mockResolvedValueOnce({ data: { hospital_request: '한국 원자력 의학원' }, error: null });
+
+        const result = await (server.registerHospitalFromRequest as any)({
+            adminId: ADMIN_ID,
+            targetUserId: USER_ID,
+            name: '한국 원자력 의학원',
+        });
+
+        expect(mockCustomUpsert).not.toHaveBeenCalled();
+        expect(mockProfilesUpdate).toHaveBeenCalledWith({
+            hospital_request: null,
+            hospital_id: 'korea-institute-radiological-medical-sciences',
+        });
+        expect(result.data).toEqual({
+            success: true,
+            hospitalId: 'korea-institute-radiological-medical-sciences',
+            name: '한국원자력의학원',
+            created: false,
+        });
     });
 });

@@ -70,7 +70,8 @@
 </style>
 
 <script>
-    import { HOSPITALS } from '../data/hospitals';
+    import { HOSPITALS, type Hospital } from '../data/hospitals';
+    import { supabase } from '../lib/supabase-browser';
 
     const queryInput = document.getElementById('hospitalQuery') as HTMLInputElement;
     const hiddenInput = document.getElementById('hospitalId') as HTMLInputElement;
@@ -79,7 +80,18 @@
     const noMatchHint = document.getElementById('hospitalNoMatchHint') as HTMLParagraphElement;
 
     // 'other'(기타)는 검색 후보에서 뺀다 — 목록에 없는 기관은 아래 요청 경로로 흡수된다.
-    const active = HOSPITALS.filter((h) => !h.retired && h.id !== 'other');
+    let active: Hospital[] = HOSPITALS.filter((h) => !h.retired && h.id !== 'other');
+
+    // 관리자가 화면에서 등록한 기관(hospitals_custom, anon 읽기 허용)을 정적 목록에 합친다.
+    // 실패해도 정적 목록만으로 동작 — 자동완성이 가입을 막아선 안 된다.
+    (async () => {
+        try {
+            const { data } = await supabase.from('hospitals_custom').select('id, name').eq('retired', false);
+            if (data?.length) active = [...active, ...(data as Hospital[])];
+        } catch {
+            // ignore
+        }
+    })();
 
     function renderOptions(query: string) {
         optionsList.innerHTML = '';
