@@ -230,6 +230,11 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                     >가입일: <span id="userJoinedAt" style="font-weight:500;">...</span></span
                 >
             </div>
+            <!-- 소속기관·소속학회 (Phase 2 가입 시 자기 신고값). 기관 등록 요청 중이면 그 사실도 표시. -->
+            <div style="margin-top:0.4rem; font-size:0.85rem; color:var(--text-muted);">
+                소속: <span id="userHospitalName" style="color:var(--text-main); font-weight:500;">-</span>
+                <span id="userSocietyShort"></span>
+            </div>
         </div>
 
         <!-- 2. Verification & Affiliation Card -->
@@ -633,6 +638,7 @@ import Icon from '../components/Icon.astro'; // Import Icon component
         import { userProfile } from '../store/user';
         import { supabase } from '../lib/supabase-browser';
         import { deleteOwnAccount } from '../lib/delete-account';
+        import { HOSPITALS } from '../data/hospitals';
 
         console.log('Mypage script loaded');
         document.addEventListener('astro:page-load', async () => {
@@ -681,6 +687,43 @@ import Icon from '../components/Icon.astro'; // Import Icon component
                     } else {
                         dateEl.textContent = '-';
                     }
+                }
+
+                // 소속기관 — 정적 목록(HOSPITALS) → 관리자가 등록한 hospitals_custom(c- 접두) 순으로 이름 해석.
+                // 등록 요청이 아직 처리 전이면 '기타 (「요청명」 등록 요청 중)'.
+                const hospitalEl = document.getElementById('userHospitalName');
+                const societyShortEl = document.getElementById('userSocietyShort');
+                if (hospitalEl) {
+                    const hospitalId: string | null = currentUser.hospital_id || null;
+                    let hospitalLabel = '-';
+                    if (hospitalId) {
+                        hospitalLabel = HOSPITALS.find((h) => h.id === hospitalId)?.name || hospitalId;
+                        if (hospitalLabel === hospitalId && hospitalId.startsWith('c-')) {
+                            try {
+                                const { data } = await supabase
+                                    .from('hospitals_custom')
+                                    .select('name')
+                                    .eq('id', hospitalId)
+                                    .maybeSingle();
+                                if (data?.name) hospitalLabel = data.name;
+                            } catch {
+                                // 정적 목록·id 폴백 유지
+                            }
+                        }
+                    }
+                    if (currentUser.hospital_request) {
+                        hospitalLabel = `${hospitalLabel} (「${currentUser.hospital_request}」 등록 요청 중)`;
+                    }
+                    hospitalEl.textContent = hospitalLabel;
+                }
+                if (societyShortEl) {
+                    const societyShortMap: Record<string, string> = {
+                        nuclear_medicine: '대한핵의학회',
+                        technology: '대한핵의학기술학회',
+                        none: '학회 비소속',
+                    };
+                    const societyLabel = societyShortMap[currentUser.society] || '';
+                    societyShortEl.textContent = societyLabel ? ` · ${societyLabel}` : '';
                 }
 
                 // Verification Date
