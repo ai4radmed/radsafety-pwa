@@ -24,4 +24,4 @@ Supabase **RLS(행 수준 보안) 정책**의 실동작 — 보안 통합 테스
 
 ## 2계층 공개 계층 (2026-09-19)
 
-- anon `findings` 테스트를 "목록 열만 허용"으로 교체: `id, title, finding_type, tags, year` 조회 성공, `description` 조회는 열 권한 거부(42501/permission).
+- anon `findings` 테스트를 "목록 열만 허용"으로 교체: `id, title, finding_type, tags, year` 조회 성공, `description` 조회는 열 권한 거부(42501/permission) 또는 빈 결과 — 본문이 담긴 행이 오면 실패(마이그레이션 적용 전후 모두 유효한 "새지 않는다" 검증).

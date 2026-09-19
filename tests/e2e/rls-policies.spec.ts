@@ -30,10 +30,15 @@ test.describe('RLS 정책 검증 (보안)', () => {
         const listed = await anon.from('findings').select('id, title, finding_type, tags, year').limit(1);
         expect(listed.error, `목록 열 조회 실패: ${listed.error?.message}`).toBeNull();
 
-        // description/violation_clause/solution 은 GRANT 에서 빠져 있어 열 단위 permission denied 여야 한다.
+        // description/violation_clause/solution 은 anon 에게 새면 안 된다: 열 권한 거부(42501, migrate_public_tier_read.sql
+        // 적용 후) 이거나, 정책이 없어 빈 결과(적용 전)여야 한다. 본문이 담긴 행이 오면 실패.
         const detail = await anon.from('findings').select('id, description').limit(1);
-        expect(detail.error, '본문 열이 anon 에게 열려 있음').not.toBeNull();
-        expect(detail.error!.code === '42501' || /permission/.test(detail.error!.message)).toBe(true);
+        if (detail.error) {
+            expect(detail.error.code === '42501' || /permission/.test(detail.error.message)).toBe(true);
+        } else {
+            const leaked = (detail.data ?? []).filter((r: any) => r.description != null);
+            expect(leaked, '본문 열이 anon 에게 새고 있음').toHaveLength(0);
+        }
     });
 
     test('로그인 사용자의 profiles 조회에 RLS 무한 재귀가 없다', async () => {
