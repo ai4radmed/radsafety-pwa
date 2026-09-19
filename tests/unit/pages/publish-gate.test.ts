@@ -44,6 +44,9 @@ describe('2-1 업로드 권한 게이트', () => {
         expect(findings).toContain('status-badge pending');
         expect(resources).toContain('관리자 검토 후 게시');
         expect(findings).toContain('관리자 검토 후 게시');
+        // pending 이면 관리자 알림(in-app+텔레그램) 액션 호출
+        expect(resources).toContain("notifySubmission({ kind: 'archive'");
+        expect(findings).toContain("notifySubmission({ kind: 'finding'");
         // 게시된 자료만 API 로 바로 연다
         expect(resources).toContain("item?.status === 'published'");
     });

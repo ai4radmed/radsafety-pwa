@@ -28,3 +28,4 @@
 - **표시**: 본인 pending/rejected 항목에 `status-badge` + `.not-published`(반투명). 다른 회원에게는 RLS가 애초에 안 보여준다.
 - **파일 규칙**(`validateUploadFile`): 20MB 이하, 허용 확장자(pdf·hwp·hwpx·doc·docx·xls·xlsx·ppt·pptx·png·jpg·jpeg·gif·webp·txt·md), 차단(docm·xlsm·pptm·exe·msi·bat·cmd·sh·js·vbs·ps1·jar·scr·com). 파일명은 서버 경로에 쓰지 않고(랜덤) `file_name`에만 원본 보관.
 - **확인란**: 신규 제출 시 `#writeConsent`(저작권·개인정보 없음) 필수.
+- **관리자 알림**: insert 응답 `status==='pending'`이면 `actions.notifySubmission({kind:'archive', id})`를 fire-and-forget 호출(in-app + 텔레그램, `.spec/src/actions/index.md` 규칙 18).
