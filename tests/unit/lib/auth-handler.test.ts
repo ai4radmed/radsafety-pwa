@@ -113,7 +113,7 @@ describe('auth-handler', () => {
         expect(setUser).toHaveBeenCalledWith(
             expect.objectContaining({
                 id: 'user123',
-                nickname: 'TestUser',
+                username: 'testuser',
             }),
         );
     });
@@ -195,7 +195,7 @@ describe('auth-handler', () => {
         expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'new-uid' }), { onConflict: 'id' });
     });
 
-    it('카카오 자가 치유는 nickname·login_email 을 비운다 (Stage B)', async () => {
+    it('카카오 자가 치유는 nickname·login_email 을 쓰지 않는다 (2-2: 컬럼 삭제)', async () => {
         const mockSession = {
             user: {
                 id: 'kakao-new-uid',
@@ -218,13 +218,15 @@ describe('auth-handler', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
 
         const { upsert } = (supabase.from as any)();
-        expect(upsert).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'kakao-new-uid', nickname: null, login_email: null, provider: 'kakao' }),
-            { onConflict: 'id' },
-        );
+        expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'kakao-new-uid', provider: 'kakao' }), {
+            onConflict: 'id',
+        });
+        const [kakaoRow] = upsert.mock.calls[0];
+        expect(kakaoRow).not.toHaveProperty('nickname');
+        expect(kakaoRow).not.toHaveProperty('login_email');
     });
 
-    it('카카오가 아닌 provider 로 자가 치유돼도 login_email·nickname 을 비운다 (Stage C — OTP 로그인 제거로 살려둘 로그인 경로 없음)', async () => {
+    it('카카오가 아닌 provider 로 자가 치유돼도 provider 만 기록한다 (2-2: 이메일·닉네임 컬럼 없음)', async () => {
         const mockSession = {
             user: {
                 id: 'email-new-uid',
@@ -246,10 +248,12 @@ describe('auth-handler', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
 
         const { upsert } = (supabase.from as any)();
-        expect(upsert).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'email-new-uid', login_email: null, nickname: null, provider: 'email' }),
-            { onConflict: 'id' },
-        );
+        expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'email-new-uid', provider: 'email' }), {
+            onConflict: 'id',
+        });
+        const [emailRow] = upsert.mock.calls[0];
+        expect(emailRow).not.toHaveProperty('login_email');
+        expect(emailRow).not.toHaveProperty('nickname');
     });
 
     it('자가 치유로 막 생긴 계정은 항상 status: pending 으로 시작한다 (Phase 2)', async () => {

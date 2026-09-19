@@ -178,18 +178,10 @@ const { pathname } = Astro.url;
             <a
                 href="/admin/members"
                 class={pathname.startsWith('/admin/members') ? 'active' : ''}
-                aria-label="Member List Registration"
+                aria-label="Member List"
             >
                 <span class="icon"><Icon name="clipboard" size="18" /></span>
-                <span class="link-text">회원명부 등록</span>
-            </a>
-            <a
-                href="/admin/verification-requests"
-                class={pathname.startsWith('/admin/verification-requests') ? 'active' : ''}
-                aria-label="Verification Requests"
-            >
-                <span class="icon"><Icon name="check-square" size="18" /></span>
-                <span class="link-text">인증관리</span>
+                <span class="link-text">회원 목록</span>
             </a>
             <a
                 href="/admin/send-notification"

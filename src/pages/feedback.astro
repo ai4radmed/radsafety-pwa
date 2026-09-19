@@ -362,8 +362,11 @@ import Icon from '../components/Icon.astro';
                 const message = formData.get('message') as string;
 
                 // Get user info from profile
-                const userName = currentUser?.real_name || currentUser?.nickname || '익명';
-                const userEmail = currentUser?.login_email || currentUser?.society_email || 'noreply@example.com';
+                // 2-2: 앱은 실명·이메일을 갖지 않는다 — 아이디와 파생 주소만 넘긴다(회신 불가 주소).
+                const userName = currentUser?.username ? `@${currentUser.username}` : '익명';
+                const userEmail = currentUser?.username
+                    ? `${currentUser.username}@radsafety.invalid`
+                    : 'noreply@radsafety.invalid';
 
                 // Validation
                 if (!title || !message) {

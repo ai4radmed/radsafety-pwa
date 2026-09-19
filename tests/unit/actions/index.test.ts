@@ -87,13 +87,13 @@ describe('server.actions', () => {
     it('필수 액션들이 export됨', () => {
         expect(server).toHaveProperty('saveFinding');
         expect(server).toHaveProperty('deleteFinding');
-        expect(server).toHaveProperty('sendVerificationCode');
-        expect(server).toHaveProperty('verifyEmailCode');
         expect(server).toHaveProperty('sendNotification');
         expect(server).toHaveProperty('sendFeedback');
-        expect(server).toHaveProperty('approveVerification');
-        expect(server).toHaveProperty('rejectVerification');
-        expect(server).toHaveProperty('revokeVerification');
+        expect(server).toHaveProperty('approvePendingMember');
+        expect(server).toHaveProperty('rejectPendingMember');
+        expect(server).toHaveProperty('resolveHospitalRequest');
+        expect(server).toHaveProperty('registerHospitalFromRequest');
+        expect(server).toHaveProperty('updateAffiliation');
     });
 });
 
@@ -145,65 +145,6 @@ describe('server.saveFinding', () => {
     });
 });
 
-describe('admin.verification', () => {
-    const adminId = '123e4567-e89b-12d3-a456-426614174000';
-    const targetUserId = '123e4567-e89b-12d3-a456-426614174001';
-
-    beforeEach(() => {
-        mockAdminFrom.mockClear();
-        mockAdminUpdate.mockClear();
-        mockAdminEq.mockClear();
-        mockAdminSingle.mockClear();
-    });
-
-    it('approveVerification: 관리자가 아니면 에러', async () => {
-        mockAdminSingle.mockResolvedValue({ data: { is_admin: false }, error: null });
-        await expect((server.approveVerification as any)({ adminId, targetUserId })).rejects.toThrow(
-            '관리자 권한이 필요합니다.',
-        );
-    });
-
-    it('approveVerification: 관리자인 경우 성공 및 DB 업데이트', async () => {
-        mockAdminSingle.mockResolvedValue({ data: { is_admin: true }, error: null });
-        const res = await (server.approveVerification as any)({ adminId, targetUserId });
-        expect(res.data).toEqual({ success: true, message: '인증 승인이 완료되었습니다.' });
-        expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { verification_status: 'verified' });
-        expect(mockAdminUpdate).toHaveBeenCalledWith(
-            'verification_requests',
-            expect.objectContaining({
-                verification_status: 'approved',
-            }),
-        );
-    });
-
-    it('rejectVerification: 반려 처리 확인', async () => {
-        mockAdminSingle.mockResolvedValue({ data: { is_admin: true }, error: null });
-        const res = await (server.rejectVerification as any)({ adminId, targetUserId, reason: '탈락' });
-        expect(res.data.success).toBe(true);
-        expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { verification_status: 'rejected' });
-        expect(mockAdminUpdate).toHaveBeenCalledWith(
-            'verification_requests',
-            expect.objectContaining({
-                verification_status: 'rejected',
-                reject_reason: '탈락',
-            }),
-        );
-    });
-
-    it('revokeVerification: 회수 처리 확인', async () => {
-        mockAdminSingle.mockResolvedValue({ data: { is_admin: true }, error: null });
-        const res = await (server.revokeVerification as any)({ adminId, targetUserId });
-        expect(res.data.success).toBe(true);
-        expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { verification_status: 'temp_verified' });
-        expect(mockAdminUpdate).toHaveBeenCalledWith(
-            'verification_requests',
-            expect.objectContaining({
-                verification_status: 'pending',
-            }),
-        );
-    });
-});
-
 describe('admin.memberApproval (Phase 3)', () => {
     const adminId = '123e4567-e89b-12d3-a456-426614174000';
     const targetUserId = '123e4567-e89b-12d3-a456-426614174001';
@@ -248,63 +189,5 @@ describe('admin.memberApproval (Phase 3)', () => {
         expect(res.data).toEqual({ success: true });
         expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { status: 'banned' });
         expect(mockAdminEq).toHaveBeenCalledWith('profiles', 'id', targetUserId);
-    });
-});
-
-describe('server.sendVerificationCode', () => {
-    const email = 'user@test.com';
-    const userId = '123e4567-e89b-12d3-a456-426614174001';
-
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
-    it('성공 케이스: DB 저장 및 이메일 발송', async () => {
-        const { sendVerificationEmail } = await import('../../../src/lib/email');
-        (sendVerificationEmail as any).mockResolvedValue({ success: true, messageId: 'test-id' });
-
-        mockAdminSingle.mockImplementation((table) => {
-            if (table === 'email_verification_codes') return Promise.resolve({ data: { id: 'code-id' }, error: null });
-            if (table === 'profiles') return Promise.resolve({ data: { real_name: '김테스트' }, error: null });
-            return Promise.resolve({ data: null, error: null });
-        });
-
-        const res = await (server.sendVerificationCode as any)({ email, userId });
-
-        expect(res.data.success).toBe(true);
-        expect(mockAdminFrom).toHaveBeenCalledWith('email_verification_codes');
-        expect(mockInsert).toHaveBeenCalled();
-        expect(sendVerificationEmail).toHaveBeenCalledWith(
-            expect.objectContaining({ to: email, userName: '김테스트' }),
-        );
-    });
-
-    it('이메일 발송 실패 시 에러 발생', async () => {
-        const { sendVerificationEmail } = await import('../../../src/lib/email');
-        (sendVerificationEmail as any).mockRejectedValue(new Error('SMTP Error'));
-
-        mockAdminSingle.mockImplementation((table) => {
-            if (table === 'email_verification_codes') return Promise.resolve({ data: { id: 'code-id' }, error: null });
-            if (table === 'profiles') return Promise.resolve({ data: { real_name: '김테스트' }, error: null });
-            return Promise.resolve({ data: null, error: null });
-        });
-
-        await expect((server.sendVerificationCode as any)({ email, userId })).rejects.toThrow(
-            '이메일 발송에 실패했습니다',
-        );
-    });
-
-    it('프로필 조회 실패 시 기본값(사용자)으로 발송', async () => {
-        const { sendVerificationEmail } = await import('../../../src/lib/email');
-        (sendVerificationEmail as any).mockResolvedValue({ success: true, messageId: 'test-id' });
-
-        mockAdminSingle.mockImplementation((table) => {
-            if (table === 'email_verification_codes') return Promise.resolve({ data: { id: 'code-id' }, error: null });
-            if (table === 'profiles') return Promise.resolve({ data: null, error: null });
-            return Promise.resolve({ data: null, error: null });
-        });
-
-        await (server.sendVerificationCode as any)({ email, userId });
-        expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ userName: '사용자' }));
     });
 });

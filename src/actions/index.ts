@@ -1,7 +1,7 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 import { supabaseAnon, supabaseAdmin } from '../lib/supabase-server';
-import { sendVerificationEmail, sendFeedbackEmail } from '../lib/email';
+import { sendFeedbackEmail } from '../lib/email';
 import { resolveFeedbackRecipients } from '../config/auth';
 import { createLogger } from '../lib/logger';
 import { sendPushToUsers } from '../lib/push';
@@ -156,137 +156,12 @@ export const server = {
         },
     }),
 
-    // Email Verification Actions
-    sendVerificationCode: defineAction({
-        input: z.object({
-            email: z.string().email(),
-            userId: z.string().uuid(),
-        }),
-        handler: async ({ email, userId }) => {
-            try {
-                logger.info('인증코드 발송 시작', { userId, email });
-
-                // Generate 6-digit code
-                const code = Math.floor(100000 + Math.random() * 900000).toString();
-                const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-                // Store code in database using admin client to bypass RLS
-                const { data: insertData, error } = await supabaseAdmin
-                    .from('email_verification_codes')
-                    .insert({
-                        user_id: userId,
-                        email,
-                        code,
-                        expires_at: expiresAt.toISOString(),
-                    })
-                    .select()
-                    .single();
-
-                if (error) {
-                    logger.error('인증코드 DB 저장 실패', { error });
-                    throw new Error(
-                        `코드 생성 실패 (${error.code}): ${error.message}${error.details ? ' - ' + error.details : ''}`,
-                        { cause: error },
-                    );
-                }
-
-                logger.info('인증코드 DB 저장 성공', { id: insertData?.id });
-
-                // 사용자 이름 가져오기
-                const { data: userProfile } = await supabaseAdmin
-                    .from('profiles')
-                    .select('real_name, nickname')
-                    .eq('id', userId)
-                    .single();
-
-                const userName = userProfile?.real_name || userProfile?.nickname || '사용자';
-
-                // Send email with verification code
-                try {
-                    await sendVerificationEmail({
-                        to: email,
-                        code,
-                        userName,
-                    });
-                    logger.info('인증 이메일 발송 성공', { email });
-                } catch (emailError) {
-                    logger.error('인증 이메일 발송 실패', { error: emailError });
-                    throw new Error('이메일 발송에 실패했습니다: ' + (emailError as Error).message, {
-                        cause: emailError,
-                    });
-                }
-
-                return { success: true, message: '인증 코드가 발송되었습니다.' };
-            } catch (error) {
-                logger.error('인증코드 발송 실패', { error });
-                throw error;
-            }
-        },
-    }),
-
-    verifyEmailCode: defineAction({
-        input: z.object({
-            code: z.string().length(6),
-            userId: z.string().uuid(),
-        }),
-        handler: async ({ code, userId }) => {
-            try {
-                logger.info('이메일 코드 검증 시작', { userId });
-
-                // Find valid code using admin client
-                const { data, error } = await supabaseAdmin
-                    .from('email_verification_codes')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .eq('code', code)
-                    .eq('verified', false)
-                    .gt('expires_at', new Date().toISOString())
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (error || !data) {
-                    logger.error('인증코드 조회 실패', { error });
-                    throw new Error('유효하지 않거나 만료된 코드입니다.');
-                }
-
-                logger.info('인증코드 조회 성공', { id: data.id });
-
-                // Mark as verified using admin client
-                const { error: updateError } = await supabaseAdmin
-                    .from('email_verification_codes')
-                    .update({
-                        verified: true,
-                        verified_at: new Date().toISOString(),
-                    })
-                    .eq('id', data.id);
-
-                if (updateError) {
-                    logger.error('인증코드 검증 업데이트 실패', { error: updateError });
-                    throw new Error('검증 처리 실패');
-                }
-
-                logger.info('이메일 검증 완료', { userId, email: data.email });
-
-                return {
-                    success: true,
-                    email: data.email,
-                    message: '이메일이 성공적으로 검증되었습니다.',
-                };
-            } catch (error) {
-                logger.error('이메일 코드 검증 실패', { error });
-                throw error;
-            }
-        },
-    }),
-
     // Send Notification Action
     sendNotification: defineAction({
         input: z.object({
             senderId: z.string().uuid(),
-            targetType: z.enum(['all', 'provider', 'verification_status', 'specific']),
+            targetType: z.enum(['all', 'provider', 'specific']),
             provider: z.enum(['kakao', 'email']).optional(),
-            verificationStatus: z.enum(['none', 'list', 'temp_verified', 'verified']).optional(),
             specificUserId: z.string().uuid().optional(),
             title: z.string().min(1),
             message: z.string().min(1),
@@ -318,8 +193,6 @@ export const server = {
                     query = query.eq('id', input.specificUserId);
                 } else if (input.targetType === 'provider' && input.provider) {
                     query = query.eq('provider', input.provider);
-                } else if (input.targetType === 'verification_status' && input.verificationStatus) {
-                    query = query.eq('verification_status', input.verificationStatus);
                 }
                 // 'all' type doesn't add any filters
 
@@ -441,150 +314,6 @@ export const server = {
         },
     }),
 
-    // Admin Verification Actions
-    approveVerification: defineAction({
-        input: z.object({
-            adminId: z.string().uuid(),
-            targetUserId: z.string().uuid(),
-        }),
-        handler: async ({ adminId, targetUserId }) => {
-            try {
-                logger.info('인증 승인 처리 시작', { adminId, targetUserId });
-
-                // 1. Check if requester is admin
-                const { data: adminProfile, error: adminError } = await supabaseAdmin
-                    .from('profiles')
-                    .select('is_admin')
-                    .eq('id', adminId)
-                    .single();
-
-                if (adminError || !adminProfile?.is_admin) {
-                    throw new Error('관리자 권한이 필요합니다.');
-                }
-
-                // 2. Update Profile using admin client to bypass RLS
-                const { error: profileError } = await supabaseAdmin
-                    .from('profiles')
-                    .update({ verification_status: 'verified' })
-                    .eq('id', targetUserId);
-
-                if (profileError) throw profileError;
-
-                // 3. Update Verification Request
-                const { error: requestError } = await supabaseAdmin
-                    .from('verification_requests')
-                    .update({
-                        verification_status: 'approved',
-                        approved_at: new Date().toISOString(),
-                    })
-                    .eq('user_id', targetUserId);
-
-                if (requestError) logger.warn('인증 요청 내역 업데이트 실패', { error: requestError });
-
-                return { success: true, message: '인증 승인이 완료되었습니다.' };
-            } catch (error) {
-                logger.error('인증 승인 중 오류 발생', { error });
-                throw error;
-            }
-        },
-    }),
-
-    rejectVerification: defineAction({
-        input: z.object({
-            adminId: z.string().uuid(),
-            targetUserId: z.string().uuid(),
-            reason: z.string(),
-        }),
-        handler: async ({ adminId, targetUserId, reason }) => {
-            try {
-                logger.info('인증 반려 처리 시작', { adminId, targetUserId });
-
-                // Check admin
-                const { data: adminProfile, error: adminError } = await supabaseAdmin
-                    .from('profiles')
-                    .select('is_admin')
-                    .eq('id', adminId)
-                    .single();
-
-                if (adminError || !adminProfile?.is_admin) {
-                    throw new Error('관리자 권한이 필요합니다.');
-                }
-
-                // Update Profile
-                const { error: profileError } = await supabaseAdmin
-                    .from('profiles')
-                    .update({ verification_status: 'rejected' })
-                    .eq('id', targetUserId);
-
-                if (profileError) throw profileError;
-
-                // Update Request
-                const { error: requestError } = await supabaseAdmin
-                    .from('verification_requests')
-                    .update({
-                        verification_status: 'rejected',
-                        rejected_at: new Date().toISOString(),
-                        reject_reason: reason,
-                    })
-                    .eq('user_id', targetUserId);
-
-                if (requestError) logger.warn('인증 요청 반려 내역 업데이트 실패', { error: requestError });
-
-                return { success: true, message: '인증 반려 처리가 완료되었습니다.' };
-            } catch (error) {
-                logger.error('인증 반려 중 오류 발생', { error });
-                throw error;
-            }
-        },
-    }),
-
-    revokeVerification: defineAction({
-        input: z.object({
-            adminId: z.string().uuid(),
-            targetUserId: z.string().uuid(),
-        }),
-        handler: async ({ adminId, targetUserId }) => {
-            try {
-                logger.info('인증 취소(회수) 처리 시작', { adminId, targetUserId });
-
-                // Check admin
-                const { data: adminProfile, error: adminError } = await supabaseAdmin
-                    .from('profiles')
-                    .select('is_admin')
-                    .eq('id', adminId)
-                    .single();
-
-                if (adminError || !adminProfile?.is_admin) {
-                    throw new Error('관리자 권한이 필요합니다.');
-                }
-
-                // Update Profile to temp_verified
-                const { error: profileError } = await supabaseAdmin
-                    .from('profiles')
-                    .update({ verification_status: 'temp_verified' })
-                    .eq('id', targetUserId);
-
-                if (profileError) throw profileError;
-
-                // Update Request
-                const { error: requestError } = await supabaseAdmin
-                    .from('verification_requests')
-                    .update({
-                        verification_status: 'pending',
-                        approved_at: null, // Clear approval time
-                    })
-                    .eq('user_id', targetUserId);
-
-                if (requestError) logger.warn('인증 요청 회수 내역 업데이트 실패', { error: requestError });
-
-                return { success: true, message: '인증 회수 처리가 완료되었습니다.' };
-            } catch (error) {
-                logger.error('인증 회수 중 오류 발생', { error });
-                throw error;
-            }
-        },
-    }),
-
     // Stage 1-A — username/password 회원가입. profiles.username 확정 후 auth.users
     // 를 가짜 이메일로 생성한다. 클라이언트는 반환된 email 로 곧바로
     // supabase.auth.signInWithPassword 를 호출해 세션을 연다(기존 개발자 로그인
@@ -629,8 +358,6 @@ export const server = {
                 {
                     id: created.user.id,
                     username,
-                    login_email: null,
-                    nickname: null,
                     provider: 'email',
                     created_at: new Date().toISOString(),
                     // Phase 2 — 신규 계정은 관리자 승인 전까지 대기. 소속기관·소속학회는
@@ -685,7 +412,7 @@ export const server = {
 
     // Stage B (privacy_redesign_plan.md 전환기간) — 기존 이메일/카카오 사용자가
     // 아이디를 정할 때 호출. auth.users.email 을 가짜 이메일로 교체하고
-    // login_email/nickname 을 비운다. password 는 선택 — 카카오 사용자는 생략 가능,
+    // 갱신한다(login_email/nickname 컬럼은 2-2 에서 삭제됨). password 는 선택 — 카카오 사용자는 생략 가능,
     // 이메일 OTP 출신 사용자는 이 방법이 유일한 향후 로그인 수단이라 사실상 필수
     // (강제 여부는 클라이언트 UI 판단, 서버는 optional 로만 받는다).
     // userId 는 클라이언트가 넘긴다 — approveVerification 등 기존 관리자 액션과
@@ -728,8 +455,6 @@ export const server = {
                 .from('profiles')
                 .update({
                     username,
-                    login_email: null,
-                    nickname: null,
                     ...(hospitalFields ?? {}),
                     ...(society !== undefined ? { society } : {}),
                 })
@@ -741,6 +466,40 @@ export const server = {
             }
 
             return { success: true, email };
+        },
+    }),
+
+    // 2-2 (2026-09-19) — 마이페이지 "소속 정보" 저장. 가입 폼과 같은 규칙: 목록에서 확정한 id 는
+    // 검증해 저장, 확정 안 된 타이핑 텍스트는 'other' + hospital_request(관리자 알림). society 는
+    // null 로 지울 수 있다. userId 는 claimUsername 과 같은 관례(클라이언트 전달).
+    updateAffiliation: defineAction({
+        input: z.object({
+            userId: z.string().uuid(),
+            hospitalId: hospitalIdSchema,
+            hospitalRequest: hospitalRequestSchema,
+            society: z.enum(['nuclear_medicine', 'technology', 'none']).nullable().optional(),
+        }),
+        handler: async ({ userId, hospitalId, hospitalRequest, society }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+            await assertKnownHospitalId(hospitalId);
+
+            const { data: profile, error: profileError } = await supabaseAdmin
+                .from('profiles')
+                .select('username')
+                .eq('id', userId)
+                .single();
+            if (profileError || !profile) throw new Error('사용자를 찾을 수 없습니다.');
+
+            const hospitalFields = resolveHospitalFields(hospitalId, hospitalRequest);
+            const update = { ...hospitalFields, ...(society !== undefined ? { society } : {}) };
+            const { error: updateError } = await supabaseAdmin.from('profiles').update(update).eq('id', userId);
+            if (updateError) throw new Error(updateError.message);
+
+            if (hospitalFields.hospital_request) {
+                await notifyAdminsOfHospitalRequest(profile.username ?? '', hospitalFields.hospital_request);
+            }
+
+            return { success: true, ...hospitalFields, society: society === undefined ? null : society };
         },
     }),
 

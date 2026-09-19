@@ -23,7 +23,7 @@
 3. **updateUserStore (프로필 부재 시 - Self-healing)**:
     - 프로필이 없을 경우 `supabase.from('profiles').upsert(data, {onConflict:'id'})`가 호출되는지 확인(insert 아님 — Stage B, auth.users→profiles 자동생성 트리거 충돌 방지).
     - 삽입 성공 후 유저 정보가 정상적으로 스토어에 저장되는지 확인.
-    - **(Stage C, 2026-09-18)** provider와 무관하게(`kakao`·`email` 모두) upsert 대상에 `nickname: null, login_email: null`이 포함되는지 확인 — 이메일 OTP 로그인 제거로 `login_email`을 살려둘 로그인 경로가 없다.
+    - **(2-2, 2026-09-19)** provider와 무관하게(`kakao`·`email` 모두) upsert 대상에 `nickname`·`login_email` **키 자체가 없는지** 확인 — 컬럼이 삭제돼 값을 보내면 upsert가 실패한다. `provider`는 포함.
     - **(Phase 2)** upsert 대상에 항상 `status: 'pending'`이 포함되는지 확인 — 자가 치유는 신규 계정에서만 실행되므로 항상 대기 상태로 시작.
 
 4. **updateUserStore (비인증 접근 시)**:

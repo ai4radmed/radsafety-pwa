@@ -42,17 +42,12 @@ async function updateUserStore(session: any) {
     const isUserLoggedIn = !!session?.user;
 
     if (isUserLoggedIn) {
+        // 2-2(2026-09-19): 세션의 이메일·닉네임은 스토어로 옮기지 않는다 — 앱은 실명·이메일을 갖지 않는다.
         const baseUser = {
             id: session.user.id,
             email: session.user.email || '',
-            login_email: session.user.email || '',
             created_at: session.user.created_at || '',
             provider: session.user.app_metadata?.provider || 'email',
-            nickname:
-                session.user.user_metadata?.full_name ||
-                session.user.user_metadata?.name ||
-                session.user.user_metadata?.user_name ||
-                '',
         };
 
         let username: string | null = null;
@@ -71,7 +66,6 @@ async function updateUserStore(session: any) {
                 setUser({
                     ...baseUser,
                     ...profile,
-                    nickname: profile.nickname || baseUser.nickname,
                     is_admin: !!profile.is_admin,
                     licenses: profile.licenses || [],
                 });
@@ -104,16 +98,12 @@ async function updateUserStore(session: any) {
  * 프로필 누락 시 자동 생성 (자가 치유)
  */
 async function performSelfHealing(userId: string, baseUser: any) {
-    // Stage C — 이메일 OTP 로그인이 사라져 login_email 을 살려둘 로그인 경로가
-    // 더 이상 없다(privacy_redesign_plan.md 1단계 C). 신규 계정은 provider 와
-    // 무관하게 항상 nickname·login_email 을 비운다. provider 자체는 계속 기록한다 —
-    // 관리자가 다른 사용자의 로그인 방식을 보는 유일한 영속 경로
+    // 이메일·닉네임 컬럼은 2-2(2026-09-19)에서 삭제됐다 — 신규 행에도 쓰지 않는다. provider 는
+    // 계속 기록한다: 관리자가 다른 사용자의 로그인 방식을 보는 유일한 영속 경로
     // (profiles.provider, sql_query/migrate_add_profile_provider.sql).
     const isKakao = baseUser.provider === 'kakao';
     const newProfile = {
         id: userId,
-        login_email: null,
-        nickname: null,
         provider: isKakao ? 'kakao' : 'email',
         created_at: new Date().toISOString(),
         is_admin: false,

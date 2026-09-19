@@ -27,7 +27,7 @@ const ADMIN_PAGES = [
     '/admin/members',
     '/admin/feedback',
     '/admin/glossary',
-    '/admin/verification-requests',
+    '/admin/member-approval',
     '/admin/send-notification',
 ];
 

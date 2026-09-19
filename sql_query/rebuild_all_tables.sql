@@ -17,7 +17,7 @@
 --   - "Admins can view all profiles" 정책에서 COALESCE + LIMIT 1 시도 (불충분)
 --   - 스키마 캐시 강제 갱신 (NOTIFY pgrst) 추가
 -- - 2026-02-20: [MAJOR] 모든 핵심 테이블 CREATE TABLE 추가 (신규 설치 시 필요한 모든 테이블)
---   - profiles, findings, allowed_members, verification_requests, notifications
+--   - profiles, findings, notifications (allowed_members·verification_requests 는 2-2, 2026-09-19 삭제)
 --   - archives 테이블 전체 생성 (profiles 외래키 관계 포함, RLS 정책 포함)
 --   - 이제 이 파일 하나만 실행하면 신규 Supabase 환경에서 전체 DB 구성 가능
 -- - 2026-02-19: archives 테이블 slug 컬럼 추가 (URL 친화적 고유 식별자)
@@ -28,7 +28,7 @@
 -- - 2026-02-16: 모든 CREATE POLICY를 IF NOT EXISTS로 래핑 (멱등성 보장)
 -- - 2026-02-16: glossary_terms 테이블 추가 (법령용어사전)
 -- - 2026-02-14: 인증 상태 세분화 (temp_verified 추가, admin → verified 마이그레이션)
--- - 2026-02-14: 이메일 검증 시스템 추가 (email_verification_codes 테이블)
+-- - 2026-02-14: 이메일 검증 시스템 추가 (email_verification_codes 테이블) → 2026-09-19 2-2 에서 삭제
 -- - 기존 구버전 백업 파일은 정리 완료 (2026-02-17)
 --
 -- 주의: 이 스크립트는 기존 데이터를 보존합니다.
@@ -40,26 +40,16 @@
 -- ============================================================
 
 -- profiles 테이블 생성
+-- 2단계 2-2(2026-09-19, sql_query/migrate_drop_legacy_profile_columns.sql): 실명·이메일·닉네임·
+-- 부서·면허 등 개인정보 컬럼과 명부/인증 테이블은 삭제됐다. 앱은 아이디·소속(기관·학회)·상태만 갖는다.
+-- username/status/hospital_id/provider/hospital_request 는 각 migrate_*.sql 이 추가(아래 참조).
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    nickname TEXT,
-    login_email TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     is_admin BOOLEAN DEFAULT false,
+    -- verification_status: 업로드 게이트가 참조하는 마지막 잔재 — 2-1(can_publish)에서 삭제 예정
     verification_status TEXT DEFAULT 'none',
-    verification_date TIMESTAMPTZ,
-    society TEXT,
-    classification TEXT,
-    society_email TEXT,
-    real_name TEXT,
-    affiliation TEXT,
-    department TEXT,
-    license_type TEXT,
-    is_safety_manager BOOLEAN DEFAULT false,
-    safety_manager_start_year TEXT,
-    safety_manager_end_year TEXT,
-    email_verified BOOLEAN DEFAULT false,
-    verification_method TEXT
+    society TEXT
 );
 
 -- RLS 활성화
@@ -164,95 +154,6 @@ BEGIN
     END IF;
 END $$;
 
--- allowed_members 테이블 생성
-CREATE TABLE IF NOT EXISTS public.allowed_members (
-    society_email TEXT PRIMARY KEY,
-    society TEXT,
-    classification TEXT,
-    real_name TEXT,
-    affiliation TEXT,
-    department TEXT,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE public.allowed_members ENABLE ROW LEVEL SECURITY;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies
-        WHERE tablename = 'allowed_members' AND policyname = 'Only admins can view allowed members'
-    ) THEN
-        CREATE POLICY "Only admins can view allowed members"
-        ON public.allowed_members FOR SELECT
-        TO authenticated
-        USING (public.is_current_user_admin() = true);
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies
-        WHERE tablename = 'allowed_members' AND policyname = 'Only admins can manage allowed members'
-    ) THEN
-        CREATE POLICY "Only admins can manage allowed members"
-        ON public.allowed_members FOR ALL
-        TO authenticated
-        USING (public.is_current_user_admin() = true);
-    END IF;
-END $$;
-
--- verification_requests 테이블 생성
-CREATE TABLE IF NOT EXISTS public.verification_requests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    verification_status TEXT DEFAULT 'pending',
-    verification_date TIMESTAMPTZ DEFAULT now(),
-    society TEXT,
-    classification TEXT,
-    society_email TEXT,
-    real_name TEXT,
-    affiliation TEXT,
-    department TEXT,
-    reason TEXT,
-    reject_reason TEXT,
-    approved_at TIMESTAMPTZ,
-    rejected_at TIMESTAMPTZ
-);
-
-ALTER TABLE public.verification_requests ENABLE ROW LEVEL SECURITY;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies
-        WHERE tablename = 'verification_requests' AND policyname = 'Users can view their own requests'
-    ) THEN
-        CREATE POLICY "Users can view their own requests"
-        ON public.verification_requests FOR SELECT
-        TO authenticated
-        USING (auth.uid() = user_id);
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies
-        WHERE tablename = 'verification_requests' AND policyname = 'Users can insert their own requests'
-    ) THEN
-        CREATE POLICY "Users can insert their own requests"
-        ON public.verification_requests FOR INSERT
-        TO authenticated
-        WITH CHECK (auth.uid() = user_id);
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies
-        WHERE tablename = 'verification_requests' AND policyname = 'Admins can manage all requests'
-    ) THEN
-        CREATE POLICY "Admins can manage all requests"
-        ON public.verification_requests FOR ALL
-        TO authenticated
-        USING (public.is_current_user_admin() = true);
-    END IF;
-END $$;
-
 -- notifications 테이블 생성
 CREATE TABLE IF NOT EXISTS public.notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -307,90 +208,6 @@ BEGIN
 END $$;
 
 -- ============================================================
--- 1. Add new columns to profiles table (if not exists)
--- ============================================================
-
-DO $$
-BEGIN
-    -- Add email_verified column
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'profiles'
-        AND column_name = 'email_verified'
-    ) THEN
-        ALTER TABLE public.profiles
-        ADD COLUMN email_verified boolean DEFAULT false;
-
-        RAISE NOTICE 'Added email_verified column to profiles';
-    ELSE
-        RAISE NOTICE 'email_verified column already exists';
-    END IF;
-
-    -- Add verification_method column
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'profiles'
-        AND column_name = 'verification_method'
-    ) THEN
-        ALTER TABLE public.profiles
-        ADD COLUMN verification_method text; -- 'login_email', 'otp', 'list'
-
-        RAISE NOTICE 'Added verification_method column to profiles';
-    ELSE
-        RAISE NOTICE 'verification_method column already exists';
-    END IF;
-END $$;
-
--- ============================================================
--- 2. Create email_verification_codes table
--- ============================================================
-
--- Drop if exists (safe to drop as this is new table with no data)
-DROP TABLE IF EXISTS public.email_verification_codes CASCADE;
-
-CREATE TABLE public.email_verification_codes (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    email text NOT NULL,
-    code text NOT NULL, -- 6-digit code
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    expires_at timestamp with time zone DEFAULT timezone('utc'::text, now()) + interval '10 minutes' NOT NULL,
-    verified boolean DEFAULT false,
-    verified_at timestamp with time zone
-);
-
--- Add indexes for performance
-CREATE INDEX idx_email_verification_user_id ON public.email_verification_codes(user_id);
-CREATE INDEX idx_email_verification_code ON public.email_verification_codes(code);
-CREATE INDEX idx_email_verification_expires ON public.email_verification_codes(expires_at);
-
--- Enable RLS
-ALTER TABLE public.email_verification_codes ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies
-CREATE POLICY "Users can view their own verification codes"
-    ON public.email_verification_codes
-    FOR SELECT
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own verification codes"
-    ON public.email_verification_codes
-    FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own verification codes"
-    ON public.email_verification_codes
-    FOR UPDATE
-    USING (auth.uid() = user_id);
-
--- Grant permissions
-GRANT ALL ON public.email_verification_codes TO postgres;
-GRANT ALL ON public.email_verification_codes TO authenticated;
-GRANT ALL ON public.email_verification_codes TO service_role;
-
--- ============================================================
 -- 3. 인증 상태 세분화 마이그레이션
 -- ============================================================
 -- 목적:
@@ -421,135 +238,6 @@ BEGIN
         RAISE NOTICE '✓ No admin status profiles found (already migrated or none exist)';
     END IF;
 END $$;
-
--- ============================================================
--- 4. Update existing data (optional)
--- ============================================================
-
--- Mark users who logged in with email as verified
-UPDATE public.profiles
-SET
-    email_verified = true,
-    verification_method = 'login_email'
-WHERE
-    login_email IS NOT NULL
-    AND login_email != ''
-    AND login_email LIKE '%@%'
-    AND email_verified IS NULL;
-
--- Mark users with list verification
-UPDATE public.profiles
-SET
-    verification_method = 'list'
-WHERE
-    verification_status = 'list'
-    AND verification_method IS NULL;
-
--- ============================================================
--- 5. Comments for documentation
--- ============================================================
-
-COMMENT ON TABLE public.email_verification_codes IS 'Stores email verification codes (OTP) for society_email validation';
-COMMENT ON COLUMN public.email_verification_codes.code IS '6-digit verification code sent to email';
-COMMENT ON COLUMN public.email_verification_codes.expires_at IS 'Code expires 10 minutes after creation';
-
-COMMENT ON COLUMN public.profiles.email_verified IS 'Whether society_email has been verified';
-COMMENT ON COLUMN public.profiles.verification_method IS 'How society_email was verified: login_email, otp, or list';
-
--- ============================================================
--- 6. Verification Summary
--- ============================================================
-
-DO $$
-DECLARE
-    total_profiles int;
-    email_verified_count int;
-    verification_codes_count int;
-    status_none int;
-    status_list int;
-    status_temp int;
-    status_verified int;
-BEGIN
-    SELECT COUNT(*) INTO total_profiles FROM public.profiles;
-    SELECT COUNT(*) INTO email_verified_count FROM public.profiles WHERE email_verified = true;
-    SELECT COUNT(*) INTO verification_codes_count FROM public.email_verification_codes;
-
-    -- Count by verification_status
-    SELECT COUNT(*) INTO status_none FROM public.profiles WHERE verification_status = 'none';
-    SELECT COUNT(*) INTO status_list FROM public.profiles WHERE verification_status = 'list';
-    SELECT COUNT(*) INTO status_temp FROM public.profiles WHERE verification_status = 'temp_verified';
-    SELECT COUNT(*) INTO status_verified FROM public.profiles WHERE verification_status = 'verified';
-
-    RAISE NOTICE '========================================';
-    RAISE NOTICE 'Migration completed successfully!';
-    RAISE NOTICE '========================================';
-    RAISE NOTICE 'Total profiles: %', total_profiles;
-    RAISE NOTICE 'Email verified: %', email_verified_count;
-    RAISE NOTICE 'Verification codes: %', verification_codes_count;
-    RAISE NOTICE '----------------------------------------';
-    RAISE NOTICE 'Verification Status Breakdown:';
-    RAISE NOTICE '  - none: %', status_none;
-    RAISE NOTICE '  - list: %', status_list;
-    RAISE NOTICE '  - temp_verified: %', status_temp;
-    RAISE NOTICE '  - verified: %', status_verified;
-    RAISE NOTICE '========================================';
-END $$;
-
--- ============================================================
--- 7. Add verification_requests history tracking columns
--- ============================================================
-
-DO $$
-BEGIN
-    -- Add reject_reason column
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'verification_requests'
-        AND column_name = 'reject_reason'
-    ) THEN
-        ALTER TABLE public.verification_requests
-        ADD COLUMN reject_reason text;
-
-        RAISE NOTICE 'Added reject_reason column to verification_requests';
-    ELSE
-        RAISE NOTICE 'reject_reason column already exists';
-    END IF;
-
-    -- Add approved_at column
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'verification_requests'
-        AND column_name = 'approved_at'
-    ) THEN
-        ALTER TABLE public.verification_requests
-        ADD COLUMN approved_at timestamp with time zone;
-
-        RAISE NOTICE 'Added approved_at column to verification_requests';
-    ELSE
-        RAISE NOTICE 'approved_at column already exists';
-    END IF;
-
-    -- Add rejected_at column
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'verification_requests'
-        AND column_name = 'rejected_at'
-    ) THEN
-        ALTER TABLE public.verification_requests
-        ADD COLUMN rejected_at timestamp with time zone;
-
-        RAISE NOTICE 'Added rejected_at column to verification_requests';
-    ELSE
-        RAISE NOTICE 'rejected_at column already exists';
-    END IF;
-END $$;
-
-COMMENT ON COLUMN public.verification_requests.reject_reason IS '인증 취소 사유 (관리자가 입력)';
-COMMENT ON COLUMN public.verification_requests.approved_at IS '인증 승인 일시';
-COMMENT ON COLUMN public.verification_requests.rejected_at IS '인증 취소 일시';
 
 -- ============================================================
 -- 8. Add title column to notifications table
@@ -1297,23 +985,19 @@ DECLARE
     user_count int;
     admin_count int;
 BEGIN
-    -- 일반 테스트 사용자 설정
-    UPDATE public.profiles
-    SET verification_status = 'verified',
-        nickname = '테스트유저',
-        email_verified = true,
-        verification_method = 'login_email'
-    WHERE login_email = 'test-user@radsafety.kr';
+    -- 일반 테스트 사용자 설정 (2-2: login_email 컬럼이 없어 auth.users.email 로 찾는다)
+    UPDATE public.profiles p
+    SET verification_status = 'verified'
+    FROM auth.users u
+    WHERE u.id = p.id AND u.email = 'test-user@radsafety.kr';
     GET DIAGNOSTICS user_count = ROW_COUNT;
 
     -- 관리자 테스트 계정 설정
-    UPDATE public.profiles
+    UPDATE public.profiles p
     SET verification_status = 'verified',
-        nickname = '테스트관리자',
-        is_admin = true,
-        email_verified = true,
-        verification_method = 'login_email'
-    WHERE login_email = 'test-admin@radsafety.kr';
+        is_admin = true
+    FROM auth.users u
+    WHERE u.id = p.id AND u.email = 'test-admin@radsafety.kr';
     GET DIAGNOSTICS admin_count = ROW_COUNT;
 
     IF user_count > 0 OR admin_count > 0 THEN

@@ -1,33 +1,24 @@
 import { persistentMap } from '@nanostores/persistent';
 import { getCertification } from '../config/auth';
 
+// 명세: .spec/src/store/user.md
+// 2단계 2-2(2026-09-19): 실명·이메일·닉네임·부서·면허 등 개인정보 필드는 DB 컬럼과 함께 삭제됨.
+// 남는 건 아이디·상태·로그인 방식·관리자 여부·소속(기관·학회)뿐이다.
 export const userProfile = persistentMap('userProfile', {
     id: '',
     username: '', // Stage 1-A (privacy_redesign_plan.md 1단계) — 아이디/비밀번호 로그인
     status: '', // Phase 2 (2단계 개정 — 2계층+가입승인+제재) — pending/active/suspended/banned
-    login_email: '',
-    nickname: '',
     created_at: '',
     is_admin: 'false',
     provider: '',
-    // 2. Verification Info
-    verification_date: '',
-    verification_status: 'none', // 'none' | 'list' | 'temp_verified' | 'verified'
+    // verification_status 는 2-1(업로드 권한 can_publish) 전까지 업로드 게이트가 참조 — 컬럼도 아직 남아 있다.
+    verification_status: 'none',
 
-    society: '', // 'nuclear_medicine' | 'technology'
-    affiliation: '',
-    department: '',
-    real_name: '',
-    society_email: '',
+    society: '', // 'nuclear_medicine' | 'technology' | 'none'
+    hospital_id: '',
+    hospital_request: '',
 
-    // 3. Safety Management Info
-    license_type: 'none',
-    is_safety_manager: 'false',
-    safety_manager_start_year: '',
-    safety_manager_end_year: '',
-
-    // 4. System / Meta
-    classification: '',
+    // Legacy / Derived
     certification: 'none',
     has_radiation_license: 'false',
     radiation_license_type: 'none',
@@ -39,37 +30,16 @@ export function setUser(user: {
     email: string;
     username?: string;
     status?: string;
-    login_email?: string;
     provider: string;
-    nickname?: string;
     created_at?: string;
     is_admin?: boolean | string;
-
-    verification_date?: string;
     verification_status?: string;
 
     society?: string;
     hospital_id?: string | null;
     hospital_request?: string | null;
-    affiliation?: string;
-    department?: string;
-    real_name?: string;
-    society_email?: string;
 
-    license_type?: string;
-    is_safety_manager?: boolean;
-    safety_manager_start_year?: string;
-    safety_manager_end_year?: string;
-
-    classification?: string;
-    // Legacy mapping arguments
-    society_name?: string;
     licenses?: any;
-    user_tier?: string;
-    // is_verified removed
-    safety_manager_start_date?: string;
-    safety_manager_end_date?: string;
-    is_safety_practice_staff?: boolean | string;
     has_radiation_license?: boolean | string;
     radiation_license_type?: string;
 }) {
@@ -77,29 +47,15 @@ export function setUser(user: {
         id: user.id || '',
         username: user.username || '',
         status: user.status || '',
-        login_email: user.login_email || user.email || '',
-        nickname: user.nickname || '',
         created_at: user.created_at || '',
         is_admin: String(user.is_admin) || 'false',
         provider: user.provider || '',
-
-        verification_date: user.verification_date || '',
         verification_status: user.verification_status || 'none',
 
         society: user.society || '',
-        affiliation: user.affiliation || '',
-        department: user.department || '',
-        real_name: user.real_name || user.society_name || '',
-        society_email: user.society_email || '',
+        hospital_id: user.hospital_id || '',
+        hospital_request: user.hospital_request || '',
 
-        license_type: user.license_type || '',
-        is_safety_manager: String(user.is_safety_manager) || 'false',
-        safety_manager_start_year: user.safety_manager_start_year || '',
-        safety_manager_end_year: user.safety_manager_end_year || '',
-
-        classification: user.classification || '',
-
-        // Legacy / Derived defaults
         certification: getCertification(user.email),
         has_radiation_license: String(user.has_radiation_license) || 'false',
         radiation_license_type: user.radiation_license_type || 'none',
@@ -112,27 +68,15 @@ export function clearUser() {
         id: '',
         username: '',
         status: '',
-        login_email: '',
-        nickname: '',
         created_at: '',
         is_admin: 'false',
         provider: '',
-
-        verification_date: '',
         verification_status: 'none',
 
         society: '',
-        affiliation: '',
-        department: '',
-        real_name: '',
-        society_email: '',
+        hospital_id: '',
+        hospital_request: '',
 
-        license_type: 'none',
-        is_safety_manager: 'false',
-        safety_manager_start_year: '',
-        safety_manager_end_year: '',
-
-        classification: '',
         certification: 'none',
         has_radiation_license: 'false',
         radiation_license_type: 'none',

@@ -755,7 +755,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
 
         const { data, error } = await supabase
             .from('archives')
-            .select('*, profiles(real_name, nickname)')
+            .select('*, profiles(username)')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -805,7 +805,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
                 <div class="col-author">${item.author || '-'}</div>
                 <!-- Registrant -->
                 <div class="col-registrant">
-                    ${item.profiles?.real_name || '-'}
+                    ${item.profiles?.username ? '@' + item.profiles.username : '-'}
                 </div>
                 ${
                     canManage
@@ -917,7 +917,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
         }
 
         // Set registrant (readonly)
-        const registrantName = item.profiles?.real_name || '알 수 없음';
+        const registrantName = item.profiles?.username ? `@${item.profiles.username}` : '알 수 없음';
         (document.getElementById('writeRegistrant') as HTMLInputElement).value = registrantName;
 
         document.getElementById('currentFileDisplay')!.textContent = item.file_name
@@ -1072,11 +1072,11 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
             const slugWarning = document.getElementById('slugWarning');
             if (slugWarning) slugWarning.style.display = 'none';
 
-            // Set registrant to current user's real name
+            // Set registrant to current user's username (2-2: 실명 미보관)
             const currentUser = userProfile.get();
             const registrantInput = document.getElementById('writeRegistrant') as HTMLInputElement;
             if (registrantInput && currentUser) {
-                registrantInput.value = currentUser.real_name || currentUser.nickname || '알 수 없음';
+                registrantInput.value = currentUser.username ? `@${currentUser.username}` : '알 수 없음';
             }
 
             document.getElementById('writeModal')!.classList.add('active');
