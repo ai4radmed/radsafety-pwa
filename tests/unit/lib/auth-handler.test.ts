@@ -58,7 +58,7 @@ describe('auth-handler', () => {
 
         expect(clearUser).toHaveBeenCalled();
         // /mypage는 보호된 페이지(publicPaths 아님)이므로 리다이렉트 발생
-        expect(window.location.href).toBe('/login');
+        expect(window.location.href).toBe('/login?from=%2Fmypage');
     });
 
     it('로그아웃 시 forceClearSupabaseCookies를 clearUser보다 먼저 호출한다', () => {
@@ -273,6 +273,26 @@ describe('auth-handler', () => {
 
         const { upsert } = (supabase.from as any)();
         expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }), { onConflict: 'id' });
+    });
+
+    describe('2계층 공개 경로 (2026-09-19)', () => {
+        it('비로그인이라도 공개 경로(/resources)는 리다이렉트하지 않는다', async () => {
+            window.location = { pathname: '/resources', href: '' } as any;
+            initAuthHandler();
+            (supabase.auth.getSession as any).mockResolvedValue({ data: { session: null } });
+            document.dispatchEvent(new CustomEvent('astro:page-load'));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(window.location.href).toBe('');
+        });
+
+        it('비로그인이 회원 전용 경로(/notifications)에 오면 /login?from= 으로 출처를 넘긴다', async () => {
+            window.location = { pathname: '/notifications', href: '' } as any;
+            initAuthHandler();
+            (supabase.auth.getSession as any).mockResolvedValue({ data: { session: null } });
+            document.dispatchEvent(new CustomEvent('astro:page-load'));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(window.location.href).toBe('/login?from=%2Fnotifications');
+        });
     });
 
     describe('Stage B — 아이디 정하기 강제 게이트', () => {

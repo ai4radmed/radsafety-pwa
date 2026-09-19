@@ -10,7 +10,7 @@
 
 ## 사이드 이펙트
 
-- `archives`·`findings` select(`status='pending'`, 작성자 `profiles(username, reject_count)` 조인). 비공개 버킷 파일은 `createSignedUrl`(10분)로 열람.
+- `archives`·`findings` select(`status='pending'`, `user_id` 포함) + 제출자 `profiles(id, username, reject_count)` 별도 `in()` 조회 후 합침 — `findings.user_id`는 `auth.users` 참조(`profiles` FK 아님)라 PostgREST 조인이 불가(2026-09-19 운영 실측 "Could not find a relationship between 'findings' and 'user_id'"). 비공개 버킷 파일은 `createSignedUrl`(10분)로 열람.
 - `actions.reviewSubmission({ adminId, kind, id, decision, reason? })` 호출.
 
 ## 핵심 규칙
@@ -25,3 +25,7 @@
 ## 이력
 
 - 2026-09-19: 신설.
+
+## 범위 축소 (2026-09-19 저녁)
+
+- 가입 승인이 `can_publish`를 함께 부여하므로 평시엔 이 표가 비어 있다. 관리자가 회원 목록에서 권한을 회수한 회원의 제출만 여기로 온다(제재 도구).

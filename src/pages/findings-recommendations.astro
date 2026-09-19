@@ -993,9 +993,12 @@ const AVAILABLE_TAGS = [
 
             // 0. Load shared items from Supabase
             async function loadSharedItems() {
+                // 비가입자(anon)는 DB 가 열 단위로 제목·유형·태그·연도만 허용한다(migrate_public_tier_read.sql) —
+                // '*' 를 요구하면 permission denied 이므로 로그인 상태에 따라 열을 고른다.
+                const isMember = Boolean(userProfile.get().id);
                 const { data: sharedItems, error } = await supabase
                     .from('findings')
-                    .select('*')
+                    .select(isMember ? '*' : 'id, title, finding_type, tags, year, created_at, status, user_id')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -1435,6 +1438,13 @@ const AVAILABLE_TAGS = [
 
                     const card = (e.target as Element).closest('.finding-item') as HTMLElement | null;
                     if (card) {
+                        // 2계층: 비가입자는 목록까지만 — 본문·위반조항·조치는 회원 전용(DB 도 열을 안 준다)
+                        if (!userProfile.get().id) {
+                            if (confirm('지적권고사례 상세 내용은 회원 전용입니다. 가입하거나 로그인하시겠습니까?')) {
+                                window.location.href = '/login?from=/findings-recommendations';
+                            }
+                            return;
+                        }
                         const data = JSON.parse(card.dataset.content || '{}');
 
                         document.getElementById('detailTitle')!.textContent = data.title;

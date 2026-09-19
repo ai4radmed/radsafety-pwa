@@ -29,3 +29,7 @@
 - **파일 규칙**(`validateUploadFile`): 20MB 이하, 허용 확장자(pdf·hwp·hwpx·doc·docx·xls·xlsx·ppt·pptx·png·jpg·jpeg·gif·webp·txt·md), 차단(docm·xlsm·pptm·exe·msi·bat·cmd·sh·js·vbs·ps1·jar·scr·com). 파일명은 서버 경로에 쓰지 않고(랜덤) `file_name`에만 원본 보관.
 - **확인란**: 신규 제출 시 `#writeConsent`(저작권·개인정보 없음) 필수.
 - **관리자 알림**: insert 응답 `status==='pending'`이면 `actions.notifySubmission({kind:'archive', id})`를 fire-and-forget 호출(in-app + 텔레그램, `.spec/src/actions/index.md` 규칙 18).
+
+## 2계층 공개 계층 (2026-09-19)
+
+- 비가입자도 목록·다운로드 가능(게시된 자료만, RLS `Public can view published archives`). anon은 `profiles`를 못 읽으므로 목록 조회는 로그인 상태에 따라 `'*, profiles(username)'` / `'*'`로 분기(등록자는 회원에게만 표시). 업로드 버튼은 기존 게이트로 숨김 + INSERT 정책이 authenticated 전용. 카드 클릭 → `/api/archives/view/<slug>`(anon 정책으로 published 조회 가능), 조회수 RPC는 anon EXECUTE 부여.

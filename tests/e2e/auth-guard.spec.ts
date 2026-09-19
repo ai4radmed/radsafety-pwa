@@ -6,20 +6,13 @@ import { test, expect } from '@playwright/test';
  * DashboardLayout의 클라이언트 스크립트가 비로그인 상태에서
  * 보호된 페이지 접근 시 /login 으로 리다이렉트하는지 검증합니다.
  *
- * publicPaths = ['/', '/login'] — 나머지는 모두 보호된 페이지입니다.
+ * 2계층(공개/회원, 2026-09-19): 공개 = /, /login, /info, /inspection-prep, /findings-recommendations(목록),
+ * /resources(다운로드), /guide, /settings. 회원 전용 = 사용자 메뉴(마이페이지·알림함·의견·개선의견조회)·관리자.
  */
 
-const PROTECTED_PAGES = [
-    '/mypage',
-    '/notifications',
-    '/settings',
-    '/feedback',
-    '/my-feedback',
-    '/findings-recommendations',
-    '/resources',
-    '/guide',
-    '/inspection-prep',
-];
+const PROTECTED_PAGES = ['/mypage', '/notifications', '/feedback', '/my-feedback', '/feedback-query'];
+
+const PUBLIC_PAGES = ['/inspection-prep', '/findings-recommendations', '/resources', '/guide', '/settings'];
 
 // /admin/settings는 비로그인 시 /login이 아닌 / (홈)으로 리다이렉트 (자체 가드 로직)
 // → 별도 테스트로 분리
@@ -45,7 +38,7 @@ test.describe('인증 가드 — 비로그인 리다이렉트', () => {
         test(`비로그인 상태에서 ${path} 접근 → /login 리다이렉트`, async ({ page }) => {
             await page.goto(path);
             // 클라이언트 JS가 실행되어 리다이렉트될 때까지 대기
-            await page.waitForURL('**/login', { timeout: 5000 });
+            await page.waitForURL('**/login**', { timeout: 5000 });
             expect(page.url()).toContain('/login');
         });
     }
@@ -53,7 +46,7 @@ test.describe('인증 가드 — 비로그인 리다이렉트', () => {
     for (const path of ADMIN_PAGES) {
         test(`비로그인 상태에서 ${path} 접근 → /login 리다이렉트`, async ({ page }) => {
             await page.goto(path);
-            await page.waitForURL('**/login', { timeout: 10000 });
+            await page.waitForURL('**/login**', { timeout: 10000 });
             expect(page.url()).toContain('/login');
         });
     }
@@ -63,6 +56,21 @@ test.describe('인증 가드 — 비로그인 리다이렉트', () => {
         await page.goto('/admin/settings');
         await page.waitForURL(/\/$/, { timeout: 10000 });
         expect(page.url()).not.toContain('/admin');
+    });
+
+    for (const path of PUBLIC_PAGES) {
+        test(`비로그인 상태에서 ${path} 접근 → 리다이렉트 없음 (공개 계층)`, async ({ page }) => {
+            await page.goto(path);
+            await page.waitForLoadState('networkidle');
+            expect(page.url()).not.toContain('/login');
+        });
+    }
+
+    test('비로그인 상태에서 회원 전용 메뉴로 튕기면 /login?from= 으로 출처가 전달된다', async ({ page }) => {
+        await page.goto('/mypage');
+        await page.waitForURL('**/login**', { timeout: 5000 });
+        expect(page.url()).toContain('from=%2Fmypage');
+        await expect(page.locator('#memberOnlyHint')).toBeVisible();
     });
 
     test('비로그인 상태에서 / (홈) 접근 → 리다이렉트 없음', async ({ page }) => {

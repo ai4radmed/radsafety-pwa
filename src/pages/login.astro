@@ -79,10 +79,30 @@ const devAdminPassword = import.meta.env.DEV_TEST_ADMIN_PASSWORD ?? '';
         .sns-buttons {
             margin-top: 1rem;
         }
+        .member-only-hint {
+            margin: 0 0 0.75rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            font-size: 0.85rem;
+            text-align: left;
+        }
     </style>
+    <script>
+        document.addEventListener('astro:page-load', () => {
+            const hint = document.getElementById('memberOnlyHint');
+            if (!hint) return;
+            hint.hidden = !new URLSearchParams(window.location.search).get('from');
+        });
+    </script>
 
     <div class="login-wrapper">
         <div class="login-container">
+            <!-- 회원 전용 메뉴에서 튕겨 온 비가입자 안내(?from=경로, auth-handler.ts) -->
+            <p id="memberOnlyHint" class="member-only-hint" hidden>
+                이 메뉴는 <strong>회원 전용</strong>입니다. 카카오로 시작하거나 아이디를 만들어 주세요.
+            </p>
             <!-- SNS Buttons Wrapper -->
             <div class="sns-buttons">
                 <LoginButton

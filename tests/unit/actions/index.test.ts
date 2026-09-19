@@ -171,11 +171,11 @@ describe('admin.memberApproval (Phase 3)', () => {
         );
     });
 
-    it('approvePendingMember: 관리자인 경우 status를 active로 변경', async () => {
+    it('approvePendingMember: 관리자인 경우 status를 active 로 + 게시 권한(can_publish) 부여', async () => {
         mockAdminSingle.mockResolvedValue({ data: { is_admin: true }, error: null });
         const res = await (server.approvePendingMember as any)({ adminId, targetUserId });
         expect(res.data).toEqual({ success: true });
-        expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { status: 'active' });
+        expect(mockAdminUpdate).toHaveBeenCalledWith('profiles', { status: 'active', can_publish: true });
         expect(mockAdminEq).toHaveBeenCalledWith('profiles', 'id', targetUserId);
     });
 
