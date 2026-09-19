@@ -6,6 +6,10 @@
 --    select policyname, tablename from pg_policies
 --    where schemaname='public' and (coalesce(qual,'')||coalesce(with_check,'')) like '%verification_status%';
 --
+-- 실행 기록(2026-09-19, 운영): 사전 점검에서 대시보드에만 존재하던 옛 정책
+--   "Authenticated users can insert archives"(archives INSERT, verification_status 참조) 1건 발견 →
+--   DROP POLICY 후 컬럼 삭제 성공. 저장소 SQL 에 없던 정책이라 rebuild_all_tables.sql 에는 흔적 없음.
+--
 -- 멱등.
 
 BEGIN;
