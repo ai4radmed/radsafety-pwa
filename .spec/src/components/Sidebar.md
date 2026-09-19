@@ -21,3 +21,4 @@
 ## 2계층 공개 계층 (2026-09-19)
 
 - 사용자 그룹(`#userNavGroup`)의 마이페이지·알림함·의견보내기·내 의견함·개선의견조회와 그룹 제목에 `data-member-only`. `updateAuthUI`가 세션 확인 전·비로그인이면 `[data-member-only]` 전부 `display:none`, 로그인이면 복원(`setMemberOnly`). 비가입자에게 보이는 사용자 항목은 "로그인" 하나. 같은 셀렉터로 하단 내비(`MobileBottomNav`)의 회원 전용 항목도 함께 토글된다.
+- 하단(`.sidebar-footer`)에 `/privacy` 링크(`.footer-link`, 2026-09-20).

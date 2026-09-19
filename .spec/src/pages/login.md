@@ -25,3 +25,8 @@
 ## 회원 전용 메뉴 안내 (2026-09-19)
 
 - `auth-handler.ts`가 회원 전용 경로에서 튕길 때 `/login?from=<경로>`로 보낸다. 페이지의 별도 `<script>`가 `from` 쿼리가 있으면 `#memberOnlyHint`("이 메뉴는 회원 전용입니다…")를 보인다. 그 외 로그인 흐름 변경 없음.
+
+## 카카오 동의 항목 최소화 · 처리방침 링크 (2026-09-20)
+
+- `signInWithOAuth` `queryParams.scope = 'account_email'` — 닉네임(`profile_nickname`)은 더 이상 요청하지 않는다. 이메일은 Supabase 계정 생성에 필요해 남기되 첫 접속 게이트가 즉시 파생 주소로 교체(앱 미보관). `documents/external_services_guide.md` §4-3.
+- 아이디 폼 아래 `.privacy-link`: "가입·로그인하면 개인정보처리방침에 동의…" + `/privacy` 링크.

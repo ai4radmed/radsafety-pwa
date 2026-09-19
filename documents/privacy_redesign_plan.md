@@ -125,15 +125,15 @@ C 단계 직전에 DB 백업 1회(개인정보 포함 — 보관 기간·파기�
 
 ### 완료 기준
 
-- [ ] 신규 사용자가 아이디/비밀번호만으로 가입·로그인·로그아웃 가능
-- [ ] 카카오 로그인 후 `profiles` 에 nickname·email 이 기록되지 않음
-- [ ] 카카오 첫 로그인 시 `username` 설정 화면이 뜨고, 설정 전에는 작성·등록이 막힘
-- [ ] 카카오 사용자가 비밀번호를 정하면 아이디/비밀번호로도 같은 계정에 로그인됨
-- [ ] 기존 이메일 사용자가 전환 화면을 거친 뒤 `auth.users.email` 이 `@radsafety.invalid` 이고 옛 글·알림·푸시 구독이 그대로 보임
-- [ ] `rls-policies.spec.ts` 통과 (정책 무변경 확인)
-- [ ] `GET /api/health?deep=1` 정상
-- [ ] `documents/database_schema.md`·`external_services_guide.md`(Kakao 동의 항목 최소화) 갱신
-- [ ] 개인정보처리방침 초안에 "로그인 이메일 미보관", "카카오는 이용 사실을 알게 됨" 반영
+- [x] 신규 사용자가 아이디/비밀번호만으로 가입·로그인·로그아웃 가능 (운영 확인 2026-09-18)
+- [x] 카카오 로그인 후 `profiles` 에 nickname·email 이 기록되지 않음 (컬럼 자체 삭제 2026-09-19, 닉네임 동의 요청 제거 2026-09-20)
+- [x] 카카오 첫 로그인 시 `username` 설정 화면이 뜨고, 설정 전에는 작성·등록이 막힘 (Stage B)
+- [x] 카카오 사용자가 비밀번호를 정하면 아이디/비밀번호로도 같은 계정에 로그인됨 (Stage B)
+- [x] 기존 이메일 사용자가 전환 화면을 거친 뒤 `auth.users.email` 이 `@radsafety.invalid` 이고 옛 글·알림·푸시 구독이 그대로 보임 (2026-09-18 운영)
+- [x] `rls-policies.spec.ts` 통과 (2-1·공개 계층에 맞춰 갱신, CI 통과 2026-09-20)
+- [x] `GET /api/health?deep=1` 정상 (`check:production` 매 배포 통과)
+- [x] `documents/database_schema.md`·`external_services_guide.md`(Kakao 동의 항목 최소화) 갱신 (2026-09-20)
+- [x] 개인정보처리방침 초안에 "로그인 이메일 미보관", "카카오는 이용 사실을 알게 됨" 반영 — `src/pages/privacy.astro`(`/privacy`, 2026-09-20 초안, 법적 검토 전)
 
 ### 예상 공수
 
