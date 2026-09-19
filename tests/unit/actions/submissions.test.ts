@@ -1,0 +1,216 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// 2-1 업로드 권한 — reviewSubmission / setPublishPermission 단위 테스트.
+// supabase-server 를 테이블별로 흉내낸다: profiles(관리자 확인·reject_count), archives/findings(대상 행),
+// storage(pending → public 이동).
+
+const state: {
+    profile: Record<string, unknown>;
+    row: Record<string, unknown> | null;
+    updates: Array<{ table: string; data: unknown; id: string }>;
+    storage: string[];
+} = { profile: {}, row: null, updates: [], storage: [] };
+
+const mockDownload = vi.fn();
+const mockUpload = vi.fn();
+const mockRemove = vi.fn();
+
+vi.mock('../../../src/lib/supabase-server', () => ({
+    supabaseAnon: {},
+    supabaseAdmin: {
+        from: (table: string) => ({
+            select: (_cols?: string) => ({
+                eq: (_col: string, _val: string) => ({
+                    single: () =>
+                        Promise.resolve(
+                            table === 'profiles'
+                                ? { data: state.profile, error: null }
+                                : { data: state.row, error: null },
+                        ),
+                    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+                }),
+            }),
+            update: (data: unknown) => ({
+                eq: (_col: string, id: string) => {
+                    state.updates.push({ table, data, id });
+                    return Promise.resolve({ error: null });
+                },
+            }),
+        }),
+        storage: {
+            from: (bucket: string) => ({
+                download: (path: string) => {
+                    state.storage.push(`download:${bucket}:${path}`);
+                    return mockDownload(path);
+                },
+                upload: (path: string, blob: unknown, opts?: unknown) => {
+                    state.storage.push(`upload:${bucket}:${path}`);
+                    return mockUpload(path, blob, opts);
+                },
+                remove: (paths: string[]) => {
+                    state.storage.push(`remove:${bucket}:${paths.join(',')}`);
+                    return mockRemove(paths);
+                },
+            }),
+        },
+    },
+}));
+
+vi.mock('../../../src/lib/email', () => ({ sendFeedbackEmail: vi.fn() }));
+vi.mock('../../../src/lib/push', () => ({ sendPushToUsers: vi.fn() }));
+vi.mock('../../../src/config/auth', () => ({ resolveFeedbackRecipients: vi.fn() }));
+vi.mock('../../../src/lib/logger', () => ({
+    createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() }),
+}));
+const mockCreateNotification = vi.fn();
+vi.mock('../../../src/lib/notification-helper', () => ({
+    createNotification: (data: unknown) => mockCreateNotification(data),
+    createBulkNotifications: vi.fn(),
+}));
+
+import { server } from '../../../src/actions/index';
+
+const ADMIN_ID = '223e4567-e89b-12d3-a456-426614174000';
+const USER_ID = '123e4567-e89b-12d3-a456-426614174000';
+const ROW_ID = '323e4567-e89b-12d3-a456-426614174000';
+
+beforeEach(() => {
+    state.profile = { is_admin: true, reject_count: 0 };
+    state.row = null;
+    state.updates = [];
+    state.storage = [];
+    mockDownload.mockReset().mockResolvedValue({ data: new Blob(['x']), error: null });
+    mockUpload.mockReset().mockResolvedValue({ error: null });
+    mockRemove.mockReset().mockResolvedValue({ error: null });
+    mockCreateNotification.mockReset().mockResolvedValue({});
+});
+
+describe('server.reviewSubmission', () => {
+    it('관리자가 아니면 거부', async () => {
+        state.profile = { is_admin: false };
+        await expect(
+            (server.reviewSubmission as any)({ adminId: ADMIN_ID, kind: 'archive', id: ROW_ID, decision: 'approve' }),
+        ).rejects.toThrow('관리자 권한이 필요합니다.');
+        expect(state.updates).toHaveLength(0);
+    });
+
+    it('이미 처리된(pending 아님) 제출물은 거부', async () => {
+        state.row = { id: ROW_ID, title: 'T', user_id: USER_ID, status: 'published' };
+        await expect(
+            (server.reviewSubmission as any)({ adminId: ADMIN_ID, kind: 'finding', id: ROW_ID, decision: 'approve' }),
+        ).rejects.toThrow('이미 처리된 제출물입니다.');
+    });
+
+    it('승인(archive, 대기 버킷 파일) — 파일 이동 + published + file_bucket 공개 + 작성자 can_publish + 알림', async () => {
+        state.row = {
+            id: ROW_ID,
+            title: '안전관리규정 예시',
+            user_id: USER_ID,
+            status: 'pending',
+            file_url: `${USER_ID}/abc.pdf`,
+            file_bucket: 'resources-pending',
+        };
+
+        const result = await (server.reviewSubmission as any)({
+            adminId: ADMIN_ID,
+            kind: 'archive',
+            id: ROW_ID,
+            decision: 'approve',
+        });
+
+        expect(state.storage).toEqual([
+            `download:resources-pending:${USER_ID}/abc.pdf`,
+            `upload:resources:${USER_ID}/abc.pdf`,
+            `remove:resources-pending:${USER_ID}/abc.pdf`,
+        ]);
+        expect(state.updates).toContainEqual({
+            table: 'archives',
+            data: { status: 'published', file_bucket: 'resources' },
+            id: ROW_ID,
+        });
+        expect(state.updates).toContainEqual({ table: 'profiles', data: { can_publish: true }, id: USER_ID });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: USER_ID, senderId: ADMIN_ID, link: '/resources' }),
+        );
+        expect(result.data).toEqual({ success: true, status: 'published' });
+    });
+
+    it('승인(finding) — 파일 이동 없음, published + can_publish + 알림', async () => {
+        state.row = { id: ROW_ID, title: '지적사례', user_id: USER_ID, status: 'pending' };
+
+        await (server.reviewSubmission as any)({ adminId: ADMIN_ID, kind: 'finding', id: ROW_ID, decision: 'approve' });
+
+        expect(state.storage).toHaveLength(0);
+        expect(state.updates).toContainEqual({ table: 'findings', data: { status: 'published' }, id: ROW_ID });
+        expect(state.updates).toContainEqual({ table: 'profiles', data: { can_publish: true }, id: USER_ID });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: USER_ID, link: '/findings-recommendations' }),
+        );
+    });
+
+    it('반려 — rejected + reject_count+1 + 사유 포함 알림', async () => {
+        state.profile = { is_admin: true, reject_count: 1 };
+        state.row = { id: ROW_ID, title: '지적사례', user_id: USER_ID, status: 'pending' };
+
+        const result = await (server.reviewSubmission as any)({
+            adminId: ADMIN_ID,
+            kind: 'finding',
+            id: ROW_ID,
+            decision: 'reject',
+            reason: '출처 불명',
+        });
+
+        expect(state.updates).toContainEqual({ table: 'findings', data: { status: 'rejected' }, id: ROW_ID });
+        expect(state.updates).toContainEqual({ table: 'profiles', data: { reject_count: 2 }, id: USER_ID });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: USER_ID, message: expect.stringContaining('출처 불명') }),
+        );
+        expect(result.data).toEqual({ success: true, status: 'rejected', rejectCount: 2 });
+    });
+
+    it('반려 3회 누적이면 차단 안내가 알림에 들어간다', async () => {
+        state.profile = { is_admin: true, reject_count: 2 };
+        state.row = { id: ROW_ID, title: 'T', user_id: USER_ID, status: 'pending' };
+
+        await (server.reviewSubmission as any)({ adminId: ADMIN_ID, kind: 'finding', id: ROW_ID, decision: 'reject' });
+
+        expect(state.updates).toContainEqual({ table: 'profiles', data: { reject_count: 3 }, id: USER_ID });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ message: expect.stringContaining('더 이상 제출할 수 없습니다') }),
+        );
+    });
+
+    it('알림 실패는 처리 결과를 바꾸지 않는다', async () => {
+        state.row = { id: ROW_ID, title: 'T', user_id: USER_ID, status: 'pending' };
+        mockCreateNotification.mockRejectedValueOnce(new Error('push down'));
+        const result = await (server.reviewSubmission as any)({
+            adminId: ADMIN_ID,
+            kind: 'finding',
+            id: ROW_ID,
+            decision: 'approve',
+        });
+        expect(result.data).toEqual({ success: true, status: 'published' });
+    });
+});
+
+describe('server.setPublishPermission', () => {
+    it('관리자가 아니면 거부', async () => {
+        state.profile = { is_admin: false };
+        await expect(
+            (server.setPublishPermission as any)({ adminId: ADMIN_ID, targetUserId: USER_ID, canPublish: true }),
+        ).rejects.toThrow('관리자 권한이 필요합니다.');
+    });
+
+    it('부여/회수 — can_publish 갱신 + 알림', async () => {
+        const result = await (server.setPublishPermission as any)({
+            adminId: ADMIN_ID,
+            targetUserId: USER_ID,
+            canPublish: false,
+        });
+        expect(state.updates).toContainEqual({ table: 'profiles', data: { can_publish: false }, id: USER_ID });
+        expect(mockCreateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: USER_ID, title: expect.stringContaining('회수') }),
+        );
+        expect(result.data).toEqual({ success: true, canPublish: false });
+    });
+});

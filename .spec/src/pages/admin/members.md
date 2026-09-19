@@ -10,8 +10,8 @@
 
 ## 사이드 이펙트
 
-- `profiles` select(`id, username, provider, status, society, hospital_id, hospital_request, is_admin, created_at`, 가입일 내림차순), `hospitals_custom` select(기관 이름 해석).
-- 쓰기 없음. 승인·거절·기관 등록 요청 처리는 `admin/member-approval.astro`(링크 제공).
+- `profiles` select(`… is_admin, can_publish, reject_count, created_at`, 가입일 내림차순), `hospitals_custom` select(기관 이름 해석).
+- `actions.setPublishPermission` 호출(게시 권한 부여/회수). 그 외 쓰기 없음. 승인·거절·기관 등록 요청 처리는 `admin/member-approval.astro`(링크 제공).
 
 ## 핵심 규칙
 
@@ -19,7 +19,7 @@
 2. **컬럼**: 아이디(`@username`, 관리자면 `ADMIN` 배지) · 로그인(카카오/아이디) · 소속기관(정적 `HOSPITALS` + `hospitals_custom` 합집합에서 이름, 요청 중이면 `🆕 요청: <기관명>` 배지) · 소속학회 · 상태(`pending`/`active`/`suspended`/`banned` 한글) · 가입일. **실명·이메일 컬럼 없음**(DB에도 없음).
 3. **필터**: 아이디 부분일치 검색 + 상태 select. 클라이언트 필터(전체 조회 후) — 수백 명 규모 전제.
 4. 사용자 입력·DB 문자열은 `escapeHtml` 로 렌더.
-5. 계획서 2-2 "업로드 권한·반려 횟수" 열은 2-1(`can_publish`/`reject_count`) 구현 시 추가.
+5. **게시 권한 열(2-1, 2026-09-19)** `publishCell`: 관리자/`제출 차단(반려 N회)`/`직접 게시 가능`/`첫 제출 검토 대기` + 반려 누적 배지 + **부여/회수** 버튼(`actions.setPublishPermission`, `confirm()` 후, 알림 발송). 관리자 행에는 버튼 없음.
 
 ## 이력
 

@@ -28,6 +28,7 @@ const ADMIN_PAGES = [
     '/admin/feedback',
     '/admin/glossary',
     '/admin/member-approval',
+    '/admin/submissions',
     '/admin/send-notification',
 ];
 

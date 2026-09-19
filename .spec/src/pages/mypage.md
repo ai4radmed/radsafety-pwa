@@ -41,7 +41,7 @@
 1. 인증 필요(DashboardLayout 가드). 프로필 자가 치유는 `auth-handler.ts` 몫.
 2. `is_admin` 은 `profiles.is_admin` 단일 기준(Stage 1-A).
 3. 이 페이지는 삭제된 컬럼(`real_name`·`login_email`·`nickname`·`society_email`·`affiliation`·`department`·`classification`·`license_type`·`is_safety_manager`·`safety_manager_*`·`verification_date`)을 어디에도 참조하지 않는다 — `tests/unit/pages/mypage-privacy.test.ts` 가 소스 문자열로 고정.
-4. 업로드 권한 표시(계획서 2-2 카드 2 "업로드 권한" 행)는 2-1(`can_publish`) 구현 시 추가.
+4. **업로드 권한 행(2-1, 2026-09-19)** `#userPublishStatus`: 관리자 → `관리자 — 바로 게시`, `reject_count>=3` → `제출 차단 (반려 N회 누적)`, `can_publish==='true'` → `직접 게시 가능`, 그 외 → `첫 제출 검토 대기(반려 N회)`. 읽기 전용.
 
 ## 이력
 
