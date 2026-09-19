@@ -128,6 +128,9 @@ import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
                 목록에는 아이디만 쓰입니다.
             </p>
             <p id="hospitalRequestNote" class="request-note" hidden></p>
+            <p class="card-desc">
+                업로드 권한: <strong id="userPublishStatus" style="color:var(--text-main);">-</strong>
+            </p>
             <div class="affiliation-form">
                 <label for="hospitalQuery">소속기관</label>
                 <HospitalAutocomplete />
@@ -216,6 +219,22 @@ import HospitalAutocomplete from '../components/HospitalAutocomplete.astro';
                 }
                 const adminBadge = document.getElementById('adminBadge');
                 if (adminBadge) adminBadge.style.display = String(currentUser.is_admin) === 'true' ? 'block' : 'none';
+
+                // 2-1 업로드 권한(계획서 2-2 카드 2 "업로드 권한" 행)
+                const publishEl = document.getElementById('userPublishStatus');
+                if (publishEl) {
+                    const rejected = Number(currentUser.reject_count || 0);
+                    publishEl.textContent =
+                        String(currentUser.is_admin) === 'true'
+                            ? '관리자 — 바로 게시'
+                            : rejected >= 3
+                              ? `제출 차단 (반려 ${rejected}회 누적)`
+                              : currentUser.can_publish === 'true'
+                                ? '직접 게시 가능'
+                                : rejected > 0
+                                  ? `첫 제출 검토 대기 (반려 ${rejected}회)`
+                                  : '첫 제출 검토 대기';
+                }
 
                 // --- 카드 2 프리필 (계정당 1회 — 사용자가 편집 중인 값을 스토어 갱신이 덮지 않도록) ---
                 if (prefilledFor === currentUser.id) return;

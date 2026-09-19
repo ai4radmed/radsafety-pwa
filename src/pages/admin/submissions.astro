@@ -1,0 +1,315 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
+
+// 제출 검토(관리자). 명세: .spec/src/pages/admin/submissions.md
+// 2단계 2-1(2026-09-19): 첫 제출(pending) 자료·사례를 승인(게시 + 작성자 can_publish) / 반려(reject_count+1).
+export const prerender = false;
+---
+
+<DashboardLayout title="제출 검토">
+    <div class="submissions-container">
+        <div class="header">
+            <div class="page-title"><Icon name="check-square" size="24" /> 제출 검토</div>
+            <p class="subtitle">
+                아직 직접 게시 권한이 없는 회원의 첫 제출입니다. <strong>승인</strong>하면 게시되고 그 회원은 이후 검토
+                없이 바로 게시할 수 있습니다. <strong>반려</strong>는 사유와 함께 알림이 가며 3회 누적 시 제출이
+                차단됩니다. 게시 권한 회수는 <a href="/admin/members">회원 목록</a>에서 합니다.
+            </p>
+        </div>
+
+        <div class="toolbar">
+            <h2 style="margin:0; font-size:1rem;">검토 대기 (<span id="pendingCount">0</span>건)</h2>
+            <button id="refreshBtn" class="btn-secondary">🔄 새로고침</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="pendingTable">
+                <thead>
+                    <th>종류</th>
+                    <th>제목</th>
+                    <th>제출자</th>
+                    <th>제출일</th>
+                    <th>처리</th>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" style="text-align:center;">데이터를 불러오는 중...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</DashboardLayout>
+
+<script>
+    import { userProfile } from '../../store/user';
+    import { supabase } from '../../lib/supabase-browser';
+
+    function escapeHtml(s: string): string {
+        return s.replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+        );
+    }
+
+    type Row = {
+        kind: 'archive' | 'finding';
+        id: string;
+        title: string;
+        created_at: string;
+        username: string | null;
+        reject_count: number;
+        file_url?: string | null;
+        file_bucket?: string | null;
+        link: string;
+    };
+
+    document.addEventListener('astro:page-load', () => {
+        const currentUser = userProfile.get() as any;
+        if (!currentUser?.id) return;
+        if (currentUser.is_admin !== 'true') {
+            alert('관리자 권한이 필요합니다.');
+            window.location.href = '/mypage';
+            return;
+        }
+
+        const tbody = document.querySelector('#pendingTable tbody');
+        const countEl = document.getElementById('pendingCount');
+        const refreshBtn = document.getElementById('refreshBtn') as HTMLButtonElement | null;
+        if (!tbody) return;
+
+        refreshBtn?.addEventListener('click', load);
+        load();
+
+        async function load() {
+            tbody!.innerHTML = '<tr><td colspan="5" style="text-align:center;">로딩 중...</td></tr>';
+            const [archives, findings] = await Promise.all([
+                supabase
+                    .from('archives')
+                    .select('id, title, created_at, file_url, file_bucket, slug, profiles(username, reject_count)')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: true }),
+                supabase
+                    .from('findings')
+                    .select('id, title, created_at, profiles:user_id(username, reject_count)')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: true }),
+            ]);
+            const err = archives.error || findings.error;
+            if (err) {
+                tbody!.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">로드 실패: ${escapeHtml(err.message)}</td></tr>`;
+                return;
+            }
+            const rows: Row[] = [
+                ...((archives.data || []) as any[]).map((a) => ({
+                    kind: 'archive' as const,
+                    id: a.id,
+                    title: a.title,
+                    created_at: a.created_at,
+                    username: a.profiles?.username ?? null,
+                    reject_count: a.profiles?.reject_count ?? 0,
+                    file_url: a.file_url,
+                    file_bucket: a.file_bucket,
+                    link: `/resources?slug=${encodeURIComponent(a.slug || '')}`,
+                })),
+                ...((findings.data || []) as any[]).map((f) => ({
+                    kind: 'finding' as const,
+                    id: f.id,
+                    title: f.title,
+                    created_at: f.created_at,
+                    username: f.profiles?.username ?? null,
+                    reject_count: f.profiles?.reject_count ?? 0,
+                    link: '/findings-recommendations',
+                })),
+            ].sort((a, b) => a.created_at.localeCompare(b.created_at));
+            render(rows);
+        }
+
+        function render(rows: Row[]) {
+            if (countEl) countEl.textContent = String(rows.length);
+            if (rows.length === 0) {
+                tbody!.innerHTML =
+                    '<tr><td colspan="5" style="text-align:center;">검토 대기 중인 제출물이 없습니다.</td></tr>';
+                return;
+            }
+            tbody!.innerHTML = '';
+            rows.forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.kind === 'archive' ? '자료실' : '지적사례'}</td>
+                    <td>
+                        <strong>${escapeHtml(row.title)}</strong>
+                        ${row.kind === 'archive' && row.file_url ? '<button class="btn-link btn-file" data-kind="archive" data-id="' + row.id + '">파일 보기</button>' : ''}
+                    </td>
+                    <td>@${escapeHtml(row.username || '(미설정)')}${row.reject_count ? ` <span class="badge-reject">반려 ${row.reject_count}회</span>` : ''}</td>
+                    <td>${new Date(row.created_at).toLocaleDateString('ko-KR')}</td>
+                    <td class="actions-cell">
+                        <button class="btn-approve" data-kind="${row.kind}" data-id="${row.id}">승인·게시</button>
+                        <button class="btn-reject" data-kind="${row.kind}" data-id="${row.id}">반려</button>
+                    </td>
+                `;
+                tbody!.appendChild(tr);
+            });
+
+            tbody!.querySelectorAll('.btn-file').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const row = rows.find((r) => r.id === (btn as HTMLElement).dataset.id);
+                    if (!row?.file_url) return;
+                    const bucket = row.file_bucket || 'resources';
+                    if (bucket === 'resources-pending') {
+                        const { data, error } = await supabase.storage
+                            .from('resources-pending')
+                            .createSignedUrl(row.file_url, 60 * 10);
+                        if (error || !data?.signedUrl) return alert('파일 URL 생성 실패: ' + (error?.message ?? ''));
+                        window.open(data.signedUrl, '_blank');
+                    } else {
+                        const { data } = supabase.storage.from('resources').getPublicUrl(row.file_url);
+                        window.open(data.publicUrl, '_blank');
+                    }
+                });
+            });
+            tbody!.querySelectorAll('.btn-approve').forEach((btn) => {
+                btn.addEventListener('click', () =>
+                    review(
+                        (btn as HTMLElement).dataset.kind as 'archive' | 'finding',
+                        (btn as HTMLElement).dataset.id!,
+                        'approve',
+                    ),
+                );
+            });
+            tbody!.querySelectorAll('.btn-reject').forEach((btn) => {
+                btn.addEventListener('click', () =>
+                    review(
+                        (btn as HTMLElement).dataset.kind as 'archive' | 'finding',
+                        (btn as HTMLElement).dataset.id!,
+                        'reject',
+                    ),
+                );
+            });
+        }
+
+        async function review(kind: 'archive' | 'finding', id: string, decision: 'approve' | 'reject') {
+            let reason: string | undefined;
+            if (decision === 'approve') {
+                if (!confirm('승인하면 게시되고, 제출자는 이후 검토 없이 바로 게시할 수 있게 됩니다. 계속할까요?'))
+                    return;
+            } else {
+                const input = prompt('반려 사유를 입력하세요 (제출자에게 알림으로 전달됩니다).');
+                if (input === null) return;
+                reason = input.trim() || undefined;
+            }
+            try {
+                const { actions } = await import('astro:actions');
+                const result = await actions.reviewSubmission({ adminId: currentUser.id, kind, id, decision, reason });
+                if (result.error) throw new Error(result.error.message);
+                load();
+            } catch (err) {
+                alert('❌ 처리 중 오류: ' + (err as Error).message);
+            }
+        }
+    });
+</script>
+
+<style>
+    .submissions-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+    .header {
+        margin-bottom: 1.5rem;
+    }
+    .page-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .subtitle {
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    .table-wrapper {
+        max-height: 70vh;
+        overflow: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    th,
+    td {
+        padding: 0.6rem 0.9rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+    th {
+        background: rgba(255, 255, 255, 0.05);
+        position: sticky;
+        top: 0;
+        color: var(--text-muted);
+    }
+    :global(.actions-cell) {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    :global(.btn-approve),
+    :global(.btn-reject) {
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    :global(.btn-approve) {
+        background: #10b981;
+        color: white;
+    }
+    :global(.btn-reject) {
+        background: #ef4444;
+        color: white;
+    }
+    :global(.btn-link) {
+        background: none;
+        border: none;
+        color: var(--accent);
+        text-decoration: underline;
+        cursor: pointer;
+        font-size: 0.8rem;
+        margin-left: 0.4rem;
+    }
+    :global(.badge-reject) {
+        display: inline-block;
+        margin-left: 0.3rem;
+        padding: 0.05rem 0.4rem;
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.18);
+        color: #ef4444;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+</style>

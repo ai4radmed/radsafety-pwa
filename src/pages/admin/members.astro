@@ -38,10 +38,11 @@ export const prerender = false;
                     <th>소속기관</th>
                     <th>소속학회</th>
                     <th>상태</th>
+                    <th>게시 권한</th>
                     <th>가입일</th>
                 </thead>
                 <tbody>
-                    <tr><td colspan="6" style="text-align:center;">데이터를 불러오는 중...</td></tr>
+                    <tr><td colspan="7" style="text-align:center;">데이터를 불러오는 중...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -102,7 +103,7 @@ export const prerender = false;
         let rows: any[] = [];
 
         async function load() {
-            tbody!.innerHTML = '<tr><td colspan="6" style="text-align:center;">로딩 중...</td></tr>';
+            tbody!.innerHTML = '<tr><td colspan="7" style="text-align:center;">로딩 중...</td></tr>';
             try {
                 const { data: custom } = await supabase.from('hospitals_custom').select('id, name');
                 allHospitals = [...HOSPITALS, ...((custom as Hospital[] | null) ?? [])];
@@ -111,10 +112,12 @@ export const prerender = false;
             }
             const { data, error } = await supabase
                 .from('profiles')
-                .select('id, username, provider, status, society, hospital_id, hospital_request, is_admin, created_at')
+                .select(
+                    'id, username, provider, status, society, hospital_id, hospital_request, is_admin, can_publish, reject_count, created_at',
+                )
                 .order('created_at', { ascending: false });
             if (error) {
-                tbody!.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">로드 실패: ${escapeHtml(error.message)}</td></tr>`;
+                tbody!.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">로드 실패: ${escapeHtml(error.message)}</td></tr>`;
                 return;
             }
             rows = data || [];
@@ -131,7 +134,7 @@ export const prerender = false;
             );
             if (countEl) countEl.textContent = `${filtered.length}명`;
             if (filtered.length === 0) {
-                tbody!.innerHTML = '<tr><td colspan="6" style="text-align:center;">표시할 회원이 없습니다.</td></tr>';
+                tbody!.innerHTML = '<tr><td colspan="7" style="text-align:center;">표시할 회원이 없습니다.</td></tr>';
                 return;
             }
             tbody!.innerHTML = filtered
@@ -143,10 +146,60 @@ export const prerender = false;
                     <td>${hospitalCell(r)}</td>
                     <td>${SOCIETY_MAP[r.society] || '-'}</td>
                     <td>${STATUS_MAP[r.status] || escapeHtml(r.status || '-')}</td>
+                    <td>${publishCell(r)}</td>
                     <td>${r.created_at ? new Date(r.created_at).toLocaleDateString('ko-KR') : '-'}</td>
                 </tr>`,
                 )
                 .join('');
+
+            tbody!.querySelectorAll('.btn-publish-toggle').forEach((btn) => {
+                btn.addEventListener('click', () =>
+                    togglePublish((btn as HTMLElement).dataset.id!, (btn as HTMLElement).dataset.next === 'true'),
+                );
+            });
+        }
+
+        // 2-1 업로드 권한: 직접 게시 가능 / 첫 제출 검토 대기 / 제출 차단(반려 3회). 관리자는 부여·회수.
+        function publishCell(r: any): string {
+            const rejected = Number(r.reject_count || 0);
+            const label = r.is_admin
+                ? '관리자'
+                : rejected >= 3
+                  ? `제출 차단(반려 ${rejected}회)`
+                  : r.can_publish
+                    ? '직접 게시 가능'
+                    : '첫 제출 검토 대기';
+            const rejectNote =
+                !r.is_admin && rejected > 0 && rejected < 3
+                    ? ` <span class="badge-request">반려 ${rejected}회</span>`
+                    : '';
+            const toggle = r.is_admin
+                ? ''
+                : ` <button class="btn-mini btn-publish-toggle" data-id="${r.id}" data-next="${r.can_publish ? 'false' : 'true'}">${r.can_publish ? '회수' : '부여'}</button>`;
+            return `${label}${rejectNote}${toggle}`;
+        }
+
+        async function togglePublish(targetUserId: string, next: boolean) {
+            if (
+                !confirm(
+                    next
+                        ? '이 회원에게 직접 게시 권한을 부여할까요? 알림이 갑니다.'
+                        : '이 회원의 직접 게시 권한을 회수할까요? 다음 제출부터 검토 대기가 됩니다. 알림이 갑니다.',
+                )
+            )
+                return;
+            try {
+                const { actions } = await import('astro:actions');
+                const result = await actions.setPublishPermission({
+                    adminId: currentUser.id,
+                    targetUserId,
+                    canPublish: next,
+                });
+                if (result.error) throw new Error(result.error.message);
+                load();
+            } catch (err) {
+                alert('❌ 처리 중 오류: ' + (err as Error).message);
+            }
         }
 
         searchInput?.addEventListener('input', render);
@@ -237,6 +290,16 @@ export const prerender = false;
         color: #f59e0b;
         font-size: 0.75rem;
         font-weight: 600;
+    }
+    :global(.btn-mini) {
+        margin-left: 0.4rem;
+        padding: 0.15rem 0.5rem;
+        font-size: 0.75rem;
+        border: 1px solid var(--border-color);
+        background: transparent;
+        color: var(--text-main);
+        border-radius: 6px;
+        cursor: pointer;
     }
     :global(.badge-admin) {
         display: inline-block;

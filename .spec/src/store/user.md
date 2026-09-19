@@ -14,17 +14,17 @@ Nanostores 기반 클라이언트 사용자 프로필 상태. `persistentMap`으
 
 ### userProfile 필드
 
-`id`, `username`, `status`, `created_at`, `is_admin`, `provider`, `verification_status`, `society`, `hospital_id`, `hospital_request`, `certification`, `has_radiation_license`, `radiation_license_type`, `users_licenses`
+`id`, `username`, `status`, `created_at`, `is_admin`, `provider`, `society`, `hospital_id`, `hospital_request`, `can_publish`, `reject_count`, `certification`, `has_radiation_license`, `radiation_license_type`, `users_licenses`
 
 - `username`: Stage 1-A — `profiles.username` 그대로. 미설정이면 빈 문자열.
 - `status`: Phase 2 — `profiles.status`(`pending`/`active`/`suspended`/`banned`). `/claim-username`이 이 값으로 신규(pending)/기존(active)을 판정.
-- `verification_status`: 2-1(`can_publish`) 전까지 업로드 게이트가 참조하는 잔재. 컬럼도 아직 남아 있다.
+- `can_publish`/`reject_count`(2-1): 직접 게시 권한·반려 누적. 문자열(`'true'`/`'2'`)로 저장, 기본 `'false'`/`'0'`. 자료실·지적사례 게이트와 마이페이지 표시가 읽는다. (`verification_status`는 2-1에서 제거.)
 - `hospital_id`/`hospital_request`: 소속기관 id(정적 목록 또는 `c-…` 커스텀, `'other'`) / 기관 등록 요청 텍스트. `null`은 빈 문자열로.
 - 나머지(`certification`·`has_radiation_license`·`radiation_license_type`·`users_licenses`)는 파생/레거시 값 — DB 컬럼 아님.
 
 ### setUser 입력
 
-`id`, `email`, `username?`, `status?`, `provider`, `created_at?`, `is_admin?`, `verification_status?`, `society?`, `hospital_id?`, `hospital_request?`, `licenses?`, `has_radiation_license?`, `radiation_license_type?`
+`id`, `email`, `username?`, `status?`, `provider`, `created_at?`, `is_admin?`, `society?`, `hospital_id?`, `hospital_request?`, `can_publish?`, `reject_count?`, `licenses?`, `has_radiation_license?`, `radiation_license_type?`
 
 ## 사이드 이펙트
 
@@ -39,3 +39,4 @@ localStorage `userProfile` 읽기/쓰기. `getCertification(email)`(config/auth)
 ## 이력
 
 - 2026-09-19: 2-2 — 개인정보 필드 제거, `hospital_id`/`hospital_request` 추가.
+- 2026-09-19: 2-1 — `can_publish`·`reject_count` 추가, `verification_status` 제거.

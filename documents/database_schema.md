@@ -24,20 +24,22 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 > ⚠️ **`auth.users` → `profiles` 자동생성 트리거 존재** (2026-09-16, Stage 1-A 프리뷰 테스트로 발견). `auth.users`에 새 행이 INSERT되면 `profiles`에도 빈 행(`id`만 채워진)이 자동으로 생긴다. 이 저장소의 `sql_query/*.sql`에는 정의가 없다 — 대시보드에서만 존재하는 것으로 추정. **이 테이블에 `id`로 새 행을 쓰는 코드는 반드시 `upsert(onConflict:'id')`를 쓸 것** — 평범한 `insert`는 `duplicate key value violates unique constraint "profiles_pkey"`로 매번 실패한다(`src/actions/index.ts`의 `signUpWithUsername`이 실제 사례, `.spec/src/actions/index.md` 규칙 10). 정확한 트리거 정의는 SQL Editor에서 `select pg_get_triggerdef(oid) from pg_trigger where tgrelid = 'auth.users'::regclass;`로 확인.
 
-| 필드명                | 타입            | 설명                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 기본값     |
-| :-------------------- | :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------- |
-| `id`                  | `uuid` (PK)     | `auth.users.id` 참조 (외래키)                                                                                                                                                                                                                                                                                                                                                                                                                                                            |            |
-| `username`            | `text` (UNIQUE) | 로그인 아이디 (영문 소문자·숫자·`_`·`-`, 3~20자). `sql_query/migrate_add_username.sql` (2026-09-15, Stage 1-A). `auth.users.email` 은 `<username>@radsafety.invalid` 파생값. **코드는 운영 배포 완료**(이메일 OTP 로그인 제거, PR #56, 2026-09-18). **nullable 유지 — `sql_query/migrate_finalize_username.sql` 은 불채택**(카카오 사용자가 자리표시 아이디로 게이트를 못 타는 문제; `privacy_redesign_plan.md` 1단계 진행 상태 참조). NULL 은 `auth-handler.ts` 첫 접속 게이트가 막는다 | `NULL`     |
-| `status`              | `text`          | 회원 상태 (`pending`:가입 후 승인 대기, `active`:정상, `suspended`:정지, `banned`:탈퇴처리). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 기존 행은 전부 `active`로 시작 — `pending`은 Phase 2 구현 후 신규 가입에서만 명시적으로 발생                                                                                                                                                                                                                               | `'active'` |
-| `hospital_id`         | `text`          | 소속기관 (`src/data/hospitals.ts`의 `id` 참조, DB 외래키 아님). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 가입 폼(Phase 2)·아이디 전환 화면이 채운다. 목록에 없는 기관을 적으면 `'other'`(기타)로 들어간다(2026-09-19, 아래 `hospital_request`)                                                                                                                                                                                                                   | `NULL`     |
-| `hospital_request`    | `text`          | 회원기관 등록 요청 — 목록에 없는 기관을 타이핑한 채 가입/전환하면 그 텍스트가 여기 남고 `hospital_id='other'`. `NOT NULL` = 관리자 검토 대기. `admin/member-approval.astro` "기관 등록 요청" → `resolveHospitalRequest`(등록: `hospital_id` 갱신·비움 / 거절: 비움만). `sql_query/migrate_add_hospital_request.sql` (2026-09-19)                                                                                                                                                         | `NULL`     |
-| `provider`            | `text`          | 로그인 제공자(`kakao`/`email`). `sql_query/migrate_add_profile_provider.sql` (2026-09-18) — `admin/member-approval.astro`가 다른 사용자의 로그인 방식을 보여주려 select 했으나 컬럼이 없어 나던 로드 실패("column profiles.provider does not exist")를 계기로 신설. `signUpWithUsername`/`auth-handler.ts` 자가 치유가 가입 시점에 채움, 이 컬럼 신설 전 가입자는 `NULL`                                                                                                                 |            |
-| `created_at`          | `timestamp`     | 프로필 생성 일시 (앱 가입일)                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `now()`    |
-| `is_admin`            | `boolean`       | 관리자 여부                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `false`    |
-| `verification_status` | `text`          | **(2-1 에서 삭제 예정, 2026-09-19 2-2 로 명부 대조 인증은 폐지)** 업로드 게이트가 아직 참조하는 잔재. 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료)                                                                                                                                                                                                                                                                                    | `'none'`   |
-| `society`             | `text`          | 소속 학회 코드 (`nuclear_medicine`, `technology` 등)                                                                                                                                                                                                                                                                                                                                                                                                                                     |            |
+| 필드명                    | 타입            | 설명                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 기본값     |
+| :------------------------ | :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------- |
+| `id`                      | `uuid` (PK)     | `auth.users.id` 참조 (외래키)                                                                                                                                                                                                                                                                                                                                                                                                                                                            |            |
+| `username`                | `text` (UNIQUE) | 로그인 아이디 (영문 소문자·숫자·`_`·`-`, 3~20자). `sql_query/migrate_add_username.sql` (2026-09-15, Stage 1-A). `auth.users.email` 은 `<username>@radsafety.invalid` 파생값. **코드는 운영 배포 완료**(이메일 OTP 로그인 제거, PR #56, 2026-09-18). **nullable 유지 — `sql_query/migrate_finalize_username.sql` 은 불채택**(카카오 사용자가 자리표시 아이디로 게이트를 못 타는 문제; `privacy_redesign_plan.md` 1단계 진행 상태 참조). NULL 은 `auth-handler.ts` 첫 접속 게이트가 막는다 | `NULL`     |
+| `status`                  | `text`          | 회원 상태 (`pending`:가입 후 승인 대기, `active`:정상, `suspended`:정지, `banned`:탈퇴처리). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 기존 행은 전부 `active`로 시작 — `pending`은 Phase 2 구현 후 신규 가입에서만 명시적으로 발생                                                                                                                                                                                                                               | `'active'` |
+| `hospital_id`             | `text`          | 소속기관 (`src/data/hospitals.ts`의 `id` 참조, DB 외래키 아님). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 가입 폼(Phase 2)·아이디 전환 화면이 채운다. 목록에 없는 기관을 적으면 `'other'`(기타)로 들어간다(2026-09-19, 아래 `hospital_request`)                                                                                                                                                                                                                   | `NULL`     |
+| `hospital_request`        | `text`          | 회원기관 등록 요청 — 목록에 없는 기관을 타이핑한 채 가입/전환하면 그 텍스트가 여기 남고 `hospital_id='other'`. `NOT NULL` = 관리자 검토 대기. `admin/member-approval.astro` "기관 등록 요청" → `resolveHospitalRequest`(등록: `hospital_id` 갱신·비움 / 거절: 비움만). `sql_query/migrate_add_hospital_request.sql` (2026-09-19)                                                                                                                                                         | `NULL`     |
+| `can_publish`             | `boolean`       | 직접 게시 권한(2-1, `sql_query/migrate_add_publish_gate.sql`, 2026-09-19). 첫 제출이 승인되면 `true`, 관리자가 회수 가능. 트리거가 이 값으로 제출 행 `status`를 정한다. 백필: 옛 인증 회원·관리자 `true`                                                                                                                                                                                                                                                                                 | `false`    |
+| `reject_count`            | `integer`       | 반려 누적(2-1). 3 이상이면 RLS INSERT 정책이 제출을 막는다                                                                                                                                                                                                                                                                                                                                                                                                                               | `0`        |
+| `provider`                | `text`          | 로그인 제공자(`kakao`/`email`). `sql_query/migrate_add_profile_provider.sql` (2026-09-18) — `admin/member-approval.astro`가 다른 사용자의 로그인 방식을 보여주려 select 했으나 컬럼이 없어 나던 로드 실패("column profiles.provider does not exist")를 계기로 신설. `signUpWithUsername`/`auth-handler.ts` 자가 치유가 가입 시점에 채움, 이 컬럼 신설 전 가입자는 `NULL`                                                                                                                 |            |
+| `created_at`              | `timestamp`     | 프로필 생성 일시 (앱 가입일)                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `now()`    |
+| `is_admin`                | `boolean`       | 관리자 여부                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `false`    |
+| ~~`verification_status`~~ | —               | **삭제됨(2-1, `sql_query/migrate_drop_verification_status.sql`, 2026-09-19)** — 업로드 게이트가 `can_publish`로 교체된 뒤 제거                                                                                                                                                                                                                                                                                                                                                           |            |
+| `society`                 | `text`          | 소속 학회 코드 (`nuclear_medicine`, `technology` 등)                                                                                                                                                                                                                                                                                                                                                                                                                                     |            |
 
-> **Note (2-2, 2026-09-19)**: 실명·이메일·닉네임·부서·구분·면허 컬럼 14개는 `sql_query/migrate_drop_legacy_profile_columns.sql`로 삭제됐다. `verification_status`(아래 4단계)는 업로드 게이트가 참조하는 잔재로 2-1에서 `can_publish`로 대체·삭제 예정:
+> **Note (2-2·2-1, 2026-09-19)**: 실명·이메일·닉네임·부서·구분·면허 컬럼 14개는 `migrate_drop_legacy_profile_columns.sql`로, `verification_status`는 `migrate_drop_verification_status.sql`로 삭제됐다. 옛 4단계 인증 상태(참고용):
 >
 > - `none`: 미인증 (기본값, 권한 없음)
 > - `list`: 회원명부 인증 (즉시 인증, 모든 권한)
@@ -48,38 +50,41 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 지적 및 권고 사례 데이터를 저장합니다.
 
-| 필드명             | 타입        | 설명                                                                             |
-| :----------------- | :---------- | :------------------------------------------------------------------------------- |
-| `id`               | `uuid` (PK) | 고유 식별자                                                                      |
-| `title`            | `text`      | 사례 제목                                                                        |
-| `finding_type`     | `text`      | 구분 (`지적`, `권고`)                                                            |
-| `tags`             | `text[]`    | 태그/카테고리 배열                                                               |
-| `year`             | `text`      | 수검 년도                                                                        |
-| `description`      | `text`      | 상세 내용                                                                        |
-| `violation_clause` | `text`      | 관련 법령 조항                                                                   |
-| `solution`         | `text`      | 조치 방안                                                                        |
-| `created_at`       | `timestamp` | 생성 일시                                                                        |
-| `user_id`          | `uuid`      | 작성자 ID (`auth.users.id` 참조, `ON DELETE SET NULL`로 탈퇴 시에도 데이터 보존) |
+| 필드명             | 타입        | 설명                                                                                                                |
+| :----------------- | :---------- | :------------------------------------------------------------------------------------------------------------------ |
+| `id`               | `uuid` (PK) | 고유 식별자                                                                                                         |
+| `title`            | `text`      | 사례 제목                                                                                                           |
+| `finding_type`     | `text`      | 구분 (`지적`, `권고`)                                                                                               |
+| `tags`             | `text[]`    | 태그/카테고리 배열                                                                                                  |
+| `year`             | `text`      | 수검 년도                                                                                                           |
+| `description`      | `text`      | 상세 내용                                                                                                           |
+| `violation_clause` | `text`      | 관련 법령 조항                                                                                                      |
+| `solution`         | `text`      | 조치 방안                                                                                                           |
+| `created_at`       | `timestamp` | 생성 일시                                                                                                           |
+| `user_id`          | `uuid`      | 작성자 ID (`auth.users.id` 참조, `ON DELETE SET NULL`로 탈퇴 시에도 데이터 보존)                                    |
+| `status`           | `text`      | `pending`/`published`/`rejected`(2-1). 트리거 `findings_enforce_status`가 정함. pending은 작성자·관리자만 조회(RLS) |
 
 ### 3. `archives`
 
 자료실(Resources)의 게시물 및 파일 정보를 저장합니다.
 
-| 필드명           | 타입            | 설명                           | 기본값              |
-| :--------------- | :-------------- | :----------------------------- | :------------------ |
-| `id`             | `uuid` (PK)     | 고유 식별자                    | `gen_random_uuid()` |
-| `title`          | `text`          | 자료 제목                      |                     |
-| `category`       | `text`          | 분류 (작성지침, 가이드북 등)   |                     |
-| `slug`           | `text` (UNIQUE) | URL 친화적 고유 식별자         |                     |
-| `year`           | `integer`       | 자료 저작년도 (제작년도)       |                     |
-| `file_url`       | `text`          | Supabase Storage 파일 경로     |                     |
-| `file_name`      | `text`          | 원본 파일명                    |                     |
-| `author`         | `text`          | 표시용 작성자명 (보조/레거시)  |                     |
-| `user_id`        | `uuid` (FK)     | 등록자 ID (`profiles.id` 참조) | `auth.uid()`        |
-| `view_count`     | `integer`       | 조회수                         | `0`                 |
-| `download_count` | `integer`       | 다운로드 횟수                  | `0`                 |
-| `content_html`   | `text`          | HTML/Markdown 내용             |                     |
-| `created_at`     | `timestamp`     | 생성 일시 (DB 등록 일시)       | `now()`             |
+| 필드명           | 타입            | 설명                                                                                        | 기본값              |
+| :--------------- | :-------------- | :------------------------------------------------------------------------------------------ | :------------------ |
+| `id`             | `uuid` (PK)     | 고유 식별자                                                                                 | `gen_random_uuid()` |
+| `title`          | `text`          | 자료 제목                                                                                   |                     |
+| `category`       | `text`          | 분류 (작성지침, 가이드북 등)                                                                |                     |
+| `slug`           | `text` (UNIQUE) | URL 친화적 고유 식별자                                                                      |                     |
+| `year`           | `integer`       | 자료 저작년도 (제작년도)                                                                    |                     |
+| `file_url`       | `text`          | Supabase Storage 파일 경로                                                                  |                     |
+| `file_name`      | `text`          | 원본 파일명                                                                                 |                     |
+| `author`         | `text`          | 표시용 작성자명 (보조/레거시)                                                               |                     |
+| `user_id`        | `uuid` (FK)     | 등록자 ID (`profiles.id` 참조)                                                              | `auth.uid()`        |
+| `view_count`     | `integer`       | 조회수                                                                                      | `0`                 |
+| `download_count` | `integer`       | 다운로드 횟수                                                                               | `0`                 |
+| `content_html`   | `text`          | HTML/Markdown 내용                                                                          |                     |
+| `status`         | `text`          | `pending`/`published`/`rejected`(2-1). 트리거 `archives_enforce_status`가 정함              | `'pending'`         |
+| `file_bucket`    | `text`          | `resources`(공개) / `resources-pending`(비공개, `<uid>/…`). 승인 시 서버가 공개로 이동(2-1) | `'resources'`       |
+| `created_at`     | `timestamp`     | 생성 일시 (DB 등록 일시)                                                                    | `now()`             |
 
 > **Note**:
 >
@@ -201,6 +206,7 @@ RLS: SELECT는 전원(`anon` 포함 — 로그인 전 가입 폼 자동완성이
 6. `push_subscriptions` - 웹 푸시 알림 구독 (섹션 11)
 7. `archives` - 자료실 게시물 (**섹션 12**, profiles 외래키 포함)
 8. `hospitals_custom` - 관리자 등록 회원기관 (`migrate_add_hospitals_custom.sql`, 통합 스크립트 밖)
+9. 스토리지 버킷 `resources-pending`(비공개, 2-1, 섹션 15) — 검토 대기 파일
 
 > 2-2(2026-09-19): `allowed_members`·`verification_requests`·`email_verification_codes`와 profiles 개인정보 컬럼은 통합 스크립트에서도 제거됨. 기존 환경은 `migrate_drop_legacy_profile_columns.sql`로 정리.
 

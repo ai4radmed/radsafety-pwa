@@ -503,6 +503,127 @@ export const server = {
         },
     }),
 
+    // 2-1 업로드 권한(2026-09-19, documents/privacy_redesign_plan.md §2-1) ────────────────
+    // 첫 제출(pending)을 관리자가 승인/반려한다. 승인 = published + 작성자 can_publish=true
+    // (pending 파일은 비공개 버킷에서 공개 버킷으로 이동). 반려 = rejected + reject_count+1
+    // (3회면 RLS 가 제출을 막는다). 어느 쪽이든 제출자에게 알림 1건.
+    reviewSubmission: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            kind: z.enum(['archive', 'finding']),
+            id: z.string().uuid(),
+            decision: z.enum(['approve', 'reject']),
+            reason: z.string().trim().max(300).optional(),
+        }),
+        handler: async ({ adminId, kind, id, decision, reason }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+            await assertAdmin(adminId);
+
+            const table = kind === 'archive' ? 'archives' : 'findings';
+            type SubmissionRow = {
+                id: string;
+                title: string;
+                user_id: string | null;
+                status: string;
+                file_url?: string | null;
+                file_bucket?: string | null;
+            };
+            // supabase-js 의 select 문자열 타입 추론은 조건식을 못 풀어 any 로 받는다 — 조회 컬럼은 두 표 모두에
+            // 있는 것 + archives 전용(file_url·file_bucket, findings 엔 없으면 undefined).
+            const columns =
+                kind === 'archive' ? 'id, title, user_id, status, file_url, file_bucket' : 'id, title, user_id, status';
+            const { data: rowData, error: rowError } = await supabaseAdmin
+                .from(table)
+                .select(columns as '*')
+                .eq('id', id)
+                .single();
+            const row = rowData as unknown as SubmissionRow | null;
+            if (rowError || !row) throw new Error('제출물을 찾을 수 없습니다.');
+            if (row.status !== 'pending') throw new Error('이미 처리된 제출물입니다.');
+
+            if (decision === 'approve') {
+                const update: Record<string, unknown> = { status: 'published' };
+                if (kind === 'archive' && row.file_bucket === 'resources-pending' && row.file_url) {
+                    await movePendingFileToPublic(row.file_url);
+                    update.file_bucket = 'resources';
+                }
+                const { error: updateError } = await supabaseAdmin.from(table).update(update).eq('id', id);
+                if (updateError) throw new Error(updateError.message);
+
+                if (row.user_id) {
+                    const { error: permError } = await supabaseAdmin
+                        .from('profiles')
+                        .update({ can_publish: true })
+                        .eq('id', row.user_id);
+                    if (permError) logger.warn('can_publish 부여 실패', { error: permError });
+                    await notifySubmitter(row.user_id, adminId, {
+                        title: '✅ 제출하신 자료가 게시되었습니다',
+                        message: `「${row.title}」이(가) 검토를 통과해 게시되었습니다. 이제부터 제출하시는 자료는 검토 없이 바로 게시됩니다.`,
+                        link: kind === 'archive' ? '/resources' : '/findings-recommendations',
+                    });
+                }
+                return { success: true, status: 'published' };
+            }
+
+            const { error: rejectError } = await supabaseAdmin.from(table).update({ status: 'rejected' }).eq('id', id);
+            if (rejectError) throw new Error(rejectError.message);
+
+            let rejectCount: number | null = null;
+            if (row.user_id) {
+                const { data: profile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('reject_count')
+                    .eq('id', row.user_id)
+                    .single();
+                rejectCount = ((profile?.reject_count as number | null) ?? 0) + 1;
+                const { error: countError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({ reject_count: rejectCount })
+                    .eq('id', row.user_id);
+                if (countError) logger.warn('reject_count 증가 실패', { error: countError });
+                await notifySubmitter(row.user_id, adminId, {
+                    title: '❌ 제출하신 자료가 반려되었습니다',
+                    message:
+                        `「${row.title}」이(가) 반려되었습니다.` +
+                        (reason ? `\n\n사유: ${reason}` : '') +
+                        (rejectCount >= 3
+                            ? '\n\n반려가 3회 누적되어 더 이상 제출할 수 없습니다. 문의는 의견보내기로 남겨주세요.'
+                            : `\n\n(반려 ${rejectCount}회 — 3회 누적 시 제출이 차단됩니다.)`),
+                    link: '/mypage',
+                });
+            }
+            return { success: true, status: 'rejected', rejectCount };
+        },
+    }),
+
+    // 관리자가 can_publish 를 부여/회수한다. 회수되면 다음 제출부터 다시 검토 대기.
+    setPublishPermission: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            targetUserId: z.string().uuid(),
+            canPublish: z.boolean(),
+        }),
+        handler: async ({ adminId, targetUserId, canPublish }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+            await assertAdmin(adminId);
+
+            const { error: updateError } = await supabaseAdmin
+                .from('profiles')
+                .update({ can_publish: canPublish })
+                .eq('id', targetUserId);
+            if (updateError) throw new Error(updateError.message);
+
+            await notifySubmitter(targetUserId, adminId, {
+                title: canPublish ? '✅ 직접 게시 권한이 부여되었습니다' : 'ℹ️ 직접 게시 권한이 회수되었습니다',
+                message: canPublish
+                    ? '이제부터 제출하시는 자료·사례는 검토 없이 바로 게시됩니다.'
+                    : '앞으로 제출하시는 자료·사례는 관리자 검토 후 게시됩니다.',
+                link: '/mypage',
+            });
+            return { success: true, canPublish };
+        },
+    }),
+
     // Phase 3 (2계층+가입승인+제재 모델, KSNM 방안위 교육팀 합의 2026-09-10 승계) ──
     // 가입 대기(status: 'pending') 계정을 관리자가 승인/거절. adminId 는 클라이언트가
     // 넘기고 서버에서 profiles.is_admin 대조 — approveVerification 등 기존 관리자
@@ -683,5 +804,39 @@ async function notifyHospitalResolution(
         });
     } catch (error) {
         logger.warn('기관 등록 요청 처리 알림 실패(처리는 완료)', { error });
+    }
+}
+
+// ── 2-1 제출 검토 공용 단계 ──
+
+// pending 파일(비공개 버킷)을 같은 경로로 공개 버킷에 복사하고 원본을 지운다. 서비스 롤 전용.
+async function movePendingFileToPublic(path: string) {
+    const admin = supabaseAdmin!;
+    const { data: blob, error: downloadError } = await admin.storage.from('resources-pending').download(path);
+    if (downloadError || !blob) throw new Error('대기 파일을 읽지 못했습니다: ' + (downloadError?.message ?? ''));
+    const { error: uploadError } = await admin.storage.from('resources').upload(path, blob, { upsert: true });
+    if (uploadError) throw new Error('공개 버킷 업로드 실패: ' + uploadError.message);
+    const { error: removeError } = await admin.storage.from('resources-pending').remove([path]);
+    if (removeError) logger.warn('대기 파일 삭제 실패(공개 복사는 완료)', { path, error: removeError });
+}
+
+async function notifySubmitter(
+    userId: string,
+    adminId: string,
+    data: { title: string; message: string; link: string },
+) {
+    try {
+        await createNotification({
+            type: 'system_notice',
+            userId,
+            senderId: adminId,
+            title: data.title,
+            message: data.message,
+            link: data.link,
+            actionLabel: '확인하기',
+            actionUrl: data.link,
+        });
+    } catch (error) {
+        logger.warn('제출 검토 알림 실패(처리는 완료)', { error });
     }
 }
