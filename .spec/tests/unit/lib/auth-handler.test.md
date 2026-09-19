@@ -43,3 +43,7 @@
 1. **Mocking**: `supabase-browser`, `nanostores` 등을 필수 모킹. `config/auth`는 Stage 1-A(2026-09) 이후 `auth-handler.ts`가 더 이상 import하지 않으므로 모킹 불필요.
 2. **Environment**: `jsdom` 환경에서 실행하여 `window.location`, `document` 조작 가능해야 함.
 3. **Async**: 비동기 함수(`.getSession`, `.from`)의 결과를 기다려 단언(assertion) 수행.
+
+## 2계층 공개 경로 (2026-09-19)
+
+- 비로그인 `/resources` → 리다이렉트 없음. 비로그인 `/notifications` → `/login?from=%2Fnotifications`. 기존 `/mypage` 케이스도 `from` 포함으로 갱신.

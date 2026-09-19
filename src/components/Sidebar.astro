@@ -22,16 +22,27 @@ const { pathname } = Astro.url;
 
         let sessionChecked = false;
 
+        // 2계층(공개/회원): 비가입자에게 사용자 메뉴(마이페이지·알림함·의견·개선의견조회)는 없다 —
+        // 사이드바·하단 내비의 [data-member-only] 요소를 로그인 상태에서만 보인다.
+        const memberOnlyEls = Array.from(document.querySelectorAll<HTMLElement>('[data-member-only]'));
+        function setMemberOnly(visible: boolean) {
+            memberOnlyEls.forEach((el) => {
+                el.style.display = visible ? '' : 'none';
+            });
+        }
+
         function updateAuthUI(user: any) {
             // Before session check completes, always show logged-out state
             if (!sessionChecked) {
                 if (apiLoginLink) apiLoginLink.style.display = 'flex';
                 if (apiLogoutBtn) apiLogoutBtn.style.display = 'none';
                 if (adminNavGroup) adminNavGroup.style.display = 'none';
+                setMemberOnly(false);
                 return;
             }
 
             if (user && user.id) {
+                setMemberOnly(true);
                 if (apiLoginLink) apiLoginLink.style.display = 'none';
                 if (apiLogoutBtn) apiLogoutBtn.style.display = 'flex';
 
@@ -40,6 +51,7 @@ const { pathname } = Astro.url;
                     adminNavGroup.style.display = user.is_admin === 'true' || user.is_admin === true ? 'flex' : 'none';
                 }
             } else {
+                setMemberOnly(false);
                 if (apiLoginLink) apiLoginLink.style.display = 'flex';
                 if (apiLogoutBtn) apiLogoutBtn.style.display = 'none';
                 if (adminNavGroup) adminNavGroup.style.display = 'none';
@@ -116,14 +128,20 @@ const { pathname } = Astro.url;
             </a>
         </div>
 
-        <div class="nav-group">
-            <span class="group-title">사용자</span>
-            <a href="/mypage" class={pathname.startsWith('/mypage') ? 'active' : ''} aria-label="My Page">
+        <div class="nav-group" id="userNavGroup">
+            <span class="group-title" data-member-only>사용자</span>
+            <a
+                href="/mypage"
+                data-member-only
+                class={pathname.startsWith('/mypage') ? 'active' : ''}
+                aria-label="My Page"
+            >
                 <span class="icon"><Icon name="user" size="18" /></span>
                 <span class="link-text">마이페이지</span>
             </a>
             <a
                 href="/notifications"
+                data-member-only
                 class={pathname.startsWith('/notifications') ? 'active' : ''}
                 aria-label="Notifications"
                 style="position: relative;"
@@ -134,16 +152,22 @@ const { pathname } = Astro.url;
                 </span>
                 <span class="link-text">알림함</span>
             </a>
-            <a href="/feedback" class={pathname === '/feedback' ? 'active' : ''} aria-label="Feedback">
+            <a href="/feedback" data-member-only class={pathname === '/feedback' ? 'active' : ''} aria-label="Feedback">
                 <span class="icon"><Icon name="mail" size="18" /></span>
                 <span class="link-text">의견보내기</span>
             </a>
-            <a href="/my-feedback" class={pathname.startsWith('/my-feedback') ? 'active' : ''} aria-label="My Feedback">
+            <a
+                href="/my-feedback"
+                data-member-only
+                class={pathname.startsWith('/my-feedback') ? 'active' : ''}
+                aria-label="My Feedback"
+            >
                 <span class="icon"><Icon name="inbox" size="18" /></span>
                 <span class="link-text">내 의견함</span>
             </a>
             <a
                 href="/feedback-query"
+                data-member-only
                 class={pathname.startsWith('/feedback-query') ? 'active' : ''}
                 aria-label="Improvement Feedback Query"
             >

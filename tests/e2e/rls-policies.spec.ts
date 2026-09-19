@@ -24,18 +24,16 @@ const hasCreds = Boolean(url && anonKey && testEmail && testPassword);
 test.describe('RLS 정책 검증 (보안)', () => {
     test.skip(!hasCreds, 'Supabase URL/anon 또는 DEV_TEST_USER_* 미설정 — 검증 생략');
 
-    test('비로그인 anon 은 findings 를 무단 조회하지 못한다 (RLS 가드)', async () => {
+    test('비로그인 anon 은 findings 목록 열(제목·태그·연도)만 읽고 본문 열은 거부된다 (2계층 공개 계층)', async () => {
         const anon = createClient(url!, anonKey!, { auth: { persistSession: false } });
-        const { error } = await anon.from('findings').select('*', { count: 'exact', head: true });
 
-        // RLS 정책 거부(PGRST301/42501/policy·permission) 또는 빈 결과(PGRST116)는 정상 가드.
-        // 그 외 일반 에러는 실패.
-        if (error) {
-            const code = error.code ?? '';
-            const isRlsBlock =
-                ['PGRST301', '42501', 'PGRST116'].includes(code) || /policy|permission/.test(error.message);
-            expect(isRlsBlock, `예상치 못한 에러: ${code} ${error.message}`).toBe(true);
-        }
+        const listed = await anon.from('findings').select('id, title, finding_type, tags, year').limit(1);
+        expect(listed.error, `목록 열 조회 실패: ${listed.error?.message}`).toBeNull();
+
+        // description/violation_clause/solution 은 GRANT 에서 빠져 있어 열 단위 permission denied 여야 한다.
+        const detail = await anon.from('findings').select('id, description').limit(1);
+        expect(detail.error, '본문 열이 anon 에게 열려 있음').not.toBeNull();
+        expect(detail.error!.code === '42501' || /permission/.test(detail.error!.message)).toBe(true);
     });
 
     test('로그인 사용자의 profiles 조회에 RLS 무한 재귀가 없다', async () => {

@@ -251,6 +251,8 @@ import Icon from '../components/Icon.astro';
     </style>
 
     <script>
+        import { userProfile } from '../store/user';
+
         document.addEventListener('astro:page-load', () => {
             // ── 글자 크기 ──────────────────────────────────────────
             const fontBtns = document.querySelectorAll('.font-btn');
@@ -276,6 +278,13 @@ import Icon from '../components/Icon.astro';
             const unsupportedMsg = document.getElementById('pushUnsupportedMsg');
 
             if (!pushToggle || !statusText) return;
+
+            // 2계층: 설정 페이지는 공개이지만 푸시 구독은 계정에 묶이므로 비가입자에겐 잠근다.
+            if (!userProfile.get().id) {
+                pushToggle.disabled = true;
+                statusText.textContent = '로그인 후 사용할 수 있습니다';
+                return;
+            }
 
             // 초기 상태 설정
             if (!('serviceWorker' in navigator) || !('PushManager' in window) || !(window as any).vapidPublicKey) {

@@ -21,3 +21,7 @@ Supabase **RLS(행 수준 보안) 정책**의 실동작 — 보안 통합 테스
 - 부작용(로그인) 있음 → 테스트 종료 시 `signOut`.
 - 자격 미설정 시 전체 `test.skip`.
 - 원 구현은 Doctor(`checkRlsPolicies`)였으나 부작용·자격 이유로 e2e 로 이전(값어치 보존, 자리 교정).
+
+## 2계층 공개 계층 (2026-09-19)
+
+- anon `findings` 테스트를 "목록 열만 허용"으로 교체: `id, title, finding_type, tags, year` 조회 성공, `description` 조회는 열 권한 거부(42501/permission).

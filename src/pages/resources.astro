@@ -763,9 +763,11 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
 
         listEl.innerHTML = '<p style="text-align:center; padding:2rem;">자료를 불러오는 중입니다...</p>';
 
+        // 비가입자(anon)는 profiles 를 못 읽으므로 등록자 조인을 뺀다(게시된 자료 목록·다운로드는 공개).
+        const isMember = Boolean(userProfile.get().id);
         const { data, error } = await supabase
             .from('archives')
-            .select('*, profiles(username)')
+            .select(isMember ? '*, profiles(username)' : '*')
             .order('created_at', { ascending: false });
 
         if (error) {

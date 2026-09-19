@@ -29,3 +29,7 @@ Phase 3(2계층+가입승인+제재 모델, `documents/privacy_redesign_plan.md`
     - **합치기**: `<select>`(정적 `HOSPITALS` + `hospitals_custom` 합집합에서 `retired`·`'other'` 제외) + "합치기" → `resolveHospitalRequest({…, hospitalId})`. 표기만 다른 기존 기관으로 보낼 때.
     - **거절**: `resolveHospitalRequest` `hospitalId` 없이 → 소속 `기타` 유지.
       전부 `confirm()` 후 실행, 성공 시 커스텀 목록 재조회 + 두 표 새로고침. 위 대기 표의 소속기관 칸에도 요청이 걸린 행은 `🆕 요청: <기관명>` 배지. 기관 이름 표시(`hospitalName`)는 정적 + 커스텀 합집합(`allHospitals`)에서 찾는다 — 페이지 로드·새로고침 때 `hospitals_custom`을 한 번 읽는다(실패하면 정적만).
+
+## 가입 승인 = 게시 권한 (2026-09-19, 2-1 축소)
+
+- `approvePendingMember`가 `status='active'`와 함께 `can_publish=true`를 쓴다(Dr. Ben 결정: 관리자가 사람을 이미 검토했으므로 첫 제출을 또 검토하지 않는다). 첫 제출 검토(`admin/submissions`)는 관리자가 회원 목록에서 권한을 **회수한** 회원에게만 작동하는 제재 도구. 기존 승인 회원은 `migrate_public_tier_read.sql`이 백필.

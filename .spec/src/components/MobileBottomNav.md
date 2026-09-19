@@ -16,3 +16,7 @@
 
 1. isActive: path==='/'이면 pathname==='/'||'', 아니면 pathname.startsWith(path).
 2. env(safe-area-inset-bottom) padding.
+
+## 2계층 공개 계층 (2026-09-19)
+
+- `navItems`의 `memberOnly: true` 항목(의견보내기)은 `data-member-only` 속성을 달고 렌더 — 실제 표시/숨김은 `Sidebar.astro`의 `setMemberOnly`가 로그인 상태에 따라 처리(이 컴포넌트엔 스크립트 없음).

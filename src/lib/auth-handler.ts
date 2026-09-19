@@ -132,14 +132,28 @@ async function performSelfHealing(userId: string, baseUser: any) {
  * 미인증 접근 시 리다이렉트 처리
  */
 function handleRedirect(path: string, isLoggedIn: boolean) {
-    const publicPaths = ['/', '/login'];
+    // 2계층(공개/회원) — 비가입자가 쓸 수 있는 메뉴(Dr. Ben 확정 2026-09-19): 홈·수검준비·지적권고사례(목록)·
+    // 자료실(다운로드)·용어검색·이용안내·설정·정보. 사용자 메뉴(마이페이지·알림함·의견·개선의견조회)와
+    // 관리자 메뉴는 회원 전용 → /login 으로. 세부 권한(사례 본문 차단·업로드 차단)은 각 페이지 + RLS 가 담당.
+    const publicPaths = [
+        '/',
+        '/login',
+        '/info',
+        '/inspection-prep',
+        '/findings-recommendations',
+        '/resources',
+        '/guide',
+        '/settings',
+        '/offline',
+    ];
     const isPublic = publicPaths.some((p) => path === p || (p !== '/' && path.startsWith(p)));
 
     const isBypass = new URLSearchParams(window.location.search).get('bypass_admin') === 'true';
 
     if (!isLoggedIn && !isPublic && !isBypass) {
         console.log('Unauthorized. Redirecting to /login...');
-        window.location.href = '/login';
+        // 회원 전용 메뉴에서 왔음을 로그인 페이지가 안내할 수 있도록 출처를 넘긴다.
+        window.location.href = `/login?from=${encodeURIComponent(path)}`;
     }
 }
 
