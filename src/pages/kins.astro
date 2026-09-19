@@ -1,0 +1,141 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Icon from '../components/Icon.astro';
+
+// KINS 공식 자원 링크 모음. 명세: .spec/src/pages/kins.md
+// KINS 연계 트랙 K-2 (documents/privacy_redesign_plan.md, 2026-07-02 박병현 실장 면담 권고 1·2번 + 4번).
+// RASIS 의 규제해석 SOS·이용자지원간행물 메뉴는 JS 호출이라 직접 주소가 없어(2026-09-20 실측) 메인으로
+// 연결하고 경로를 안내한다. 직접 URL 은 KINS 확인 후 교체.
+const links = [
+    {
+        title: '방사선규제해석 SOS',
+        org: 'KINS · RASIS',
+        desc: '방사선 규제(허가·신고·사용·이동사용 등)에 대한 유권해석 사례와 키워드 검색. 규정 해석이 애매할 때 먼저 찾아보는 창구.',
+        url: 'https://rasis.kins.re.kr/',
+        path: 'RASIS 메인 → 알림마당 → 방사선규제해석SOS',
+        icon: 'search' as const,
+    },
+    {
+        title: '이용자지원간행물',
+        org: 'KINS · RASIS',
+        desc: '방사선안전관리 실무용 가이드·해설서 등 KINS 가 이용자를 위해 발간한 간행물.',
+        url: 'https://rasis.kins.re.kr/',
+        path: 'RASIS 메인 → 알림마당 → 이용자지원간행물',
+        icon: 'book' as const,
+    },
+    {
+        title: '원자력안전위원회 보도자료',
+        org: '원안위(NSSC)',
+        desc: '방사선 사건·사고와 규제 동향의 가장 빠른 공식 소스. 의료 관련 건은 정기검사 준비에 참고.',
+        url: 'https://www.nssc.go.kr/ko/cms/FR_CON/index.do?MENU_ID=190',
+        path: '',
+        icon: 'alert-circle' as const,
+    },
+];
+---
+
+<DashboardLayout title="KINS 공식 자원">
+    <div class="kins-container">
+        <h1><Icon name="shield" size="20" /> KINS·원안위 공식 자원</h1>
+        <p class="intro">
+            한국원자력안전기술원(KINS)과 원자력안전위원회가 제공하는 공식 창구입니다. 2026-07-02 KINS 의료방사선평가실
+            협의에서 앱 연계를 권고받은 항목으로, 링크를 누르면 해당 기관 사이트가 새 탭에서 열립니다(자료의 저작권은 각
+            기관에 있습니다).
+        </p>
+
+        <div class="link-list">
+            {
+                links.map((l) => (
+                    <a class="link-card" href={l.url} target="_blank" rel="noopener noreferrer">
+                        <div class="link-head">
+                            <Icon name={l.icon} size="18" class="link-icon" />
+                            <span class="link-title">{l.title}</span>
+                            <span class="link-org">{l.org}</span>
+                        </div>
+                        <p class="link-desc">{l.desc}</p>
+                        {l.path && <p class="link-path">경로: {l.path}</p>}
+                    </a>
+                ))
+            }
+        </div>
+
+        <p class="note">
+            ※ RASIS 의 세부 메뉴는 직접 주소가 없어 메인 화면에서 위 경로로 들어가야 합니다. 직접 주소가 확인되면
+            갱신합니다.
+        </p>
+    </div>
+
+    <style>
+        .kins-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .intro {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+        }
+        .link-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .link-card {
+            display: block;
+            padding: 0.9rem 1rem;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: inherit;
+            text-decoration: none;
+            transition:
+                transform 0.15s,
+                box-shadow 0.15s;
+        }
+        .link-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 14px -4px var(--shadow-color);
+        }
+        .link-head {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .link-title {
+            font-weight: 700;
+        }
+        .link-org {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 0.05rem 0.45rem;
+        }
+        .link-desc {
+            margin: 0.4rem 0 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .link-path {
+            margin: 0.3rem 0 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .note {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</DashboardLayout>

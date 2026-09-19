@@ -12,7 +12,15 @@ import { test, expect } from '@playwright/test';
 
 const PROTECTED_PAGES = ['/mypage', '/notifications', '/feedback', '/my-feedback', '/feedback-query'];
 
-const PUBLIC_PAGES = ['/inspection-prep', '/findings-recommendations', '/resources', '/guide', '/settings'];
+const PUBLIC_PAGES = [
+    '/inspection-prep',
+    '/findings-recommendations',
+    '/resources',
+    '/guide',
+    '/settings',
+    '/kins',
+    '/privacy',
+];
 
 // /admin/settings는 비로그인 시 /login이 아닌 / (홈)으로 리다이렉트 (자체 가드 로직)
 // → 별도 테스트로 분리
