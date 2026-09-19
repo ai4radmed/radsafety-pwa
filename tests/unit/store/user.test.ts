@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { userProfile, setUser, clearUser } from '../../../src/store/user';
 
+// 2단계 2-2(2026-09-19): 실명·이메일·닉네임·부서·면허 필드는 DB 컬럼과 함께 스토어에서도 제거됐다.
 describe('setUser', () => {
     beforeEach(() => {
         clearUser();
@@ -11,38 +12,29 @@ describe('setUser', () => {
             id: 'user-123',
             email: 'test@example.com',
             provider: 'kakao',
-            nickname: '테스터',
+            username: 'tester',
+            status: 'active',
         });
 
         const profile = userProfile.get();
         expect(profile.id).toBe('user-123');
-        expect(profile.login_email).toBe('test@example.com');
         expect(profile.provider).toBe('kakao');
-        expect(profile.nickname).toBe('테스터');
+        expect(profile.username).toBe('tester');
+        expect(profile.status).toBe('active');
     });
 
-    it('login_email이 있으면 email보다 우선', () => {
+    it('이메일·닉네임·실명은 스토어에 저장되지 않는다 (2-2)', () => {
         setUser({
             id: 'user-123',
-            email: 'login@example.com',
-            login_email: 'actual@example.com',
+            email: 'test@example.com',
             provider: 'email',
+            ...({ nickname: '테스터', real_name: '홍길동', login_email: 'x@y.z' } as any),
         });
 
-        const profile = userProfile.get();
-        expect(profile.login_email).toBe('actual@example.com');
-    });
-
-    it('username이 매핑됨 (Stage 1-A)', () => {
-        setUser({
-            id: 'user-123',
-            email: 'gildong@radsafety.invalid',
-            provider: 'email',
-            username: 'gildong',
-        });
-
-        const profile = userProfile.get();
-        expect(profile.username).toBe('gildong');
+        const profile = userProfile.get() as Record<string, unknown>;
+        expect(profile).not.toHaveProperty('nickname');
+        expect(profile).not.toHaveProperty('real_name');
+        expect(profile).not.toHaveProperty('login_email');
     });
 
     it('username 미설정 시 빈 문자열', () => {
@@ -52,33 +44,33 @@ describe('setUser', () => {
             provider: 'kakao',
         });
 
-        const profile = userProfile.get();
-        expect(profile.username).toBe('');
+        expect(userProfile.get().username).toBe('');
     });
 
-    it('society_name 레거시 필드가 real_name으로 폴백', () => {
+    it('소속(기관·학회·기관 등록 요청)이 매핑되고 null 은 빈 문자열', () => {
         setUser({
             id: 'user-123',
             email: 'test@example.com',
-            provider: 'kakao',
-            society_name: '홍길동',
+            provider: 'email',
+            society: 'nuclear_medicine',
+            hospital_id: 'other',
+            hospital_request: '새로운병원',
         });
+        let profile = userProfile.get();
+        expect(profile.society).toBe('nuclear_medicine');
+        expect(profile.hospital_id).toBe('other');
+        expect(profile.hospital_request).toBe('새로운병원');
 
-        const profile = userProfile.get();
-        expect(profile.real_name).toBe('홍길동');
-    });
-
-    it('real_name이 있으면 society_name보다 우선', () => {
         setUser({
             id: 'user-123',
             email: 'test@example.com',
-            provider: 'kakao',
-            real_name: '실제이름',
-            society_name: '학회이름',
+            provider: 'email',
+            hospital_id: null,
+            hospital_request: null,
         });
-
-        const profile = userProfile.get();
-        expect(profile.real_name).toBe('실제이름');
+        profile = userProfile.get();
+        expect(profile.hospital_id).toBe('');
+        expect(profile.hospital_request).toBe('');
     });
 
     it('boolean is_admin이 string으로 변환됨', () => {
@@ -89,20 +81,7 @@ describe('setUser', () => {
             is_admin: true,
         });
 
-        const profile = userProfile.get();
-        expect(profile.is_admin).toBe('true');
-    });
-
-    it('boolean is_safety_manager가 string으로 변환됨', () => {
-        setUser({
-            id: 'user-123',
-            email: 'test@example.com',
-            provider: 'email',
-            is_safety_manager: true,
-        });
-
-        const profile = userProfile.get();
-        expect(profile.is_safety_manager).toBe('true');
+        expect(userProfile.get().is_admin).toBe('true');
     });
 
     it('licenses 배열이 JSON string으로 변환됨', () => {
@@ -113,8 +92,7 @@ describe('setUser', () => {
             licenses: ['license1', 'license2'],
         });
 
-        const profile = userProfile.get();
-        expect(profile.users_licenses).toBe('["license1","license2"]');
+        expect(userProfile.get().users_licenses).toBe('["license1","license2"]');
     });
 
     it('licenses가 이미 string이면 그대로 저장', () => {
@@ -125,8 +103,7 @@ describe('setUser', () => {
             licenses: '["existing"]',
         });
 
-        const profile = userProfile.get();
-        expect(profile.users_licenses).toBe('["existing"]');
+        expect(userProfile.get().users_licenses).toBe('["existing"]');
     });
 
     it('@ksnm.or.kr 이메일은 certification이 ksnm', () => {
@@ -136,8 +113,7 @@ describe('setUser', () => {
             provider: 'email',
         });
 
-        const profile = userProfile.get();
-        expect(profile.certification).toBe('ksnm');
+        expect(userProfile.get().certification).toBe('ksnm');
     });
 });
 
@@ -147,8 +123,10 @@ describe('clearUser', () => {
             id: 'user-123',
             email: 'test@example.com',
             provider: 'kakao',
-            nickname: '테스터',
+            username: 'tester',
             is_admin: true,
+            society: 'technology',
+            hospital_id: 'other',
         });
 
         clearUser();
@@ -156,11 +134,11 @@ describe('clearUser', () => {
         const profile = userProfile.get();
         expect(profile.id).toBe('');
         expect(profile.username).toBe('');
-        expect(profile.login_email).toBe('');
-        expect(profile.nickname).toBe('');
         expect(profile.is_admin).toBe('false');
         expect(profile.provider).toBe('');
         expect(profile.verification_status).toBe('none');
+        expect(profile.society).toBe('');
+        expect(profile.hospital_id).toBe('');
         expect(profile.certification).toBe('none');
         expect(profile.users_licenses).toBe('[]');
     });

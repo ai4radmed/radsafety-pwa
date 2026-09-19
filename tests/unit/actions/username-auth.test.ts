@@ -142,8 +142,6 @@ describe('server.signUpWithUsername', () => {
             expect.objectContaining({
                 id: USER_ID,
                 username: 'gildong',
-                login_email: null,
-                nickname: null,
                 provider: 'email',
             }),
             expect.objectContaining({ onConflict: 'id' }),
@@ -335,7 +333,7 @@ describe('server.claimUsername', () => {
         expect(result.data).toEqual({ success: true, email: 'gildong@radsafety.invalid' });
     });
 
-    it('정상 — auth.users.email 교체 + profiles.username/login_email/nickname 갱신', async () => {
+    it('정상 — auth.users.email 교체 + profiles.username 갱신 (login_email/nickname 컬럼은 2-2 에서 삭제)', async () => {
         mockProfilesSelect.mockResolvedValue({ data: null, error: null });
         mockAdminUpdateUserById.mockResolvedValue({ error: null });
 
@@ -345,9 +343,7 @@ describe('server.claimUsername', () => {
             USER_ID,
             expect.objectContaining({ email: 'gildong@radsafety.invalid', email_confirm: true }),
         );
-        expect(mockProfilesUpdate).toHaveBeenCalledWith(
-            expect.objectContaining({ username: 'gildong', login_email: null, nickname: null }),
-        );
+        expect(mockProfilesUpdate).toHaveBeenCalledWith(expect.objectContaining({ username: 'gildong' }));
     });
 
     it('password 를 같이 주면 updateUserById 에 password 도 실린다 (Stage B, 이메일 OTP 출신 전환)', async () => {

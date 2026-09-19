@@ -2,7 +2,7 @@
 
 ## 역할 요약
 
-Nanostores 기반 클라이언트 사용자 프로필 상태. `persistentMap`으로 localStorage에 저장하며 `setUser`, `clearUser`로 갱신한다.
+Nanostores 기반 클라이언트 사용자 프로필 상태. `persistentMap`으로 localStorage에 저장하며 `setUser`, `clearUser`로 갱신한다. 2단계 2-2(2026-09-19)부터 **개인정보 필드는 없다** — 아이디·상태·로그인 방식·관리자 여부·소속(기관·학회)만.
 
 ## Public API
 
@@ -14,21 +14,28 @@ Nanostores 기반 클라이언트 사용자 프로필 상태. `persistentMap`으
 
 ### userProfile 필드
 
-id, username, status, login_email, nickname, created_at, is_admin, provider, verification_date, verification_status, society, affiliation, department, real_name, society_email, license_type, is_safety_manager, safety_manager_start_year, safety_manager_end_year, classification, certification, has_radiation_license, radiation_license_type, users_licenses
+`id`, `username`, `status`, `created_at`, `is_admin`, `provider`, `verification_status`, `society`, `hospital_id`, `hospital_request`, `certification`, `has_radiation_license`, `radiation_license_type`, `users_licenses`
 
-- `username`: Stage 1-A(`documents/privacy_redesign_plan.md` 1단계) — 아이디/비밀번호 로그인 사용자의 이름표. `profiles.username`을 그대로 반영. 미설정(카카오·전환 전 이메일 사용자)이면 빈 문자열.
-- `status`: Phase 2(2단계 개정 — 2계층+가입승인+제재, `sql_query/migrate_add_member_status_hospital.sql`) — `profiles.status`를 그대로 반영(`pending`/`active`/`suspended`/`banned`). `/claim-username`이 이 값으로 "신규 가입자인지"(pending) "기존 전환 대상인지"(active) 판정해 소속기관·소속학회 입력란 노출 여부를 정한다.
+- `username`: Stage 1-A — `profiles.username` 그대로. 미설정이면 빈 문자열.
+- `status`: Phase 2 — `profiles.status`(`pending`/`active`/`suspended`/`banned`). `/claim-username`이 이 값으로 신규(pending)/기존(active)을 판정.
+- `verification_status`: 2-1(`can_publish`) 전까지 업로드 게이트가 참조하는 잔재. 컬럼도 아직 남아 있다.
+- `hospital_id`/`hospital_request`: 소속기관 id(정적 목록 또는 `c-…` 커스텀, `'other'`) / 기관 등록 요청 텍스트. `null`은 빈 문자열로.
+- 나머지(`certification`·`has_radiation_license`·`radiation_license_type`·`users_licenses`)는 파생/레거시 값 — DB 컬럼 아님.
 
 ### setUser 입력
 
-id, email, username?, status?, login_email?, provider, nickname?, created_at?, is_admin?, verification_date?, verification_status?, society?, affiliation?, department?, real_name?, society_email?, license_type?, is_safety_manager?, safety_manager_start_year?, safety_manager_end_year?, classification?, society_name?, licenses?, user_tier?, safety_manager_start_date?, safety_manager_end_date?, is_safety_practice_staff?, has_radiation_license?, radiation_license_type?
+`id`, `email`, `username?`, `status?`, `provider`, `created_at?`, `is_admin?`, `verification_status?`, `society?`, `hospital_id?`, `hospital_request?`, `licenses?`, `has_radiation_license?`, `radiation_license_type?`
 
 ## 사이드 이펙트
 
-localStorage `userProfile` 읽기/쓰기. `getCertification`(config/auth) 호출.
+localStorage `userProfile` 읽기/쓰기. `getCertification(email)`(config/auth) 호출 — 이메일은 파생값 계산에만 쓰고 저장하지 않는다.
 
 ## 핵심 규칙
 
 1. `certification`은 `getCertification(user.email)`로 계산.
-2. `real_name` fallback: `user.real_name || user.society_name`.
-3. `users_licenses`: `licenses`가 string이면 그대로, 아니면 `JSON.stringify(licenses || [])`.
+2. `users_licenses`: `licenses`가 string이면 그대로, 아니면 `JSON.stringify(licenses || [])`.
+3. **삭제된 필드(`login_email`·`nickname`·`real_name`·`society_email`·`affiliation`·`department`·`classification`·`license_type`·`is_safety_manager`·`safety_manager_*`·`verification_date`)는 입력에 섞여 와도 저장하지 않는다** — `setUser`가 명시 필드만 매핑한다(`auth-handler.ts`가 `...profile` 스프레드로 넘겨도 걸러짐).
+
+## 이력
+
+- 2026-09-19: 2-2 — 개인정보 필드 제거, `hospital_id`/`hospital_request` 추가.

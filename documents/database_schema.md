@@ -24,34 +24,20 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 
 > ⚠️ **`auth.users` → `profiles` 자동생성 트리거 존재** (2026-09-16, Stage 1-A 프리뷰 테스트로 발견). `auth.users`에 새 행이 INSERT되면 `profiles`에도 빈 행(`id`만 채워진)이 자동으로 생긴다. 이 저장소의 `sql_query/*.sql`에는 정의가 없다 — 대시보드에서만 존재하는 것으로 추정. **이 테이블에 `id`로 새 행을 쓰는 코드는 반드시 `upsert(onConflict:'id')`를 쓸 것** — 평범한 `insert`는 `duplicate key value violates unique constraint "profiles_pkey"`로 매번 실패한다(`src/actions/index.ts`의 `signUpWithUsername`이 실제 사례, `.spec/src/actions/index.md` 규칙 10). 정확한 트리거 정의는 SQL Editor에서 `select pg_get_triggerdef(oid) from pg_trigger where tgrelid = 'auth.users'::regclass;`로 확인.
 
-| 필드명                      | 타입            | 설명                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 기본값     |
-| :-------------------------- | :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------- |
-| `id`                        | `uuid` (PK)     | `auth.users.id` 참조 (외래키)                                                                                                                                                                                                                                                                                                                                                                                                                                                            |            |
-| `username`                  | `text` (UNIQUE) | 로그인 아이디 (영문 소문자·숫자·`_`·`-`, 3~20자). `sql_query/migrate_add_username.sql` (2026-09-15, Stage 1-A). `auth.users.email` 은 `<username>@radsafety.invalid` 파생값. **코드는 운영 배포 완료**(이메일 OTP 로그인 제거, PR #56, 2026-09-18). **nullable 유지 — `sql_query/migrate_finalize_username.sql` 은 불채택**(카카오 사용자가 자리표시 아이디로 게이트를 못 타는 문제; `privacy_redesign_plan.md` 1단계 진행 상태 참조). NULL 은 `auth-handler.ts` 첫 접속 게이트가 막는다 | `NULL`     |
-| `status`                    | `text`          | 회원 상태 (`pending`:가입 후 승인 대기, `active`:정상, `suspended`:정지, `banned`:탈퇴처리). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 기존 행은 전부 `active`로 시작 — `pending`은 Phase 2 구현 후 신규 가입에서만 명시적으로 발생                                                                                                                                                                                                                               | `'active'` |
-| `hospital_id`               | `text`          | 소속기관 (`src/data/hospitals.ts`의 `id` 참조, DB 외래키 아님). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 가입 폼(Phase 2)·아이디 전환 화면이 채운다. 목록에 없는 기관을 적으면 `'other'`(기타)로 들어간다(2026-09-19, 아래 `hospital_request`)                                                                                                                                                                                                                   | `NULL`     |
-| `hospital_request`          | `text`          | 회원기관 등록 요청 — 목록에 없는 기관을 타이핑한 채 가입/전환하면 그 텍스트가 여기 남고 `hospital_id='other'`. `NOT NULL` = 관리자 검토 대기. `admin/member-approval.astro` "기관 등록 요청" → `resolveHospitalRequest`(등록: `hospital_id` 갱신·비움 / 거절: 비움만). `sql_query/migrate_add_hospital_request.sql` (2026-09-19)                                                                                                                                                         | `NULL`     |
-| `nickname`                  | `text`          | 카카오 닉네임 (표시용) — Stage 1-A 부터 신규 카카오 가입 시 기록하지 않음(전환 완료 후 컬럼 삭제 예정, 2단계)                                                                                                                                                                                                                                                                                                                                                                            |            |
-| `login_email`               | `text`          | 로그인 이메일 (auth.users.email 복사본)                                                                                                                                                                                                                                                                                                                                                                                                                                                  |            |
-| `provider`                  | `text`          | 로그인 제공자(`kakao`/`email`). `sql_query/migrate_add_profile_provider.sql` (2026-09-18) — `admin/member-approval.astro`가 다른 사용자의 로그인 방식을 보여주려 select 했으나 컬럼이 없어 나던 로드 실패("column profiles.provider does not exist")를 계기로 신설. `signUpWithUsername`/`auth-handler.ts` 자가 치유가 가입 시점에 채움, 이 컬럼 신설 전 가입자는 `NULL`                                                                                                                 |            |
-| `created_at`                | `timestamp`     | 프로필 생성 일시 (앱 가입일)                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `now()`    |
-| `is_admin`                  | `boolean`       | 관리자 여부                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `false`    |
-| `verification_status`       | `text`          | 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료)                                                                                                                                                                                                                                                                                                                                                                                          | `'none'`   |
-| `verification_date`         | `timestamp`     | 인증 (요청/완료) 일시                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |            |
-| `society`                   | `text`          | 소속 학회 코드 (`nuclear_medicine`, `technology` 등)                                                                                                                                                                                                                                                                                                                                                                                                                                     |            |
-| `classification`            | `text`          | 직종 구분 (의사, 방사선사 등)                                                                                                                                                                                                                                                                                                                                                                                                                                                            |            |
-| `society_email`             | `text`          | 학회/특별사용자 인증용 이메일                                                                                                                                                                                                                                                                                                                                                                                                                                                            |            |
-| `real_name`                 | `text`          | 실명 (학회 인증 정보)                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |            |
-| `affiliation`               | `text`          | 소속 기관                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |            |
-| `department`                | `text`          | 소속 부서                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |            |
-| `license_type`              | `text`          | 보유 면허 종류 (`none`, `supervisor`, `special`, `general`, `engineer`)                                                                                                                                                                                                                                                                                                                                                                                                                  |            |
-| `is_safety_manager`         | `boolean`       | 방사선안전관리자 여부                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `false`    |
-| `safety_manager_start_year` | `text`          | 안전관리자 업무 시작년도                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |            |
-| `safety_manager_end_year`   | `text`          | 안전관리자 업무 종료년도                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |            |
-| `email_verified`            | `boolean`       | society_email 검증 완료 여부                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `false`    |
-| `verification_method`       | `text`          | 이메일 검증 방법 (`login_email`, `otp`, `list`)                                                                                                                                                                                                                                                                                                                                                                                                                                          |            |
+| 필드명                | 타입            | 설명                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 기본값     |
+| :-------------------- | :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------- |
+| `id`                  | `uuid` (PK)     | `auth.users.id` 참조 (외래키)                                                                                                                                                                                                                                                                                                                                                                                                                                                            |            |
+| `username`            | `text` (UNIQUE) | 로그인 아이디 (영문 소문자·숫자·`_`·`-`, 3~20자). `sql_query/migrate_add_username.sql` (2026-09-15, Stage 1-A). `auth.users.email` 은 `<username>@radsafety.invalid` 파생값. **코드는 운영 배포 완료**(이메일 OTP 로그인 제거, PR #56, 2026-09-18). **nullable 유지 — `sql_query/migrate_finalize_username.sql` 은 불채택**(카카오 사용자가 자리표시 아이디로 게이트를 못 타는 문제; `privacy_redesign_plan.md` 1단계 진행 상태 참조). NULL 은 `auth-handler.ts` 첫 접속 게이트가 막는다 | `NULL`     |
+| `status`              | `text`          | 회원 상태 (`pending`:가입 후 승인 대기, `active`:정상, `suspended`:정지, `banned`:탈퇴처리). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 기존 행은 전부 `active`로 시작 — `pending`은 Phase 2 구현 후 신규 가입에서만 명시적으로 발생                                                                                                                                                                                                                               | `'active'` |
+| `hospital_id`         | `text`          | 소속기관 (`src/data/hospitals.ts`의 `id` 참조, DB 외래키 아님). `sql_query/migrate_add_member_status_hospital.sql` (2026-09-16). 가입 폼(Phase 2)·아이디 전환 화면이 채운다. 목록에 없는 기관을 적으면 `'other'`(기타)로 들어간다(2026-09-19, 아래 `hospital_request`)                                                                                                                                                                                                                   | `NULL`     |
+| `hospital_request`    | `text`          | 회원기관 등록 요청 — 목록에 없는 기관을 타이핑한 채 가입/전환하면 그 텍스트가 여기 남고 `hospital_id='other'`. `NOT NULL` = 관리자 검토 대기. `admin/member-approval.astro` "기관 등록 요청" → `resolveHospitalRequest`(등록: `hospital_id` 갱신·비움 / 거절: 비움만). `sql_query/migrate_add_hospital_request.sql` (2026-09-19)                                                                                                                                                         | `NULL`     |
+| `provider`            | `text`          | 로그인 제공자(`kakao`/`email`). `sql_query/migrate_add_profile_provider.sql` (2026-09-18) — `admin/member-approval.astro`가 다른 사용자의 로그인 방식을 보여주려 select 했으나 컬럼이 없어 나던 로드 실패("column profiles.provider does not exist")를 계기로 신설. `signUpWithUsername`/`auth-handler.ts` 자가 치유가 가입 시점에 채움, 이 컬럼 신설 전 가입자는 `NULL`                                                                                                                 |            |
+| `created_at`          | `timestamp`     | 프로필 생성 일시 (앱 가입일)                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `now()`    |
+| `is_admin`            | `boolean`       | 관리자 여부                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `false`    |
+| `verification_status` | `text`          | **(2-1 에서 삭제 예정, 2026-09-19 2-2 로 명부 대조 인증은 폐지)** 업로드 게이트가 아직 참조하는 잔재. 인증 상태 (`none`:미인증, `list`:명부인증, `temp_verified`:임시인증, `verified`:관리자승인완료)                                                                                                                                                                                                                                                                                    | `'none'`   |
+| `society`             | `text`          | 소속 학회 코드 (`nuclear_medicine`, `technology` 등)                                                                                                                                                                                                                                                                                                                                                                                                                                     |            |
 
-> **Note**: `verification_status`는 4단계로 구분됩니다:
+> **Note (2-2, 2026-09-19)**: 실명·이메일·닉네임·부서·구분·면허 컬럼 14개는 `sql_query/migrate_drop_legacy_profile_columns.sql`로 삭제됐다. `verification_status`(아래 4단계)는 업로드 게이트가 참조하는 잔재로 2-1에서 `can_publish`로 대체·삭제 예정:
 >
 > - `none`: 미인증 (기본값, 권한 없음)
 > - `list`: 회원명부 인증 (즉시 인증, 모든 권한)
@@ -104,44 +90,11 @@ PostgreSQL에서 **스키마(Schema)**는 테이블, 함수 등의 객체를 포
 >     - 관리: `documents/resource_slugs.md` 참조
 > - **`year`**: 자료의 저작년도(제작년도)를 저장하며, `created_at`(DB 등록일시)과 구별됩니다.
 > - **`view_count`, `download_count`**: 자료의 조회수와 다운로드 횟수를 추적합니다.
-> - `registrant_email` 필드는 제거되었으며, `user_id`를 통해 `profiles` 테이블의 정보(`real_name`, `login_email`)를 참조합니다.
+> - `registrant_email` 필드는 제거되었으며, `user_id`를 통해 `profiles.username`을 참조합니다(등록자 표시 `@username`, 2-2 이후 실명·이메일 미보관).
 
-### 4. `allowed_members`
+### 4. `hospitals_custom` (2026-09-19)
 
-회원 가입 승인을 위한 허용 목록(Whitelist)입니다.
-
-| 필드명           | 타입        | 설명                                                 |
-| :--------------- | :---------- | :--------------------------------------------------- |
-| `society_email`  | `text` (PK) | 허용된 학회 이메일                                   |
-| `society`        | `text`      | 소속 학회 코드 (`nuclear_medicine`, `technology` 등) |
-| `classification` | `text`      | 구분 (전공의, 방사선사 등)                           |
-| `real_name`      | `text`      | 실명                                                 |
-| `affiliation`    | `text`      | 소속 기관                                            |
-| `department`     | `text`      | 부서                                                 |
-| `created_at`     | `timestamp` | 등록 일시                                            |
-
-### 5. `verification_requests`
-
-등급 상향 또는 정회원 인증 요청 내역입니다.
-
-| 필드명                | 타입        | 설명                                         |
-| :-------------------- | :---------- | :------------------------------------------- |
-| `id`                  | `uuid` (PK) | 고유 식별자                                  |
-| `user_id`             | `uuid`      | 신청자 ID                                    |
-| `verification_status` | `text`      | 상태 (`pending`, `approved`, `rejected`)     |
-| `verification_date`   | `timestamp` | 신청/인증 일시                               |
-| `society`             | `text`      | 학회 코드 (`nuclear_medicine`, `technology`) |
-| `classification`      | `text`      | 구분 (전공의, 방사선사 등)                   |
-| `society_email`       | `text`      | 연락처 이메일                                |
-| `real_name`           | `text`      | 신청자 실명                                  |
-| `affiliation`         | `text`      | 근무 기관                                    |
-| `department`          | `text`      | 소속 부서                                    |
-| `reason`              | `text`      | 신청 사유                                    |
-| `reject_reason`       | `text`      | 인증 취소 사유 (관리자가 입력)               |
-| `approved_at`         | `timestamp` | 인증 승인 일시                               |
-| `rejected_at`         | `timestamp` | 인증 취소 일시                               |
-
-### 5-1. `hospitals_custom` (2026-09-19)
+> `allowed_members`(회원명부)·`verification_requests`(인증 요청)·`email_verification_codes`(OTP)는 2단계 2-2(2026-09-19)에서 삭제됐다 — 앱은 명부·실명·이메일을 갖지 않는다.
 
 관리자가 가입승인 화면에서 **배포 없이** 등록한 회원기관. 정적 목록 `src/data/hospitals.ts`와 합쳐서 하나의 목록처럼 쓰인다(`src/lib/hospitals.ts`). `sql_query/migrate_add_hospitals_custom.sql`.
 
@@ -169,24 +122,7 @@ RLS: SELECT는 전원(`anon` 포함 — 로그인 전 가입 폼 자동완성이
 | `is_read`    | `boolean`   | 읽음 여부                      | `false`             |
 | `created_at` | `timestamp` | 생성 일시                      | `now()`             |
 
-> **Note**: 관리자가 인증 승인/취소 시 자동으로 알림이 생성되며, 사용자는 알림함에서 읽음 여부를 관리할 수 있습니다.
-
-### 7. `email_verification_codes`
-
-이메일 소유권 확인을 위한 OTP 코드를 저장합니다.
-
-| 필드명        | 타입        | 설명                             | 기본값              |
-| :------------ | :---------- | :------------------------------- | :------------------ |
-| `id`          | `uuid` (PK) | 고유 식별자                      | `gen_random_uuid()` |
-| `user_id`     | `uuid` (FK) | 사용자 ID (`auth.users.id` 참조) |                     |
-| `email`       | `text`      | 인증할 이메일 주소               |                     |
-| `code`        | `text`      | 6자리 인증 코드                  |                     |
-| `created_at`  | `timestamp` | 생성 일시                        | `now()`             |
-| `expires_at`  | `timestamp` | 만료 일시 (생성 후 10분)         | `now() + 10분`      |
-| `verified`    | `boolean`   | 인증 완료 여부                   | `false`             |
-| `verified_at` | `timestamp` | 인증 완료 일시                   |                     |
-
-> **Note**: 학회 이메일 인증 시 사용되며, 10분 후 자동 만료됩니다.
+> **Note**: 가입 승인·기관 등록 요청 처리 등 관리자 조치와 시스템 공지가 알림으로 생성되며, 사용자는 알림함에서 읽음 여부를 관리할 수 있습니다.
 
 ### 8. `push_subscriptions`
 
@@ -259,33 +195,27 @@ RLS: SELECT는 전원(`anon` 포함 — 로그인 전 가입 폼 자동완성이
 
 1. `profiles` - 사용자 프로필 (auth.users와 1:1 관계)
 2. `findings` - 지적 및 권고 사례
-3. `allowed_members` - 회원 가입 허용 목록
-4. `verification_requests` - 인증 요청 내역
-5. `notifications` - 사용자 알림
-6. `email_verification_codes` - 이메일 OTP 인증 (섹션 2)
-7. `glossary_terms` - 법령용어사전 (섹션 10)
-8. `feedback` - 사용자 의견/문의 (섹션 10)
-9. `push_subscriptions` - 웹 푸시 알림 구독 (섹션 11)
-10. `archives` - 자료실 게시물 (**섹션 12**, profiles 외래키 포함)
+3. `notifications` - 사용자 알림
+4. `glossary_terms` - 법령용어사전 (섹션 10)
+5. `feedback` - 사용자 의견/문의 (섹션 10)
+6. `push_subscriptions` - 웹 푸시 알림 구독 (섹션 11)
+7. `archives` - 자료실 게시물 (**섹션 12**, profiles 외래키 포함)
+8. `hospitals_custom` - 관리자 등록 회원기관 (`migrate_add_hospitals_custom.sql`, 통합 스크립트 밖)
+
+> 2-2(2026-09-19): `allowed_members`·`verification_requests`·`email_verification_codes`와 profiles 개인정보 컬럼은 통합 스크립트에서도 제거됨. 기존 환경은 `migrate_drop_legacy_profile_columns.sql`로 정리.
 
 ### 스크립트 구성 (섹션별)
 
-| 섹션   | 내용                                                                                                  |
-| ------ | ----------------------------------------------------------------------------------------------------- |
-| **0**  | **핵심 테이블 전체 생성 (profiles, findings, allowed_members, verification_requests, notifications)** |
-| 1      | `profiles` 컬럼 추가 (email_verified, verification_method) - 기존 환경 마이그레이션용                 |
-| 2      | `email_verification_codes` 테이블                                                                     |
-| 3      | 인증 상태 마이그레이션 (admin → verified)                                                             |
-| 4      | 기존 데이터 업데이트                                                                                  |
-| 5      | 코멘트                                                                                                |
-| 6      | 검증 요약 출력                                                                                        |
-| 7      | `verification_requests` 컬럼 추가                                                                     |
-| 8      | `notifications` 컬럼 추가                                                                             |
-| 9      | `notifications` 인덱스/코멘트                                                                         |
-| 10     | `glossary_terms` 테이블 + `feedback` 테이블 + Storage 버킷                                            |
-| 11     | `push_subscriptions` 테이블 (웹 푸시)                                                                 |
-| **12** | **`archives` 테이블 전체 생성 + RLS 정책 + 인덱스 + RPC 함수**                                        |
-| 13     | 테스트 계정 초기 profiles 설정                                                                        |
+| 섹션   | 내용                                                                                      |
+| ------ | ----------------------------------------------------------------------------------------- |
+| **0**  | **핵심 테이블 전체 생성 (profiles, findings, notifications)**                             |
+| 3      | 인증 상태 마이그레이션 (admin → verified) — `verification_status` 잔재, 2-1에서 제거 예정 |
+| 8      | `notifications` 컬럼 추가                                                                 |
+| 9      | `notifications` 인덱스/코멘트                                                             |
+| 10     | `glossary_terms` 테이블 + `feedback` 테이블 + Storage 버킷                                |
+| 11     | `push_subscriptions` 테이블 (웹 푸시)                                                     |
+| **12** | **`archives` 테이블 전체 생성 + RLS 정책 + 인덱스 + RPC 함수**                            |
+| 13     | 테스트 계정 초기 profiles 설정                                                            |
 
 ### 주요 기술적 개선 사항
 
@@ -325,7 +255,7 @@ USING (
 );
 ```
 
-이 패턴은 `profiles`, `findings`, `allowed_members`, `verification_requests`, `notifications`, `glossary_terms`, `feedback`, `archives` 등 모든 관리자 권한 RLS 정책에 적용되었습니다.
+이 패턴은 `profiles`, `findings`, `notifications`, `glossary_terms`, `feedback`, `archives` 등 모든 관리자 권한 RLS 정책에 적용되었습니다.
 
 #### archives 외래키 안정성 보강
 

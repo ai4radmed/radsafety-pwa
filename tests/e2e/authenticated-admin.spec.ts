@@ -62,15 +62,6 @@ test.describe('3-4 관리자 기능 (인증 후)', () => {
         expect(page.url()).not.toContain('/login');
     });
 
-    // ── 인증 요청 ─────────────────────────────────────────────
-    test('인증 요청 — 목록 표시', async ({ page }) => {
-        await page.goto('/admin/verification-requests');
-        await page.waitForLoadState('networkidle');
-        expect(page.url()).toContain('/admin/verification-requests');
-        await expect(page).toHaveTitle(/인증|RadSafety/);
-        await expect(page.locator('body')).not.toContainText('로딩 중...');
-    });
-
     // ── 의견 관리 ─────────────────────────────────────────────
     test('의견 관리 — 목록 표시', async ({ page }) => {
         await page.goto('/admin/feedback');
@@ -167,7 +158,7 @@ test.describe('3-4 관리자 기능 (인증 후)', () => {
             }
         });
 
-        const adminPages = ['/admin/members', '/admin/feedback', '/admin/glossary', '/admin/verification-requests'];
+        const adminPages = ['/admin/members', '/admin/feedback', '/admin/glossary', '/admin/member-approval'];
 
         for (const path of adminPages) {
             await page.goto(path);

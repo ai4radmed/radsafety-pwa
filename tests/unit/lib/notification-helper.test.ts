@@ -20,12 +20,7 @@ vi.mock('../../../src/lib/push', () => ({
     sendPushToUsers: vi.fn().mockResolvedValue(undefined),
 }));
 
-import {
-    getUserIdsByFilter,
-    createVerificationApprovedNotification,
-    createVerificationRejectedNotification,
-    createBulkNotifications,
-} from '../../../src/lib/notification-helper';
+import { getUserIdsByFilter, createBulkNotifications } from '../../../src/lib/notification-helper';
 
 describe('getUserIdsByFilter', () => {
     beforeEach(() => {
@@ -55,50 +50,6 @@ describe('getUserIdsByFilter', () => {
 
         expect(mockFrom).toHaveBeenCalledWith('profiles');
         expect(result).toEqual(['u1', 'u2']);
-    });
-});
-
-describe('createVerificationApprovedNotification', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockFrom.mockReturnValue({
-            insert: vi.fn().mockReturnThis(),
-            select: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-                data: { id: 'notif-1' },
-                error: null,
-            }),
-        });
-    });
-
-    it('createNotification을 호출하여 verification_approved 타입 알림 생성', async () => {
-        const result = await createVerificationApprovedNotification('user-1', 'admin-1', '대한핵의학회', '의사');
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe('notif-1');
-        expect(mockFrom).toHaveBeenCalledWith('notifications');
-    });
-});
-
-describe('createVerificationRejectedNotification', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockFrom.mockReturnValue({
-            insert: vi.fn().mockReturnThis(),
-            select: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-                data: { id: 'notif-reject-1' },
-                error: null,
-            }),
-        });
-    });
-
-    it('createNotification을 호출하여 verification_rejected 타입 알림 생성', async () => {
-        const result = await createVerificationRejectedNotification('user-1', 'admin-1', '서류 부족');
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe('notif-reject-1');
-        expect(mockFrom).toHaveBeenCalledWith('notifications');
     });
 });
 

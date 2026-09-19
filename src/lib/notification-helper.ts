@@ -81,52 +81,6 @@ export async function createNotification(data: NotificationData) {
 }
 
 /**
- * 인증 승인 알림 생성
- */
-export async function createVerificationApprovedNotification(
-    userId: string,
-    senderId: string,
-    societyName: string,
-    classification: string,
-) {
-    return createNotification({
-        type: 'verification_approved',
-        userId,
-        senderId,
-        title: '✅ 인증이 최종 승인되었습니다',
-        message: `인증 요청이 앱관리자에 의해 최종 승인되었습니다.\n\n${societyName} ${classification}으로 등록되었습니다.`,
-        priority: 'high',
-        link: '/mypage',
-        actionLabel: '프로필 확인',
-        actionUrl: '/mypage',
-        metadata: {
-            society_name: societyName,
-            classification,
-        },
-    });
-}
-
-/**
- * 인증 거부 알림 생성
- */
-export async function createVerificationRejectedNotification(userId: string, senderId: string, rejectReason: string) {
-    return createNotification({
-        type: 'verification_rejected',
-        userId,
-        senderId,
-        title: '❌ 인증 요청이 거부되었습니다',
-        message: `귀하의 인증 요청이 거부되었습니다.\n\n사유: ${rejectReason}\n\n문의사항이 있으시면 관리자에게 연락해주세요.`,
-        priority: 'high',
-        link: '/mypage',
-        actionLabel: '재신청',
-        actionUrl: '/mypage',
-        metadata: {
-            reject_reason: rejectReason,
-        },
-    });
-}
-
-/**
  * 대량 알림 생성 (여러 사용자에게 동일한 메시지)
  */
 export async function createBulkNotifications(userIds: string[], data: Omit<NotificationData, 'userId'>) {
@@ -172,12 +126,11 @@ export async function createBulkNotifications(userIds: string[], data: Omit<Noti
  * 사용자 필터링 조건에 따라 사용자 ID 목록 가져오기
  */
 export async function getUserIdsByFilter(filter: {
-    targetType: 'all' | 'provider' | 'verification_status' | 'specific';
+    targetType: 'all' | 'provider' | 'specific';
     provider?: 'kakao' | 'email';
-    verificationStatus?: 'none' | 'list' | 'temp_verified' | 'verified';
     specificUserId?: string;
 }) {
-    const { targetType, provider, verificationStatus, specificUserId } = filter;
+    const { targetType, provider, specificUserId } = filter;
 
     // 특정 사용자 지정
     if (targetType === 'specific' && specificUserId) {
@@ -189,11 +142,6 @@ export async function getUserIdsByFilter(filter: {
     // 로그인 방법에 따른 필터
     if (targetType === 'provider' && provider) {
         query = query.eq('provider', provider);
-    }
-
-    // 인증 상태에 따른 필터
-    if (targetType === 'verification_status' && verificationStatus) {
-        query = query.eq('verification_status', verificationStatus);
     }
 
     // 전체 사용자는 필터 없음 (all)
