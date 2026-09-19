@@ -21,3 +21,7 @@
 ## 성공 기준
 
 - `information_schema.columns`에 `profiles.verification_status` 없음. 자료실·지적사례 등록·열람 정상.
+
+## 실행 기록
+
+- 2026-09-19 운영: 사전 점검에서 대시보드 전용 옛 정책 `Authenticated users can insert archives`(archives INSERT, `verification_status` 참조) 1건 발견 → `DROP POLICY` 후 컬럼 삭제 성공. 이 정책은 저장소 SQL에 없었다 — 대시보드에서 직접 만든 정책이 코드와 어긋나 있던 사례. 새 INSERT 정책 `Active members can submit archives`가 역할을 대체.
