@@ -11,12 +11,13 @@ export const userProfile = persistentMap('userProfile', {
     created_at: '',
     is_admin: 'false',
     provider: '',
-    // verification_status 는 2-1(업로드 권한 can_publish) 전까지 업로드 게이트가 참조 — 컬럼도 아직 남아 있다.
-    verification_status: 'none',
 
     society: '', // 'nuclear_medicine' | 'technology' | 'none'
     hospital_id: '',
     hospital_request: '',
+    // 2-1 업로드 권한 — 첫 제출 승인 시 true, 반려 3회면 제출 차단
+    can_publish: 'false',
+    reject_count: '0',
 
     // Legacy / Derived
     certification: 'none',
@@ -33,11 +34,12 @@ export function setUser(user: {
     provider: string;
     created_at?: string;
     is_admin?: boolean | string;
-    verification_status?: string;
 
     society?: string;
     hospital_id?: string | null;
     hospital_request?: string | null;
+    can_publish?: boolean | string;
+    reject_count?: number | string;
 
     licenses?: any;
     has_radiation_license?: boolean | string;
@@ -50,11 +52,12 @@ export function setUser(user: {
         created_at: user.created_at || '',
         is_admin: String(user.is_admin) || 'false',
         provider: user.provider || '',
-        verification_status: user.verification_status || 'none',
 
         society: user.society || '',
         hospital_id: user.hospital_id || '',
         hospital_request: user.hospital_request || '',
+        can_publish: String(user.can_publish ?? false),
+        reject_count: String(user.reject_count ?? 0),
 
         certification: getCertification(user.email),
         has_radiation_license: String(user.has_radiation_license) || 'false',
@@ -71,11 +74,12 @@ export function clearUser() {
         created_at: '',
         is_admin: 'false',
         provider: '',
-        verification_status: 'none',
 
         society: '',
         hospital_id: '',
         hospital_request: '',
+        can_publish: 'false',
+        reject_count: '0',
 
         certification: 'none',
         has_radiation_license: 'false',

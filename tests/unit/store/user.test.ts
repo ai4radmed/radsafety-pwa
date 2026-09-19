@@ -73,6 +73,17 @@ describe('setUser', () => {
         expect(profile.hospital_request).toBe('');
     });
 
+    it('업로드 권한(can_publish·reject_count)이 string 으로 매핑되고 기본값은 false/0 (2-1)', () => {
+        setUser({ id: 'user-123', email: 'a@b.c', provider: 'email', can_publish: true, reject_count: 2 });
+        let profile = userProfile.get();
+        expect(profile.can_publish).toBe('true');
+        expect(profile.reject_count).toBe('2');
+        setUser({ id: 'user-123', email: 'a@b.c', provider: 'email' });
+        profile = userProfile.get();
+        expect(profile.can_publish).toBe('false');
+        expect(profile.reject_count).toBe('0');
+    });
+
     it('boolean is_admin이 string으로 변환됨', () => {
         setUser({
             id: 'user-123',
@@ -136,7 +147,6 @@ describe('clearUser', () => {
         expect(profile.username).toBe('');
         expect(profile.is_admin).toBe('false');
         expect(profile.provider).toBe('');
-        expect(profile.verification_status).toBe('none');
         expect(profile.society).toBe('');
         expect(profile.hospital_id).toBe('');
         expect(profile.certification).toBe('none');

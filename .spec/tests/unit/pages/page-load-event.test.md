@@ -19,7 +19,7 @@ Vitest (단위)
 
 - index, feedback, mypage, resources, inspection-prep, findings-recommendations
 - settings, notifications, my-feedback
-- admin: members, member-approval, glossary, feedback, send-notification (verification-requests 는 2-2 에서 삭제)
+- admin: members, member-approval, submissions, glossary, feedback, send-notification (verification-requests 는 2-2 에서 삭제)
 - components: Sidebar, ChecklistItem, GlossaryModal, Lightbox, LoginGuide
 - layouts: DashboardLayout
 

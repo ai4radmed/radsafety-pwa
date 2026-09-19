@@ -94,6 +94,8 @@ describe('server.actions', () => {
         expect(server).toHaveProperty('resolveHospitalRequest');
         expect(server).toHaveProperty('registerHospitalFromRequest');
         expect(server).toHaveProperty('updateAffiliation');
+        expect(server).toHaveProperty('reviewSubmission');
+        expect(server).toHaveProperty('setPublishPermission');
     });
 });
 

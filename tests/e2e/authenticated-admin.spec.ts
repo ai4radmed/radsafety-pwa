@@ -158,7 +158,13 @@ test.describe('3-4 관리자 기능 (인증 후)', () => {
             }
         });
 
-        const adminPages = ['/admin/members', '/admin/feedback', '/admin/glossary', '/admin/member-approval'];
+        const adminPages = [
+            '/admin/members',
+            '/admin/feedback',
+            '/admin/glossary',
+            '/admin/member-approval',
+            '/admin/submissions',
+        ];
 
         for (const path of adminPages) {
             await page.goto(path);

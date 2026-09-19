@@ -30,6 +30,7 @@ export const GET: APIRoute = async ({ params, redirect }) => {
         const { data, error } = await supabaseAnon
             .from('archives')
             .select('id, file_url, file_name, title')
+            .eq('status', 'published')
             .eq('slug', slug)
             .single();
 
