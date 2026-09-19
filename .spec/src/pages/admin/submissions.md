@@ -20,7 +20,7 @@
 3. **승인**: `confirm()` → `reviewSubmission(decision:'approve')`. 서버가 게시·파일 이동·`can_publish=true`·알림까지 처리. 성공 시 목록 새로고침(행이 사라짐).
 4. **반려**: `prompt()`로 사유(선택) → `reviewSubmission(decision:'reject', reason)`. 서버가 `rejected`·`reject_count+1`·알림.
 5. 사용자 입력은 `escapeHtml`. 파일 보기는 `file_bucket`에 따라 서명 URL(pending) / 공개 URL.
-6. 첫 제출 시 관리자 텔레그램 알림(계획서 규칙 6)은 **미구현** — 필요 시 `health.yml` 경로 재사용. 지금은 관리자 in-app 알림도 없음(검토는 이 페이지를 열어 확인).
+6. 첫 제출 시 관리자 알림(계획서 규칙 6): 제출자 클라이언트가 `notifySubmission`을 호출 → 관리자 전원 in-app 알림 + 텔레그램 1통(`src/lib/telegram.ts`, Dr. Ben 개인 DM — 관리자가 늘면 그룹으로 분리). 2026-09-19 구현.
 
 ## 이력
 

@@ -20,14 +20,26 @@ vi.mock('../../../src/lib/supabase-server', () => ({
     supabaseAdmin: {
         from: (table: string) => ({
             select: (_cols?: string) => ({
-                eq: (_col: string, _val: string) => ({
+                eq: (col: string, _val: string) => ({
                     single: () =>
                         Promise.resolve(
                             table === 'profiles'
                                 ? { data: state.profile, error: null }
                                 : { data: state.row, error: null },
                         ),
-                    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+                    maybeSingle: () =>
+                        Promise.resolve(
+                            table === 'profiles'
+                                ? { data: { username: 'gildong' }, error: null }
+                                : { data: null, error: null },
+                        ),
+                    // await 가능한 목록 조회(is_admin=true 관리자 목록)
+                    then: (resolve: (v: unknown) => void) =>
+                        resolve(
+                            col === 'is_admin'
+                                ? { data: [{ id: 'admin-1' }, { id: 'admin-2' }], error: null }
+                                : { data: [], error: null },
+                        ),
                 }),
             }),
             update: (data: unknown) => ({
@@ -63,9 +75,15 @@ vi.mock('../../../src/lib/logger', () => ({
     createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() }),
 }));
 const mockCreateNotification = vi.fn();
+const mockCreateBulk = vi.fn();
 vi.mock('../../../src/lib/notification-helper', () => ({
     createNotification: (data: unknown) => mockCreateNotification(data),
-    createBulkNotifications: vi.fn(),
+    createBulkNotifications: (ids: unknown, data: unknown) => mockCreateBulk(ids, data),
+}));
+const mockTelegram = vi.fn();
+vi.mock('../../../src/lib/telegram', () => ({
+    sendTelegramMessage: (text: string) => mockTelegram(text),
+    isTelegramConfigured: () => true,
 }));
 
 import { server } from '../../../src/actions/index';
@@ -83,6 +101,8 @@ beforeEach(() => {
     mockUpload.mockReset().mockResolvedValue({ error: null });
     mockRemove.mockReset().mockResolvedValue({ error: null });
     mockCreateNotification.mockReset().mockResolvedValue({});
+    mockCreateBulk.mockReset().mockResolvedValue([]);
+    mockTelegram.mockReset().mockResolvedValue(true);
 });
 
 describe('server.reviewSubmission', () => {
@@ -212,5 +232,36 @@ describe('server.setPublishPermission', () => {
             expect.objectContaining({ userId: USER_ID, title: expect.stringContaining('회수') }),
         );
         expect(result.data).toEqual({ success: true, canPublish: false });
+    });
+});
+
+describe('server.notifySubmission', () => {
+    it('pending 제출물 — 관리자 전원 in-app 알림 + 텔레그램 1통', async () => {
+        state.row = { id: ROW_ID, title: '안전관리규정 예시', user_id: USER_ID, status: 'pending' };
+
+        const result = await (server.notifySubmission as any)({ kind: 'archive', id: ROW_ID });
+
+        expect(mockCreateBulk).toHaveBeenCalledWith(
+            ['admin-1', 'admin-2'],
+            expect.objectContaining({ link: '/admin/submissions', message: expect.stringContaining('@gildong') }),
+        );
+        expect(mockTelegram).toHaveBeenCalledWith(expect.stringContaining('안전관리규정 예시'));
+        expect(mockTelegram).toHaveBeenCalledWith(expect.stringContaining('/admin/submissions'));
+        expect(result.data).toEqual({ success: true, notified: true, telegram: true });
+    });
+
+    it('pending 이 아니면 알리지 않는다', async () => {
+        state.row = { id: ROW_ID, title: 'T', user_id: USER_ID, status: 'published' };
+        const result = await (server.notifySubmission as any)({ kind: 'finding', id: ROW_ID });
+        expect(mockCreateBulk).not.toHaveBeenCalled();
+        expect(mockTelegram).not.toHaveBeenCalled();
+        expect(result.data).toEqual({ success: true, notified: false, telegram: false });
+    });
+
+    it('텔레그램 실패는 삼키고 결과에만 표시', async () => {
+        state.row = { id: ROW_ID, title: 'T', user_id: USER_ID, status: 'pending' };
+        mockTelegram.mockRejectedValueOnce(new Error('HTTP 401'));
+        const result = await (server.notifySubmission as any)({ kind: 'finding', id: ROW_ID });
+        expect(result.data).toEqual({ success: true, notified: true, telegram: false });
     });
 });

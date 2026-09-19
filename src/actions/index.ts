@@ -7,6 +7,7 @@ import { createLogger } from '../lib/logger';
 import { sendPushToUsers } from '../lib/push';
 import { createNotification, createBulkNotifications } from '../lib/notification-helper';
 import { customHospitalId, findStaticHospitalByName, getHospitalName, isKnownHospitalId } from '../lib/hospitals';
+import { sendTelegramMessage } from '../lib/telegram';
 
 const logger = createLogger('actions');
 
@@ -593,6 +594,69 @@ export const server = {
                 });
             }
             return { success: true, status: 'rejected', rejectCount };
+        },
+    }),
+
+    // 2-1 규칙 6 — 첫 제출(pending) 직후 제출자 클라이언트가 호출. 관리자 전원에게 in-app 알림 +
+    // 텔레그램 1통(Vercel env TELEGRAM_BOT_TOKEN/CHAT_ID, 미설정이면 생략). 검토 지연을 막기 위한 장치라
+    // 실패해도 제출 자체는 이미 끝난 상태 — 알림 실패는 삼키고 결과에만 표시한다.
+    notifySubmission: defineAction({
+        input: z.object({
+            kind: z.enum(['archive', 'finding']),
+            id: z.string().uuid(),
+        }),
+        handler: async ({ kind, id }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+            const table = kind === 'archive' ? 'archives' : 'findings';
+            const { data: rowData, error: rowError } = await supabaseAdmin
+                .from(table)
+                .select('id, title, user_id, status' as '*')
+                .eq('id', id)
+                .single();
+            const row = rowData as unknown as { title: string; user_id: string | null; status: string } | null;
+            if (rowError || !row) throw new Error('제출물을 찾을 수 없습니다.');
+            if (row.status !== 'pending') return { success: true, notified: false, telegram: false };
+
+            let username = '';
+            if (row.user_id) {
+                const { data: profile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('username')
+                    .eq('id', row.user_id)
+                    .maybeSingle();
+                username = (profile?.username as string | null) ?? '';
+            }
+            const kindLabel = kind === 'archive' ? '자료실' : '지적사례';
+
+            let notified = false;
+            try {
+                const { data: admins } = await supabaseAdmin.from('profiles').select('id').eq('is_admin', true);
+                const ids = (admins ?? []).map((a: { id: string }) => a.id);
+                if (ids.length > 0) {
+                    await createBulkNotifications(ids, {
+                        type: 'system_notice',
+                        title: '📝 검토 대기 제출물',
+                        message: `@${username || '(아이디 미설정)'} 님이 ${kindLabel} 「${row.title}」을(를) 제출했습니다. 검토 후 게시해 주세요.`,
+                        link: '/admin/submissions',
+                        actionLabel: '검토하기',
+                        actionUrl: '/admin/submissions',
+                    });
+                    notified = true;
+                }
+            } catch (error) {
+                logger.warn('제출 알림(in-app) 실패', { error });
+            }
+
+            let telegram = false;
+            try {
+                telegram = await sendTelegramMessage(
+                    `[RadSafety] 검토 대기 제출물\n${kindLabel} · @${username || '(아이디 미설정)'}\n「${row.title}」\nhttps://radsafety.kr/admin/submissions`,
+                );
+            } catch (error) {
+                logger.warn('제출 알림(텔레그램) 실패', { error });
+            }
+
+            return { success: true, notified, telegram };
         },
     }),
 

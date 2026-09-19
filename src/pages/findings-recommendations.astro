@@ -1238,6 +1238,14 @@ const AVAILABLE_TAGS = [
                             const { data, error } = await supabase.from('findings').insert(payload).select().single();
                             if (error) throw error;
                             result = data;
+                            if (data?.status === 'pending' && data?.id) {
+                                // 관리자 알림(in-app + 텔레그램) — 실패해도 제출은 끝났으므로 조용히 넘긴다
+                                import('astro:actions')
+                                    .then(({ actions }) =>
+                                        (actions as any).notifySubmission({ kind: 'finding', id: data.id }),
+                                    )
+                                    .catch(() => {});
+                            }
                             alert(
                                 data?.status === 'pending'
                                     ? '사례가 제출되었습니다. 관리자 검토 후 게시되며, 결과는 알림으로 알려드립니다.'

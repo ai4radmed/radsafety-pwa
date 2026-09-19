@@ -96,6 +96,7 @@ describe('server.actions', () => {
         expect(server).toHaveProperty('updateAffiliation');
         expect(server).toHaveProperty('reviewSubmission');
         expect(server).toHaveProperty('setPublishPermission');
+        expect(server).toHaveProperty('notifySubmission');
     });
 });
 
