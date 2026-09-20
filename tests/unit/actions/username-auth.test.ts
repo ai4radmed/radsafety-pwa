@@ -14,6 +14,34 @@ const mockAdminUpdateUserById = vi.fn();
 const mockCustomSelect = vi.fn();
 const mockCustomUpsert = vi.fn();
 
+// 2026-09-20 세션 인증 전환: 액션은 클라이언트 id 대신 세션(src/actions/auth.ts)을 본다.
+// 테스트는 auth 를 모의하되 **같은 supabase-server 모의의 profiles 조회**를 타게 해 기존 mock 호출 순서를 보존한다.
+// session.userId 가 "로그인한 사람"이다.
+const session = { userId: '123e4567-e89b-12d3-a456-426614174000' };
+vi.mock('../../../src/actions/auth', async () => {
+    const { supabaseAdmin } = await import('../../../src/lib/supabase-server');
+    const load = async (opts?: { active?: boolean }) => {
+        const { data, error } = await (supabaseAdmin as any)
+            .from('profiles')
+            .select('is_admin, status')
+            .eq('id', session.userId)
+            .single();
+        if (error) throw new Error('사용자를 찾을 수 없습니다.');
+        // 기존 테스트의 profiles 모의가 null 을 돌려주는 경우(아이디 중복 조회용) — 일반 회원으로 간주
+        const d = (data ?? {}) as { is_admin?: boolean; status?: string | null };
+        if (opts?.active && d.status !== 'active') throw new Error('가입 승인된 회원만 이용할 수 있습니다.');
+        return { id: session.userId, isAdmin: Boolean(d.is_admin), status: d.status ?? null };
+    };
+    return {
+        requireUser: (_ctx: unknown, opts?: { active?: boolean }) => load(opts),
+        requireAdmin: async () => {
+            const u = await load();
+            if (!u.isAdmin) throw new Error('관리자 권한이 필요합니다.');
+            return u;
+        },
+    };
+});
+
 vi.mock('../../../src/lib/supabase-server', () => ({
     supabaseAnon: {},
     supabaseAdmin: {
@@ -317,6 +345,9 @@ describe('server.signInWithUsername', () => {
 });
 
 describe('server.claimUsername', () => {
+    beforeEach(() => {
+        session.userId = USER_ID;
+    });
     it('다른 사용자가 이미 쓰는 아이디면 에러', async () => {
         mockProfilesSelect.mockResolvedValue({ data: { id: 'someone-else' }, error: null });
         await expect((server.claimUsername as any)({ userId: USER_ID, username: 'gildong' })).rejects.toThrow(
@@ -429,6 +460,9 @@ describe('server.claimUsername', () => {
 
 describe('server.resolveHospitalRequest', () => {
     const ADMIN_ID = '223e4567-e89b-12d3-a456-426614174000';
+    beforeEach(() => {
+        session.userId = ADMIN_ID;
+    });
 
     it('관리자가 아니면 거부', async () => {
         mockProfilesSelect.mockResolvedValueOnce({ data: { is_admin: false }, error: null });
@@ -506,6 +540,9 @@ describe('server.resolveHospitalRequest', () => {
 
 describe('server.registerHospitalFromRequest', () => {
     const ADMIN_ID = '223e4567-e89b-12d3-a456-426614174000';
+    beforeEach(() => {
+        session.userId = ADMIN_ID;
+    });
 
     it('관리자가 아니면 거부', async () => {
         mockProfilesSelect.mockResolvedValueOnce({ data: { is_admin: false }, error: null });

@@ -55,10 +55,10 @@ describe('관리자 /admin/bulletins', () => {
 });
 
 describe('reviewBulletin 액션', () => {
-    it('assertAdmin 뒤 게시 시 active 회원 전체 알림, 후속이면 "후속:" 제목', () => {
+    it('requireAdmin(세션) 뒤 게시 시 active 회원 전체 알림, 후속이면 "후속:" 제목', () => {
         const start = ACTIONS.indexOf('reviewBulletin: defineAction');
         const body = ACTIONS.slice(start, ACTIONS.indexOf('reviewSubmission: defineAction'));
-        expect(body).toMatch(/await assertAdmin\(adminId\)/);
+        expect(body).toMatch(/await requireAdmin\(context\)/);
         expect(body).toMatch(/\.eq\('status', 'active'\)/);
         expect(body).toMatch(/createBulkNotifications\(/);
         expect(body).toMatch(/`후속: \$\{row\.title\}`/);

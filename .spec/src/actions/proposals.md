@@ -4,7 +4,7 @@
 
 3단계 제도 개선 제안 채널의 액션 묶음(`index.ts` `server` 에 spread). **문지기는 RLS 가 아니라 여기** — 세션으로 로그인만 확인하고(익명 모드에선 신원을 본 뒤 버린다) 서비스 롤로 쓴다. 설계 원문 = `documents/privacy_redesign_plan.md` 3단계(2026-09-08 확정, 2026-09-20 구현).
 
-**기존 액션과 다른 점**: 사용자 판정을 **세션 쿠키**(`createSupabaseServerClient(context.request, context.cookies).auth.getUser()`)로 한다. `index.ts` 의 다른 액션들은 클라이언트가 보낸 `userId`/`adminId` 를 믿는데, 익명 채널은 신원 오판이 곧 사고라 이 파일부터 세션 기준으로 전환했다(기존 액션의 전환은 후속 과제).
+**인증**: 공용 `src/actions/auth.ts`(`requireUser(context, {active:true})`·`requireAdmin`) — 세션 쿠키 기준. 이 파일에서 먼저 도입했고 같은 날 `index.ts` 전 액션으로 확대(`.spec/src/actions/auth.md`).
 
 ## Public API
 

@@ -9,6 +9,7 @@ import { createNotification, createBulkNotifications } from '../lib/notification
 import { customHospitalId, findStaticHospitalByName, getHospitalName, isKnownHospitalId } from '../lib/hospitals';
 import { sendTelegramMessage } from '../lib/telegram';
 import { proposalActions } from './proposals';
+import { requireUser, requireAdmin } from './auth';
 
 const logger = createLogger('actions');
 
@@ -164,7 +165,7 @@ export const server = {
     // Send Notification Action
     sendNotification: defineAction({
         input: z.object({
-            senderId: z.string().uuid(),
+            senderId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시
             targetType: z.enum(['all', 'provider', 'specific']),
             provider: z.enum(['kakao', 'email']).optional(),
             specificUserId: z.string().uuid().optional(),
@@ -174,13 +175,14 @@ export const server = {
             actionLabel: z.string().optional(),
             actionUrl: z.string().optional(),
         }),
-        handler: async (input) => {
+        handler: async (input, context) => {
+            const senderId = (await requireAdmin(context)).id;
             try {
                 // Check if sender is admin
                 const { data: profile, error: profileError } = await supabaseAdmin
                     .from('profiles')
                     .select('is_admin')
-                    .eq('id', input.senderId)
+                    .eq('id', senderId)
                     .single();
 
                 if (profileError || !profile) {
@@ -211,7 +213,7 @@ export const server = {
                 // Create notifications for all target users
                 const notifications = users.map((u) => ({
                     user_id: u.id,
-                    sender_id: input.senderId,
+                    sender_id: senderId,
                     type: 'admin_message',
                     priority: 'normal',
                     title: input.title,
@@ -267,10 +269,10 @@ export const server = {
                 )
                 .optional(),
         }),
-        handler: async (input) => {
+        handler: async (input, context) => {
             try {
-                // Use userId from input (passed from client)
-                const userId = input.userId || null;
+                // 2026-09-20: 세션이 권위 — 클라이언트가 보낸 userId 는 무시
+                const userId = (await requireUser(context)).id;
 
                 // Insert feedback into database
                 const { data: feedback, error: insertError } = await supabaseAdmin
@@ -424,14 +426,16 @@ export const server = {
     // 동일한 관례(세션 기반 context 대신 명시적 id 전달).
     claimUsername: defineAction({
         input: z.object({
-            userId: z.string().uuid(),
+            userId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시
             username: usernameSchema,
             password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.').optional(),
             hospitalId: hospitalIdSchema,
             hospitalRequest: hospitalRequestSchema,
             society: societySchema,
         }),
-        handler: async ({ userId, username, password, hospitalId, hospitalRequest, society }) => {
+        handler: async ({ username, password, hospitalId, hospitalRequest, society }, context) => {
+            // 첫 접속 게이트 — 아직 pending 일 수 있으므로 active 를 요구하지 않는다
+            const userId = (await requireUser(context)).id;
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
             await assertKnownHospitalId(hospitalId);
 
@@ -479,12 +483,13 @@ export const server = {
     // null 로 지울 수 있다. userId 는 claimUsername 과 같은 관례(클라이언트 전달).
     updateAffiliation: defineAction({
         input: z.object({
-            userId: z.string().uuid(),
+            userId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시
             hospitalId: hospitalIdSchema,
             hospitalRequest: hospitalRequestSchema,
             society: z.enum(['nuclear_medicine', 'technology', 'none']).nullable().optional(),
         }),
-        handler: async ({ userId, hospitalId, hospitalRequest, society }) => {
+        handler: async ({ hospitalId, hospitalRequest, society }, context) => {
+            const userId = (await requireUser(context)).id;
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
             await assertKnownHospitalId(hospitalId);
 
@@ -516,7 +521,7 @@ export const server = {
     // 게시 = status published + 회원(active) 알림 1건(스레드 후속이면 "후속" 표기). 자동 확정 ✗ — 오판이 곧 회원 오알림.
     reviewBulletin: defineAction({
         input: z.object({
-            adminId: z.string().uuid(),
+            adminId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시(하위 호환)
             id: z.string().uuid(),
             decision: z.enum(['publish', 'ignore', 'update']),
             summary: z.string().trim().max(2000).optional(),
@@ -529,9 +534,9 @@ export const server = {
                 .max(20)
                 .optional(),
         }),
-        handler: async ({ adminId, id, decision, summary, prepNote, parentId, checklistRefs }) => {
+        handler: async ({ id, decision, summary, prepNote, parentId, checklistRefs }, context) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
-            await assertAdmin(adminId);
+            const adminId = (await requireAdmin(context)).id;
 
             const { data: row, error: rowError } = await supabaseAdmin
                 .from('bulletins')
@@ -598,15 +603,15 @@ export const server = {
 
     reviewSubmission: defineAction({
         input: z.object({
-            adminId: z.string().uuid(),
+            adminId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시(하위 호환)
             kind: z.enum(['archive', 'finding']),
             id: z.string().uuid(),
             decision: z.enum(['approve', 'reject']),
             reason: z.string().trim().max(300).optional(),
         }),
-        handler: async ({ adminId, kind, id, decision, reason }) => {
+        handler: async ({ kind, id, decision, reason }, context) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
-            await assertAdmin(adminId);
+            const adminId = (await requireAdmin(context)).id;
 
             const table = kind === 'archive' ? 'archives' : 'findings';
             type SubmissionRow = {
@@ -693,7 +698,8 @@ export const server = {
             kind: z.enum(['archive', 'finding']),
             id: z.string().uuid(),
         }),
-        handler: async ({ kind, id }) => {
+        handler: async ({ kind, id }, context) => {
+            const user = await requireUser(context);
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
             const table = kind === 'archive' ? 'archives' : 'findings';
             const { data: rowData, error: rowError } = await supabaseAdmin
@@ -703,6 +709,7 @@ export const server = {
                 .single();
             const row = rowData as unknown as { title: string; user_id: string | null; status: string } | null;
             if (rowError || !row) throw new Error('제출물을 찾을 수 없습니다.');
+            if (row.user_id !== user.id && !user.isAdmin) throw new Error('본인 제출물만 알릴 수 있습니다.');
             if (row.status !== 'pending') return { success: true, notified: false, telegram: false };
 
             let username = '';
@@ -751,13 +758,13 @@ export const server = {
     // 관리자가 can_publish 를 부여/회수한다. 회수되면 다음 제출부터 다시 검토 대기.
     setPublishPermission: defineAction({
         input: z.object({
-            adminId: z.string().uuid(),
+            adminId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시(하위 호환)
             targetUserId: z.string().uuid(),
             canPublish: z.boolean(),
         }),
-        handler: async ({ adminId, targetUserId, canPublish }) => {
+        handler: async ({ targetUserId, canPublish }, context) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
-            await assertAdmin(adminId);
+            const adminId = (await requireAdmin(context)).id;
 
             const { error: updateError } = await supabaseAdmin
                 .from('profiles')
@@ -782,18 +789,13 @@ export const server = {
     // 액션과 동일한 관례.
     approvePendingMember: defineAction({
         input: z.object({
-            adminId: z.string().uuid(),
+            adminId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시(하위 호환)
             targetUserId: z.string().uuid(),
         }),
-        handler: async ({ adminId, targetUserId }) => {
+        handler: async ({ targetUserId }, context) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
 
-            const { data: adminProfile, error: adminError } = await supabaseAdmin
-                .from('profiles')
-                .select('is_admin')
-                .eq('id', adminId)
-                .single();
-            if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
+            await requireAdmin(context);
 
             // 가입 승인 = 게시 권한(Dr. Ben 2026-09-19): 관리자가 이미 사람을 검토했으므로 첫 제출을 또 검토하지
             // 않는다. can_publish 는 이후 제재(회수) 도구로만 쓰인다.
@@ -812,18 +814,13 @@ export const server = {
     // 새 계정(다른 username)으로 다시 하면 되므로 굳이 상태를 늘리지 않는다.
     rejectPendingMember: defineAction({
         input: z.object({
-            adminId: z.string().uuid(),
+            adminId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시(하위 호환)
             targetUserId: z.string().uuid(),
         }),
-        handler: async ({ adminId, targetUserId }) => {
+        handler: async ({ targetUserId }, context) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
 
-            const { data: adminProfile, error: adminError } = await supabaseAdmin
-                .from('profiles')
-                .select('is_admin')
-                .eq('id', adminId)
-                .single();
-            if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
+            await requireAdmin(context);
 
             const { error: updateError } = await supabaseAdmin
                 .from('profiles')
@@ -841,15 +838,15 @@ export const server = {
     // registerHospitalFromRequest.
     resolveHospitalRequest: defineAction({
         input: z.object({
-            adminId: z.string().uuid(),
+            adminId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시(하위 호환)
             targetUserId: z.string().uuid(),
             hospitalId: z.string().trim().optional(),
         }),
-        handler: async ({ adminId, targetUserId, hospitalId }) => {
+        handler: async ({ targetUserId, hospitalId }, context) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
             if (hospitalId === 'other') throw new Error('알 수 없는 소속기관입니다.');
 
-            await assertAdmin(adminId);
+            const adminId = (await requireAdmin(context)).id;
             if (hospitalId) await assertKnownHospitalId(hospitalId);
 
             const requested = await readHospitalRequest(targetUserId);
@@ -868,7 +865,7 @@ export const server = {
     // 같은 이름을 두 번 등록해도 행이 하나다(upsert).
     registerHospitalFromRequest: defineAction({
         input: z.object({
-            adminId: z.string().uuid(),
+            adminId: z.string().uuid().optional(), // 2026-09-20: 세션이 권위 — 값은 무시(하위 호환)
             targetUserId: z.string().uuid(),
             name: z
                 .string()
@@ -876,9 +873,9 @@ export const server = {
                 .min(2, '기관명은 2자 이상이어야 합니다.')
                 .max(60, '기관명은 60자 이내로 입력하세요.'),
         }),
-        handler: async ({ adminId, targetUserId, name }) => {
+        handler: async ({ targetUserId, name }, context) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
-            await assertAdmin(adminId);
+            const adminId = (await requireAdmin(context)).id;
 
             const requested = await readHospitalRequest(targetUserId);
 
@@ -908,15 +905,6 @@ export const server = {
 };
 
 // ── 기관 등록 요청 공용 단계(resolveHospitalRequest · registerHospitalFromRequest) ──
-
-async function assertAdmin(adminId: string) {
-    const { data: adminProfile, error: adminError } = await supabaseAdmin!
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', adminId)
-        .single();
-    if (adminError || !adminProfile?.is_admin) throw new Error('관리자 권한이 필요합니다.');
-}
 
 async function readHospitalRequest(targetUserId: string): Promise<string> {
     const { data: target, error: targetError } = await supabaseAdmin!
