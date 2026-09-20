@@ -415,7 +415,7 @@ bulletins
 
 **실행 위치 — Vercel Cron** (`vercel.json`, 하루 1회 07:00 KST): K-1 이 GitHub Actions cron 을 택한 이유("앱 사망 시에도 수집·알림 생존")는 헬스 하트비트에는 맞지만 콘텐츠 알림에는 무의미(앱이 죽으면 회원 알림도 못 읽는다). 반면 앱 안에서 돌면 `createBulkNotifications`·`sendPushToUsers`·`sendTelegramMessage`·Vercel env 를 그대로 재사용하고 GitHub secret 에 서비스 롤 키를 복제할 필요가 없다. Hobby 한도(cron 당 하루 1회·100개)는 소스 셋(SOS·간행물·원안위)을 **cron 하나가 순서대로** 돌면 충분 — 소스별 try/catch 격리. K-1 도 이 cron 에 어댑터로 얹는 것을 기본안으로 재조정(위 K-1 파이프라인의 GitHub Actions 줄은 그때 갱신).
 
-**구현(2026-09-20)**: `sql_query/migrate_add_watch_tables.sql`(`watch_items`·`watch_sources`, 본문 미저장·개인정보 0) · `src/lib/watch/`(엔진·스토어·알림·어댑터 2개) · `src/pages/api/cron/watch.ts`(Bearer `CRON_SECRET` 또는 admin 쿠키, `?dry=1`) · `vercel.json`. 알려진 한계: SOS 답변 본문(`answCntn`)은 목록에 비어 있어 답변만 바뀌는 수정은 못 잡는다. 원안위 보도자료는 K-1(`bulletins`, 사람 승인 흐름)에 남긴다 — 단순 "새 글" 알림이 아니라 요약·체크리스트 연결이 가치라서.
+**구현(2026-09-20)**: `sql_query/migrate_add_watch_tables.sql`(`watch_items`·`watch_sources`, 본문 미저장·개인정보 0) · `src/lib/watch/`(엔진·스토어·알림·어댑터 2개) · `src/pages/api/cron/watch.ts`(Bearer `CRON_SECRET` 또는 admin 쿠키, `?dry=1`) · `vercel.json`. 알려진 한계: SOS 답변 본문(`answCntn`)은 목록에 비어 있어 답변만 바뀌는 수정은 못 잡는다. **보고 모드**(2026-09-20 Dr. Ben): 당분간 env `WATCH_REPORT` 미설정 = `all` — 변화 없어도 매일 텔레그램 하트비트(프로세스 생존 확인). 안정되면 `WATCH_REPORT=changes` 로 전환. 원안위 보도자료는 K-1(`bulletins`, 사람 승인 흐름)에 남긴다 — 단순 "새 글" 알림이 아니라 요약·체크리스트 연결이 가치라서.
 
 ---
 
