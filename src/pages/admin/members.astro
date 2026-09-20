@@ -173,9 +173,13 @@ export const prerender = false;
                 !r.is_admin && rejected > 0 && rejected < 3
                     ? ` <span class="badge-request">반려 ${rejected}회</span>`
                     : '';
-            const toggle = r.is_admin
-                ? ''
-                : ` <button class="btn-mini btn-publish-toggle" data-id="${r.id}" data-next="${r.can_publish ? 'false' : 'true'}">${r.can_publish ? '회수' : '부여'}</button>`;
+            // 관리자 행·가입 거절(banned)/대기(pending) 행에는 버튼 없음 — 로그인 못 하는 계정에 권한을 만지는 건 무의미하고,
+            // 이름이 비슷한 행(test0919 vs test09191)을 잘못 누르는 실수를 부른다(2026-09-20 실사례).
+            const inactive = r.status === 'banned' || r.status === 'pending';
+            const toggle =
+                r.is_admin || inactive
+                    ? ''
+                    : ` <button class="btn-mini btn-publish-toggle" data-id="${r.id}" data-next="${r.can_publish ? 'false' : 'true'}">${r.can_publish ? '회수' : '부여'}</button>`;
             return `${label}${rejectNote}${toggle}`;
         }
 
