@@ -174,6 +174,8 @@ export const server = {
             link: z.string().optional(),
             actionLabel: z.string().optional(),
             actionUrl: z.string().optional(),
+            // 업데이트 안내처럼 이력으로 남길 공지는 만료 없음(2026-09-20). 기본은 30일.
+            noExpiry: z.boolean().optional(),
         }),
         handler: async (input, context) => {
             const senderId = (await requireAdmin(context)).id;
@@ -221,7 +223,7 @@ export const server = {
                     link: input.link || null,
                     action_label: input.actionLabel || null,
                     action_url: input.actionUrl || null,
-                    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    expires_at: input.noExpiry ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                     is_read: false,
                     created_at: new Date().toISOString(),
                 }));
