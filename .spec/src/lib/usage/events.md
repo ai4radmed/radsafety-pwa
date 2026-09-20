@@ -8,15 +8,17 @@
 
 ## U-1 이벤트
 
-| 이벤트              | 속성                       | 기록 지점                                             |
-| ------------------- | -------------------------- | ----------------------------------------------------- |
-| `page_view`         | 없음                       | `src/middleware.ts`                                   |
-| `signup`            | `method` = kakao\|password | `signUpWithUsername` · `claimUsername`(pending 일 때) |
-| `username_set`      | 없음                       | `claimUsername`                                       |
-| `login`             | `method`                   | **U-1 미구현** — 아래 참조                            |
-| `resource_download` | `slug`                     | U-2                                                   |
-| `feedback_sent`     | 없음                       | `sendFeedback`                                        |
-| `submission_sent`   | 없음                       | U-2                                                   |
+| 이벤트              | 속성                       | 기록 지점                                              |
+| ------------------- | -------------------------- | ------------------------------------------------------ |
+| `page_view`         | 없음                       | `src/middleware.ts`                                    |
+| `gate_blocked`      | 없음                       | `src/middleware.ts` — 비로그인 × 회원 전용 경로        |
+| `signup`            | `method` = kakao\|password | `signUpWithUsername` · `claimUsername`(pending 일 때)  |
+| `username_set`      | 없음                       | `claimUsername`                                        |
+| `login`             | `method`                   | **U-1 미구현** — 아래 참조                             |
+| `resource_download` | `slug`                     | **U-3** — 클라이언트에서 저장소 주소로 직접 내려받는다 |
+| `feedback_sent`     | 없음                       | `sendFeedback`                                         |
+| `submission_sent`   | `kind` = archive\|finding  | `notifySubmission`                                     |
+| `signup_approved`   | 없음                       | `approvePendingMember`                                 |
 
 `login` 을 U-1 에서 안 넣은 이유: `signInWithUsername` 액션은 아이디로 이메일을 찾아 주기만 하고 실제 인증은 브라우저의 Supabase 클라이언트가 한다. 이 지점에서 기록하면 **성공이 아니라 시도**를 세게 되어 수치가 거짓이 된다. U-3 에서 클라이언트 쪽 성공 시점에 붙인다.
 
@@ -51,3 +53,19 @@
 ## 계약
 
 `sanitizeProps` 는 **던지지 않는다.** 집계 때문에 업무가 실패하면 안 된다. 허용목록 밖은 조용히 버리고, 남은 키가 없으면 `null` 을 돌려준다.
+
+## 벽 이탈 퍼널 (U-2)
+
+"어디에서 포기하는가"에 답하는 구간이다. 지금 앱은 비회원도 공개 메뉴를 보므로, 이탈이 가장 많이 일어나는 지점은 **회원 전용 벽**이다.
+
+```
+gate_blocked → page_view(/login) → signup → signup_approved
+```
+
+`gate_blocked` 는 **`page_view` 를 대신한다.** 비로그인이 회원 전용 화면을 열면 실제로는 화면을 못 보고 `/login` 으로 돌려보내지므로, 조회로 세면 "봤다"는 거짓이 되고 이탈 지점도 가려진다. 둘을 같이 기록하면 이중 집계가 된다.
+
+공개/회원 판정은 `src/lib/public-paths.ts` 가 단일 권위다 — 리다이렉트를 하는 `auth-handler` 와 같은 목록을 쓴다.
+
+`login` 은 여전히 U-3 이다. 다만 `/login` 의 `page_view` 가 그 자리를 임시로 메운다 — 로그인 화면까지는 왔다는 뜻이기 때문이다.
+
+`resource_download` 를 서두르지 않는 이유: `archives.download_count` 가 이미 자료별 누적 횟수를 센다. 무엇이 인기인지 순위는 그것으로 충분하고, 우리 집계가 더하는 것은 시계열과 회원/비회원 구분뿐이다.

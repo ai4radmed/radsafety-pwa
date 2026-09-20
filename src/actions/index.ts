@@ -920,6 +920,8 @@ export const server = {
                 logger.warn('제출 알림(텔레그램) 실패', { error });
             }
 
+            await recordUsage({ event: 'submission_sent', props: { kind }, userId: user.id });
+
             return { success: true, notified, telegram };
         },
     }),
@@ -973,6 +975,9 @@ export const server = {
                 .update({ status: 'active', can_publish: true })
                 .eq('id', targetUserId);
             if (updateError) throw new Error(updateError.message);
+
+            // 벽 → 로그인 → 가입 → 승인 퍼널의 종점(U-2). 승인된 회원 기준이라 userId 는 대상자다.
+            await recordUsage({ event: 'signup_approved', userId: targetUserId });
 
             return { success: true };
         },

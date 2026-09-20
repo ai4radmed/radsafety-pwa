@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import fs from 'fs';
+import path from 'path';
 
 vi.mock('../../../src/lib/logger', () => ({
     createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
@@ -139,5 +141,29 @@ describe('usage 허용목록 계약', () => {
         for (const e of ['page_view', 'signup', 'username_set', 'feedback_sent']) {
             expect(Object.keys(USAGE_EVENTS)).toContain(e);
         }
+    });
+
+    it('U-2 벽 이탈 퍼널 이벤트가 등록돼 있다', () => {
+        for (const e of ['gate_blocked', 'signup_approved', 'submission_sent']) {
+            expect(Object.keys(USAGE_EVENTS)).toContain(e);
+        }
+    });
+
+    it('제출물 종류는 허용목록 두 값만', () => {
+        expect(sanitizeProps('submission_sent', { kind: 'archive' })).toEqual({ kind: 'archive' });
+        expect(sanitizeProps('submission_sent', { kind: 'finding' })).toEqual({ kind: 'finding' });
+        expect(sanitizeProps('submission_sent', { kind: 'proposal' })).toBeNull();
+    });
+});
+
+describe('퍼널 기록 지점 (소스 계약)', () => {
+    const IDX = fs.readFileSync(path.resolve('src/actions/index.ts'), 'utf-8');
+
+    it('가입 승인이 퍼널 종점을 기록한다 — 대상 회원 기준', () => {
+        expect(IDX).toMatch(/recordUsage\(\{ event: 'signup_approved', userId: targetUserId \}\)/);
+    });
+
+    it('제출 알림이 제출 사실을 기록한다', () => {
+        expect(IDX).toMatch(/event: 'submission_sent'/);
     });
 });

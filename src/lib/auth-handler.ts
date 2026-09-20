@@ -1,6 +1,7 @@
 import { supabase, forceClearSupabaseCookies } from './supabase-browser';
 import { setUser, clearUser } from '../store/user';
 import { saveLastRoute } from './last-route';
+import { isPublicPath } from './public-paths';
 
 // Stage B (privacy_redesign_plan.md 전환기간) — username 없는 계정은 어디를 가려 해도
 // 먼저 여기부터 거쳐야 한다. 신규·기존 구분 없음(Dr. Ben 2026-09-16 결정: 배포 후 첫 접속
@@ -132,24 +133,9 @@ async function performSelfHealing(userId: string, baseUser: any) {
  * 미인증 접근 시 리다이렉트 처리
  */
 function handleRedirect(path: string, isLoggedIn: boolean) {
-    // 2계층(공개/회원) — 비가입자가 쓸 수 있는 메뉴(Dr. Ben 확정 2026-09-19): 홈·수검준비·지적권고사례(목록)·
-    // 자료실(다운로드)·용어검색·이용안내·설정·정보. 사용자 메뉴(마이페이지·알림함·의견·개선의견조회)와
-    // 관리자 메뉴는 회원 전용 → /login 으로. 세부 권한(사례 본문 차단·업로드 차단)은 각 페이지 + RLS 가 담당.
-    const publicPaths = [
-        '/',
-        '/login',
-        '/info',
-        '/inspection-prep',
-        '/findings-recommendations',
-        '/resources',
-        '/guide',
-        '/settings',
-        '/offline',
-        '/privacy',
-        '/kins',
-        '/proposal-lookup', // 익명 제안 조회 — 코드 소지 = 본인, 로그인 요구 시 조회와 계정이 다시 묶인다(3단계)
-    ];
-    const isPublic = publicPaths.some((p) => path === p || (p !== '/' && path.startsWith(p)));
+    // 2계층(공개/회원) 목록은 src/lib/public-paths.ts 가 단일 권위 — 서버 미들웨어의 사용성
+    // 집계(gate_blocked)도 같은 목록을 쓴다. 두 벌로 두면 한쪽만 고친 날 어긋난다.
+    const isPublic = isPublicPath(path);
 
     const isBypass = new URLSearchParams(window.location.search).get('bypass_admin') === 'true';
 
