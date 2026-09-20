@@ -29,6 +29,8 @@ describe('/api/cron/watch', () => {
         expect(ROUTE).toMatch(/searchParams\.get\('dry'\) === '1'/);
         expect(ROUTE).toMatch(/persist: !dry/);
         expect(ROUTE).toMatch(/dry \? \{ memberNotified: 0, telegram: false \}/);
+        // env 인식 진단값 — 비밀값이 아니라 "읽혔는가" 만 응답에 싣는다
+        expect(ROUTE).toMatch(/telegramConfigured: isTelegramConfigured\(\)/);
     });
 
     it('응답은 no-store 이고 비밀값을 되돌리지 않는다', () => {

@@ -9,10 +9,13 @@ import { createLogger } from './logger';
 
 const logger = createLogger('push');
 
-// VAPID 설정 (환경변수)
-const VAPID_PUBLIC_KEY = import.meta.env.PUBLIC_VAPID_KEY;
-const VAPID_PRIVATE_KEY = import.meta.env.VAPID_PRIVATE_KEY;
-const VAPID_EMAIL = import.meta.env.VAPID_EMAIL || 'mailto:noreply@radsafety.kr';
+// VAPID 설정 (환경변수). Vercel 은 런타임 env 를 import.meta.env 에 인라인하지 않을 수 있어
+// process.env 로 폴백한다(telegram.ts·health.ts 와 같은 함정 — 2026-09-20 cron 실행에서 실측).
+const env = (name: string): string | undefined =>
+    import.meta.env[name] || (typeof process !== 'undefined' ? process.env[name] : undefined);
+const VAPID_PUBLIC_KEY = env('PUBLIC_VAPID_KEY');
+const VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY');
+const VAPID_EMAIL = env('VAPID_EMAIL') || 'mailto:noreply@radsafety.kr';
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
     webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
