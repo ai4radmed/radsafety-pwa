@@ -5,6 +5,15 @@ import Icon from '../../components/Icon.astro';
 
 <DashboardLayout title="알림 발송">
     <style>
+        .checkbox-inline {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            cursor: pointer;
+        }
         .send-notification-container {
             max-width: 800px;
             margin: 0 auto;
@@ -327,6 +336,13 @@ import Icon from '../../components/Icon.astro';
                 </div>
 
                 <div class="form-group">
+                    <label class="checkbox-inline">
+                        <input type="checkbox" id="noExpiry" name="noExpiry" />
+                        업데이트 안내 — 만료 없음(알림함에 이력으로 남김). 일반 공지는 30일 뒤 만료
+                    </label>
+                </div>
+
+                <div class="form-group">
                     <label class="form-label" for="link">링크 (선택)</label>
                     <input type="text" id="link" name="link" class="form-input" placeholder="/mypage" />
                     <div class="help-text">알림 클릭 시 이동할 URL을 입력하세요.</div>
@@ -510,6 +526,7 @@ import Icon from '../../components/Icon.astro';
                     if (formData.get('link')) input.link = formData.get('link');
                     if (formData.get('actionLabel')) input.actionLabel = formData.get('actionLabel');
                     if (formData.get('actionUrl')) input.actionUrl = formData.get('actionUrl');
+                    if (formData.get('noExpiry')) input.noExpiry = true;
 
                     // Add target-specific fields
                     if (targetType === 'provider') {
