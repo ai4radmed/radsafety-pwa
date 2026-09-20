@@ -62,3 +62,18 @@ Astro server actions 진입점. `defineAction`으로 `saveFinding`, `deleteFindi
 - `checklistRefs?: string[]`(slug `^[a-z0-9-]+$`, ≤20) → `checklist_refs`(후속 2026-09-20).
 - 거부: `parentId === id`(자기참조). 알림 실패는 로그만(게시는 완료).
 - 화면: `src/pages/admin/bulletins.astro`. 테스트: `tests/unit/pages/bulletins.test.ts`.
+
+## setAdminRole · changePassword (2026-09-20)
+
+**`setAdminRole({ targetUserId, isAdmin })`** — `requireAdmin(context)`. 관리자가 다른 회원에게 관리자 권한을 주고 회수한다(그전까지 SQL 전용). 가드 셋:
+
+1. **자기 자신 해제 금지** — 권한을 잃으면 화면으로 되돌릴 수 없다(SQL 필요).
+2. **마지막 관리자 해제 금지** — `count(is_admin=true) <= 1` 이면 거부. 관리자 0명 = 아무도 관리 화면에 못 들어감.
+3. **active 회원에게만 부여** — 로그인할 수 없는 계정(`pending`·`banned`)에 권한은 무의미.
+   현재 값과 같으면 멱등 반환. 대상에게 `admin_message` 알림 1건(실패해도 처리 유지). 화면: `admin/members.astro` `관리자` 열.
+
+**`changePassword({ currentPassword?, newPassword(≥8) })`** — `requireUser(context)`, **본인만**(대상 지정 입력 없음).
+
+- `profiles.provider !== 'kakao'`(아이디 계정): `currentPassword` **필수** → `createAnonClient()` 로 `signInWithPassword` 재인증 후 변경. 공유 `supabaseAnon` 의 메모리 세션을 건드리지 않으려고 1회성 클라이언트를 쓴다.
+- `provider === 'kakao'`: 비밀번호가 없는 계정이므로 세션만으로 **최초 설정**(아이디 로그인이라는 예비 경로 확보). 이미 비밀번호를 설정한 카카오 사용자도 현재 비밀번호 없이 바꿀 수 있는데, 주 인증이 카카오이고 유효 세션이 증거라 수용한다.
+- **아이디 변경 액션은 만들지 않는다** — 아이디는 작성자 표시의 식별자(Dr. Ben 2026-09-20).

@@ -20,3 +20,7 @@
 
 1. createSupabaseServerClient: getAll → parseCookieHeader, setAll → cookies.set.
 2. supabaseAdmin fallback: 서비스 롤 키 없을 때 anon 클라이언트 사용.
+
+## createAnonClient() (2026-09-20)
+
+재인증 전용 **1회성** anon 클라이언트. `changePassword` 가 "현재 비밀번호"를 `signInWithPassword` 로 확인할 때 쓴다 — 모듈 수준 공유 클라이언트 `supabaseAnon` 에 로그인하면 그 인스턴스의 메모리 세션이 바뀌어 동시 요청이 서로를 오염시킬 수 있다.
