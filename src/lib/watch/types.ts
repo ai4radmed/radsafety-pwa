@@ -20,8 +20,16 @@ export interface WatchSource {
     label: string;
     /** 직접 주소가 없는 소스의 "메인 → 메뉴" 경로 안내 */
     guide: string;
-    /** 알림 카드가 가리킬 앱 내 경로 */
+    /** 알림 카드가 가리킬 경로(앱 내 또는 외부 URL) */
     link: string;
+    /**
+     * full(기본): 목록 API 가 전체를 돌려준다 — 누락=삭제 후보, 급감 판정 적용.
+     * window: 최신 N건만 받는 게시판(원안위 보도자료 등) — 창 밖으로 밀려난 건은 삭제가 아니므로
+     *         누락·삭제 판정을 하지 않고, 급감 판정도 0건일 때만.
+     */
+    mode?: 'full' | 'window';
+    /** 회원 알림 대상 필터(예: 원안위 보도자료 중 의료·방사선 관련만). 없으면 전부. */
+    memberFilter?: (item: WatchItem) => boolean;
     fetchItems(): Promise<WatchItem[]>;
 }
 

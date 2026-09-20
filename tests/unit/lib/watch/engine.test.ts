@@ -216,3 +216,36 @@ describe('watch/engine runSource — 스토어 오류', () => {
         expect(r.consecutiveFailures).toBeGreaterThanOrEqual(3);
     });
 });
+
+describe('watch/engine runSource — window 소스(최신 N건 게시판)', () => {
+    const windowSource = (items: WatchItem[]): WatchSource => ({ ...source(items), mode: 'window' });
+
+    it('창 밖으로 밀려난 옛 글은 누락·삭제로 판정하지 않는다', async () => {
+        const store = memoryStore({
+            state: { lastCount: 3, consecutiveFailures: 0, baselineAt: 'x' },
+            items: [
+                { externalId: '1', fingerprint: 'fp-1', missingCount: 0, removedAt: null },
+                { externalId: '2', fingerprint: 'fp-2', missingCount: 0, removedAt: null },
+                { externalId: '3', fingerprint: 'fp-3', missingCount: 0, removedAt: null },
+            ],
+        });
+        // 새 글 4 가 들어오며 1 이 창 밖으로
+        const r = await runSource(windowSource([item('4'), item('3'), item('2')]), store);
+        expect(r.status).toBe('ok');
+        expect(r.added.map((i) => i.externalId)).toEqual(['4']);
+        expect(r.removed).toEqual([]);
+        expect(store.calls.some((c) => c.startsWith('missing'))).toBe(false);
+        expect(store.items.get('1')?.missingCount).toBe(0);
+    });
+
+    it('창 크기가 고정이라 급감 판정은 0건일 때만', async () => {
+        const store = memoryStore({
+            state: { lastCount: 20, consecutiveFailures: 0, baselineAt: 'x' },
+            items: [{ externalId: '1', fingerprint: 'fp-1', missingCount: 0, removedAt: null }],
+        });
+        const ok = await runSource(windowSource([item('1'), item('2')]), store);
+        expect(ok.status).toBe('ok');
+        const empty = await runSource(windowSource([]), store);
+        expect(empty.status).toBe('suspicious');
+    });
+});
