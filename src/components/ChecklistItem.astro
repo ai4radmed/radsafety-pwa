@@ -9,7 +9,7 @@ import Icon from './Icon.astro';
 // import { resources } from "../data/resources"; // Removed static import
 ---
 
-<div class={`checklist-item ${open ? 'open' : ''}`} data-id={item.id}>
+<div class={`checklist-item ${open ? 'open' : ''}`} data-id={item.id} id={`checklist-${item.slug ?? item.id}`}>
     <div class="header">
         <label class="checkbox-container">
             <input type="checkbox" class="status-checkbox" />
@@ -524,6 +524,13 @@ import Icon from './Icon.astro';
                 }
                 updateMainCheckbox(); // Update text
             });
+
+            // 3-0. 딥링크(#checklist-<slug>) — 사건·사고(K-1)에서 연결된 항목은 펼쳐진 채로 스크롤(2026-09-20)
+            if (location.hash && item.id === decodeURIComponent(location.hash.slice(1))) {
+                panel.classList.add('open');
+                item.classList.add('open');
+                setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+            }
 
             // 3. Toggle Accordion
             btn.addEventListener('click', () => {

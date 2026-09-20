@@ -107,6 +107,19 @@ export default defineConfig({
                 // 대신 runtimeCaching으로 NetworkFirst → offline fallback 처리
                 runtimeCaching: [
                     {
+                        // 사건·사고 데이터(K-1 후속, 2026-09-20): Supabase REST bulletins 응답을 NetworkFirst 로 캐시해
+                        // 오프라인에서도 마지막으로 본 사례집이 열린다. published 만 RLS 로 내려오므로 회원 간 차이 없음.
+                        urlPattern: ({ url, request }) =>
+                            request.method === 'GET' && /\/rest\/v1\/bulletins(\?|$)/.test(url.pathname + url.search),
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'bulletins-data',
+                            networkTimeoutSeconds: 5,
+                            expiration: { maxEntries: 8, maxAgeSeconds: 7 * 24 * 60 * 60 },
+                            cacheableResponse: { statuses: [0, 200] },
+                        },
+                    },
+                    {
                         // SSR 페이지: 네트워크 우선, 실패 시 /offline 표시
                         urlPattern: ({ request }) => request.mode === 'navigate',
                         handler: 'NetworkFirst',

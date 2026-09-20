@@ -28,6 +28,12 @@ import Icon from '../components/Icon.astro';
             참고용으로만 활용하시길 바랍니다.
         </p>
 
+        <a id="latestBulletin" class="bulletin-banner" href="/bulletins" data-member-only hidden>
+            <span class="bb-label">최신 사건·사고</span>
+            <span class="bb-title" id="bbTitle"></span>
+            <span class="bb-meta" id="bbMeta"></span>
+        </a>
+
         <div class="card-grid">
             <a href="/inspection-prep" class="card primary">
                 <div class="card-header">
@@ -94,6 +100,36 @@ import Icon from '../components/Icon.astro';
     </div>
 
     <style>
+        .bulletin-banner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 0.4rem 0.6rem;
+            margin-bottom: 1rem;
+            padding: 0.55rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: inherit;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .bulletin-banner[hidden] {
+            display: none;
+        }
+        .bb-label {
+            font-weight: 700;
+            color: #ef4444;
+            white-space: nowrap;
+        }
+        .bb-title {
+            font-weight: 600;
+        }
+        .bb-meta {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
         .hero {
             text-align: left;
             padding: 0; /* Minimized */
@@ -192,10 +228,40 @@ import Icon from '../components/Icon.astro';
 
     <script>
         import { restoreLastRouteIfNeeded } from '../lib/last-route';
+        import { supabase } from '../lib/supabase-browser';
+        import { userProfile } from '../store/user';
         // astro:page-load는 직접 접속과 View Transitions 재방문 모두에서 발생하므로
         // readyState 체크 없이 단일 이벤트로 처리 (codebase_guide.md 3-4 참조)
         document.addEventListener('astro:page-load', () => {
             if (restoreLastRouteIfNeeded()) return; // 리다이렉트 발생
+            loadLatestBulletin();
         });
+
+        // 홈 상단 최신 사건 배너(K-1 후속, 2026-09-20): 회원에게만(RLS·data-member-only), 의료·RI 관련 루트 사건 1건.
+        // 비로그인·없음·오류면 배너를 숨긴 채 둔다(홈은 항상 열려야 하므로 실패를 삼킨다).
+        async function loadLatestBulletin() {
+            const banner = document.getElementById('latestBulletin') as HTMLAnchorElement | null;
+            if (!banner) return;
+            const user = userProfile.get() as { id?: string } | null;
+            if (!user?.id) return;
+            try {
+                const { data } = await supabase
+                    .from('bulletins')
+                    .select('title, occurred_at, source, published_at')
+                    .eq('status', 'published')
+                    .eq('relevant', true)
+                    .is('parent_id', null)
+                    .order('published_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                if (!data) return;
+                document.getElementById('bbTitle')!.textContent = data.title;
+                document.getElementById('bbMeta')!.textContent =
+                    `${data.occurred_at ?? ''} · ${data.source === 'nssc' ? '원안위 보도자료' : 'NSIC 사례집'}`;
+                banner.hidden = false;
+            } catch {
+                /* 배너는 부가 기능 — 조용히 생략 */
+            }
+        }
     </script>
 </DashboardLayout>

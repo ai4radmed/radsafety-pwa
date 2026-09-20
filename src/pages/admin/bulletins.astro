@@ -1,6 +1,12 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Icon from '../../components/Icon.astro';
+import { getCollection } from 'astro:content';
+
+// 체크리스트 카탈로그(slug·제목·분류) — 클라이언트 스크립트는 astro:content 를 못 쓰므로 JSON 으로 내려보낸다.
+const checklistCatalog = (await getCollection('inspection_prep'))
+    .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
+    .map((e) => ({ slug: e.slug, title: e.data.title, category: e.data.category ?? '공통' }));
 
 // 사건·사고 검토(관리자). 명세: .spec/src/pages/admin/bulletins.md
 // K-1(2026-09-20): cron 이 모은 원안위 속보·NSIC 사례집을 사건 스레드로 확정하고 게시한다.
@@ -31,6 +37,7 @@ export const prerender = false;
 
         <div id="list" class="list"><p class="muted">불러오는 중...</p></div>
     </div>
+    <script type="application/json" id="checklistCatalog" set:html={JSON.stringify(checklistCatalog)} />
 
     <style>
         .bulletins-admin {
@@ -205,6 +212,27 @@ export const prerender = false;
         .muted {
             color: var(--text-muted);
         }
+        .checklist-picker summary {
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .cl-group {
+            margin: 0.4rem 0 0 0.5rem;
+        }
+        .cl-cat {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin: 0.3rem 0 0.15rem;
+        }
+        .cl-item {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+            font-size: 0.82rem;
+            padding: 0.1rem 0;
+        }
         .hint {
             font-size: 0.75rem;
             color: var(--accent);
@@ -234,7 +262,10 @@ export const prerender = false;
         status: 'pending' | 'published' | 'ignored';
         parent_id: string | null;
         suggested_parent_id: string | null;
+        checklist_refs: string[] | null;
     };
+    type CatalogItem = { slug: string; title: string; category: string };
+    const CATALOG: CatalogItem[] = JSON.parse(document.getElementById('checklistCatalog')?.textContent || '[]');
 
     function esc(s: string | null | undefined): string {
         return (s ?? '').replace(
@@ -272,7 +303,7 @@ export const prerender = false;
             const { data, error } = await supabase
                 .from('bulletins')
                 .select(
-                    'id, source, title, occurred_at, incident_type, incident_grade, region, org_masked, source_url, summary, cause, prep_note, relevant, status, parent_id, suggested_parent_id',
+                    'id, source, title, occurred_at, incident_type, incident_grade, region, org_masked, source_url, summary, cause, prep_note, relevant, status, parent_id, suggested_parent_id, checklist_refs',
                 )
                 .order('occurred_at', { ascending: false, nullsFirst: false })
                 .limit(500);
@@ -286,6 +317,23 @@ export const prerender = false;
                 if (el) el.textContent = String(all.filter((b) => b.status === s).length);
             });
             render();
+        }
+
+        // 체크리스트 항목 선택기 — 분류별 체크박스. 카탈로그는 서버가 JSON 으로 내려준 콘텐츠 목록.
+        function checklistPicker(selected: string[]): string {
+            const groups = new Map<string, CatalogItem[]>();
+            CATALOG.forEach((c) => groups.set(c.category, [...(groups.get(c.category) ?? []), c]));
+            return Array.from(groups.entries())
+                .map(
+                    ([cat, items]) =>
+                        `<div class="cl-group"><div class="cl-cat">${esc(cat)}</div>${items
+                            .map(
+                                (c) =>
+                                    `<label class="cl-item"><input type="checkbox" data-cl="${esc(c.slug)}" ${selected.includes(c.slug) ? 'checked' : ''}/> ${esc(c.title)}</label>`,
+                            )
+                            .join('')}</div>`,
+                )
+                .join('');
         }
 
         // 상위 후보: 루트(parent 없음)이고 무시되지 않은 사건 — 확정본은 속보(nssc)에 붙는 게 보통이지만 제한하지 않는다.
@@ -331,6 +379,10 @@ export const prerender = false;
                             <label>요약(회원에게 보임)<textarea data-f="summary">${esc(b.summary)}</textarea></label>
                             <label>정기검사 준비 포인트<textarea data-f="prep">${esc(b.prep_note)}</textarea></label>
                             <label>상위 사건(스레드) ${suggested}<select data-f="parent">${parentOptions(b)}</select></label>
+                            <details class="checklist-picker">
+                                <summary>관련 체크리스트 항목 (<span data-cl-count>${(b.checklist_refs ?? []).length}</span>개 선택)</summary>
+                                ${checklistPicker(b.checklist_refs ?? [])}
+                            </details>
                         </div>
                         <div class="actions">
                             ${b.status !== 'published' ? '<button class="btn btn-publish" data-act="publish">게시 + 회원 알림</button>' : '<button class="btn btn-save" data-act="update">저장</button>'}
@@ -365,6 +417,9 @@ export const prerender = false;
             const prepNote = (card.querySelector<HTMLTextAreaElement>('[data-f="prep"]')!.value || '').trim();
             const parentRaw = card.querySelector<HTMLSelectElement>('[data-f="parent"]')!.value;
             const parentId = parentRaw ? parentRaw : null;
+            const checklistRefs = Array.from(card.querySelectorAll<HTMLInputElement>('[data-cl]:checked')).map(
+                (cb) => cb.dataset.cl!,
+            );
             if (decision === 'publish' && !confirm('게시하면 회원 전체에 알림이 갑니다. 진행할까요?')) return;
             btn.disabled = true;
             const { data, error } = await actions.reviewBulletin({
@@ -374,6 +429,7 @@ export const prerender = false;
                 summary,
                 prepNote,
                 parentId,
+                checklistRefs,
             });
             btn.disabled = false;
             if (error || !data?.success) {

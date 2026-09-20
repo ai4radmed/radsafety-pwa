@@ -1265,3 +1265,5 @@ COMMENT ON TABLE public.bulletins IS '사건·사고 전파(K-1) — 원안위 �
 
 COMMIT;
 
+-- 16-a. bulletins.checklist_refs (2026-09-20 후속) — sql_query/migrate_add_bulletin_checklist_refs.sql 과 동일
+ALTER TABLE public.bulletins ADD COLUMN IF NOT EXISTS checklist_refs text[] NOT NULL DEFAULT '{}';
