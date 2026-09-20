@@ -10,7 +10,8 @@
 
 import { defineAction, ActionError, type ActionAPIContext } from 'astro:actions';
 import { z } from 'astro:schema';
-import { supabaseAdmin, createSupabaseServerClient } from '../lib/supabase-server';
+import { supabaseAdmin } from '../lib/supabase-server';
+import { requireUser, requireAdmin } from './auth';
 import { createNotification } from '../lib/notification-helper';
 import { sendTelegramMessage } from '../lib/telegram';
 import { createLogger } from '../lib/logger';
@@ -40,31 +41,8 @@ import {
 
 const logger = createLogger('proposals');
 
-type SessionUser = { id: string; isAdmin: boolean };
-
-/** 세션에서 사용자를 읽는다. 없으면 401. */
-async function requireUser(context: ActionAPIContext): Promise<SessionUser> {
-    const supabase = createSupabaseServerClient(context.request, context.cookies);
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new ActionError({ code: 'UNAUTHORIZED', message: '로그인이 필요합니다.' });
-    const { data: profile } = await supabaseAdmin!
-        .from('profiles')
-        .select('is_admin, status')
-        .eq('id', user.id)
-        .maybeSingle();
-    if (!profile || profile.status !== 'active') {
-        throw new ActionError({ code: 'FORBIDDEN', message: '가입 승인된 회원만 제안할 수 있습니다.' });
-    }
-    return { id: user.id, isAdmin: Boolean(profile.is_admin) };
-}
-
-async function requireAdmin(context: ActionAPIContext): Promise<SessionUser> {
-    const u = await requireUser(context);
-    if (!u.isAdmin) throw new ActionError({ code: 'FORBIDDEN', message: '관리자 권한이 필요합니다.' });
-    return u;
-}
+// 인증 헬퍼는 공용 src/actions/auth.ts (2026-09-20 전 액션 세션 전환). 제안은 active 회원만.
+const requireActiveUser = (context: ActionAPIContext) => requireUser(context, { active: true });
 
 function env() {
     const e = import.meta.env;
@@ -91,7 +69,7 @@ export const proposalActions = {
         input: z.object({ file: z.instanceof(File) }),
         handler: async ({ file }, context) => {
             if (!supabaseAdmin) throw new ActionError({ code: 'INTERNAL_SERVER_ERROR', message: '서버 설정 오류' });
-            await requireUser(context);
+            await requireActiveUser(context);
             if (file.size > ATTACHMENT_MAX_BYTES) {
                 throw new ActionError({ code: 'BAD_REQUEST', message: '첨부는 파일당 3MB 이하만 가능합니다.' });
             }
@@ -143,7 +121,7 @@ export const proposalActions = {
         }),
         handler: async ({ mode, category, body, attachments }, context) => {
             if (!supabaseAdmin) throw new ActionError({ code: 'INTERNAL_SERVER_ERROR', message: '서버 설정 오류' });
-            const user = await requireUser(context);
+            const user = await requireActiveUser(context);
             const day = todayKst();
             const key = quotaKey(mode, user.id, day, quotaSecret(env()));
 
@@ -226,7 +204,7 @@ export const proposalActions = {
         input: z.object({ id: z.string().uuid() }),
         handler: async ({ id }, context) => {
             if (!supabaseAdmin) throw new ActionError({ code: 'INTERNAL_SERVER_ERROR', message: '서버 설정 오류' });
-            const user = await requireUser(context);
+            const user = await requireActiveUser(context);
             const { data: row } = await supabaseAdmin
                 .from('proposals')
                 .select('id, author_id, status, attachments')
@@ -314,7 +292,7 @@ export const proposalActions = {
         input: z.object({ id: z.string().uuid(), storagePath: z.string().refine(isValidAttachmentPath) }),
         handler: async ({ id, storagePath }, context) => {
             if (!supabaseAdmin) throw new ActionError({ code: 'INTERNAL_SERVER_ERROR', message: '서버 설정 오류' });
-            const user = await requireUser(context);
+            const user = await requireActiveUser(context);
             const { data: row } = await supabaseAdmin
                 .from('proposals')
                 .select('author_id, attachments')

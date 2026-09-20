@@ -320,6 +320,7 @@ proposal_quota
 
 > **진행 상태(2026-09-20, 구현)**: 위 설계대로 구현. `sql_query/migrate_add_proposals.sql`(두 테이블 + CHECK `proposals_anonymous_has_no_identity` 로 익명 행 신원 NULL 을 DB 에서도 강제 + 비공개 버킷) · `src/lib/proposals.ts`(코드·해시·HMAC 키·매직 바이트·sharp/pdf-lib 메타 제거) · `src/actions/proposals.ts`(**세션 쿠키 기준 인증** — 기존 액션의 클라이언트 `userId/adminId` 신뢰 패턴과 결별; 익명 채널부터 적용) · 화면 `/proposals`(제출)·`/proposal-lookup`(공개 조회)·`/my-proposals`·`/admin/proposals` · 사이드바·이용안내 §13·처리방침 §8.
 > **설계 대비 조정**: ① 첨부 10MB → **파일당 3MB, 1개씩 업로드**(Vercel 함수 본문 4.5MB 한도). ② 마이페이지 "내 제안" 목록은 카드 추가 대신 **별도 페이지 `/my-proposals`**(마이페이지 비대화 회피). ③ `proposal_quota` 에 `day` 컬럼 추가(HMAC 키만으로는 지난 날 행을 못 골라냄) — 정리는 제출 시 기회적 삭제(cron 불필요). ④ 쿼터 HMAC 비밀은 env `PROPOSAL_QUOTA_SECRET` 이 없으면 서비스 롤 키 해시에서 파생(새 env 없이 가동). ⑤ 로그 예외는 logger 수정이 아니라 액션이 본문·사용자를 아예 로그에 싣지 않는 방식(테스트가 정규식으로 검사). 미구현: 지적사례로 옮겨 적기는 수동(설계대로), KINS 보고 집계는 관리자 화면 상단 통계(전체·익명·아이디)로 갈음.
+> **액션 인증 전환(2026-09-20, 같은 날 후속)**: 3단계에서 도입한 세션 기준 인증(`src/actions/auth.ts`)을 `index.ts` 의 전 액션으로 확대 — 관리자 8개는 `requireAdmin(context)`, 회원 4개는 `requireUser(context)`, `notifySubmission` 은 본인 제출물만. 클라이언트가 보내던 `adminId`/`userId`/`senderId` 는 optional 로만 남고 무시(화면 무변경). 이전 구조(관리자 UUID 만 알면 API 직접 호출로 관리자 동작 가능)의 보안 구멍 봉합. 정적 테스트 `session-auth.test.ts` 로 고정.
 > **회원 전용 재확인(2026-09-20 Dr. Ben)**: 배포 직후 "제보자를 안심시키려면 비회원도 익명 제출이 가능해야 하지 않나"를 검토(IP-HMAC 쿼터·허니팟·Turnstile 대안까지) → **회원 전용 유지로 결정**. 근거: 가입이 봇·도배에 대한 최소 방어선이고, 익명성은 "로그인 안 함"이 아니라 "로그인 뒤 작성자를 기록하지 않음"으로 보장된다. 보완: 사이드바에 "제안 조회"(공개) 노출, 제출 화면에 익명의 뜻 안내 한 줄.
 
 ## KINS 연계 트랙 (확정 2026-09-08) — 1~3단계와 독립, 병행 가능
