@@ -713,6 +713,7 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
 <script>
     import { supabase } from '../lib/supabase-browser';
     import { userProfile } from '../store/user';
+    import { track } from '../lib/usage/track';
 
     let archivesData: any[] = [];
     let currentSort: { field: string; order: string } = { field: 'date', order: 'desc' };
@@ -1092,6 +1093,9 @@ const categories = ['작성지침', '작성예시', '가이드북', '발표자�
             // Add download count increment on click
             downloadLink.onclick = () => {
                 incrementDownloadCount(id);
+                // 내려받기는 저장소 주소로 직접 가서 서버를 지나지 않는다 — 여기서만 셀 수 있다(U-3).
+                // archives.download_count 는 자료별 누적이고, 이쪽은 시계열·회원 구분을 더한다.
+                if (item.slug) track('resource_download', { props: { slug: String(item.slug) } });
             };
 
             // Use iframe for PDF preview if it's a PDF
