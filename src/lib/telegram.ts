@@ -8,16 +8,22 @@ import { createLogger } from './logger';
 
 const logger = createLogger('telegram');
 
+// Vercel 은 런타임 env 를 import.meta.env 에 인라인하지 않을 수 있다(health.ts 와 같은 함정 —
+// 2026-09-20 cron 실행에서 "자격 미설정" 으로 실측). process.env 로 폴백한다.
+function envVar(name: 'TELEGRAM_BOT_TOKEN' | 'TELEGRAM_CHAT_ID'): string | undefined {
+    return import.meta.env[name] || (typeof process !== 'undefined' ? process.env[name] : undefined);
+}
+
 export function isTelegramConfigured(): boolean {
-    return Boolean(import.meta.env.TELEGRAM_BOT_TOKEN && import.meta.env.TELEGRAM_CHAT_ID);
+    return Boolean(envVar('TELEGRAM_BOT_TOKEN') && envVar('TELEGRAM_CHAT_ID'));
 }
 
 /**
  * @returns true 발송됨 / false 자격 미설정 또는 SUBMISSION_ALERT=off 로 생략. HTTP 오류는 throw.
  */
 export async function sendTelegramMessage(text: string): Promise<boolean> {
-    const token = import.meta.env.TELEGRAM_BOT_TOKEN;
-    const chatId = import.meta.env.TELEGRAM_CHAT_ID;
+    const token = envVar('TELEGRAM_BOT_TOKEN');
+    const chatId = envVar('TELEGRAM_CHAT_ID');
     if (!token || !chatId) {
         logger.info('텔레그램 자격 미설정 — 발송 생략');
         return false;

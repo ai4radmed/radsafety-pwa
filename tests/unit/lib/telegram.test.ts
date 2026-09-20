@@ -46,3 +46,12 @@ describe('lib/telegram', () => {
         await expect(sendTelegramMessage('x')).rejects.toThrow('HTTP 401');
     });
 });
+
+describe('lib/telegram env 폴백', () => {
+    it('import.meta.env 에 없으면 process.env 를 읽는다 (Vercel cron 런타임 함정)', async () => {
+        const fs = await import('fs');
+        const src = fs.readFileSync('src/lib/telegram.ts', 'utf-8');
+        expect(src).toMatch(/process\.env\[name\]/);
+        expect(src).not.toMatch(/import\.meta\.env\.TELEGRAM_BOT_TOKEN/);
+    });
+});

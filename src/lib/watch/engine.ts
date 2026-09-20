@@ -132,7 +132,10 @@ async function runSourceInner(
                 baselineAt: nowIso,
             });
         }
-        logger.info('감시 baseline 저장', { source: source.id, count: items.length });
+        logger.info(persist ? '감시 baseline 저장' : '감시 baseline (dry — 저장 안 함)', {
+            source: source.id,
+            count: items.length,
+        });
         return { ...base, status: 'baseline', count: items.length, consecutiveFailures: 0 };
     }
 
