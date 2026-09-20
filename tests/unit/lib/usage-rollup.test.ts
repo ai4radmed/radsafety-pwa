@@ -90,6 +90,20 @@ describe('rollup 활성 사용자', () => {
     });
 });
 
+describe('rollup 활성 사용자 — 기간 커버리지 가드', () => {
+    it('기간 시작이 읽어 온 범위보다 앞서면 그 기간은 건너뛴다 — 부분 계산으로 덮어쓰지 않는다', () => {
+        // 09-23(수)은 주 중간이다. 그날부터만 읽었다면 그 주와 9월 전체는 부분만 보인다.
+        const rows = [row({ actor_key: 'a', week_key: 'w', month_key: 'm', hour: '2026-09-23T03:00:00Z' })];
+        const guarded = aggregateActive(rows, { minPeriodStart: new Date('2026-09-22T15:00:00Z') });
+        // 일(09-21)만 남고 주·월은 시작이 더 앞이라 빠진다
+        expect(guarded.map((g) => g.period)).toEqual(['day']);
+
+        // 가드가 없으면 전부 계산된다(8일 창만 읽고 월간을 덮어쓰던 옛 동작)
+        const unguarded = aggregateActive(rows);
+        expect(unguarded.map((g) => g.period).sort()).toEqual(['day', 'month', 'week']);
+    });
+});
+
 describe('rollup 실행', () => {
     it('서비스 롤 클라이언트가 없으면 던지지 않고 오류를 담아 돌려준다', async () => {
         const r = await runUsageRollup({ now: new Date('2026-09-21T18:40:00Z') });
@@ -107,10 +121,22 @@ describe('rollup 계약 (소스)', () => {
     const CRON = fs.readFileSync(path.resolve('src/pages/api/cron/usage-rollup.ts'), 'utf-8');
     const VERCEL = JSON.parse(fs.readFileSync(path.resolve('vercel.json'), 'utf-8'));
 
-    it('집계는 덮어쓰기라 여러 번 돌려도 같은 결과가 된다', () => {
-        expect(SRC).toMatch(/upsert\(daily, \{ onConflict: 'day,event' \}\)/);
-        expect(SRC).toMatch(/onConflict: 'day,page,event'/);
+    it('여러 번 돌려도 같은 결과가 된다', () => {
+        // 일자·화면은 지우고 다시 넣고, 활성자는 덮어쓴다
+        expect(SRC).toMatch(/insert\(daily\)/);
+        expect(SRC).toMatch(/insert\(pageDaily\)/);
         expect(SRC).toMatch(/onConflict: 'period,period_key'/);
+    });
+
+    it('창 안의 집계는 지우고 다시 넣는다 — 원시에서 사라진 조합의 낡은 합계가 남지 않게', () => {
+        expect(SRC).toMatch(/from\('usage_daily'\)\.delete\(\)\.gte\('day', sinceDayKey\)/);
+        expect(SRC).toMatch(/from\('usage_page_daily'\)\.delete\(\)\.gte\('day', sinceDayKey\)/);
+    });
+
+    it('활성자는 이번 주·이번 달 시작까지 거슬러 읽는다 — 8일치로 한 달치를 덮어쓰지 않게', () => {
+        expect(SRC).toMatch(/kstWeekStart\(now\)/);
+        expect(SRC).toMatch(/kstMonthStart\(now\)/);
+        expect(SRC).toMatch(/minPeriodStart/);
     });
 
     it('보존 기간이 지난 원시 행을 지운다', () => {
