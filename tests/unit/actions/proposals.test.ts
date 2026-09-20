@@ -89,6 +89,9 @@ describe('화면·경로', () => {
         expect(SIDEBAR).toMatch(/href="\/proposals"\s+data-member-only/);
         expect(SIDEBAR).toMatch(/href="\/my-proposals"\s+data-member-only/);
         expect(SIDEBAR).toMatch(/href="\/admin\/proposals"/);
+        // 조회는 공개 메뉴(data-member-only 없음)
+        expect(SIDEBAR).toMatch(/href="\/proposal-lookup"\s+class=/);
+        expect(SUBMIT).toMatch(/로그인 뒤 작성자를 기록하지 않는 것/);
         expect(LOOKUP).toMatch(/actions\.lookupProposal/);
         expect(MINE).toMatch(/\.eq\('mode', 'signed'\)/);
         expect(MINE).toMatch(/actions\.withdrawProposal/);
