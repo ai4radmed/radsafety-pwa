@@ -1267,3 +1267,60 @@ COMMIT;
 
 -- 16-a. bulletins.checklist_refs (2026-09-20 후속) — sql_query/migrate_add_bulletin_checklist_refs.sql 과 동일
 ALTER TABLE public.bulletins ADD COLUMN IF NOT EXISTS checklist_refs text[] NOT NULL DEFAULT '{}';
+
+-- ============================================================
+-- 17. 3단계 제도 개선 제안 (2026-09-20) — sql_query/migrate_add_proposals.sql 과 동일 내용
+-- ============================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS public.proposals (
+    id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    category      text        NOT NULL CHECK (category IN ('안전관리', '피폭', '규제', '기타')),
+    body          text        NOT NULL,
+    attachments   jsonb       NOT NULL DEFAULT '[]'::jsonb,   -- [{storage_path, size, kind}] 원본 파일명 없음
+    status        text        NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'reviewing', 'answered', 'closed')),
+    admin_note    text,
+    admin_reply   text,
+    mode          text        NOT NULL CHECK (mode IN ('anonymous', 'signed')),
+    author_id     uuid        REFERENCES public.profiles(id) ON DELETE SET NULL,
+    created_at    timestamptz,                                 -- signed 만(초 단위)
+    created_day   date        NOT NULL DEFAULT CURRENT_DATE,   -- 두 모드 공통. anonymous 의 유일한 시간 정보
+    answered_at   timestamptz,
+    receipt_hash  text        UNIQUE,                          -- anonymous 만. sha256(접수증 코드)
+    CONSTRAINT proposals_anonymous_has_no_identity CHECK (
+        (mode = 'anonymous' AND author_id IS NULL AND created_at IS NULL AND receipt_hash IS NOT NULL) OR
+        (mode = 'signed'    AND author_id IS NOT NULL AND created_at IS NOT NULL AND receipt_hash IS NULL)
+    )
+);
+
+CREATE INDEX IF NOT EXISTS proposals_status_day_idx ON public.proposals (status, created_day DESC);
+CREATE INDEX IF NOT EXISTS proposals_author_idx ON public.proposals (author_id) WHERE author_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.proposal_quota (
+    key    text    PRIMARY KEY,   -- anonymous: HMAC(user_id|day) / signed: user_id|day
+    day    date    NOT NULL,      -- 정리용(다음 날 삭제)
+    count  integer NOT NULL DEFAULT 0
+);
+
+ALTER TABLE public.proposals      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proposal_quota ENABLE ROW LEVEL SECURITY;
+
+-- 읽기: 본인 signed 건 또는 관리자. anonymous 행은 author_id NULL 이라 본인 정책에 걸리지 않는다(관리자만).
+DROP POLICY IF EXISTS "Authors and admins can read proposals" ON public.proposals;
+CREATE POLICY "Authors and admins can read proposals"
+    ON public.proposals FOR SELECT TO authenticated
+    USING (author_id = auth.uid() OR public.is_current_user_admin() = true);
+
+GRANT SELECT ON public.proposals TO authenticated;
+-- proposal_quota: 정책 없음 → 서비스 롤만.
+
+-- 비공개 첨부 버킷. 클라이언트 정책 없음(서비스 롤 업로드·서명 URL).
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('proposal-attachments', 'proposal-attachments', false)
+ON CONFLICT (id) DO NOTHING;
+
+COMMENT ON TABLE public.proposals IS '3단계 제도 개선 제안 — 익명(신원 컬럼 NULL 강제)/아이디. 쓰기는 서비스 롤 전용.';
+COMMENT ON TABLE public.proposal_quota IS '제안 1인 1일 쿼터. anonymous 키는 HMAC — proposals 와 연결 불가. 다음 날 정리.';
+
+COMMIT;
+

@@ -8,6 +8,7 @@ import { sendPushToUsers } from '../lib/push';
 import { createNotification, createBulkNotifications } from '../lib/notification-helper';
 import { customHospitalId, findStaticHospitalByName, getHospitalName, isKnownHospitalId } from '../lib/hospitals';
 import { sendTelegramMessage } from '../lib/telegram';
+import { proposalActions } from './proposals';
 
 const logger = createLogger('actions');
 
@@ -87,6 +88,9 @@ async function notifyAdminsOfHospitalRequest(username: string, request: string) 
 }
 
 export const server = {
+    // 3단계 제도 개선 제안(2026-09-20) — 세션 기반 인증, 별도 파일. 명세: .spec/src/actions/proposals.md
+    ...proposalActions,
+
     saveFinding: defineAction({
         accept: 'form',
         input: z.object({

@@ -34,4 +34,4 @@ Playwright (E2E)
 
 ## 2계층 공개 계층 (2026-09-19)
 
-- `PROTECTED_PAGES` = 사용자 메뉴 5개(`/mypage`·`/notifications`·`/feedback`·`/my-feedback`·`/feedback-query`) + `/bulletins`(K-1 사건·사고, 회원 전용, 2026-09-20). `PUBLIC_PAGES`(`/inspection-prep`·`/findings-recommendations`·`/resources`·`/guide`·`/settings`)는 비로그인도 리다이렉트 없음. 회원 전용에서 튕기면 `/login?from=…` + `#memberOnlyHint` 표시.
+- `PROTECTED_PAGES` = 사용자 메뉴 5개(`/mypage`·`/notifications`·`/feedback`·`/my-feedback`·`/feedback-query`) + `/bulletins`(K-1 사건·사고, 회원 전용, 2026-09-20) + `/proposals`·`/my-proposals`(3단계, 2026-09-20). `PUBLIC_PAGES` 에 `/proposal-lookup`(익명 제안 조회, 공개). `PUBLIC_PAGES`(`/inspection-prep`·`/findings-recommendations`·`/resources`·`/guide`·`/settings`)는 비로그인도 리다이렉트 없음. 회원 전용에서 튕기면 `/login?from=…` + `#memberOnlyHint` 표시.

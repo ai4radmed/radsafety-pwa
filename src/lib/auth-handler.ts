@@ -147,6 +147,7 @@ function handleRedirect(path: string, isLoggedIn: boolean) {
         '/offline',
         '/privacy',
         '/kins',
+        '/proposal-lookup', // 익명 제안 조회 — 코드 소지 = 본인, 로그인 요구 시 조회와 계정이 다시 묶인다(3단계)
     ];
     const isPublic = publicPaths.some((p) => path === p || (p !== '/' && path.startsWith(p)));
 

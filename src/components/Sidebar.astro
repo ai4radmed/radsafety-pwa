@@ -175,6 +175,24 @@ const { pathname } = Astro.url;
                 <span class="link-text">내 의견함</span>
             </a>
             <a
+                href="/proposals"
+                data-member-only
+                class={pathname === '/proposals' ? 'active' : ''}
+                aria-label="Proposals"
+            >
+                <span class="icon"><Icon name="pencil" size="18" /></span>
+                <span class="link-text">제도개선 제안</span>
+            </a>
+            <a
+                href="/my-proposals"
+                data-member-only
+                class={pathname.startsWith('/my-proposals') ? 'active' : ''}
+                aria-label="My Proposals"
+            >
+                <span class="icon"><Icon name="inbox" size="18" /></span>
+                <span class="link-text">내 제안</span>
+            </a>
+            <a
                 href="/feedback-query"
                 data-member-only
                 class={pathname.startsWith('/feedback-query') ? 'active' : ''}
@@ -239,6 +257,14 @@ const { pathname } = Astro.url;
             >
                 <span class="icon"><Icon name="check-square" size="18" /></span>
                 <span class="link-text">제출 검토</span>
+            </a>
+            <a
+                href="/admin/proposals"
+                class={pathname.startsWith('/admin/proposals') ? 'active' : ''}
+                aria-label="Proposal Review"
+            >
+                <span class="icon"><Icon name="pencil" size="18" /></span>
+                <span class="link-text">제안 검토</span>
             </a>
             <a
                 href="/admin/feedback"

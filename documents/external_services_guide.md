@@ -154,10 +154,12 @@ https://*-ai4radmed.vercel.app/auth/callback
 
 #### 1-6. Storage Buckets
 
-| 버킷                   | 용도          | 공개          |
-| ---------------------- | ------------- | ------------- |
-| `resources`            | 자료실 파일   | Public        |
-| `feedback-attachments` | 의견 첨부파일 | Private (RLS) |
+| 버킷                   | 용도                                                 | 공개                                                      |
+| ---------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| `resources`            | 자료실 파일                                          | Public                                                    |
+| `feedback-attachments` | 의견 첨부파일                                        | Private (RLS)                                             |
+| `resources-pending`    | 검토 대기 자료                                       | Private (RLS)                                             |
+| `proposal-attachments` | 제도 개선 제안 첨부(메타 제거본, 경로에 사용자 없음) | Private — 클라이언트 정책 없음, 서비스 롤 업로드·서명 URL |
 
 ---
 
