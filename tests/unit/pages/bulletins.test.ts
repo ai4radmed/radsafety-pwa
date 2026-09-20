@@ -87,7 +87,8 @@ describe('K-1 후속(2026-09-20): 체크리스트 연결 · 홈 배너 · 오프
         expect(ADMIN).toMatch(/checklistRefs,/);
         const start = ACTIONS.indexOf('reviewBulletin: defineAction');
         const body = ACTIONS.slice(start, ACTIONS.indexOf('reviewSubmission: defineAction'));
-        expect(body).toMatch(/checklistRefs: z\.array\(z\.string\(\)\.regex/);
+        // prettier 가 여러 줄로 나눌 수 있으므로 공백·줄바꿈에 무관하게(2026-09-20 CI 회귀)
+        expect(body).toMatch(/checklistRefs:\s*z\s*\.array\(\s*z\s*\.string\(\)\s*\.regex/);
         expect(body).toMatch(/patch\.checklist_refs = checklistRefs/);
     });
     it('회원 화면은 refs 를 /inspection-prep#checklist-<slug> 링크로, 카탈로그에 없는 slug 는 건너뛴다', () => {
