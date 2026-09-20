@@ -9,7 +9,30 @@ import Icon from '../components/Icon.astro';
         <p class="subtitle">RadSafety 앱을 100% 활용하는 방법을 알려드립니다.</p>
 
         <section class="guide-section">
-            <h2>1. 정기검사 체크리스트</h2>
+            <h2>1. 시작하기 — 회원과 비회원</h2>
+            <p>
+                로그인하지 않아도 <strong>정기검사 수검준비</strong>, <strong>지적권고사례 목록</strong>,
+                <strong>자료실 다운로드</strong>, <strong>이용안내</strong>, <strong>설정</strong>,
+                <strong>제안 조회</strong>를 이용할 수 있습니다. 다만 지적권고사례의 세부 내용 열람, 자료·사례 등록,
+                사건·사고, 제도개선 제안, 알림함 등은 회원 전용입니다.
+            </p>
+            <p>
+                가입은 <strong>아이디/비밀번호</strong> 또는 <strong>카카오</strong> 두 가지입니다. 아이디로 가입하면 이메일을
+                적지 않아도 되고, 카카오로 가입해도 <strong>카카오 닉네임·프로필은 받지 않습니다</strong>. 앱은 <strong
+                    >실명·이메일·회원명부를 보관하지 않습니다</strong
+                >(자세한 내용은 화면 하단
+                <a href="/privacy">개인정보처리방침</a>).
+            </p>
+            <p>
+                가입 신청 후 <strong>관리자 승인</strong>을 받으면 모든 회원 기능을 쓸 수 있고,
+                <strong>자료실·지적권고사례에 직접 등록</strong>할 수 있습니다. 소속기관이 목록에 없으면
+                <strong>'기타'</strong>로 가입하신 뒤 관리자가 기관을 등록해 드립니다. 소속 정보는 본인과 관리자에게만
+                보이며 입력하지 않아도 됩니다.
+            </p>
+        </section>
+
+        <section class="guide-section">
+            <h2>2. 정기검사 수검준비</h2>
             <p>
                 정기검사 수검 시 필요한 항목들을 카테고리별로 점검할 수 있습니다.<br />
                 각 항목을 클릭하면 <strong>확인 방법 및 작성지침, 작성예시</strong>를 바로 보실 수 있습니다.<br />
@@ -22,21 +45,43 @@ import Icon from '../components/Icon.astro';
         </section>
 
         <section class="guide-section">
-            <h2>2. 지적권고사항</h2>
+            <h2>3. 지적권고사례</h2>
             <p>
                 외부에 공개된 <strong>공적 수검 사례</strong>와 <strong>의료 현장에서 익명으로 공유해 주신</strong> 생생한
                 지적 사항들을 체계적으로 정리하였습니다.<br />
                 이를 통해 유사한 지적 사항의 재발을 방지하고 수검 준비의 완성도를 높일 수 있습니다.
             </p>
-            <p>파일 업로드 권한을 인증받은 회원은 본인의 사례를 직접 등록하실 수도 있습니다.</p>
+            <p>
+                비회원은 <strong>목록</strong>까지 볼 수 있고, 세부 내용은 로그인 후 확인하실 수 있습니다. 승인된 회원은
+                본인의 사례를 <strong>직접 등록</strong>할 수 있습니다.
+            </p>
         </section>
 
         <section class="guide-section">
-            <h2>3. 자료실</h2>
+            <h2>4. 사건·사고 <span class="member-only">회원 전용</span></h2>
+            <p>
+                원자력안전위원회 보도자료(조사 착수 속보)와 원자력안전정보공개센터(NSIC) 방사선사고 사례집(원인·등급
+                확정)을 <strong>사건별로</strong> 모아 보여 줍니다. 같은 사고의 확정본은 속보 아래
+                <strong>후속</strong>으로 이어지고, 관리자가 붙인 <strong>정기검사 준비 포인트</strong>와
+                <strong>관련 체크리스트 항목</strong> 링크가 함께 표시됩니다.
+            </p>
+            <p>
+                기본은 의료·RI 관련 건만 보이며 "전체"로 바꿀 수 있습니다. 새 사건이 게시되면 알림이 오고, 한 번 열어 둔
+                목록은 오프라인에서도 볼 수 있습니다. 본문은 원문 링크로 연결됩니다.
+            </p>
+        </section>
+
+        <section class="guide-section">
+            <h2>5. 자료실</h2>
             <p>체크리스트와 연동된 각종 양식뿐만 아니라 가이드북, 발표자료 등을 조회하거나 다운로드하실 수 있습니다.</p>
             <ul class="feature-list" style="margin-top: 1rem;">
+                <li><strong>다운로드</strong>: 로그인 없이도 가능합니다.</li>
                 <li><strong>미리보기</strong>: 자료가 PDF 형식인 경우에만 지원됩니다.</li>
-                <li><strong>자료 등록</strong>: 권한 승인 시 직접 자료를 업로드할 수 있습니다.</li>
+                <li>
+                    <strong>자료 등록</strong>: <strong>가입이 승인되면 바로 게시</strong>됩니다. 학회 회원 여부를 따로
+                    인증하는 절차는 없습니다. 다만 게시 권한이 회수된 경우에는 첫 제출이 관리자 검토를 거치고, 부적절한
+                    제출로 3회 반려되면 제출이 제한됩니다.
+                </li>
                 <li>
                     <strong>Slug(식별자)</strong>: 체크리스트 링크용 데이터이므로, 일반 등록 시에는 비워두셔도
                     무방합니다.
@@ -45,154 +90,146 @@ import Icon from '../components/Icon.astro';
         </section>
 
         <section class="guide-section">
-            <h2>4. 의견보내기</h2>
-            <p>수신대상자는 관리자입니다.</p>
-        </section>
-
-        <section class="guide-section">
-            <h2>5. 용어검색</h2>
+            <h2>6. 용어검색</h2>
             <p>화면 상단의 돋보기를 클릭하시면 이 앱에 등록된 용어의 경우 설명을 검색하실 수 있습니다.</p>
         </section>
 
         <section class="guide-section">
-            <h2>6. 알림</h2>
-            <p>
-                관리자가 보내는 알림이 사용자에게 전달되며, 누적되어 저장됩니다. 모두 읽음으로 표시하는 기능이 있습니다.
-            </p>
-        </section>
-
-        <section class="guide-section">
-            <h2>7. 마이페이지</h2>
-            <p>이 앱은 카카오 또는 이메일로 로그인이 된 사람은 일반사용자로 자료를 조회할 수 있습니다.</p>
-
-            <h3 style="color: var(--text-main); font-size: 1.1rem; margin-top: 1.5rem;">[로그인 정보 카드]</h3>
-            <ul class="feature-list" style="margin-top: 0.5rem;">
-                <li><strong>로그인 수단</strong>: 카카오/이메일 로그인이 배지로 구분되어 표시됩니다.</li>
-                <li>
-                    <strong>사용자 정보</strong>: 카카오 닉네임 및 등록된 이메일 주소를 확인할 수 있습니다.
-                </li>
-                <li><strong>가입일</strong>: RadSafety 앱에 처음 가입한 날짜가 표시됩니다.</li>
-            </ul>
-
-            <h3 style="color: var(--text-main); font-size: 1.1rem; margin-top: 2rem;">[파일 업로드 권한 인증]</h3>
-            <p style="margin-top: 0.5rem;">
-                대한핵의학회 및 대한핵의학기술학회 정회원에게는 자료실 파일 업로드 권한을 부여합니다.<br />
-                인증 신청 시 학회 이메일 목록을 기반으로 <strong>자동으로 회원 여부를 검증</strong>합니다.
-            </p>
-            <ul class="feature-list" style="margin-top: 1rem;">
-                <li>
-                    <strong>자동 인증 실패 시</strong>: 학회 등록 이메일과 로그인 이메일이 다른 경우 자동 인증이 되지
-                    않습니다. 이럴 경우
-                    <strong>[관리자에게 인증 요청]</strong> 메뉴를 통해 요청하시면 임시승인이 자동으로 이루어지며, 추후 관리자
-                    확인이 됩니다.
-                </li>
-                <li>
-                    <strong>특별 사용자</strong>: 두 학회 회원이 아니더라도 방사선안전관리자, 규제기관 근무자 등 권한이
-                    필요한 경우 <strong>[특별사용자 인증 요청]</strong> 메뉴를 사용해 주세요.
-                </li>
-                <li>
-                    <strong>정보 동기화</strong>: 인증 이후 학회 정보가 갱신되었다면 <strong>[재인증 요청]</strong>을
-                    통해 정보를 최신화할 수 있습니다. (데이터베이스 갱신 주기에 따라 수개월의 시차가 있을 수 있습니다.)
-                </li>
-            </ul>
-
-            <h3 style="color: var(--text-main); font-size: 1.1rem; margin-top: 2rem;">[방사선안전관리정보 카드]</h3>
-            <p style="margin-top: 0.5rem;">더 나은 정보 공유를 위해 기본적인 안전관리 현황 정보를 수집합니다.</p>
-            <ul class="feature-list" style="margin-top: 1rem;">
-                <li>
-                    <strong>면허 및 선임</strong>: 소지하신 안전관리 면허를 선택하고, 현재 관리자 선임 여부를 체크해
-                    주세요.
-                </li>
-                <li>
-                    <strong>선임기간</strong>: 선임 시작 연도를 기입해 주세요. 활동 중이라면 종료 연도는 비워두시면
-                    됩니다. (과거에 활동했거나 선임이 종료된 경우에만 종료 연도를 작성합니다.)
-                </li>
-            </ul>
-        </section>
-
-        <section class="guide-section">
-            <h2>8. 설정</h2>
-            <p>화면의 글자크기를 조정할 수 있습니다.</p>
-            <p>
-                푸시 알림을 설정할 수 있습니다. 이는 새 알림이 있을 때 스마트폰 상단에 알림이 표시되고, 홈 화면 앱
-                아이콘에 읽지 않은 알림 수가 표시됩니다.
-            </p>
-        </section>
-
-        <section class="guide-section">
-            <h2>9. 내 의견함</h2>
-            <p>의견보내기가 누적으로 저장되어 있습니다.</p>
-        </section>
-
-        <section class="guide-section">
-            <h2>10. 개선의견조회</h2>
-            <p style="margin-top: 1rem;">
-                <strong>개선의견조회</strong>에서는 관리자가 검토하고
-                <strong>관리자 의견(admin_note)</strong>을 남긴 접수만 확인할 수 있습니다.
-            </p>
-            <ul class="feature-list" style="margin-top: 0.75rem;">
-                <li>
-                    <strong>검토중</strong>: 개선을 시도하려고 준비 중이며 진행이 이어질 가능성이 큽니다.
-                </li>
-                <li>
-                    <strong>보류</strong>: 반기 이상의 시간이 소요될 것으로 보여 보류합니다.
-                </li>
-                <li>
-                    <strong>완료</strong>: 개선이 반영/처리되어 종료된 상태입니다.
-                </li>
-            </ul>
-            <p>
-                <strong>의견보내기</strong>로 개선의견을 제출하기 전에,
-                <strong>개선의견조회</strong>를 먼저 확인해 보시면 이미 다른 사용자가 같은/유사한 의견을 보냈는지 알 수
-                있습니다.
-            </p>
-        </section>
-
-        <section class="guide-section">
-            <h2>11. KINS 공식 자원</h2>
+            <h2>7. KINS 공식 자원</h2>
             <p>
                 홈의 <strong>KINS 공식 자원</strong> 카드(또는 <a href="/kins">/kins</a>)에서 한국원자력안전기술원의
                 <strong>방사선규제해석 SOS</strong>, <strong>이용자지원간행물</strong>과 원자력안전위원회
                 <strong>보도자료</strong>로 바로 갈 수 있습니다. 로그인 없이 이용 가능하며 각 기관 사이트가 새 탭에서
-                열립니다.
+                열립니다. 이 자원들에 새 글이 올라오면 회원에게 알림으로 알려드립니다.
             </p>
         </section>
 
         <section class="guide-section">
-            <h2>12. 사건·사고</h2>
+            <h2>8. 제도개선 제안 <span class="member-only">회원 전용</span></h2>
             <p>
-                <strong>사건·사고</strong> 메뉴(회원 전용)는 원자력안전위원회 보도자료(조사 착수 속보)와 원자력안전정보공개센터(NSIC)
-                방사선사고 사례집(원인·등급 확정)을 <strong>사건별로</strong> 모아 보여 줍니다. 같은 사고의 확정본은 속보
-                아래 <strong>후속</strong>으로 이어지고, 관리자가 붙인
-                <strong>정기검사 준비 포인트</strong>가 강조됩니다. 기본은 의료·RI 관련 건만 보이며 "전체"로 바꿀 수
-                있습니다. 새 사건이 게시되면 알림이 옵니다. 본문은 원문 링크로 연결됩니다.
+                방사선안전관리 <strong>제도·규제·현장 관행</strong>에 대한 개선 의견을 내는 창구입니다(앱 오류·사용성은
+                아래 <strong>의견보내기</strong>). 제출할 때 <strong>익명</strong>(기본)과 <strong>아이디</strong> 중 고릅니다.
+            </p>
+            <ul class="feature-list" style="margin-top: 1rem;">
+                <li>
+                    <strong>익명 제안</strong>: 관리자도 작성자를 알 수 없습니다. 제출 직후 한 번만 보이는
+                    <strong>접수증 코드</strong>를 적어 두시고 <a href="/proposal-lookup">제안 조회</a>에서 답변을
+                    확인하세요(코드를 잃으면 확인할 수 없습니다). 제안 조회는 로그인 없이도 됩니다.
+                </li>
+                <li>
+                    <strong>아이디 제안</strong>: 답변이 알림으로 오고 <strong>내 제안</strong>에서 상태를 보며 답변 전
+                    철회할 수 있습니다.
+                </li>
+                <li>
+                    <strong>첨부</strong>: 이미지·PDF, 파일당 3MB, 최대 3개. 촬영 정보(EXIF·위치)와 문서 작성자 정보를
+                    지운 뒤 저장됩니다.
+                </li>
+                <li><strong>하루 3건</strong>까지 제안할 수 있습니다.</li>
+            </ul>
+            <p>
+                "익명"은 로그인하지 않는다는 뜻이 아니라 <strong>로그인한 뒤 작성자를 기록하지 않는다</strong>는
+                뜻입니다. 회원만 제안할 수 있게 한 것은 봇·도배를 막기 위해서입니다.
             </p>
         </section>
 
         <section class="guide-section">
-            <h2>13. 제도 개선 제안</h2>
+            <h2>9. 의견보내기 · 내 의견함 · 개선의견조회 <span class="member-only">회원 전용</span></h2>
             <p>
-                <strong>제도개선 제안</strong>(회원 전용)은 방사선안전관리 제도·규제·현장 관행에 대한 개선 의견을 내는
-                창구입니다(앱 오류·사용성은 의견보내기). 제출할 때 <strong>익명</strong>(기본)과 <strong>아이디</strong>
-                중 고릅니다. 익명 제안은 관리자도 작성자를 알 수 없고, 제출 직후 한 번만 보이는 <strong
-                    >접수증 코드</strong
-                >로
-                <a href="/proposal-lookup">제안 조회</a>에서 답변을 확인합니다(코드를 잃으면 확인 불가). 아이디 제안은
-                답변이 알림으로 오고 <strong>내 제안</strong>에서 상태를 보며 답변 전 철회할 수 있습니다.
-                첨부(이미지·PDF)는 촬영·작성자 정보를 지운 뒤 저장됩니다. 하루 3건까지 제안할 수 있습니다.
+                <strong>의견보내기</strong>는 <strong>앱의 오류나 사용성</strong>에 대한 창구이며 관리자에게 전달됩니다.
+                보낸 의견은 <strong>내 의견함</strong>에 쌓입니다.
+            </p>
+            <p style="margin-top: 1rem;">
+                <strong>개선의견조회</strong>에서는 관리자가 검토하고 <strong>관리자 의견</strong>을 남긴 접수만 확인할
+                수 있습니다.
+            </p>
+            <ul class="feature-list" style="margin-top: 0.75rem;">
+                <li><strong>검토중</strong>: 개선을 시도하려고 준비 중이며 진행이 이어질 가능성이 큽니다.</li>
+                <li><strong>보류</strong>: 반기 이상의 시간이 소요될 것으로 보여 보류합니다.</li>
+                <li><strong>완료</strong>: 개선이 반영/처리되어 종료된 상태입니다.</li>
+            </ul>
+            <p>
+                의견을 보내기 전에 <strong>개선의견조회</strong>를 먼저 확인해 보시면 이미 다른 사용자가 같은/유사한
+                의견을 보냈는지 알 수 있습니다.
             </p>
         </section>
 
         <section class="guide-section">
-            <h2>14. 로그인/로그아웃</h2>
+            <h2>10. 알림함 <span class="member-only">회원 전용</span></h2>
             <p>
-                이 앱은 한번 로그인하면 재방문시에 다시 로그인할 필요가 없습니다. 그러나 로그아웃을 하면 재방문시 다시
-                로그인을 해야 합니다.
+                관리자 공지, 가입·권한 처리 결과, 새 사건·사고 게시, 제도개선 제안 답변, KINS 자원의 새 글 등이 전달되어
+                누적 보관됩니다. 모두 읽음으로 표시하는 기능이 있습니다. 앱 업데이트 안내도 이곳에 남으므로 지난 변경
+                내역을 다시 볼 수 있습니다.
+            </p>
+        </section>
+
+        <section class="guide-section">
+            <h2>11. 마이페이지 <span class="member-only">회원 전용</span></h2>
+            <ul class="feature-list" style="margin-top: 0.5rem;">
+                <li>
+                    <strong>계정 정보</strong>: 로그인 수단(아이디/카카오) 배지, <strong>아이디</strong>, 가입일, 게시
+                    권한 상태가 표시됩니다. 실명·이메일·전화번호는 보관하지 않으므로 표시할 것도 없습니다.
+                </li>
+                <li>
+                    <strong>소속 정보</strong>: 소속기관·소속학회를 직접 고치거나 지울 수 있습니다. 선택 항목이며 본인과
+                    관리자에게만 보입니다. 목록에 없는 기관을 적으면 관리자에게 등록 요청이 전달됩니다.
+                </li>
+                <li>
+                    <strong>비밀번호</strong>: 아이디로 로그인하시는 분은 현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿀
+                    수 있습니다. <strong>카카오로 로그인하시는 분도 비밀번호를 따로 정해 두면 아이디로도 로그인</strong
+                    >할 수 있습니다(8자 이상) — 카카오 계정을 쓸 수 없을 때의 예비 경로입니다.
+                    <em>아이디 자체는 바꿀 수 없습니다</em> — 작성자 표시에 쓰이기 때문입니다.
+                </li>
+                <li>
+                    <strong>회원 탈퇴</strong>: 계정 정보는 즉시 삭제되며, 올리신 자료·사례는 작성자 연결이 끊긴 채
+                    남습니다.
+                </li>
+            </ul>
+            <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                ※ 예전에 있던 <strong>학회 회원 이메일 대조 인증</strong>(자동 인증·특별사용자 인증·재인증)과
+                <strong>면허·선임 정보 입력</strong>은 개인정보를 최소로 다루기 위해 <strong>모두 없앴습니다</strong>.
+                지금은 가입 승인만으로 등록 권한이 부여됩니다.
+            </p>
+        </section>
+
+        <section class="guide-section">
+            <h2>12. 설정</h2>
+            <p>화면의 글자크기를 조정할 수 있습니다.</p>
+            <p>
+                푸시 알림을 설정할 수 있습니다(회원 전용). 이는 새 알림이 있을 때 스마트폰 상단에 알림이 표시되고, 홈
+                화면 앱 아이콘에 읽지 않은 알림 수가 표시됩니다.
+            </p>
+        </section>
+
+        <section class="guide-section">
+            <h2>13. 로그인 / 로그아웃</h2>
+            <p>
+                로그인 방법은 <strong>아이디/비밀번호</strong>와 <strong>카카오</strong> 두 가지입니다. 한번 로그인하면 재방문
+                시 다시 로그인할 필요가 없고, 로그아웃하면 다시 로그인해야 합니다.
+            </p>
+            <p>
+                <strong>카카오 로그인</strong>은 카카오가 알려주는 계정 식별자만 쓰며, 닉네임·프로필 사진은 요청하지
+                않습니다. 계정을 만들 때 카카오계정 이메일을 잠시 전달받지만 첫 접속에서 아이디를 정하는 즉시
+                <code>아이디@radsafety.invalid</code> 형태의 가짜 주소로 바뀌어 <strong>앱에 저장되지 않습니다</strong>.
+            </p>
+            <p>
+                예전에 이메일로 인증코드를 받아 로그인하던 방식은 개인정보를 최소로 다루기 위해 없앴습니다. 그 방식으로
+                가입하셨던 분은 <strong>다시 가입</strong>해 주셔야 하며, 카카오로 가입하신 분은 첫 접속 때 아이디를 한
+                번 정하시면 됩니다.
             </p>
         </section>
     </div>
 
     <style>
+        .member-only {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 999px;
+            padding: 0.05rem 0.45rem;
+            margin-left: 0.4rem;
+            vertical-align: middle;
+        }
         .guide-container {
             max-width: 800px;
             margin: 0 auto;
