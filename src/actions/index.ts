@@ -11,6 +11,7 @@ import { sendTelegramMessage } from '../lib/telegram';
 import { sendAdminNotice } from '../lib/admin-notify';
 import { proposalActions } from './proposals';
 import { requireUser, requireAdmin } from './auth';
+import { recordUsage } from '../lib/usage/record';
 
 const logger = createLogger('actions');
 
@@ -351,6 +352,8 @@ export const server = {
                     // Don't fail the whole operation if email fails - data is saved
                 }
 
+                await recordUsage({ event: 'feedback_sent' });
+
                 return {
                     success: true,
                     message: '의견이 성공적으로 전송되었습니다. 감사합니다!',
@@ -427,6 +430,7 @@ export const server = {
                 await notifyAdminsOfHospitalRequest(username, hospitalFields.hospital_request);
             }
             await notifyAdminsOfSignup(username, 'email');
+            await recordUsage({ event: 'signup', props: { method: 'password' }, userId: created.user.id });
 
             return { success: true, email };
         },
@@ -527,7 +531,9 @@ export const server = {
             // 아이디 전환에서는 알리지 않는다 — signUpWithUsername 과 중복되지도 않는다(그쪽은 게이트를 안 탄다).
             if (currentStatus === 'pending') {
                 await notifyAdminsOfSignup(username, 'kakao');
+                await recordUsage({ event: 'signup', props: { method: 'kakao' }, userId });
             }
+            await recordUsage({ event: 'username_set', userId });
 
             return { success: true, email };
         },
