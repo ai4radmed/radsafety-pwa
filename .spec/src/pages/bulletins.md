@@ -16,6 +16,8 @@
 3. 부모가 published 가 아닌 후속(부모가 pending 상태 등)은 루트처럼 표시해 숨기지 않는다.
 4. 출처 표기(원안위·NSIC 공공누리) 문구를 상단에 둔다.
 
+5. "더 보기" 버튼은 요약이 실제로 잘렸을 때(`scrollHeight > clientHeight`)만 보인다 — 짧은 요약에 누를 게 없는 버튼이 붙던 결함 수정(Dr. Ben 2026-09-20).
+
 ## 관련
 
 - 이용안내 §12 · 사이드바 "사건·사고" · 관리자 `.spec/src/pages/admin/bulletins.md` · 테스트 `tests/unit/pages/bulletins.test.ts`

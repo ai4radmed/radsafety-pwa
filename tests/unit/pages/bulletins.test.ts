@@ -21,6 +21,10 @@ describe('회원 /bulletins', () => {
         expect(MEMBER).toMatch(/data-filter="relevant"/);
         expect(MEMBER).toMatch(/filter-btn active" data-filter="relevant"/);
     });
+    it('"더 보기"는 잘린 내용이 있을 때만(실제 높이 > 표시 높이) — 회원·관리자 화면 공통', () => {
+        expect(MEMBER).toMatch(/s\.scrollHeight <= s\.clientHeight \+ 1/);
+        expect(ADMIN).toMatch(/s\.scrollHeight <= s\.clientHeight \+ 1/);
+    });
     it('원문은 링크(전문 재게시 ✗), 준비 포인트 강조', () => {
         expect(MEMBER).toMatch(/source_url/);
         expect(MEMBER).toMatch(/rel="noopener noreferrer"/);
