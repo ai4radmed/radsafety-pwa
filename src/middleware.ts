@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServerClient } from './lib/supabase-server';
 import { isTrackablePath } from './lib/usage/events';
+import { isPublicPath } from './lib/public-paths';
 import { recordUsage } from './lib/usage/record';
 
 export const onRequest = defineMiddleware(async ({ request, cookies, locals }, next) => {
@@ -19,8 +20,12 @@ export const onRequest = defineMiddleware(async ({ request, cookies, locals }, n
     if (request.method === 'GET') {
         const pathname = new URL(request.url).pathname;
         if (isTrackablePath(pathname)) {
+            // 비로그인이 회원 전용 화면을 열면 화면을 보는 게 아니라 벽을 만난 것이다
+            // (auth-handler 가 /login 으로 돌려보낸다). 조회로 세면 "봤다"는 거짓이 되고
+            // 이탈 지점도 안 보인다 — 그래서 조회 대신 gate_blocked 로 센다(U-2).
+            const blocked = !session && !isPublicPath(pathname);
             await recordUsage({
-                event: 'page_view',
+                event: blocked ? 'gate_blocked' : 'page_view',
                 page: pathname,
                 userId: session?.user?.id ?? null,
             });

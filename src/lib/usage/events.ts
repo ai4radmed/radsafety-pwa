@@ -6,17 +6,21 @@
 /** 이벤트 이름 → 허용 속성 키. 빈 배열이면 속성 없이 횟수만 센다. */
 export const USAGE_EVENTS: Record<string, readonly string[]> = {
     page_view: [],
+    // 비로그인이 회원 전용 화면을 열었다 = 벽을 만났다. 조회가 아니라 이탈 후보다(U-2).
+    gate_blocked: [],
     signup: ['method'], // kakao | password
     username_set: [],
+    signup_approved: [],
     login: ['method'], // kakao | password
     resource_download: ['slug'],
     feedback_sent: [],
-    submission_sent: [],
+    submission_sent: ['kind'], // archive | finding
 };
 
 /** 속성 값 허용목록. 자유 텍스트를 막는다 — 검색어·제목·본문은 어떤 경로로도 들어오지 않는다. */
 const PROP_VALUES: Record<string, readonly string[] | 'slug'> = {
     method: ['kakao', 'password'],
+    kind: ['archive', 'finding'],
     slug: 'slug', // 영문·숫자·하이픈 64자 이내
 };
 
