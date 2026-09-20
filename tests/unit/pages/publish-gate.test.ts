@@ -70,3 +70,10 @@ describe('2-1 업로드 권한 게이트', () => {
         expect(mypage).toContain('직접 게시 가능');
     });
 });
+
+describe('회원 목록 — 권한 버튼 노출 조건 (2026-09-20)', () => {
+    it('관리자·banned·pending 행에는 부여/회수 버튼을 그리지 않는다', () => {
+        expect(members).toMatch(/const inactive = r\.status === 'banned' \|\| r\.status === 'pending'/);
+        expect(members).toMatch(/r\.is_admin \|\| inactive\s*\?\s*''/);
+    });
+});
