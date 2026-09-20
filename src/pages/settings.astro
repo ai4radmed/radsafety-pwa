@@ -252,6 +252,7 @@ import Icon from '../components/Icon.astro';
 
     <script>
         import { userProfile } from '../store/user';
+        import { track } from '../lib/usage/track';
 
         document.addEventListener('astro:page-load', () => {
             // ── 글자 크기 ──────────────────────────────────────────
@@ -312,6 +313,8 @@ import Icon from '../components/Icon.astro';
                 if (!pushToggle || !statusText) return;
                 try {
                     const perm = await Notification.requestPermission();
+                    // 푸시 허용률은 알림 기능이 실제로 닿는 범위를 재는 수치다(U-3).
+                    if (perm === 'granted') track('push_granted');
                     if (perm !== 'granted') {
                         pushToggle.checked = false;
                         if (perm === 'denied') {
