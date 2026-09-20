@@ -16,7 +16,9 @@ const SUBMIT = read('src/pages/proposals.astro');
 const LOOKUP = read('src/pages/proposal-lookup.astro');
 const MINE = read('src/pages/my-proposals.astro');
 const ADMIN = read('src/pages/admin/proposals.astro');
-const AUTH = read('src/lib/auth-handler.ts');
+// 2계층 공개 경로 목록은 2026-09-20(U-2)에 public-paths.ts 로 분리됐다 — auth-handler 와 서버
+// 미들웨어가 같은 목록을 써야 해서다. 조회 공개·제출 비공개 계약은 이제 그 파일이 진다.
+const PUBLIC_PATHS_SRC = read('src/lib/public-paths.ts');
 const SIDEBAR = read('src/components/Sidebar.astro');
 const PRIVACY = read('src/pages/privacy.astro');
 
@@ -102,8 +104,8 @@ describe('화면·경로', () => {
         expect(SUBMIT).toMatch(/\.form\[hidden\],\s*\.result\[hidden\]\s*\{\s*display: none;/);
     });
     it('조회는 공개 경로(publicPaths), 제출·내 제안은 회원 전용(data-member-only)', () => {
-        expect(AUTH).toMatch(/'\/proposal-lookup'/);
-        expect(AUTH).not.toMatch(/'\/proposals'/);
+        expect(PUBLIC_PATHS_SRC).toMatch(/'\/proposal-lookup'/);
+        expect(PUBLIC_PATHS_SRC).not.toMatch(/'\/proposals'/);
         expect(SIDEBAR).toMatch(/href="\/proposals"\s+data-member-only/);
         expect(SIDEBAR).toMatch(/href="\/my-proposals"\s+data-member-only/);
         expect(SIDEBAR).toMatch(/href="\/admin\/proposals"/);

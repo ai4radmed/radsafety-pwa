@@ -3,6 +3,17 @@
 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/). 버전은 `src/consts.ts`(`APP_VERSION`·`APP_RELEASE_DATE`)·`package.json` 과 함께 올린다.
 회원 공지는 관리자 **알림 발송** 화면에서 제목 `RadSafety vX.Y.Z 주요 업데이트 안내`, 본문 `RadSafety가 vX.Y.Z로 업데이트되었습니다. 이번 변경은 아래 N가지입니다.` + 번호 목록, **만료 없음** 옵션으로 보낸다(알림함이 업데이트 이력이 된다).
 
+## [Unreleased]
+
+### 사용성 집계 (U 트랙) — U-2 회원 전용 벽 이탈 퍼널
+
+- **`gate_blocked`** — 비로그인이 회원 전용 화면을 열면 조회가 아니라 **벽을 만난 것**으로 센다. 실제로는 화면을 못 보고 `/login` 으로 되돌아가므로 조회로 세면 거짓이 되고 이탈 지점이 가려진다
+- 퍼널이 이어졌다: `gate_blocked` → `/login` 조회 → `signup` → **`signup_approved`**(가입 승인)
+- `submission_sent`(자료실·지적사례 구분) 기록 추가
+- **2계층 공개 경로를 `src/lib/public-paths.ts` 로 분리** — 리다이렉트를 하는 `auth-handler` 와 집계를 하는 미들웨어가 같은 목록을 쓴다. 두 벌로 두면 한쪽만 고친 날 어긋난다
+
+> `resource_download` 는 U-3 으로 둔다 — 내려받기는 클라이언트가 저장소 주소로 직접 가고, 자료별 누적 횟수는 `archives.download_count` 가 이미 센다.
+
 ## [1.1.0] - 2026-09-20 — 사용성 집계 시작 (U 트랙 U-1)
 
 > **회원 공지는 v1.0.0 과 묶어 한 통으로** 보낸다(2026-09-20 Dr. Ben). v1.0.0 은 운영 배포는 끝났으나 아직 회원에게 알리지 않았고, 여기에 처리방침 변경이 더해졌기 때문이다. 공지 제목은 `RadSafety v1.1.0 주요 업데이트 안내`, **만료 없음** 옵션.
