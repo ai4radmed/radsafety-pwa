@@ -37,6 +37,9 @@ export default defineConfig({
     use: {
         baseURL: smokeBaseUrl || (isMonthly ? monthlyBaseUrl : 'http://localhost:4321'),
         trace: 'on-first-retry',
+        // 사용성 집계에서 빠지기 위해 무인 점검임을 밝힌다(src/lib/usage/monitor.ts). 프로덕션 스모크·
+        // 월간 점검(시스템 계정)·로컬 E2E 전부 — 어느 것도 실제 사용이 아니다.
+        extraHTTPHeaders: { 'x-radsafety-monitor': 'playwright' },
     },
     projects: isMonthly
         ? [
