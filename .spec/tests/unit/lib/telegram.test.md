@@ -11,8 +11,9 @@ Vitest. `fetch` 를 `vi.stubGlobal`, env 를 `vi.stubEnv` 로 모의.
 
 ## 검증 항목
 
-| it                                          | 검증 내용                                                                      |
-| ------------------------------------------- | ------------------------------------------------------------------------------ |
-| 자격 미설정이면 발송하지 않고 false         | `isTelegramConfigured()` false, fetch 호출 0                                   |
-| 자격이 있으면 sendMessage 로 POST 하고 true | URL `bot<token>/sendMessage`, body `{chat_id, text, disable_web_page_preview}` |
-| HTTP 오류는 throw                           | `HTTP 401` 포함 메시지                                                         |
+| it                                              | 검증 내용                                                                                     |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 자격 미설정이면 발송하지 않고 false             | `isTelegramConfigured()` false, fetch 호출 0                                                  |
+| 자격이 있으면 sendMessage 로 POST 하고 true     | URL `bot<token>/sendMessage`, body `{chat_id, text, disable_web_page_preview}`                |
+| HTTP 오류는 throw                               | `HTTP 401` 포함 메시지                                                                        |
+| import.meta.env 에 없으면 process.env 를 읽는다 | 소스에 `process.env[name]` 폴백 존재, 직접 `import.meta.env.TELEGRAM_*` 접근 없음(2026-09-20) |

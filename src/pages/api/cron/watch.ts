@@ -11,6 +11,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { createSupabaseServerClient } from '../../../lib/supabase-server';
 import { createLogger } from '../../../lib/logger';
+import { isTelegramConfigured } from '../../../lib/telegram';
 import { WATCH_SOURCES, runSource, notifyWatchResults, supabaseWatchStore } from '../../../lib/watch';
 import type { SourceRunResult } from '../../../lib/watch';
 
@@ -75,7 +76,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
         results.push(await runSource(source, supabaseWatchStore, { persist: !dry, now: startedAt }));
     }
 
-    const delivery = dry ? { memberNotified: 0, telegram: false } : await notifyWatchResults(WATCH_SOURCES, results);
+    // telegramConfigured: 값이 아니라 "읽혔는가" 만 — 2026-09-20 cron 첫 실행에서 env 미인식이 실측돼 진단값으로 노출.
+    const delivery = {
+        ...(dry ? { memberNotified: 0, telegram: false } : await notifyWatchResults(WATCH_SOURCES, results)),
+        telegramConfigured: isTelegramConfigured(),
+    };
 
     const allFailed = results.every((r) => r.status === 'error' || r.status === 'suspicious');
     if (allFailed) logger.warn('감시 전 소스 실패', { results: results.map(summarize) });
