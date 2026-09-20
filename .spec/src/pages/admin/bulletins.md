@@ -17,6 +17,8 @@
 3. 상위 사건 select 의 기본값 = `parent_id` ?? `suggested_parent_id` ?? 새 사건. 제안이 있어도 사람이 보고 게시.
 4. 무시는 되돌릴 수 있다(되살리기 = `update` 로 저장, status 는 액션이 그대로 둠 → 다시 pending 으로 돌리려면 관리자가 게시/무시 중 택).
 
+5. "더 보기" 버튼은 요약이 실제로 잘렸을 때(`scrollHeight > clientHeight`)만 보인다 — 짧은 요약에 누를 게 없는 버튼이 붙던 결함 수정(Dr. Ben 2026-09-20).
+
 ## 관련
 
 - 액션 `reviewBulletin`(`.spec/src/actions/index.md`) · 회원 화면 `.spec/src/pages/bulletins.md` · 테스트 `tests/unit/pages/bulletins.test.ts`
