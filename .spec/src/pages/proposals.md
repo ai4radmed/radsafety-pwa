@@ -11,7 +11,8 @@
 3. 원본 파일명·미리보기는 화면에도 남기지 않는다(종류·용량만).
 4. 회원 전용 — `auth-handler` publicPaths 밖, 사이드바 `data-member-only`, e2e PROTECTED_PAGES.
 5. 접수증 코드는 결과 화면 외 어디에도 저장하지 않는다(localStorage ✗).
-6. **회원 전용은 확정**(2026-09-20 Dr. Ben 재확인) — 가입이 봇·도배 최소 방어선. 화면 상단에 "익명 = 로그인 뒤 작성자를 기록하지 않는 것" 안내(`.subtitle.note`).
+6. 라벨 문구는 `.label-text` 로 감싼다(그리드 라벨 안의 카운터 span 이 줄을 쪼갬) · `.form[hidden]`·`.result[hidden]` 은 `display:none` 명시(그리드가 hidden 을 이김) — 2026-09-20 Dr. Ben 캡처로 발견.
+7. **회원 전용은 확정**(2026-09-20 Dr. Ben 재확인) — 가입이 봇·도배 최소 방어선. 화면 상단에 "익명 = 로그인 뒤 작성자를 기록하지 않는 것" 안내(`.subtitle.note`).
 
 ## 관련
 

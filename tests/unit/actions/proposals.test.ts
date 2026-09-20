@@ -82,6 +82,9 @@ describe('화면·경로', () => {
         expect(SUBMIT).toMatch(/PROPOSAL_NOTICES\.common1/);
         expect(SUBMIT).toMatch(/id="receiptCode"/);
         expect(SUBMIT).toMatch(/actions\.uploadProposalAttachment\(fd\)/);
+        // grid 라벨의 글자 수 span 이 줄을 쪼개지 않도록 label-text 로 감싼다 · hidden 이 display:grid 에 지지 않도록
+        expect(SUBMIT).toMatch(/<span class="label-text">내용 \(<span id="bodyCount">/);
+        expect(SUBMIT).toMatch(/\.form\[hidden\],\s*\.result\[hidden\]\s*\{\s*display: none;/);
     });
     it('조회는 공개 경로(publicPaths), 제출·내 제안은 회원 전용(data-member-only)', () => {
         expect(AUTH).toMatch(/'\/proposal-lookup'/);

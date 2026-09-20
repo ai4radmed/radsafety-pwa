@@ -40,14 +40,14 @@ export const prerender = false;
             </fieldset>
 
             <label>
-                분류
+                <span class="label-text">분류</span>
                 <select name="category" required>
                     {PROPOSAL_CATEGORIES.map((c) => <option value={c}>{c}</option>)}
                 </select>
             </label>
 
             <label>
-                내용 (<span id="bodyCount">0</span>자, 최소 {BODY_MIN}자)
+                <span class="label-text">내용 (<span id="bodyCount">0</span>자, 최소 {BODY_MIN}자)</span>
                 <textarea
                     name="body"
                     rows="8"
@@ -135,6 +135,11 @@ export const prerender = false;
         .form {
             display: grid;
             gap: 0.9rem;
+        }
+        /* display:grid 가 hidden 속성보다 우선하므로 명시 — 제출 뒤 폼 숨김·결과 패널 표시 전환 */
+        .form[hidden],
+        .result[hidden] {
+            display: none;
         }
         .form > label {
             display: grid;
