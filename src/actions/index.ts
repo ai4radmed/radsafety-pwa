@@ -8,6 +8,7 @@ import { sendPushToUsers } from '../lib/push';
 import { createNotification, createBulkNotifications } from '../lib/notification-helper';
 import { customHospitalId, findStaticHospitalByName, getHospitalName, isKnownHospitalId } from '../lib/hospitals';
 import { sendTelegramMessage } from '../lib/telegram';
+import { sendAdminNotice } from '../lib/admin-notify';
 import { proposalActions } from './proposals';
 import { requireUser, requireAdmin } from './auth';
 
@@ -86,6 +87,44 @@ async function notifyAdminsOfHospitalRequest(username: string, request: string) 
     } catch (error) {
         logger.warn('기관 등록 요청 관리자 알림 실패(가입은 정상 처리)', { error });
     }
+    await sendAdminNotice({
+        subject: '회원기관 등록 요청 1건',
+        lines: [`@${username} 님이 목록에 없는 기관 <strong>"${request}"</strong> 의 등록을 요청했습니다.`],
+        linkPath: '/admin/member-approval',
+        linkLabel: '기관 등록 요청 검토',
+    });
+}
+
+/**
+ * 새 가입 신청(pending) 관리자 알림 — 앱 내 알림 + 메일. 2026-09-20 신설:
+ * 그전까지 **새 가입 신청에는 어떤 알림도 없어** 관리자가 화면을 직접 열어 봐야 알 수 있었다.
+ * 실패해도 가입을 막지 않는다.
+ */
+async function notifyAdminsOfSignup(username: string, provider: 'kakao' | 'email') {
+    if (!supabaseAdmin) return;
+    const label = provider === 'kakao' ? '카카오' : '아이디';
+    try {
+        const { data: admins } = await supabaseAdmin.from('profiles').select('id').eq('is_admin', true);
+        const ids = (admins ?? []).map((a: { id: string }) => a.id);
+        if (ids.length > 0) {
+            await createBulkNotifications(ids, {
+                type: 'system_notice',
+                title: '🙋 새 가입 신청',
+                message: `@${username} 님이 가입을 신청했습니다(${label} 로그인). 승인 여부를 검토해 주세요.`,
+                link: '/admin/member-approval',
+                actionLabel: '가입 승인 검토',
+                actionUrl: '/admin/member-approval',
+            });
+        }
+    } catch (error) {
+        logger.warn('가입 신청 관리자 알림 실패(가입은 정상 처리)', { error });
+    }
+    await sendAdminNotice({
+        subject: '새 가입 신청 1건',
+        lines: [`아이디 <strong>@${username}</strong> · ${label} 로그인`, '승인 여부를 검토해 주세요.'],
+        linkPath: '/admin/member-approval',
+        linkLabel: '가입 승인 검토',
+    });
 }
 
 export const server = {
@@ -387,6 +426,7 @@ export const server = {
             if (hospitalFields.hospital_request) {
                 await notifyAdminsOfHospitalRequest(username, hospitalFields.hospital_request);
             }
+            await notifyAdminsOfSignup(username, 'email');
 
             return { success: true, email };
         },
@@ -441,6 +481,14 @@ export const server = {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
             await assertKnownHospitalId(hospitalId);
 
+            // 가입 알림 판정용 — 아래 profiles 갱신 전에 읽어 둔다(갱신 후엔 구분이 안 된다).
+            const { data: before } = await supabaseAdmin
+                .from('profiles')
+                .select('status')
+                .eq('id', userId)
+                .maybeSingle();
+            const currentStatus = before?.status ?? null;
+
             const { data: existing, error: lookupError } = await supabaseAdmin
                 .from('profiles')
                 .select('id')
@@ -474,6 +522,11 @@ export const server = {
 
             if (hospitalFields?.hospital_request) {
                 await notifyAdminsOfHospitalRequest(username, hospitalFields.hospital_request);
+            }
+            // 첫 접속 게이트를 지나는 pending 계정 = 신규 가입(주로 카카오). 기존 active 회원의
+            // 아이디 전환에서는 알리지 않는다 — signUpWithUsername 과 중복되지도 않는다(그쪽은 게이트를 안 탄다).
+            if (currentStatus === 'pending') {
+                await notifyAdminsOfSignup(username, 'kakao');
             }
 
             return { success: true, email };
@@ -848,6 +901,12 @@ export const server = {
 
             let telegram = false;
             try {
+                await sendAdminNotice({
+                    subject: '검토 대기 제출물 1건',
+                    lines: [`${kindLabel} · @${username || '(아이디 미설정)'}`, `제목: ${row.title}`],
+                    linkPath: '/admin/submissions',
+                    linkLabel: '제출 검토',
+                });
                 telegram = await sendTelegramMessage(
                     `[RadSafety] 검토 대기 제출물\n${kindLabel} · @${username || '(아이디 미설정)'}\n「${row.title}」\nhttps://radsafety.kr/admin/submissions`,
                 );
