@@ -11,6 +11,7 @@
  */
 import { supabaseAdmin } from './supabase-server';
 import { APP_VERSION, APP_RELEASE_DATE } from '../consts';
+import { usageSecretConfigured } from './usage/record';
 
 export type CheckResult = {
     name: string;
@@ -113,6 +114,13 @@ export async function checkConfig(): Promise<CheckResult[]> {
             }
             return missingOptional.length > 0 ? `optional missing: ${missingOptional.join(',')}` : undefined;
         }),
+        // 사용성 집계 익명화 키(U 트랙). 값은 절대 돌려주지 않고 설정 여부만 알린다.
+        // envPresent 를 쓰지 않는 이유: 그쪽은 import.meta.env 만 보는데 Vercel 런타임 env 는
+        // 인라인되지 않을 수 있다(2026-09-20 TELEGRAM 실측). usageSecretConfigured 는 process.env 폴백을 한다.
+        // 없어도 앱은 정상 — 사용자 구분 없이 횟수만 센다. 그래서 실패가 아니라 상태 문구로 알린다.
+        await timed('usage-hmac', 2, async () =>
+            usageSecretConfigured() ? 'configured' : 'not configured (횟수만 집계)',
+        ),
     ];
 }
 
