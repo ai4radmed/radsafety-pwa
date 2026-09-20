@@ -282,13 +282,18 @@ export const prerender = false;
                 </article>`,
                 )
                 .join('');
-            listEl!.querySelectorAll<HTMLButtonElement>('[data-more]').forEach((btn) =>
+            listEl!.querySelectorAll<HTMLButtonElement>('[data-more]').forEach((btn) => {
+                const s = btn.previousElementSibling as HTMLElement;
+                // 잘린 내용이 없으면(실제 높이 ≤ 표시 높이) 버튼을 숨긴다 — 누를 게 없는 "더 보기" 방지(Dr. Ben 2026-09-20)
+                if (s.scrollHeight <= s.clientHeight + 1) {
+                    btn.hidden = true;
+                    return;
+                }
                 btn.addEventListener('click', () => {
-                    const s = btn.previousElementSibling as HTMLElement;
                     s.classList.toggle('open');
                     btn.textContent = s.classList.contains('open') ? '접기' : '더 보기';
-                }),
-            );
+                });
+            });
         }
     });
 </script>
