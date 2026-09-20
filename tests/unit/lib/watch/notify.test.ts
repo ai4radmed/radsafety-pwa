@@ -156,3 +156,40 @@ describe('watch/notify notifyWatchResults', () => {
         expect(out).toEqual({ memberNotified: 0, telegram: false });
     });
 });
+
+describe('watch/notify memberFilter · 직접 주소', () => {
+    const filtered: WatchSource = {
+        ...source,
+        id: 'nssc-press',
+        label: '원안위 보도자료',
+        memberFilter: (i) => i.detail?.relevant === 'Y',
+    };
+    const press = (id: string, relevant: 'Y' | 'N'): WatchItem => ({
+        externalId: id,
+        title: `보도 ${id}`,
+        category: '방사선안전과',
+        fingerprint: 'fp',
+        detail: { relevant, writeDate: '2026.09.18', url: `https://example.org/${id}` },
+    });
+
+    it('회원 알림은 필터를 통과한 건만, 전부 걸러지면 null', () => {
+        const n = buildMemberNotification(
+            filtered,
+            result({ source: 'nssc-press', added: [press('1', 'Y'), press('2', 'N')] }),
+        )!;
+        expect(n.title).toBe('원안위 보도자료 신규 1건');
+        expect(n.message).toContain('2026.09.18 · 방사선안전과 · 보도 1');
+        expect(n.message).toContain('https://example.org/1');
+        expect(n.message).not.toContain('보도 2');
+        expect(buildMemberNotification(filtered, result({ added: [press('2', 'N')] }))).toBeNull();
+    });
+
+    it('관리자 요약은 전체 신규와 회원 알림 건수를 함께 적는다', () => {
+        const s = buildAdminSummary(
+            [result({ source: 'nssc-press', label: '원안위 보도자료', added: [press('1', 'Y'), press('2', 'N')] })],
+            'changes',
+            [filtered],
+        )!;
+        expect(s).toContain('신규 2 · 수정 0 · 삭제 0 · 회원 알림 1');
+    });
+});

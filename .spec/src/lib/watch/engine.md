@@ -10,13 +10,15 @@
 
 | 이름                                       | 설명                                                                                                                                                                                           |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `WATCH_SOURCES`                            | 감시 대상 레지스트리 `[kinsSosSource, kinsPubSource]`. 새 소스 = 어댑터 파일 + 여기 한 줄.                                                                                                     |
+| `WATCH_SOURCES`                            | 감시 대상 레지스트리 `[kinsSosSource, kinsPubSource, nsscPressSource]`. 새 소스 = 어댑터 파일 + 여기 한 줄.                                                                                    |
 | `computeDiff(existing, next)`              | 순수. `{ added, changed, missing }`. 삭제 확정 행(`removedAt`)이 다시 보이면 **added** 로 취급.                                                                                                |
 | `isSuspiciousDrop(prevCount, nextCount)`   | 순수. `nextCount === 0` 또는 직전 정상 건수의 **절반 미만**이면 true. 직전 건수 없으면(최초) false.                                                                                            |
 | `runSource(source, store, {persist, now})` | 한 소스 1회 실행. **절대 throw 하지 않고** `SourceRunResult` 로 보고(다른 소스를 막지 않기 위해). `persist:false` 는 dry-run(스토어 무기록).                                                   |
 | `MISSING_THRESHOLD` = 2                    | 연속 누락 이 횟수면 삭제 확정(하루 1회 실행 → 이틀).                                                                                                                                           |
 | `FAILURE_ALERT_THRESHOLD` = 3              | 연속 실패 이 횟수부터 관리자 텔레그램 경고(`notify.ts`).                                                                                                                                       |
 | `supabaseWatchStore`                       | `WatchStore` 의 Supabase 구현(`watch_items`/`watch_sources`, 서비스 롤).                                                                                                                       |
+| `WatchSource.mode`                         | `'full'`(기본) / `'window'` — 최신 N건만 주는 게시판(원안위 보도자료). window 는 **누락·삭제 판정 생략**(창 밖 = 삭제 아님), 급감 판정은 **0건일 때만**.                                       |
+| `WatchSource.memberFilter`                 | 회원 알림 대상 필터(원안위: 관련 건만). 엔진은 무관, `notify.ts` 가 적용.                                                                                                                      |
 | 타입                                       | `WatchItem`(externalId·title·category·fingerprint·detail) · `WatchSource`(id·label·guide·link·fetchItems) · `StoredItem` · `SourceState` · `WatchDiff` · `SourceRunResult` · `WatchStore` 계약 |
 
 ## `runSource` 상태 흐름
@@ -39,7 +41,8 @@ fetchItems 실패 ──────────────→ status 'error'  
 3. **baseline 은 조용히** — 최초 실행(또는 테이블 비운 뒤 재실행)은 알림 대상이 없다.
 4. **삭제는 행을 지우지 않는다** — `removed_at` 표시. 재등장 시 신규로 알림.
 5. `changed_at` 은 지문이 바뀐 건만 갱신(스토어가 두 묶음으로 upsert).
-6. 엔진은 Supabase 를 모른다 — `WatchStore` 계약만. 테스트는 메모리 스토어.
+6. window 소스는 `computeDiff` 결과의 `missing` 을 비운다 — 창 크기(15)보다 오래된 글이 매일 "누락"으로 잡혀 이틀 뒤 삭제 확정되는 오판을 막는다.
+7. 엔진은 Supabase 를 모른다 — `WatchStore` 계약만. 테스트는 메모리 스토어.
 
 ## 관련
 

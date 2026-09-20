@@ -26,3 +26,5 @@ Vitest. `WatchStore` 계약을 메모리 구현(`memoryStore`)으로 채워 Supa
 | runSource               | 급감은 diff 를 돌리지 않는다                                          | suspicious, markMissing 미호출, 기존 행 무변경                    |
 | runSource               | persist:false 는 스토어에 아무것도 쓰지 않는다                        | calls 비어 있음, diff 결과는 반환                                 |
 | runSource — 스토어 오류 | 테이블 미생성 등 스토어 예외도 throw 하지 않고 error + 즉시 경고 수준 | `error` 에 원인 포함, `consecutiveFailures ≥ 3`(관리자 경고 대상) |
+| runSource — window 소스 | 창 밖으로 밀려난 옛 글은 누락·삭제로 판정하지 않는다                  | mode 'window': added 만, markMissing 미호출, 옛 행 무변경         |
+| runSource — window 소스 | 창 크기가 고정이라 급감 판정은 0건일 때만                             | 2건(lastCount 20) ok, 0건 suspicious                              |
