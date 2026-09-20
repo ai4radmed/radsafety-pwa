@@ -57,6 +57,30 @@ export function kstWeekKey(at: Date = new Date()): string {
     return `${date.getUTCFullYear()}-W${pad(week)}`;
 }
 
+/** 한국 시간 기준 자정의 실제 시각(UTC). 기간의 시작점을 재는 데 쓴다. */
+function kstMidnightUtc(y: number, m: number, d: number): Date {
+    return new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - 9 * 60 * 60 * 1000);
+}
+
+export function kstDayStart(at: Date = new Date()): Date {
+    const { y, m, d } = kstParts(at);
+    return kstMidnightUtc(y, m, d);
+}
+
+export function kstMonthStart(at: Date = new Date()): Date {
+    const { y, m } = kstParts(at);
+    return kstMidnightUtc(y, m, 1);
+}
+
+/** ISO 주의 시작(월요일) 자정. */
+export function kstWeekStart(at: Date = new Date()): Date {
+    const { y, m, d } = kstParts(at);
+    const probe = new Date(Date.UTC(y, m - 1, d));
+    const dayNum = probe.getUTCDay() || 7; // 월=1 … 일=7
+    probe.setUTCDate(probe.getUTCDate() - (dayNum - 1));
+    return kstMidnightUtc(probe.getUTCFullYear(), probe.getUTCMonth() + 1, probe.getUTCDate());
+}
+
 function hmac(secret: string, input: string): string {
     return createHmac('sha256', secret).update(input).digest('hex').slice(0, 32);
 }

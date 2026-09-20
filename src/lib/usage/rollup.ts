@@ -15,7 +15,7 @@
 import { supabaseAdmin } from '../supabase-server';
 import { createLogger } from '../logger';
 import { USAGE_RETENTION_DAYS } from './config';
-import { kstDayKey, kstMonthKey, kstWeekKey } from './record';
+import { kstDayKey, kstMonthKey, kstMonthStart, kstWeekKey, kstWeekStart, kstDayStart } from './record';
 
 const log = createLogger('usage-rollup');
 
@@ -110,13 +110,17 @@ export function aggregatePageDaily(rows: RawUsageRow[]): PageDailyAggregate[] {
  * 기간마다 다른 키를 쓴다 — 하루치 키로는 주간 활성자를 셀 수 없다. 날이 바뀌면 일일 키를
  * 다시 만들 수 없는 것이 설계의 의도이기 때문이다.
  */
-export function aggregateActive(rows: RawUsageRow[]): ActiveAggregate[] {
+export function aggregateActive(rows: RawUsageRow[], opts: { minPeriodStart?: Date } = {}): ActiveAggregate[] {
+    const min = opts.minPeriodStart ? opts.minPeriodStart.getTime() : -Infinity;
     const day = new Map<string, Set<string>>();
     const week = new Map<string, Set<string>>();
     const month = new Map<string, Set<string>>();
 
-    const add = (m: Map<string, Set<string>>, key: string, value: string | null) => {
+    const add = (m: Map<string, Set<string>>, key: string, value: string | null, periodStart: Date) => {
         if (!value) return;
+        // 기간의 시작이 읽어 온 범위보다 앞서면 그 기간은 **부분만** 보인다. 부분 계산으로
+        // 저장된 값을 덮어쓰면 수치가 줄어든다 — 그럴 바엔 건드리지 않는다.
+        if (periodStart.getTime() < min) return;
         let s = m.get(key);
         if (!s) {
             s = new Set();
@@ -127,9 +131,9 @@ export function aggregateActive(rows: RawUsageRow[]): ActiveAggregate[] {
 
     for (const row of rows) {
         const at = new Date(row.hour);
-        add(day, kstDayKey(at), row.actor_key);
-        add(week, kstWeekKey(at), row.week_key);
-        add(month, kstMonthKey(at), row.month_key);
+        add(day, kstDayKey(at), row.actor_key, kstDayStart(at));
+        add(week, kstWeekKey(at), row.week_key, kstWeekStart(at));
+        add(month, kstMonthKey(at), row.month_key, kstMonthStart(at));
     }
 
     const out: ActiveAggregate[] = [];
@@ -144,6 +148,8 @@ export function aggregateActive(rows: RawUsageRow[]): ActiveAggregate[] {
 export interface RollupResult {
     windowDays: number;
     since: string;
+    /** 활성자 계산을 위해 실제로 읽어 온 시작점(이번 주·이번 달 시작까지 거슬러 간다). */
+    fetchedFrom: string;
     scannedRows: number;
     dailyRows: number;
     pageDailyRows: number;
@@ -190,6 +196,7 @@ export async function runUsageRollup(opts: { now?: Date; dry?: boolean } = {}): 
     const base: RollupResult = {
         windowDays: ROLLUP_WINDOW_DAYS,
         since: since.toISOString(),
+        fetchedFrom: since.toISOString(),
         scannedRows: 0,
         dailyRows: 0,
         pageDailyRows: 0,
@@ -202,20 +209,39 @@ export async function runUsageRollup(opts: { now?: Date; dry?: boolean } = {}): 
     if (!supabaseAdmin) return { ...base, error: '서버 설정 오류: 관리자 권한 클라이언트가 없습니다.' };
 
     try {
-        const rows = await fetchWindow(since.toISOString());
-        const daily = aggregateDaily(rows);
-        const pageDaily = aggregatePageDaily(rows);
-        const active = aggregateActive(rows);
+        // 활성자는 **그 기간 전체**를 봐야 센다. 8일 창만 읽고 월간 활성자를 계산하면 8일치가
+        // 한 달치 자리에 덮어써져 수치가 줄어든다. 그래서 이번 주·이번 달의 시작까지 거슬러
+        // 읽는다(보존 기간이 35일인 이유가 여기 있다 — 한 달이 온전히 남아 있어야 한다).
+        const fetchStart = new Date(
+            Math.min(since.getTime(), kstWeekStart(now).getTime(), kstMonthStart(now).getTime()),
+        );
+        // 보존 경계보다 앞선 기간은 원시가 이미 잘려 있어 부분만 보인다 — 건드리지 않는다.
+        const minPeriodStart = new Date(Math.max(fetchStart.getTime(), prunedBefore.getTime()));
+
+        const rows = await fetchWindow(fetchStart.toISOString());
+
+        // 일자·화면 집계는 8일 창만 다시 쓴다. 그 앞은 이미 확정돼 있고 건드릴 이유가 없다.
+        const sinceDayKey = kstDayKey(since);
+        const windowRows = rows.filter((r) => kstDayKey(new Date(r.hour)) >= sinceDayKey);
+
+        const daily = aggregateDaily(windowRows);
+        const pageDaily = aggregatePageDaily(windowRows);
+        const active = aggregateActive(rows, { minPeriodStart });
 
         if (!dry) {
+            // 창 안에서는 **다시 계산한 것이 정답**이다. 덮어쓰기만 하면 원시에서 사라진 조합의
+            // 낡은 집계가 영원히 남는다(시험용 행을 지워도 합계에 계속 잡히는 식).
+            const delDaily = await supabaseAdmin.from('usage_daily').delete().gte('day', sinceDayKey);
+            if (delDaily.error) throw new Error(delDaily.error.message);
+            const delPage = await supabaseAdmin.from('usage_page_daily').delete().gte('day', sinceDayKey);
+            if (delPage.error) throw new Error(delPage.error.message);
+
             if (daily.length > 0) {
-                const { error } = await supabaseAdmin.from('usage_daily').upsert(daily, { onConflict: 'day,event' });
+                const { error } = await supabaseAdmin.from('usage_daily').insert(daily);
                 if (error) throw new Error(error.message);
             }
             if (pageDaily.length > 0) {
-                const { error } = await supabaseAdmin
-                    .from('usage_page_daily')
-                    .upsert(pageDaily, { onConflict: 'day,page,event' });
+                const { error } = await supabaseAdmin.from('usage_page_daily').insert(pageDaily);
                 if (error) throw new Error(error.message);
             }
             if (active.length > 0) {
@@ -239,6 +265,7 @@ export async function runUsageRollup(opts: { now?: Date; dry?: boolean } = {}): 
 
         return {
             ...base,
+            fetchedFrom: fetchStart.toISOString(),
             scannedRows: rows.length,
             dailyRows: daily.length,
             pageDailyRows: pageDaily.length,
