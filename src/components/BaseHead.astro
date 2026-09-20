@@ -56,3 +56,13 @@ const { title, description, image = FallbackImage, scale = 1 } = Astro.props;
 
 <!-- PWA: Service Worker 등록 (dev 모드에서 registerSW.js 404 방지) -->
 {import.meta.env.PROD && <script is:inline src="/registerSW.js" />}
+
+<!--
+  사용성 집계 — 클라이언트 수집(U-3). 공개·회원 화면 양쪽이 BaseHead 를 쓰므로 여기 한 곳이면
+  된다. 서버가 못 보는 것만 잡는다(오프라인 접속·앱 설치). 회원 식별자는 보내지 않는다 —
+  /api/track 이 세션 쿠키에서 읽는다.
+-->
+<script>
+    import { initTracking } from '../lib/usage/track';
+    initTracking();
+</script>

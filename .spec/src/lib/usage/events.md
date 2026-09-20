@@ -8,17 +8,17 @@
 
 ## U-1 이벤트
 
-| 이벤트              | 속성                       | 기록 지점                                              |
-| ------------------- | -------------------------- | ------------------------------------------------------ |
-| `page_view`         | 없음                       | `src/middleware.ts`                                    |
-| `gate_blocked`      | 없음                       | `src/middleware.ts` — 비로그인 × 회원 전용 경로        |
-| `signup`            | `method` = kakao\|password | `signUpWithUsername` · `claimUsername`(pending 일 때)  |
-| `username_set`      | 없음                       | `claimUsername`                                        |
-| `login`             | `method`                   | **U-1 미구현** — 아래 참조                             |
-| `resource_download` | `slug`                     | **U-3** — 클라이언트에서 저장소 주소로 직접 내려받는다 |
-| `feedback_sent`     | 없음                       | `sendFeedback`                                         |
-| `submission_sent`   | `kind` = archive\|finding  | `notifySubmission`                                     |
-| `signup_approved`   | 없음                       | `approvePendingMember`                                 |
+| 이벤트              | 속성                       | 기록 지점                                             |
+| ------------------- | -------------------------- | ----------------------------------------------------- |
+| `page_view`         | 없음                       | `src/middleware.ts`                                   |
+| `gate_blocked`      | 없음                       | `src/middleware.ts` — 비로그인 × 회원 전용 경로       |
+| `signup`            | `method` = kakao\|password | `signUpWithUsername` · `claimUsername`(pending 일 때) |
+| `username_set`      | 없음                       | `claimUsername`                                       |
+| `login`             | `method`                   | **U-1 미구현** — 아래 참조                            |
+| `resource_download` | `slug`                     | `resources.astro` 내려받기 클릭(클라이언트)           |
+| `feedback_sent`     | 없음                       | `sendFeedback`                                        |
+| `submission_sent`   | `kind` = archive\|finding  | `notifySubmission`                                    |
+| `signup_approved`   | 없음                       | `approvePendingMember`                                |
 
 `login` 을 U-1 에서 안 넣은 이유: `signInWithUsername` 액션은 아이디로 이메일을 찾아 주기만 하고 실제 인증은 브라우저의 Supabase 클라이언트가 한다. 이 지점에서 기록하면 **성공이 아니라 시도**를 세게 되어 수치가 거짓이 된다. U-3 에서 클라이언트 쪽 성공 시점에 붙인다.
 
@@ -66,6 +66,16 @@ gate_blocked → page_view(/login) → signup → signup_approved
 
 공개/회원 판정은 `src/lib/public-paths.ts` 가 단일 권위다 — 리다이렉트를 하는 `auth-handler` 와 같은 목록을 쓴다.
 
-`login` 은 여전히 U-3 이다. 다만 `/login` 의 `page_view` 가 그 자리를 임시로 메운다 — 로그인 화면까지는 왔다는 뜻이기 때문이다.
+`login` 은 U-3 에서 채웠다. 카카오는 서버 콜백(`exchangeCodeForSession` 성공 = 로그인 성공)이, 비밀번호는 브라우저가 기록한다 — 비밀번호 인증은 서버를 지나지 않기 때문이다.
 
-`resource_download` 를 서두르지 않는 이유: `archives.download_count` 가 이미 자료별 누적 횟수를 센다. 무엇이 인기인지 순위는 그것으로 충분하고, 우리 집계가 더하는 것은 시계열과 회원/비회원 구분뿐이다.
+`resource_download` 는 `archives.download_count`(자료별 누적)와 **겹치되 다르다** — 이쪽은 시계열과 회원/비회원 구분을 더한다. 순위만 볼 거면 기존 컬럼으로 충분하다.
+
+## U-3 클라이언트 이벤트
+
+| 이벤트          | 기록 지점                                                   |
+| --------------- | ----------------------------------------------------------- |
+| `offline_visit` | `track.ts` 초기화·화면 전환 시 `navigator.onLine === false` |
+| `pwa_installed` | `appinstalled` 이벤트                                       |
+| `push_granted`  | `settings.astro` 권한 요청 결과가 granted 일 때             |
+
+허용목록은 클라이언트와 서버가 **같은 파일**을 쓴다. `track()` 이 보내기 전에 한 번 거르고, `/api/track` 이 저장 전에 다시 거른다. 클라이언트 검증만 믿지 않는다.

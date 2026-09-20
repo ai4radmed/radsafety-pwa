@@ -15,6 +15,10 @@ export const USAGE_EVENTS: Record<string, readonly string[]> = {
     resource_download: ['slug'],
     feedback_sent: [],
     submission_sent: ['kind'], // archive | finding
+    // U-3 클라이언트 — 서버가 볼 수 없는 것만
+    offline_visit: [],
+    pwa_installed: [],
+    push_granted: [],
 };
 
 /** 속성 값 허용목록. 자유 텍스트를 막는다 — 검색어·제목·본문은 어떤 경로로도 들어오지 않는다. */
