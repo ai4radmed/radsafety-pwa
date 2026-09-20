@@ -23,12 +23,12 @@ describe('SITE_DESCRIPTION', () => {
 
 describe('APP_VERSION', () => {
     it('예상값과 일치해야 한다', () => {
-        expect(APP_VERSION).toBe('0.2.1');
+        expect(APP_VERSION).toBe('0.3.0');
     });
 });
 
 describe('APP_RELEASE_DATE', () => {
     it('예상값과 일치해야 한다', () => {
-        expect(APP_RELEASE_DATE).toBe('2026-03-20');
+        expect(APP_RELEASE_DATE).toBe('2026-09-20');
     });
 });
