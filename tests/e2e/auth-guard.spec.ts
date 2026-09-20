@@ -10,7 +10,16 @@ import { test, expect } from '@playwright/test';
  * /resources(다운로드), /guide, /settings. 회원 전용 = 사용자 메뉴(마이페이지·알림함·의견·개선의견조회)·관리자.
  */
 
-const PROTECTED_PAGES = ['/mypage', '/notifications', '/feedback', '/my-feedback', '/feedback-query', '/bulletins'];
+const PROTECTED_PAGES = [
+    '/mypage',
+    '/notifications',
+    '/feedback',
+    '/my-feedback',
+    '/feedback-query',
+    '/bulletins',
+    '/proposals',
+    '/my-proposals',
+];
 
 const PUBLIC_PAGES = [
     '/inspection-prep',
@@ -20,6 +29,7 @@ const PUBLIC_PAGES = [
     '/settings',
     '/kins',
     '/privacy',
+    '/proposal-lookup',
 ];
 
 // /admin/settings는 비로그인 시 /login이 아닌 / (홈)으로 리다이렉트 (자체 가드 로직)

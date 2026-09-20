@@ -318,6 +318,9 @@ proposal_quota
 
 2단계(인증 폐지) 이후 착수 — "로그인 = 카카오/아이디 계정" 전제가 서야 한다. 테이블·액션·쿼터 반나절, 첨부 메타 제거 반나절, 제출·조회·마이페이지 목록·관리자 화면 1일, 명세·테스트 반나절 — **약 2.5일**.
 
+> **진행 상태(2026-09-20, 구현)**: 위 설계대로 구현. `sql_query/migrate_add_proposals.sql`(두 테이블 + CHECK `proposals_anonymous_has_no_identity` 로 익명 행 신원 NULL 을 DB 에서도 강제 + 비공개 버킷) · `src/lib/proposals.ts`(코드·해시·HMAC 키·매직 바이트·sharp/pdf-lib 메타 제거) · `src/actions/proposals.ts`(**세션 쿠키 기준 인증** — 기존 액션의 클라이언트 `userId/adminId` 신뢰 패턴과 결별; 익명 채널부터 적용) · 화면 `/proposals`(제출)·`/proposal-lookup`(공개 조회)·`/my-proposals`·`/admin/proposals` · 사이드바·이용안내 §13·처리방침 §8.
+> **설계 대비 조정**: ① 첨부 10MB → **파일당 3MB, 1개씩 업로드**(Vercel 함수 본문 4.5MB 한도). ② 마이페이지 "내 제안" 목록은 카드 추가 대신 **별도 페이지 `/my-proposals`**(마이페이지 비대화 회피). ③ `proposal_quota` 에 `day` 컬럼 추가(HMAC 키만으로는 지난 날 행을 못 골라냄) — 정리는 제출 시 기회적 삭제(cron 불필요). ④ 쿼터 HMAC 비밀은 env `PROPOSAL_QUOTA_SECRET` 이 없으면 서비스 롤 키 해시에서 파생(새 env 없이 가동). ⑤ 로그 예외는 logger 수정이 아니라 액션이 본문·사용자를 아예 로그에 싣지 않는 방식(테스트가 정규식으로 검사). 미구현: 지적사례로 옮겨 적기는 수동(설계대로), KINS 보고 집계는 관리자 화면 상단 통계(전체·익명·아이디)로 갈음.
+
 ## KINS 연계 트랙 (확정 2026-09-08) — 1~3단계와 독립, 병행 가능
 
 2026-07-02 KINS–KSNM 업무협의(박병현 실장)에서 나온 권고 4건의 구현. 로그인·인증 개편과 무관하게 현행 구조 위에 얹을 수 있으므로 **1단계보다 먼저 내놓는 것도 가능**하다. vault 정본: `knowledge/01_projects/2026-01_RadSafety-pwa/2026-07-02_KINS_박병현실장면담_RadSafety연계권고.md`.

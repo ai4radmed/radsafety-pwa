@@ -1,0 +1,147 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Icon from '../components/Icon.astro';
+
+// 익명 제안 조회(공개 — 로그인 불필요: 코드 소지 = 본인, 로그인을 요구하면 조회 시각과 계정이 다시 묶인다).
+// 명세: .spec/src/pages/proposal-lookup.md
+export const prerender = false;
+---
+
+<DashboardLayout title="제안 조회">
+    <div class="lookup">
+        <div class="page-title"><Icon name="search" size="24" /> 제안 조회</div>
+        <p class="subtitle">
+            익명으로 제출한 제안의 <strong>접수증 코드</strong>(예: RS-7K3M-Q9XA)를 입력하면 진행 상태와 관리자 답변을
+            볼 수 있습니다.
+        </p>
+        <form id="lookupForm" class="form">
+            <input
+                id="codeInput"
+                name="code"
+                placeholder="RS-XXXX-XXXX"
+                autocomplete="off"
+                spellcheck="false"
+                required
+            />
+            <button type="submit" class="btn-primary">조회</button>
+        </form>
+        <div id="out" class="out" hidden></div>
+    </div>
+
+    <style>
+        .lookup {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        .page-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0.5rem 0 1rem;
+        }
+        .form {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .form input {
+            flex: 1;
+            background: var(--bg-primary, transparent);
+            color: inherit;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.55rem 0.7rem;
+            font: inherit;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.55rem 1rem;
+            cursor: pointer;
+        }
+        .out {
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            background: var(--bg-card);
+            padding: 1rem;
+            display: grid;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .out .meta {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .out .body,
+        .out .reply {
+            white-space: pre-wrap;
+            line-height: 1.55;
+        }
+        .out .reply {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 0.5rem;
+        }
+        .status {
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 0.05rem 0.5rem;
+            font-size: 0.78rem;
+        }
+    </style>
+</DashboardLayout>
+
+<script>
+    import { actions } from 'astro:actions';
+
+    const STATUS_LABEL: Record<string, string> = {
+        new: '접수됨',
+        reviewing: '검토 중',
+        answered: '답변 완료',
+        closed: '종결',
+    };
+    function esc(s: string | null | undefined): string {
+        return (s ?? '').replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+        );
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const form = document.getElementById('lookupForm') as HTMLFormElement | null;
+        if (!form) return;
+        const input = document.getElementById('codeInput') as HTMLInputElement;
+        const out = document.getElementById('out')!;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            out.hidden = false;
+            out.innerHTML = '<span class="meta">조회 중…</span>';
+            const { data, error } = await actions.lookupProposal({ code: input.value });
+            if (error) {
+                out.innerHTML = `<span class="meta">조회 실패: ${esc(error.message)}</span>`;
+                return;
+            }
+            if (!data?.found) {
+                out.innerHTML = '<span class="meta">해당 코드의 제안이 없습니다. 코드를 다시 확인해 주세요.</span>';
+                return;
+            }
+            const p = data.proposal;
+            out.innerHTML = `
+                <div class="meta">[${esc(p.category)}] 접수일 ${esc(p.created_day)} · <span class="status">${STATUS_LABEL[p.status] ?? esc(p.status)}</span></div>
+                <div class="body">${esc(p.body)}</div>
+                ${p.admin_reply ? `<div class="reply"><strong>관리자 답변</strong>${p.answered_at ? ` <span class="meta">(${esc(String(p.answered_at).slice(0, 10))})</span>` : ''}<br/>${esc(p.admin_reply)}</div>` : '<div class="meta">아직 답변이 없습니다.</div>'}
+            `;
+        });
+    });
+</script>
