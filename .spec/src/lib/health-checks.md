@@ -31,8 +31,9 @@ function runChecks(mode: 'shallow' | 'deep'): Promise<CheckResult[]>;
 
 `runChecks('shallow')` = `checkAppHost` + `checkConfig`(= `config` + `usage-hmac`) + `checkSupabase(DB핑)` + `checkMeta`.
 
+`runChecks('deep')` = 위 + `checkSupabase(Auth·Storage)` + `checkSchema` + `checkFunctional`.
+
 > **`usage-hmac`**: `USAGE_HMAC_SECRET` 의 **설정 여부만** 알린다(값 반환 금지 — 이 lib 의 기본 제약). 없어도 앱은 정상이므로 `ok:false` 가 아니라 detail 문구로 구분한다. `envPresent` 를 쓰지 않는 이유는 그쪽이 `import.meta.env` 만 보기 때문이다 — Vercel 런타임 env 는 인라인되지 않을 수 있다(2026-09-20 TELEGRAM 실측). 자격증명 지도가 이 키를 ✅ 로 적을 때 **실물 확인 수단**이 된다.
-> `runChecks('deep')` = 위 + `checkSupabase(Auth·Storage)` + `checkSchema` + `checkFunctional`.
 
 > **범위 주석(as-built)**: ⑤의 **콘텐츠 컬렉션 로드(`inspection_prep`)** 는 `astro:content` 컨텍스트가 필요해 `lib` 순수성·유닛 테스트성을 지키려 **엔드포인트 deep 경로에서 `content` 점검(layer 5)** 으로 수행한다(이 lib 밖). 초안 명세의 "OTP 경로 존재" 점검은 ② `config`(Supabase URL/anon 존재) + ③ `auth-reach`(deep) 에 포섭되어 별도 함수로 두지 않는다.
 >
