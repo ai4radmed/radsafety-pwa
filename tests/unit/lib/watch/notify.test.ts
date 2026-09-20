@@ -21,7 +21,12 @@ vi.mock('../../../../src/lib/telegram', () => ({
     sendTelegramMessage: (...args: unknown[]) => sendTelegramMessage(...args),
 }));
 
-import { buildMemberNotification, buildAdminSummary, notifyWatchResults } from '../../../../src/lib/watch/notify';
+import {
+    buildMemberNotification,
+    buildAdminSummary,
+    notifyWatchResults,
+    getWatchReportMode,
+} from '../../../../src/lib/watch/notify';
 import type { SourceRunResult, WatchItem, WatchSource } from '../../../../src/lib/watch/types';
 
 const source: WatchSource = {
@@ -84,22 +89,51 @@ describe('watch/notify buildMemberNotification', () => {
 });
 
 describe('watch/notify buildAdminSummary', () => {
-    it('조용한 정상 실행은 null (텔레그램 안 보냄)', () => {
+    it('changes 모드: 조용한 정상 실행은 null (텔레그램 안 보냄)', () => {
         expect(
-            buildAdminSummary([result(), result({ status: 'error', consecutiveFailures: 1, error: 'x' })]),
+            buildAdminSummary([result(), result({ status: 'error', consecutiveFailures: 1, error: 'x' })], 'changes'),
         ).toBeNull();
     });
 
-    it('baseline·변화·3회 연속 실패는 보고', () => {
-        const s = buildAdminSummary([
-            result({ status: 'baseline', count: 158 }),
-            result({ removed: ['9'] }),
-            result({ status: 'suspicious', consecutiveFailures: 3, error: '건수 급감: 158 → 2' }),
-        ])!;
+    it('changes 모드: baseline·변화·3회 연속 실패는 보고', () => {
+        const s = buildAdminSummary(
+            [
+                result({ status: 'baseline', count: 158 }),
+                result({ removed: ['9'] }),
+                result({ status: 'suspicious', consecutiveFailures: 3, error: '건수 급감: 158 → 2' }),
+            ],
+            'changes',
+        )!;
         expect(s).toContain('baseline 저장 158건');
         expect(s).toContain('삭제 1');
         expect(s).toContain('3회 연속 실패');
         expect(s).toContain('급감');
+    });
+
+    it('all 모드: 변화 없어도 하트비트 문안 — 소스별 건수와 1~2회 실패까지 적는다', () => {
+        const s = buildAdminSummary(
+            [result({ count: 158 }), result({ status: 'error', consecutiveFailures: 1, error: 'HTTP 503' })],
+            'all',
+        )!;
+        expect(s.split('\n')[0]).toBe('[RadSafety] KINS 자원 감시 — 변화 없음');
+        expect(s).toContain('변화 없음 (158건)');
+        expect(s).toContain('실패 1회째 — HTTP 503');
+    });
+
+    it('all 모드: 변화가 있으면 머리말에 "변화 없음"을 붙이지 않는다', () => {
+        const s = buildAdminSummary([result({ added: [item('1', '새 해석')] })], 'all')!;
+        expect(s.split('\n')[0]).toBe('[RadSafety] KINS 자원 감시');
+        expect(s).toContain('신규 1');
+    });
+
+    it('기본 모드는 all, WATCH_REPORT=changes 면 changes', () => {
+        vi.stubEnv('WATCH_REPORT', '');
+        expect(getWatchReportMode()).toBe('all');
+        vi.stubEnv('WATCH_REPORT', 'changes');
+        expect(getWatchReportMode()).toBe('changes');
+        vi.stubEnv('WATCH_REPORT', 'weird');
+        expect(getWatchReportMode()).toBe('all');
+        vi.unstubAllEnvs();
     });
 });
 

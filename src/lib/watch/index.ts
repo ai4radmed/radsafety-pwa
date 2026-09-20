@@ -10,6 +10,6 @@ import type { WatchSource } from './types';
 export const WATCH_SOURCES: WatchSource[] = [kinsSosSource, kinsPubSource];
 
 export { runSource, computeDiff, isSuspiciousDrop, MISSING_THRESHOLD, FAILURE_ALERT_THRESHOLD } from './engine';
-export { notifyWatchResults, buildMemberNotification, buildAdminSummary } from './notify';
+export { notifyWatchResults, buildMemberNotification, buildAdminSummary, getWatchReportMode } from './notify';
 export { supabaseWatchStore } from './supabase-store';
 export type * from './types';

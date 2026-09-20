@@ -41,26 +41,46 @@ export function buildMemberNotification(
     return { title, message: lines.join('\n') };
 }
 
-/** 관리자 텔레그램 문안. 알릴 것(변화·삭제·연속 실패)이 없으면 null. */
-export function buildAdminSummary(results: SourceRunResult[]): string | null {
+/**
+ * 보고 모드 — env WATCH_REPORT (health.yml 의 HEALTH_REPORT 와 같은 발상, 코드 변경·재배포 없이 Vercel env 로 전환).
+ *   all     : 매 실행 보고 — 변화 없어도 "변화 없음 · N건" 하트비트(기본. 2026-09-20 Dr. Ben — 점검 프로세스 생존 확인용)
+ *   changes : 변화·baseline·연속 실패(≥3)만 — 장기 운영 모드
+ * env 값이 둘 다 아니면 all.
+ */
+export type WatchReportMode = 'all' | 'changes';
+
+export function getWatchReportMode(): WatchReportMode {
+    const raw = import.meta.env.WATCH_REPORT || (typeof process !== 'undefined' ? process.env.WATCH_REPORT : undefined);
+    return raw === 'changes' ? 'changes' : 'all';
+}
+
+/** 관리자 텔레그램 문안. changes 모드에서 알릴 것(변화·삭제·baseline·연속 실패)이 없으면 null. all 모드는 항상 문안. */
+export function buildAdminSummary(results: SourceRunResult[], mode: WatchReportMode = 'changes'): string | null {
     const lines: string[] = [];
+    let notable = false;
     for (const r of results) {
         if (r.status === 'ok' && (r.added.length || r.changed.length || r.removed.length)) {
+            notable = true;
             lines.push(
                 `${r.label}: 신규 ${r.added.length} · 수정 ${r.changed.length} · 삭제 ${r.removed.length} (총 ${r.count}건)`,
             );
             for (const item of [...r.added, ...r.changed].slice(0, MAX_LISTED)) lines.push(`  - ${itemLine(item)}`);
+        } else if (r.status === 'ok') {
+            lines.push(`${r.label}: 변화 없음 (${r.count}건)`);
         } else if (r.status === 'baseline') {
+            notable = true;
             lines.push(`${r.label}: baseline 저장 ${r.count}건 (알림 없음)`);
-        } else if (
-            (r.status === 'error' || r.status === 'suspicious') &&
-            r.consecutiveFailures >= FAILURE_ALERT_THRESHOLD
-        ) {
+        } else if (r.consecutiveFailures >= FAILURE_ALERT_THRESHOLD) {
+            notable = true;
             lines.push(`${r.label}: ${r.consecutiveFailures}회 연속 실패 — ${r.error ?? ''}`);
+        } else {
+            lines.push(`${r.label}: 실패 ${r.consecutiveFailures}회째 — ${r.error ?? ''} (3회부터 경고)`);
         }
     }
+    if (mode === 'changes' && !notable) return null;
     if (!lines.length) return null;
-    return ['[RadSafety] KINS 자원 감시', ...lines].join('\n');
+    const head = mode === 'all' && !notable ? '[RadSafety] KINS 자원 감시 — 변화 없음' : '[RadSafety] KINS 자원 감시';
+    return [head, ...lines].join('\n');
 }
 
 async function activeMemberIds(): Promise<string[]> {
@@ -101,7 +121,7 @@ export async function notifyWatchResults(
     }
 
     let telegram = false;
-    const summary = buildAdminSummary(results);
+    const summary = buildAdminSummary(results, getWatchReportMode());
     if (summary) {
         try {
             telegram = await sendTelegramMessage(summary);
