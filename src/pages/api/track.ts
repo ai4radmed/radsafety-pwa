@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { recordUsage } from '../../lib/usage/record';
+import { isMonitorRequest } from '../../lib/usage/monitor';
 
 export const prerender = false;
 
@@ -32,6 +33,9 @@ function safeAt(raw: unknown): Date {
  */
 export const POST: APIRoute = async ({ request, cookies }) => {
     try {
+        // 헤드리스 스모크 테스트가 화면을 열면 클라이언트 수집도 같이 켜진다 — 여기서도 거른다.
+        if (isMonitorRequest(request)) return new Response(null, { status: 204 });
+
         const declared = Number(request.headers.get('content-length') ?? '0');
         if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
             return new Response(null, { status: 204 });
