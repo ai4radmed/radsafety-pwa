@@ -193,15 +193,21 @@ https://*-ai4radmed.vercel.app/auth/callback
 
 **설정 경로**: `Vercel Dashboard > Settings > Environment Variables`
 
-| 변수명                      | Scope (적용 범위)              | 비고                   |
-| :-------------------------- | :----------------------------- | :--------------------- |
-| `PUBLIC_SUPABASE_URL`       | All (Production, Preview, Dev) | Supabase API URL       |
-| `PUBLIC_SUPABASE_ANON_KEY`  | All                            | Supabase 공개 키       |
-| `SUPABASE_SERVICE_ROLE_KEY` | All                            | 서버 전용 비밀 키      |
-| `RESEND_API_KEY`            | All                            | 이메일 발송용 API 키   |
-| `PUBLIC_VAPID_KEY`          | All                            | 웹 푸시 알림용 공개 키 |
+| 변수명                                    | Scope (적용 범위)              | 비고                                                                                                                                                                                    |
+| :---------------------------------------- | :----------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_SUPABASE_URL`                     | All (Production, Preview, Dev) | Supabase API URL                                                                                                                                                                        |
+| `PUBLIC_SUPABASE_ANON_KEY`                | All                            | Supabase 공개 키                                                                                                                                                                        |
+| `SUPABASE_SERVICE_ROLE_KEY`               | All                            | 서버 전용 비밀 키                                                                                                                                                                       |
+| `RESEND_API_KEY`                          | All                            | 이메일 발송용 API 키                                                                                                                                                                    |
+| `PUBLIC_VAPID_KEY`                        | All                            | 웹 푸시 알림용 공개 키                                                                                                                                                                  |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | All                            | 관리자 텔레그램(제출 알림·KINS 감시 요약). `PUBLIC_` 접두 금지                                                                                                                          |
+| `CRON_SECRET`                             | Production                     | Vercel Cron 인증(`/api/cron/watch`). Vercel 이 `Authorization: Bearer` 로 자동 첨부. `openssl rand -hex 32` 로 생성, Bitwarden 보관. 미설정 시 cron 호출은 401(관리자 수동 실행만 가능) |
 
 > 상세 목록은 [## 1-4. 환경 변수](#1-4-환경-변수) 섹션을 참조하세요.
+
+### 2-3-1a. Cron Jobs (2026-09-20)
+
+`vercel.json` 의 `crons` 가 배포 시 등록된다(Vercel Dashboard > Settings > Cron Jobs 에서 확인·수동 실행). 현재 1개: `/api/cron/watch`, `0 22 * * *`(07:00 KST ±59분). Hobby 요금제는 cron 당 **하루 1회** 가 최소 간격(개수는 100개) — 감시 소스가 늘어도 이 cron 하나가 순서대로 처리한다. 스케줄 변경 = `vercel.json` 한 줄 + `main` 머지.
 
 ### 2-3-2. 동적 리다이렉션 메커니즘
 

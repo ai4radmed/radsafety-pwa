@@ -127,7 +127,29 @@ RLS: SELECT는 전원(`anon` 포함 — 로그인 전 가입 폼 자동완성이
 | `is_read`    | `boolean`   | 읽음 여부                      | `false`             |
 | `created_at` | `timestamp` | 생성 일시                      | `now()`             |
 
-> **Note**: 가입 승인·기관 등록 요청 처리 등 관리자 조치와 시스템 공지가 알림으로 생성되며, 사용자는 알림함에서 읽음 여부를 관리할 수 있습니다.
+> **Note**: 가입 승인·기관 등록 요청 처리 등 관리자 조치와 시스템 공지가 알림으로 생성되며, 사용자는 알림함에서 읽음 여부를 관리할 수 있습니다. 외부 자원 갱신(아래 `watch_*`)도 `system_notice` 로 소스당 실행당 1건 들어온다.
+
+### 7. `watch_items` · `watch_sources` (2026-09-20, K-3)
+
+외부 게시판(KINS RASIS 규제해석 SOS·이용자지원간행물) 갱신 감시 상태. `/api/cron/watch` 가 하루 1회 목록 API 를 읽어 집합 비교한다. `sql_query/migrate_add_watch_tables.sql`. **본문 미저장·개인정보 0**, 서비스 롤 전용(클라이언트 정책 없음).
+
+`watch_items` — 게시물 1건 = 1행, PK `(source, external_id)`:
+
+| 필드명          | 타입          | 설명                                                      | 기본값  |
+| :-------------- | :------------ | :-------------------------------------------------------- | :------ |
+| `source`        | `text`        | `kins-sos` \| `kins-pub`                                  |         |
+| `external_id`   | `text`        | 소스 고유키(SOS `writNo`, 간행물 `pblcClNo-pblcClSn`)     |         |
+| `title`         | `text`        | 제목                                                      |         |
+| `category`      | `text`        | 분류 라벨                                                 |         |
+| `fingerprint`   | `text`        | sha256(변화 감지 필드) — 목록이 분류순이라 건별 지문 비교 |         |
+| `detail`        | `jsonb`       | 안내용 소량 메타(관리번호·게시일)                         |         |
+| `first_seen_at` | `timestamptz` | 최초 관측                                                 | `now()` |
+| `last_seen_at`  | `timestamptz` | 마지막 관측                                               | `now()` |
+| `changed_at`    | `timestamptz` | 지문이 마지막으로 바뀐 시각                               |         |
+| `missing_count` | `integer`     | 연속 누락 횟수 — 2회면 삭제 확정                          | `0`     |
+| `removed_at`    | `timestamptz` | 삭제 확정 시각(행은 남김 — 재등장 시 신규 알림)           |         |
+
+`watch_sources` — 소스별 실행 상태, PK `source`: `last_run_at`, `last_ok_at`, `last_count`(급감 판정 기준), `consecutive_failures`(3회부터 관리자 텔레그램), `last_error`, `baseline_at`(최초 저장만 한 실행).
 
 ### 8. `push_subscriptions`
 

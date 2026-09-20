@@ -403,7 +403,19 @@ bulletins
 
 `src/data/resources.ts` 에 두 항목 추가: **방사선규제해석 SOS**, **이용자지원간행물**. 정확한 URL·인용 범위는 vault 노트 후속 행동대로 KINS 확인 후 기입. 공수 1시간. K-1 통보 메일에 함께 문의한다.
 
-> **진행 상태(2026-09-20)**: `src/data/resources.ts`는 더 이상 화면에 쓰이지 않아(자료실은 DB `archives`) **공개 페이지 `/kins`**(`src/pages/kins.astro`) + 홈 카드 + 이용안내 §11로 구현. 항목 3개: 방사선규제해석 SOS·이용자지원간행물(둘 다 RASIS 메인 링크 + 경로 안내 — RASIS 메뉴가 JS 호출이라 직접 주소 없음, headless 실측)·원안위 보도자료(권고 4번, 직접 URL). 직접 URL·인용 범위 확인 + K-1 연계 예고 + RASIS 마스킹 누락 알림을 담은 메일 초안을 박병현 실장 앞으로 작성(draft-only, 발송은 Dr. Ben).
+> **진행 상태(2026-09-20)**: `src/data/resources.ts`는 더 이상 화면에 쓰이지 않아(자료실은 DB `archives`) **공개 페이지 `/kins`**(`src/pages/kins.astro`) + 홈 카드 + 이용안내 §11로 구현. 항목 3개: 방사선규제해석 SOS·이용자지원간행물(둘 다 RASIS 메인 링크 + 경로 안내 — RASIS 메뉴가 JS 호출이라 직접 주소 없음, headless 실측)·원안위 보도자료(권고 4번, 직접 URL). KINS 확인 메일은 **불필요**(링크 게재는 KINS가 7/2 협의에서 먼저 제안한 사항 — Dr. Ben 2026-09-20). 직접 URL은 향후 접촉 시 확인.
+>
+> **직접 주소 결론(2026-09-20 재실측)**: SOS 화면 `RadSafeInfoSysPtcp070101.do` 는 GET 이면 "알 수 없는 오류", 타 도메인 POST 로 열어도 `top.fn_getRealMenu is not a function` 으로 목록이 비어 있다 — **부모 프레임 의존이라 딥링크 불가**. 보안 이득은 없고(POST 는 접근 통제가 아님) eGovFrame 포털 템플릿 관행의 부산물. 바꿀 수 있는 쪽은 KINS 뿐 → 향후 접촉 시 "SOS 직접 URL/모바일 페이지" 요청 항목으로.
+
+### K-3. KINS 자원 갱신 감시 (확정 2026-09-20) — 권고 1·2번의 보완
+
+**문제**: 딥링크가 없어 회원이 SOS·간행물에 새 글이 올라왔는지 알 길이 없다. **발견**: 화면은 프레임 의존이지만 목록을 채우는 내부 API(`selectIntrprtInstList.do` 158건·`selectPblcList.do` 40건)는 로그인·프레임 없이 JSON 을 돌려준다 → 프로그램이 주기적으로 읽어 변화를 감지하면 된다.
+
+**알고리즘** (Dr. Ben 승인 2026-09-20): 수집(POST, rowCount 검증) → 건별 `fingerprint = sha256(변화 감지 필드)` → 상태 테이블과 **집합 diff**(목록이 분류순이라 건수·최신글 비교 불가) → 신규/수정/누락(2회 연속이면 삭제 확정) → 안전장치(0건·절반 미만 급감·잘린 응답은 diff 생략, 최초 실행은 baseline 만, 3회 연속 실패 시 관리자 경고) → 묶음 알림(소스당 1건, 회원 앱 내+푸시, 관리자 텔레그램. 삭제는 관리자만).
+
+**실행 위치 — Vercel Cron** (`vercel.json`, 하루 1회 07:00 KST): K-1 이 GitHub Actions cron 을 택한 이유("앱 사망 시에도 수집·알림 생존")는 헬스 하트비트에는 맞지만 콘텐츠 알림에는 무의미(앱이 죽으면 회원 알림도 못 읽는다). 반면 앱 안에서 돌면 `createBulkNotifications`·`sendPushToUsers`·`sendTelegramMessage`·Vercel env 를 그대로 재사용하고 GitHub secret 에 서비스 롤 키를 복제할 필요가 없다. Hobby 한도(cron 당 하루 1회·100개)는 소스 셋(SOS·간행물·원안위)을 **cron 하나가 순서대로** 돌면 충분 — 소스별 try/catch 격리. K-1 도 이 cron 에 어댑터로 얹는 것을 기본안으로 재조정(위 K-1 파이프라인의 GitHub Actions 줄은 그때 갱신).
+
+**구현(2026-09-20)**: `sql_query/migrate_add_watch_tables.sql`(`watch_items`·`watch_sources`, 본문 미저장·개인정보 0) · `src/lib/watch/`(엔진·스토어·알림·어댑터 2개) · `src/pages/api/cron/watch.ts`(Bearer `CRON_SECRET` 또는 admin 쿠키, `?dry=1`) · `vercel.json`. 알려진 한계: SOS 답변 본문(`answCntn`)은 목록에 비어 있어 답변만 바뀌는 수정은 못 잡는다. 원안위 보도자료는 K-1(`bulletins`, 사람 승인 흐름)에 남긴다 — 단순 "새 글" 알림이 아니라 요약·체크리스트 연결이 가치라서.
 
 ---
 
