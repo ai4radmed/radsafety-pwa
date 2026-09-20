@@ -52,3 +52,12 @@ Astro server actions 진입점. `defineAction`으로 `saveFinding`, `deleteFindi
 16. **2-2(2026-09-19) — 개인정보 컬럼 삭제 이후**: `signUpWithUsername`·`claimUsername` 은 더 이상 `login_email`/`nickname` 을 쓰지 않는다(컬럼 자체가 없음, `sql_query/migrate_drop_legacy_profile_columns.sql`). `updateAffiliation` 은 마이페이지 카드 2 의 저장 액션으로, 가입 폼과 동일한 기관 처리 규칙(규칙 14·15)을 재사용한다 — 확정 id 검증, 미확정 텍스트는 `other`+요청+관리자 알림. 세션 대신 클라이언트가 넘긴 `userId` 를 신뢰하는 관례는 규칙 9 와 같다.
 17. **2-1 업로드 권한(2026-09-19, `sql_query/migrate_add_publish_gate.sql`)**: 제출 행의 `status`는 DB 트리거가 정한다(클라이언트 값 무시) — 서버 액션은 서비스 롤이라 `auth.uid()`가 NULL이고 트리거가 손대지 않으므로 `reviewSubmission`이 직접 `published`/`rejected`를 쓴다. 승인 시 파일 이동은 **복사 성공 후 삭제** 순서(복사 실패 시 대기 파일 보존). 알림 실패는 처리 결과를 바꾸지 않는다(`notifySubmitter`가 삼킴). 반려 3회 누적의 실제 차단은 RLS INSERT 정책(`reject_count < 3`)이 한다 — 액션은 카운트만 올린다.
 18. **첫 제출 관리자 알림(`notifySubmission`, 2026-09-19)**: 제출(insert)은 클라이언트가 Supabase에 직접 하므로 서버가 끼어들 지점이 없다 — 대신 클라이언트가 insert 응답의 `status==='pending'`이면 이 액션을 fire-and-forget 으로 호출한다. 서버는 행을 다시 읽어 pending 인지 확인한 뒤에만 알린다(클라이언트가 임의로 호출해도 게시된 행으로는 알림이 안 간다). 텔레그램은 `src/lib/telegram.ts`(Vercel env `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, 미설정이면 생략). 알림 실패는 제출 결과에 영향 없음.
+
+## reviewBulletin (K-1, 2026-09-20)
+
+입력 `{ adminId, id, decision: 'publish'|'ignore'|'update', summary?, prepNote?, parentId?: uuid|null }`. `assertAdmin` 뒤 `bulletins` 행을 갱신한다.
+
+- `publish`: `status='published'`, `published_at`, (summary/prepNote/parentId 있으면 함께) → **active 회원 전체** `createBulkNotifications(type system_notice, link /bulletins, 90일)`. `parentId`(또는 기존 parent) 가 있으면 제목 `후속: <제목>` + 본문에 상위 사건 제목, 없으면 `사건·사고: <제목>`. 이미 published 면 오류.
+- `ignore`: `status='ignored'`. `update`: 필드만 저장(상태 유지).
+- 거부: `parentId === id`(자기참조). 알림 실패는 로그만(게시는 완료).
+- 화면: `src/pages/admin/bulletins.astro`. 테스트: `tests/unit/pages/bulletins.test.ts`.

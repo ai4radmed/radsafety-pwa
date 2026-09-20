@@ -508,6 +508,84 @@ export const server = {
     // 첫 제출(pending)을 관리자가 승인/반려한다. 승인 = published + 작성자 can_publish=true
     // (pending 파일은 비공개 버킷에서 공개 버킷으로 이동). 반려 = rejected + reject_count+1
     // (3회면 RLS 가 제출을 막는다). 어느 쪽이든 제출자에게 알림 1건.
+    // K-1 사건·사고 전파(2026-09-20): 관리자가 bulletins 를 게시/무시하고 스레드(parent)를 확정한다.
+    // 게시 = status published + 회원(active) 알림 1건(스레드 후속이면 "후속" 표기). 자동 확정 ✗ — 오판이 곧 회원 오알림.
+    reviewBulletin: defineAction({
+        input: z.object({
+            adminId: z.string().uuid(),
+            id: z.string().uuid(),
+            decision: z.enum(['publish', 'ignore', 'update']),
+            summary: z.string().trim().max(2000).optional(),
+            prepNote: z.string().trim().max(1000).optional(),
+            // null = 루트(스레드 시작), uuid = 그 사건의 후속
+            parentId: z.string().uuid().nullable().optional(),
+        }),
+        handler: async ({ adminId, id, decision, summary, prepNote, parentId }) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+            await assertAdmin(adminId);
+
+            const { data: row, error: rowError } = await supabaseAdmin
+                .from('bulletins')
+                .select('id, title, status, source, parent_id, occurred_at')
+                .eq('id', id)
+                .single();
+            if (rowError || !row) throw new Error('사건을 찾을 수 없습니다.');
+            if (parentId === id) throw new Error('자기 자신을 상위 사건으로 지정할 수 없습니다.');
+
+            const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+            if (summary !== undefined) patch.summary = summary || null;
+            if (prepNote !== undefined) patch.prep_note = prepNote || null;
+            if (parentId !== undefined) patch.parent_id = parentId;
+
+            if (decision === 'ignore') {
+                patch.status = 'ignored';
+            } else if (decision === 'publish') {
+                if (row.status === 'published') throw new Error('이미 게시된 사건입니다.');
+                patch.status = 'published';
+                patch.published_at = new Date().toISOString();
+            }
+
+            const { error: updateError } = await supabaseAdmin.from('bulletins').update(patch).eq('id', id);
+            if (updateError) throw new Error(updateError.message);
+
+            if (decision === 'publish') {
+                const effectiveParent = parentId !== undefined ? parentId : row.parent_id;
+                let parentTitle: string | null = null;
+                if (effectiveParent) {
+                    const { data: parent } = await supabaseAdmin
+                        .from('bulletins')
+                        .select('title')
+                        .eq('id', effectiveParent)
+                        .maybeSingle();
+                    parentTitle = parent?.title ?? null;
+                }
+                try {
+                    const { data: members } = await supabaseAdmin.from('profiles').select('id').eq('status', 'active');
+                    const ids = (members ?? []).map((m) => m.id);
+                    if (ids.length) {
+                        const isFollowUp = Boolean(effectiveParent);
+                        await createBulkNotifications(ids, {
+                            type: 'system_notice',
+                            senderId: adminId,
+                            title: isFollowUp ? `후속: ${row.title}` : `사건·사고: ${row.title}`,
+                            message: isFollowUp
+                                ? `「${parentTitle ?? '앞선 사건'}」의 후속(원인·등급 확정)이 게시되었습니다.`
+                                : `${row.occurred_at ?? ''} ${row.source === 'nsic' ? 'NSIC 사례집' : '원안위 보도자료'} — 사건·사고 목록에서 확인하세요.`.trim(),
+                            link: '/bulletins',
+                            priority: 'normal',
+                            expiresInDays: 90,
+                            metadata: { bulletin: id, source: row.source, followUp: isFollowUp },
+                        });
+                    }
+                } catch (error) {
+                    logger.warn('사건 게시 알림 실패(게시는 완료)', { error });
+                }
+            }
+
+            return { success: true, status: patch.status ?? row.status };
+        },
+    }),
+
     reviewSubmission: defineAction({
         input: z.object({
             adminId: z.string().uuid(),

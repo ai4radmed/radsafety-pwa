@@ -1,0 +1,294 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Icon from '../components/Icon.astro';
+
+// 사건·사고(회원). 명세: .spec/src/pages/bulletins.md
+// K-1(2026-09-20): 원안위 보도자료(속보) + NSIC 방사선사고 사례집(원인·등급)을 사건 스레드로 보여 준다.
+// 기본 필터 "의료·RI 관련", 전체 토글. 본문 전문은 재게시하지 않고 원문 링크. 회원 전용(auth-handler publicPaths 밖).
+export const prerender = false;
+---
+
+<DashboardLayout title="사건·사고">
+    <div class="bulletins">
+        <div class="header">
+            <div class="page-title"><Icon name="alert-circle" size="24" /> 사건·사고</div>
+            <p class="subtitle">
+                원자력안전위원회 보도자료(조사 착수 속보)와 원자력안전정보공개센터(NSIC) 방사선사고 사례집(원인·등급
+                확정)을 사건별로 모았습니다. 같은 사고의 확정본은 속보 아래 <strong>후속</strong>으로 이어집니다.
+                관리자가 붙인
+                <strong>정기검사 준비 포인트</strong>를 참고하세요. 출처: 원안위·NSIC(공공누리), 자료의 저작권은 각
+                기관에 있습니다.
+            </p>
+        </div>
+
+        <div class="toolbar">
+            <div class="filters">
+                <button class="filter-btn active" data-filter="relevant">의료·RI 관련</button>
+                <button class="filter-btn" data-filter="all">전체</button>
+            </div>
+            <span class="count muted"><span id="count">0</span>건</span>
+        </div>
+
+        <div id="list" class="list"><p class="muted">불러오는 중...</p></div>
+    </div>
+
+    <style>
+        .bulletins {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .page-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0.5rem 0 1rem;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .filters {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 99px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .filter-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .card {
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            background: var(--bg-card);
+            padding: 0.9rem 1rem;
+        }
+        .meta {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+        .badge {
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 0.05rem 0.45rem;
+        }
+        .badge.src-nssc {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+        .badge.src-nsic {
+            color: #22c55e;
+            border-color: #22c55e;
+        }
+        .title {
+            font-weight: 700;
+            margin: 0.1rem 0 0.4rem;
+        }
+        .title a {
+            color: inherit;
+        }
+        .summary {
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            max-height: 6em;
+            overflow: hidden;
+        }
+        .summary.open {
+            max-height: none;
+        }
+        .more {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0;
+        }
+        .prep {
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.7rem;
+            border-radius: 6px;
+            background: rgba(59, 130, 246, 0.12);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .prep strong {
+            color: var(--accent);
+        }
+        .followups {
+            margin-top: 0.6rem;
+            padding-left: 0.8rem;
+            border-left: 2px dashed var(--border-color);
+            display: grid;
+            gap: 0.5rem;
+        }
+        .followup .title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .muted {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</DashboardLayout>
+
+<script>
+    import { supabase } from '../lib/supabase-browser';
+
+    type Bulletin = {
+        id: string;
+        source: 'nsic' | 'nssc';
+        title: string;
+        occurred_at: string | null;
+        incident_type: string | null;
+        incident_grade: string | null;
+        region: string | null;
+        org_masked: string | null;
+        source_url: string;
+        summary: string | null;
+        cause: string | null;
+        prep_note: string | null;
+        relevant: boolean;
+        parent_id: string | null;
+        published_at: string | null;
+    };
+
+    function esc(s: string | null | undefined): string {
+        return (s ?? '').replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+        );
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const listEl = document.getElementById('list');
+        if (!listEl) return;
+        const countEl = document.getElementById('count')!;
+        const btns = Array.from(document.querySelectorAll<HTMLButtonElement>('.filter-btn'));
+        let filter: 'relevant' | 'all' = 'relevant';
+        let all: Bulletin[] = [];
+
+        btns.forEach((b) =>
+            b.addEventListener('click', () => {
+                btns.forEach((x) => x.classList.toggle('active', x === b));
+                filter = b.dataset.filter as typeof filter;
+                render();
+            }),
+        );
+        load();
+
+        async function load() {
+            // RLS 가 published 만 준다(관리자는 전부 — 여기서도 published 만 보이게 명시).
+            const { data, error } = await supabase
+                .from('bulletins')
+                .select(
+                    'id, source, title, occurred_at, incident_type, incident_grade, region, org_masked, source_url, summary, cause, prep_note, relevant, parent_id, published_at',
+                )
+                .eq('status', 'published')
+                .order('occurred_at', { ascending: false, nullsFirst: false })
+                .limit(500);
+            if (error) {
+                listEl!.innerHTML = `<p class="muted">불러오지 못했습니다: ${esc(error.message)}</p>`;
+                return;
+            }
+            all = (data ?? []) as Bulletin[];
+            render();
+        }
+
+        function meta(b: Bulletin): string {
+            const src = b.source === 'nssc' ? '원안위 보도자료' : 'NSIC 사례집';
+            return `<div class="meta">
+                <span class="badge src-${b.source}">${src}</span>
+                <span>${esc(b.occurred_at ?? '')}</span>
+                ${b.incident_type ? `<span>${esc(b.incident_type)}</span>` : ''}
+                ${b.incident_grade ? `<span>${esc(b.incident_grade)}</span>` : ''}
+                ${b.region ? `<span>${esc(b.region)}</span>` : ''}
+                ${b.org_masked ? `<span>${esc(b.org_masked)}</span>` : ''}
+            </div>`;
+        }
+
+        function body(b: Bulletin): string {
+            const text = [b.summary, b.cause ? `사고원인: ${b.cause}` : ''].filter(Boolean).join('\n');
+            const prep = b.prep_note
+                ? `<div class="prep"><strong>정기검사 준비 포인트</strong> ${esc(b.prep_note)}</div>`
+                : '';
+            return `${text ? `<div class="summary">${esc(text)}</div><button class="more" data-more>더 보기</button>` : ''}${prep}`;
+        }
+
+        function render() {
+            // 스레드: 루트(parent 없음) + 그 후속. 필터는 스레드 단위(루트나 후속 중 하나라도 관련이면 표시).
+            const children = new Map<string, Bulletin[]>();
+            all.forEach((b) => {
+                if (b.parent_id) children.set(b.parent_id, [...(children.get(b.parent_id) ?? []), b]);
+            });
+            const roots = all.filter((b) => !b.parent_id || !all.some((p) => p.id === b.parent_id));
+            const threads = roots
+                .map((r) => ({ root: r, followups: children.get(r.id) ?? [] }))
+                .filter((t) => filter === 'all' || t.root.relevant || t.followups.some((f) => f.relevant));
+            countEl.textContent = String(threads.length);
+            if (!threads.length) {
+                listEl!.innerHTML = '<p class="muted">표시할 사건이 없습니다.</p>';
+                return;
+            }
+            listEl!.innerHTML = threads
+                .map(
+                    ({ root, followups }) => `<article class="card">
+                    ${meta(root)}
+                    <div class="title"><a href="${esc(root.source_url)}" target="_blank" rel="noopener noreferrer">${esc(root.title)} ↗</a></div>
+                    ${body(root)}
+                    ${
+                        followups.length
+                            ? `<div class="followups">${followups
+                                  .map(
+                                      (f) => `<div class="followup">
+                                        ${meta(f)}
+                                        <div class="title">후속 · <a href="${esc(f.source_url)}" target="_blank" rel="noopener noreferrer">${esc(f.title)} ↗</a></div>
+                                        ${body(f)}
+                                    </div>`,
+                                  )
+                                  .join('')}</div>`
+                            : ''
+                    }
+                </article>`,
+                )
+                .join('');
+            listEl!.querySelectorAll<HTMLButtonElement>('[data-more]').forEach((btn) =>
+                btn.addEventListener('click', () => {
+                    const s = btn.previousElementSibling as HTMLElement;
+                    s.classList.toggle('open');
+                    btn.textContent = s.classList.contains('open') ? '접기' : '더 보기';
+                }),
+            );
+        }
+    });
+</script>

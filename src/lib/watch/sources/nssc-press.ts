@@ -93,5 +93,6 @@ export const nsscPressSource: WatchSource = {
     link: NSSC_BOARD_URL,
     mode: 'window',
     memberFilter: (item) => item.detail?.relevant === 'Y',
+    notifyMembers: false, // 회원 알림은 bulletins 게시(관리자 확정) 시점에 — 속보·확정본 중복 알림 방지
     fetchItems: () => fetchNsscItems(),
 };

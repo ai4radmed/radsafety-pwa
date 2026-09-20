@@ -77,7 +77,7 @@ export function buildAdminSummary(
             notable = true;
             const src = byId.get(r.source);
             const relevant = src?.memberFilter
-                ? ` · 회원 알림 ${[...r.added, ...r.changed].filter(src.memberFilter).length}`
+                ? ` · 관련 ${[...r.added, ...r.changed].filter(src.memberFilter).length}`
                 : '';
             lines.push(
                 `${r.label}: 신규 ${r.added.length} · 수정 ${r.changed.length} · 삭제 ${r.removed.length}${relevant} (총 ${r.count}건)`,
@@ -118,6 +118,7 @@ export async function notifyWatchResults(
     for (const result of results) {
         const source = byId.get(result.source);
         if (!source) continue;
+        if (source.notifyMembers === false) continue; // 게시(관리자 승인) 시점에 따로 알린다
         const note = buildMemberNotification(source, result);
         if (!note) continue;
         try {
