@@ -151,6 +151,29 @@ RLS: SELECT는 전원(`anon` 포함 — 로그인 전 가입 폼 자동완성이
 
 `watch_sources` — 소스별 실행 상태, PK `source`: `last_run_at`, `last_ok_at`, `last_count`(급감 판정 기준), `consecutive_failures`(3회부터 관리자 텔레그램), `last_error`, `baseline_at`(최초 저장만 한 실행).
 
+### 8. `bulletins` (2026-09-20, K-1)
+
+사건·사고 전파. 원안위 보도자료(속보)와 NSIC 방사선사고 사례집(원인·등급 확정본)을 **사건 스레드**로 담는다 — 같은 사고가 두 기관에서 두 번 나오므로 속보가 루트(`parent_id NULL`), 확정본은 후속(`parent_id`=루트). `sql_query/migrate_add_bulletins.sql`. 본문 전문 미재게시(링크), 실명·상세주소 없음(기관명은 'OO병원' 마스킹 그대로).
+
+| 필드명                                                 | 타입          | 설명                                                                      | 기본값              |
+| :----------------------------------------------------- | :------------ | :------------------------------------------------------------------------ | :------------------ |
+| `id`                                                   | `uuid` (PK)   |                                                                           | `gen_random_uuid()` |
+| `source`                                               | `text`        | `nsic` \| `nssc` (CHECK)                                                  |                     |
+| `external_id`                                          | `text`        | NSIC `EXMN…` / NSSC `BBS_SEQ`. `UNIQUE(source, external_id)`              |                     |
+| `title`                                                | `text`        |                                                                           |                     |
+| `occurred_at`                                          | `date`        | NSIC 사고일 / NSSC 게시일                                                 |                     |
+| `incident_type`·`incident_grade`·`region`·`org_masked` | `text`        | NSIC 분류·등급·지역·마스킹 기관명                                         |                     |
+| `source_url`                                           | `text`        | 원문 링크                                                                 |                     |
+| `summary`·`cause`                                      | `text`        | NSIC 개요(inciMainCntn)·원인(inciCausCntn) / NSSC 는 관리자 작성          |                     |
+| `prep_note`                                            | `text`        | 관리자 "정기검사 준비 포인트"                                             |                     |
+| `relevant`                                             | `boolean`     | 의료·RI 관련(어댑터 판정) — 회원 화면 기본 필터                           | `false`             |
+| `status`                                               | `text`        | `pending` \| `published` \| `ignored` (CHECK). NSIC 최초 백필은 published | `'pending'`         |
+| `parent_id`                                            | `uuid` (FK)   | 확정된 스레드 루트(자기참조, ON DELETE SET NULL) — 관리자만 정한다        |                     |
+| `suggested_parent_id`                                  | `uuid` (FK)   | 자동 제안(사고일 ±60일 가장 가까운 속보) — 관리자 확인용                  |                     |
+| `published_at`·`created_at`·`updated_at`               | `timestamptz` |                                                                           |                     |
+
+RLS: SELECT `authenticated` — `status='published' OR is_current_user_admin()`. anon 없음(회원 계층). 쓰기는 서비스 롤(cron `ingestBulletins`, 액션 `reviewBulletin`).
+
 ### 8. `push_subscriptions`
 
 웹 푸시 알림 구독 정보를 저장합니다.

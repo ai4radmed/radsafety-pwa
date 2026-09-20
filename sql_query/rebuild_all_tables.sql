@@ -1220,4 +1220,48 @@ CREATE POLICY "Owners and admins delete pending resources"
         (auth.uid()::text = (storage.foldername(name))[1] OR public.is_current_user_admin() = true)
     );
 
+-- ============================================================
+-- 16. K-1 사건·사고 전파 (2026-09-20) — sql_query/migrate_add_bulletins.sql 과 동일 내용
+-- ============================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS public.bulletins (
+    id                   uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    source               text        NOT NULL CHECK (source IN ('nsic', 'nssc')),
+    external_id          text        NOT NULL,                 -- NSIC: EXMN… / NSSC: BBS_SEQ
+    title                text        NOT NULL,
+    occurred_at          date,                                 -- NSIC 사고일자 / NSSC 게시일
+    incident_type        text,                                 -- 분실·피폭·화재·기기고장·오염·방출·기타 (NSIC)
+    incident_grade       text,                                 -- (0등급)·1등급·미대상 … (NSIC)
+    region               text,                                 -- [서울] 등 (NSIC)
+    org_masked           text,                                 -- 'OO대학교병원' 그대로 (NSIC)
+    source_url           text        NOT NULL,                 -- 원문 링크(전문 재게시 ✗)
+    summary              text,                                 -- NSIC: 개요(inciMainCntn) / NSSC: 관리자 작성
+    cause                text,                                 -- NSIC: 사고원인(inciCausCntn)
+    prep_note            text,                                 -- 관리자 "정기검사 준비 포인트"
+    relevant             boolean     NOT NULL DEFAULT false,   -- 의료·RI 관련 판정(어댑터)
+    status               text        NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'published', 'ignored')),
+    parent_id            uuid        REFERENCES public.bulletins(id) ON DELETE SET NULL,  -- 확정된 스레드 루트
+    suggested_parent_id  uuid        REFERENCES public.bulletins(id) ON DELETE SET NULL,  -- 자동 제안(관리자 확인용)
+    published_at         timestamptz,
+    created_at           timestamptz NOT NULL DEFAULT now(),
+    updated_at           timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (source, external_id)
+);
+
+CREATE INDEX IF NOT EXISTS bulletins_status_occurred_idx ON public.bulletins (status, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS bulletins_parent_idx ON public.bulletins (parent_id);
+
+ALTER TABLE public.bulletins ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Published bulletins are visible to members" ON public.bulletins;
+CREATE POLICY "Published bulletins are visible to members"
+    ON public.bulletins FOR SELECT TO authenticated
+    USING (status = 'published' OR public.is_current_user_admin() = true);
+
+GRANT SELECT ON public.bulletins TO authenticated;
+
+COMMENT ON TABLE public.bulletins IS '사건·사고 전파(K-1) — 원안위 속보 + NSIC 사례집을 사건 스레드로. 본문 미재게시·개인정보 0. 쓰기는 서비스 롤.';
+
+COMMIT;
 

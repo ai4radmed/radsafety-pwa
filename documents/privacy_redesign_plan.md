@@ -399,6 +399,8 @@ bulletins
 
 **공수**: 어댑터 2개·테이블·폴러·워크플로 1일, 관리자·사용자 화면 1일, 명세·테스트 반나절 — **약 2.5일**.
 
+> **진행 상태(2026-09-20, 본체 구현)**: 위 파이프라인을 **Vercel Cron(`/api/cron/watch`) 위에 어댑터로** 얹어 구현(K-3 결정과 동일 — GitHub Actions 폴러 ✗). `bulletins` 테이블(`sql_query/migrate_add_bulletins.sql`, 위 스키마 + **`parent_id`·`suggested_parent_id`** 스레드 컬럼, `cause` 분리) · NSIC 어댑터(`src/lib/watch/sources/nsic-accidents.ts`, 목록 HTML 파싱 + 상세 JSON, 2026-09-20 실측 103건·의료 19건) · 수집 `src/lib/bulletins/ingest.ts`(NSIC 최초 백필 = published, 이후 pending; NSSC 관련 건만 pending; 스레드 후보 자동 제안 ±60일) · 액션 `reviewBulletin`(게시/무시/저장 + 스레드 확정 + 회원 알림 "사건·사고: …"/"후속: …") · 관리자 `admin/bulletins.astro` · 회원 `bulletins.astro`(스레드 표시, 기본 필터 의료·RI, 준비 포인트 강조) · 사이드바·이용안내 §12. 원안위·NSIC 소스는 `notifyMembers:false` — 감시 단계 회원 알림 ✗, **게시 시점에 사건 단위 1회**(속보·확정본 중복 알림 방지). 홈 배너·오프라인 캐시·`checklist_refs` 연결·자동 게시 토글은 미구현(후속). KINS 통보 메일은 K-2 결정(불필요)과 같은 이유로 보류 — RASIS 마스킹 누락 알림은 별건으로 다음 접촉 때.
+
 ### K-2. KINS 공식 자원 링크 — 권고 1·2번
 
 `src/data/resources.ts` 에 두 항목 추가: **방사선규제해석 SOS**, **이용자지원간행물**. 정확한 URL·인용 범위는 vault 노트 후속 행동대로 KINS 확인 후 기입. 공수 1시간. K-1 통보 메일에 함께 문의한다.

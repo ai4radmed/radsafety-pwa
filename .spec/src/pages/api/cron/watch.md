@@ -44,6 +44,7 @@ GET `/api/cron/watch`. Vercel Cron 이 **하루 1회** 호출해 `WATCH_SOURCES`
             "consecutiveFailures": 0
         }
     ],
+    "bulletins": [{ "source": "nsic", "inserted": 103, "backfilled": true, "pendingTitles": [] }],
     "delivery": { "memberNotified": 17, "telegram": true, "telegramConfigured": true }
 }
 ```
@@ -67,6 +68,7 @@ GET `/api/cron/watch`. Vercel Cron 이 **하루 1회** 호출해 `WATCH_SOURCES`
 
 1. `prerender = false`.
 2. **비밀값 미반환** — 응답에 토큰·지문·메타 없음(건수·제목만).
+   3a. **K-1 배선(2026-09-20)**: 소스별 `runSource` 뒤 `ingestBulletins(source.id, r.items, {persist:!dry})` — 원안위·NSIC 만 대상(그 외 null). 최초 실행은 NSIC 백필(published). dry 는 계획만 세우고 `pendingTitles` 로 보여 준다.
 3. 소스 하나 실패가 전체를 500 으로 만들지 않는다(엔진이 throw 하지 않음). 전부 실패했을 때만 502.
 4. 알림 전달 실패도 응답 실패로 바꾸지 않는다(`delivery` 로만 보고). `delivery.telegramConfigured` 는 env 가 런타임에 읽혔는지의 진단값(값 아님) — 2026-09-20 첫 cron 실행에서 `import.meta.env` 미인식이 실측돼 추가.
 5. `CRON_SECRET` 은 Vercel env(Production) — `.env.example` 참고, `PUBLIC_` 접두 금지.

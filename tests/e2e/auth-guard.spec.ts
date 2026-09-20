@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
  * /resources(다운로드), /guide, /settings. 회원 전용 = 사용자 메뉴(마이페이지·알림함·의견·개선의견조회)·관리자.
  */
 
-const PROTECTED_PAGES = ['/mypage', '/notifications', '/feedback', '/my-feedback', '/feedback-query'];
+const PROTECTED_PAGES = ['/mypage', '/notifications', '/feedback', '/my-feedback', '/feedback-query', '/bulletins'];
 
 const PUBLIC_PAGES = [
     '/inspection-prep',

@@ -138,7 +138,7 @@ async function runSourceInner(
             source: source.id,
             count: items.length,
         });
-        return { ...base, status: 'baseline', count: items.length, consecutiveFailures: 0 };
+        return { ...base, status: 'baseline', count: items.length, consecutiveFailures: 0, items };
     }
 
     const diff = computeDiff(existing, items);
@@ -177,5 +177,6 @@ async function runSourceInner(
         changed: diff.changed,
         removed: [...removedIds],
         consecutiveFailures: 0,
+        items,
     };
 }
