@@ -98,7 +98,9 @@ async function runSourceInner(
         return { ...base, status: 'error', count: 0, consecutiveFailures: failures + 1, error: message };
     }
 
-    if (isSuspiciousDrop(state?.lastCount ?? null, items.length)) {
+    // window 소스(최신 N건 게시판)는 건수가 창 크기로 고정이라 급감 판정은 0건일 때만 의미 있다.
+    const windowed = source.mode === 'window';
+    if (windowed ? items.length === 0 : isSuspiciousDrop(state?.lastCount ?? null, items.length)) {
         const message = `건수 급감: ${state?.lastCount ?? '-'} → ${items.length}`;
         logger.warn('감시 소스 급감 — diff 생략', { source: source.id, message });
         if (persist) {
@@ -140,6 +142,8 @@ async function runSourceInner(
     }
 
     const diff = computeDiff(existing, items);
+    // window 소스: 창 밖으로 밀려난 옛 글은 삭제가 아니다 — 누락·삭제 판정 생략.
+    if (windowed) diff.missing = [];
     const removedIds = new Set(
         diff.missing.filter((m) => m.missingCount + 1 >= MISSING_THRESHOLD).map((m) => m.externalId),
     );

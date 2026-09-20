@@ -18,24 +18,33 @@ const MAX_LISTED = 5;
 
 function itemLine(item: WatchItem): string {
     const tag = item.detail?.mngNo ? `[${item.detail.mngNo}] ` : '';
+    const date = item.detail?.writeDate ? `${item.detail.writeDate} · ` : '';
     const cat = item.category ? `${item.category} · ` : '';
-    return `${tag}${cat}${item.title}`;
+    const url = item.detail?.url ? `\n    ${item.detail.url}` : '';
+    return `${tag}${date}${cat}${item.title}${url}`;
 }
 
-/** 회원 알림 문안. 신규·수정이 없으면 null. */
+/** 소스의 memberFilter 를 적용한 회원 알림 대상(신규·수정). */
+function memberItems(source: WatchSource, result: SourceRunResult): { added: WatchItem[]; changed: WatchItem[] } {
+    const f = source.memberFilter ?? (() => true);
+    return { added: result.added.filter(f), changed: result.changed.filter(f) };
+}
+
+/** 회원 알림 문안. (memberFilter 적용 후) 신규·수정이 없으면 null. */
 export function buildMemberNotification(
     source: WatchSource,
     result: SourceRunResult,
 ): { title: string; message: string } | null {
-    const total = result.added.length + result.changed.length;
+    const { added, changed } = memberItems(source, result);
+    const total = added.length + changed.length;
     if (total === 0) return null;
 
     const parts: string[] = [];
-    if (result.added.length) parts.push(`신규 ${result.added.length}건`);
-    if (result.changed.length) parts.push(`수정 ${result.changed.length}건`);
+    if (added.length) parts.push(`신규 ${added.length}건`);
+    if (changed.length) parts.push(`수정 ${changed.length}건`);
     const title = `${source.label} ${parts.join(' · ')}`;
 
-    const lines = [...result.added, ...result.changed].slice(0, MAX_LISTED).map(itemLine);
+    const lines = [...added, ...changed].slice(0, MAX_LISTED).map(itemLine);
     if (total > MAX_LISTED) lines.push(`… 외 ${total - MAX_LISTED}건`);
     lines.push(`경로: ${source.guide}`);
     return { title, message: lines.join('\n') };
@@ -55,14 +64,23 @@ export function getWatchReportMode(): WatchReportMode {
 }
 
 /** 관리자 텔레그램 문안. changes 모드에서 알릴 것(변화·삭제·baseline·연속 실패)이 없으면 null. all 모드는 항상 문안. */
-export function buildAdminSummary(results: SourceRunResult[], mode: WatchReportMode = 'changes'): string | null {
+export function buildAdminSummary(
+    results: SourceRunResult[],
+    mode: WatchReportMode = 'changes',
+    sources: WatchSource[] = [],
+): string | null {
     const lines: string[] = [];
     let notable = false;
+    const byId = new Map(sources.map((s) => [s.id, s]));
     for (const r of results) {
         if (r.status === 'ok' && (r.added.length || r.changed.length || r.removed.length)) {
             notable = true;
+            const src = byId.get(r.source);
+            const relevant = src?.memberFilter
+                ? ` · 회원 알림 ${[...r.added, ...r.changed].filter(src.memberFilter).length}`
+                : '';
             lines.push(
-                `${r.label}: 신규 ${r.added.length} · 수정 ${r.changed.length} · 삭제 ${r.removed.length} (총 ${r.count}건)`,
+                `${r.label}: 신규 ${r.added.length} · 수정 ${r.changed.length} · 삭제 ${r.removed.length}${relevant} (총 ${r.count}건)`,
             );
             for (const item of [...r.added, ...r.changed].slice(0, MAX_LISTED)) lines.push(`  - ${itemLine(item)}`);
         } else if (r.status === 'ok') {
@@ -121,7 +139,7 @@ export async function notifyWatchResults(
     }
 
     let telegram = false;
-    const summary = buildAdminSummary(results, getWatchReportMode());
+    const summary = buildAdminSummary(results, getWatchReportMode(), sources);
     if (summary) {
         try {
             telegram = await sendTelegramMessage(summary);
