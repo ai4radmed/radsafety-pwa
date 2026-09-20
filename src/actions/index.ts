@@ -1,6 +1,6 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
-import { supabaseAnon, supabaseAdmin } from '../lib/supabase-server';
+import { supabaseAnon, supabaseAdmin, createAnonClient } from '../lib/supabase-server';
 import { sendFeedbackEmail } from '../lib/email';
 import { resolveFeedbackRecipients } from '../config/auth';
 import { createLogger } from '../lib/logger';
@@ -600,6 +600,108 @@ export const server = {
             }
 
             return { success: true, status: patch.status ?? row.status };
+        },
+    }),
+
+    // 관리자 지정/해제(2026-09-20) — 관리자가 다른 회원에게 관리자 권한을 주고 회수한다.
+    // 그전까지는 SQL 로만 가능했다. 가드 셋: ① 자기 자신 해제 금지(권한을 잃으면 화면으로 되돌릴 수 없다)
+    // ② 마지막 관리자 해제 금지(관리자 0명이면 아무도 관리 화면에 못 들어간다) ③ active 회원에게만 부여
+    // (로그인할 수 없는 계정에 권한은 무의미). 대상에게 알림 1건.
+    setAdminRole: defineAction({
+        input: z.object({
+            targetUserId: z.string().uuid(),
+            isAdmin: z.boolean(),
+        }),
+        handler: async ({ targetUserId, isAdmin }, context) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+            const admin = await requireAdmin(context);
+
+            if (targetUserId === admin.id && !isAdmin) {
+                throw new Error('자기 자신의 관리자 권한은 해제할 수 없습니다. 다른 관리자에게 요청하세요.');
+            }
+
+            const { data: target, error: targetError } = await supabaseAdmin
+                .from('profiles')
+                .select('id, username, status, is_admin')
+                .eq('id', targetUserId)
+                .single();
+            if (targetError || !target) throw new Error('대상 회원을 찾을 수 없습니다.');
+            if (isAdmin && target.status !== 'active') {
+                throw new Error('가입 승인된(활성) 회원만 관리자로 지정할 수 있습니다.');
+            }
+            if (Boolean(target.is_admin) === isAdmin) return { success: true, isAdmin }; // 멱등
+
+            if (!isAdmin) {
+                const { count } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('is_admin', true);
+                if ((count ?? 0) <= 1) throw new Error('마지막 관리자는 해제할 수 없습니다.');
+            }
+
+            const { error: updateError } = await supabaseAdmin
+                .from('profiles')
+                .update({ is_admin: isAdmin })
+                .eq('id', targetUserId);
+            if (updateError) throw new Error(updateError.message);
+
+            try {
+                await createNotification({
+                    type: 'admin_message',
+                    userId: targetUserId,
+                    senderId: admin.id,
+                    title: isAdmin ? '🔑 관리자 권한이 부여되었습니다' : '관리자 권한이 해제되었습니다',
+                    message: isAdmin
+                        ? '가입 승인·제출 검토·사건 게시·제안 답변·알림 발송을 할 수 있습니다. 화면을 새로고침하면 관리자 메뉴가 나타납니다.'
+                        : '관리자 메뉴 이용 권한이 해제되었습니다.',
+                    link: isAdmin ? '/admin/member-approval' : '/mypage',
+                    expiresInDays: 90,
+                });
+            } catch (error) {
+                logger.warn('관리자 권한 알림 실패(처리는 완료)', { error });
+            }
+
+            return { success: true, isAdmin };
+        },
+    }),
+
+    // 비밀번호 변경(2026-09-20). 아이디 로그인 계정은 **현재 비밀번호로 재인증**해야 바꿀 수 있고,
+    // 카카오 전용 계정은 비밀번호가 없으므로 세션만으로 최초 설정한다(아이디 로그인이라는 예비 경로 확보).
+    // 아이디 변경 기능은 두지 않는다 — 아이디는 작성자 표시의 식별자라 바뀌면 과거 게시물 추적이 끊긴다.
+    changePassword: defineAction({
+        input: z.object({
+            currentPassword: z.string().optional(),
+            newPassword: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
+        }),
+        handler: async ({ currentPassword, newPassword }, context) => {
+            if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
+            const user = await requireUser(context);
+
+            const { data: profile } = await supabaseAdmin
+                .from('profiles')
+                .select('provider')
+                .eq('id', user.id)
+                .maybeSingle();
+            const kakaoOnly = profile?.provider === 'kakao';
+
+            if (!kakaoOnly) {
+                if (!currentPassword) throw new Error('현재 비밀번호를 입력해 주세요.');
+                const { data: userRes } = await supabaseAdmin.auth.admin.getUserById(user.id);
+                const email = userRes?.user?.email;
+                if (!email) throw new Error('계정 정보를 찾을 수 없습니다.');
+                // 공유 클라이언트의 세션을 건드리지 않도록 1회성 클라이언트로 검증한다.
+                const probe = createAnonClient();
+                const { error: signInError } = await probe.auth.signInWithPassword({
+                    email,
+                    password: currentPassword,
+                });
+                await probe.auth.signOut().catch(() => undefined);
+                if (signInError) throw new Error('현재 비밀번호가 일치하지 않습니다.');
+            }
+
+            const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password: newPassword });
+            if (error) throw new Error(error.message);
+            return { success: true, kakaoOnly };
         },
     }),
 
