@@ -1,0 +1,282 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
+import { USAGE_MIN_DISPLAY_COUNT } from '../../lib/usage/config';
+
+// 사용 현황(관리자). 명세: .spec/src/pages/admin/usage.md
+// U 트랙 U-4 — 무엇이 쓰이는지·어디에서 이탈하는지 본다. 개인은 식별하지 않는다.
+export const prerender = false;
+const minDisplay = USAGE_MIN_DISPLAY_COUNT;
+---
+
+<DashboardLayout title="사용 현황">
+    <div class="usage-container">
+        <div class="header">
+            <div class="page-title"><Icon name="clipboard" size="24" /> 사용 현황</div>
+            <p class="subtitle">
+                어떤 기능이 쓰이는지, 어디에서 이용자가 멈추는지 봅니다. <strong
+                    >개인을 식별하거나 추적하지 않습니다</strong
+                > — 회원 식별자는 날짜와 섞어 되돌릴 수 없는 값으로 바꿔 세므로, 날이 바뀌면 같은 사람을 이을 수 없습니다.
+                비로그인 방문자는 서로 구분할 수단이 없어 "몇 명"에는 들어가지 않고 횟수에만 들어갑니다.
+            </p>
+        </div>
+
+        <div class="cards" id="activeCards">
+            <div class="card">
+                <div class="card-label">오늘 활성 회원</div><div class="card-value" id="todayActors">-</div>
+            </div>
+            <div class="card">
+                <div class="card-label">이번 주 활성 회원</div><div class="card-value" id="weekActors">-</div>
+            </div>
+            <div class="card">
+                <div class="card-label">이번 달 활성 회원</div><div class="card-value" id="monthActors">-</div>
+            </div>
+        </div>
+
+        <section>
+            <h2>회원 전용 벽 이탈 <span class="hint">최근 30일</span></h2>
+            <p class="note">
+                비회원이 회원 전용 화면을 열면 로그인 화면으로 돌아갑니다. 단계 사이의 감소폭이 곧 "어디에서
+                포기하는가"입니다.
+            </p>
+            <table class="funnel">
+                <thead><tr><th>단계</th><th>건수</th></tr></thead>
+                <tbody id="funnelBody">
+                    <tr><td colspan="2">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>많이 열린 화면 <span class="hint">최근 30일</span></h2>
+            <table>
+                <thead><tr><th>화면</th><th>조회</th><th>회원 수</th></tr></thead>
+                <tbody id="pagesBody">
+                    <tr><td colspan="3">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>가장 많이 벽을 만든 화면 <span class="hint">최근 30일</span></h2>
+            <p class="note">여기 위쪽에 있는 화면일수록 비회원 수요가 큽니다. 공개로 돌릴지 판단하는 근거가 됩니다.</p>
+            <table>
+                <thead><tr><th>화면</th><th>차단</th></tr></thead>
+                <tbody id="blockedBody">
+                    <tr><td colspan="2">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>기능별 사용 <span class="hint">최근 30일</span></h2>
+            <table>
+                <thead><tr><th>이벤트</th><th>횟수</th><th>회원 수</th></tr></thead>
+                <tbody id="eventsBody">
+                    <tr><td colspan="3">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <p class="footnote" id="footnote"></p>
+    </div>
+
+    <style>
+        .usage-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .subtitle,
+        .note {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+            margin: 1.25rem 0;
+        }
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.9rem;
+        }
+        .card-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .card-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+        }
+        section {
+            margin: 1.75rem 0;
+        }
+        h2 {
+            font-size: 1rem;
+            margin: 0 0 0.4rem;
+        }
+        .hint {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            margin-top: 0.5rem;
+        }
+        th,
+        td {
+            border: 1px solid var(--border-color);
+            padding: 0.45rem 0.6rem;
+            text-align: left;
+        }
+        th:not(:first-child),
+        td:not(:first-child) {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .footnote {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2rem;
+        }
+    </style>
+
+    <script define:vars={{ minDisplay }}>
+        // 가리기 기준은 서버 설정(USAGE_MIN_DISPLAY_COUNT)에서 온다. 0 이면 가리지 않는다.
+        function show(n) {
+            if (minDisplay > 0 && n > 0 && n < minDisplay) return '<' + minDisplay;
+            return String(n);
+        }
+
+        const EVENT_LABELS = {
+            page_view: '화면 조회',
+            gate_blocked: '회원 전용 벽',
+            signup: '가입 신청',
+            signup_approved: '가입 승인',
+            username_set: '아이디 설정',
+            login: '로그인',
+            resource_download: '자료 내려받기',
+            feedback_sent: '의견 보내기',
+            submission_sent: '자료·사례 제출',
+            offline_visit: '오프라인 접속',
+            pwa_installed: '앱 설치',
+            push_granted: '푸시 허용',
+        };
+
+        function rowsHtml(rows, cols, empty) {
+            if (rows.length === 0)
+                return '<tr><td colspan="' + cols + '">아직 기록이 없습니다. ' + empty + '</td></tr>';
+            return rows.join('');
+        }
+
+        async function load() {
+            let data;
+            try {
+                const res = await fetch('/api/admin/usage');
+                if (!res.ok) throw new Error(res.status === 403 ? '관리자 권한이 필요합니다.' : '불러오지 못했습니다.');
+                data = await res.json();
+            } catch (err) {
+                document.getElementById('footnote').textContent = err instanceof Error ? err.message : String(err);
+                return;
+            }
+
+            document.getElementById('todayActors').textContent = show(data.today.actors);
+            document.getElementById('weekActors').textContent = show(data.week.actors);
+            document.getElementById('monthActors').textContent = show(data.month.actors);
+
+            // 이벤트별 합계
+            const byEvent = new Map();
+            for (const r of data.daily) {
+                const cur = byEvent.get(r.event) || { count: 0, actors: 0 };
+                cur.count += r.count;
+                // 활성자는 날짜별 집계라 단순 합이 아니다 — 최댓값으로 "하루 최대 몇 명"을 보여 준다.
+                cur.actors = Math.max(cur.actors, r.unique_actors);
+                byEvent.set(r.event, cur);
+            }
+
+            const g = (e) => (byEvent.get(e) || { count: 0 }).count;
+            const loginViews = data.pages
+                .filter((p) => p.page === '/login' && p.event === 'page_view')
+                .reduce((s, p) => s + p.count, 0);
+            const funnel = [
+                ['회원 전용 벽을 만남', g('gate_blocked')],
+                ['로그인 화면 도달', loginViews],
+                ['가입 신청', g('signup')],
+                ['가입 승인', g('signup_approved')],
+            ];
+            document.getElementById('funnelBody').innerHTML = rowsHtml(
+                funnel.map((f) => '<tr><td>' + f[0] + '</td><td>' + show(f[1]) + '</td></tr>'),
+                2,
+                '집계는 매일 새벽에 갱신됩니다.',
+            );
+
+            // 화면별
+            const pageAgg = new Map();
+            const blockAgg = new Map();
+            for (const p of data.pages) {
+                const target = p.event === 'gate_blocked' ? blockAgg : p.event === 'page_view' ? pageAgg : null;
+                if (!target) continue;
+                const cur = target.get(p.page) || { count: 0, actors: 0 };
+                cur.count += p.count;
+                cur.actors = Math.max(cur.actors, p.unique_actors);
+                target.set(p.page, cur);
+            }
+            const sorted = (m) => [...m.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 20);
+
+            document.getElementById('pagesBody').innerHTML = rowsHtml(
+                sorted(pageAgg).map(
+                    ([page, v]) =>
+                        '<tr><td>' + page + '</td><td>' + show(v.count) + '</td><td>' + show(v.actors) + '</td></tr>',
+                ),
+                3,
+                '집계는 매일 새벽에 갱신됩니다.',
+            );
+
+            document.getElementById('blockedBody').innerHTML = rowsHtml(
+                sorted(blockAgg).map(([page, v]) => '<tr><td>' + page + '</td><td>' + show(v.count) + '</td></tr>'),
+                2,
+                '비회원이 회원 전용 화면을 연 적이 없습니다.',
+            );
+
+            document.getElementById('eventsBody').innerHTML = rowsHtml(
+                [...byEvent.entries()]
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .map(
+                        ([e, v]) =>
+                            '<tr><td>' +
+                            (EVENT_LABELS[e] || e) +
+                            '</td><td>' +
+                            show(v.count) +
+                            '</td><td>' +
+                            show(v.actors) +
+                            '</td></tr>',
+                    ),
+                3,
+                '집계는 매일 새벽에 갱신됩니다.',
+            );
+
+            document.getElementById('footnote').textContent =
+                '집계 갱신: 매일 새벽 (원시 기록은 보존 기간이 지나면 삭제되고 합계만 남습니다). ' +
+                '"회원 수"는 그 기간 중 하루 최대 인원입니다 — 날짜를 넘어 같은 사람을 이을 수 없으므로 합산하지 않습니다.' +
+                (minDisplay > 0 ? ' ' + minDisplay + '명 미만은 가려집니다.' : '');
+        }
+
+        load();
+        document.addEventListener('astro:page-load', load);
+    </script>
+</DashboardLayout>
