@@ -275,6 +275,14 @@ const { pathname } = Astro.url;
                 <span class="link-text">제안 검토</span>
             </a>
             <a
+                href="/admin/usage"
+                class={pathname.startsWith('/admin/usage') ? 'active' : ''}
+                aria-label="Usage Analytics"
+            >
+                <span class="icon"><Icon name="clipboard" size="18" /></span>
+                <span class="link-text">사용 현황</span>
+            </a>
+            <a
                 href="/admin/feedback"
                 class={pathname.startsWith('/admin/feedback') ? 'active' : ''}
                 aria-label="Feedback Management"
