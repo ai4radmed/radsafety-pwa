@@ -29,6 +29,16 @@ export const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
     },
 });
 
+/**
+ * 재인증 전용 1회성 anon 클라이언트 — 공유 `supabaseAnon` 의 메모리 세션을 건드리지 않는다.
+ * 비밀번호 변경 시 "현재 비밀번호" 검증(signInWithPassword)에만 쓴다(2026-09-20).
+ */
+export function createAnonClient() {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+}
+
 // Admin client for server-side operations (bypasses RLS)
 // Only create if service role key is available
 export const supabaseAdmin = supabaseServiceRoleKey
