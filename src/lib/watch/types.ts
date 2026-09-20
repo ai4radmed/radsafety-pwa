@@ -28,8 +28,13 @@ export interface WatchSource {
      *         누락·삭제 판정을 하지 않고, 급감 판정도 0건일 때만.
      */
     mode?: 'full' | 'window';
-    /** 회원 알림 대상 필터(예: 원안위 보도자료 중 의료·방사선 관련만). 없으면 전부. */
+    /** 관련(회원 관심) 판정 필터 — 회원 알림 대상·관리자 요약의 "관련 N". 없으면 전부. */
     memberFilter?: (item: WatchItem) => boolean;
+    /**
+     * false 면 감시 단계에서 회원 알림을 보내지 않는다(관리자 텔레그램만). bulletins 처럼 사람 승인 뒤
+     * 게시 시점에 알리는 소스용 — 감시 알림과 게시 알림이 겹치지 않게.
+     */
+    notifyMembers?: boolean;
     fetchItems(): Promise<WatchItem[]>;
 }
 
@@ -68,6 +73,8 @@ export interface SourceRunResult {
     removed: string[];
     consecutiveFailures: number;
     error?: string;
+    /** 이번 실행에서 수집한 전체 항목(ok·baseline 일 때). bulletins 수집·백필이 쓴다. */
+    items?: WatchItem[];
 }
 
 /** 영속 계층 — Supabase 구현(`supabase-store.ts`)과 테스트용 메모리 구현이 같은 계약을 따른다. */

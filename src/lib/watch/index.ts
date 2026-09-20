@@ -6,9 +6,10 @@
 import { kinsSosSource } from './sources/kins-sos';
 import { kinsPubSource } from './sources/kins-pub';
 import { nsscPressSource } from './sources/nssc-press';
+import { nsicAccidentSource } from './sources/nsic-accidents';
 import type { WatchSource } from './types';
 
-export const WATCH_SOURCES: WatchSource[] = [kinsSosSource, kinsPubSource, nsscPressSource];
+export const WATCH_SOURCES: WatchSource[] = [kinsSosSource, kinsPubSource, nsscPressSource, nsicAccidentSource];
 
 export { runSource, computeDiff, isSuspiciousDrop, MISSING_THRESHOLD, FAILURE_ALERT_THRESHOLD } from './engine';
 export { notifyWatchResults, buildMemberNotification, buildAdminSummary, getWatchReportMode } from './notify';

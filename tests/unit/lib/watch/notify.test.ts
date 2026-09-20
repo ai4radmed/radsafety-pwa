@@ -184,12 +184,22 @@ describe('watch/notify memberFilter · 직접 주소', () => {
         expect(buildMemberNotification(filtered, result({ added: [press('2', 'N')] }))).toBeNull();
     });
 
-    it('관리자 요약은 전체 신규와 회원 알림 건수를 함께 적는다', () => {
+    it('관리자 요약은 전체 신규와 관련 건수를 함께 적는다', () => {
         const s = buildAdminSummary(
             [result({ source: 'nssc-press', label: '원안위 보도자료', added: [press('1', 'Y'), press('2', 'N')] })],
             'changes',
             [filtered],
         )!;
-        expect(s).toContain('신규 2 · 수정 0 · 삭제 0 · 회원 알림 1');
+        expect(s).toContain('신규 2 · 수정 0 · 삭제 0 · 관련 1');
+    });
+});
+
+describe('watch/notify notifyMembers:false', () => {
+    it('감시 단계 회원 알림을 건너뛴다(게시 시점에 따로) — 텔레그램은 그대로', async () => {
+        const quiet: WatchSource = { ...source, id: 'nssc-press', notifyMembers: false };
+        const out = await notifyWatchResults([quiet], [result({ source: 'nssc-press', added: [item('1', '속보')] })]);
+        expect(createBulkNotifications).not.toHaveBeenCalled();
+        expect(out.memberNotified).toBe(0);
+        expect(out.telegram).toBe(true);
     });
 });

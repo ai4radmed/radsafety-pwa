@@ -14,6 +14,7 @@ import { createLogger } from '../../../lib/logger';
 import { isTelegramConfigured } from '../../../lib/telegram';
 import { WATCH_SOURCES, runSource, notifyWatchResults, supabaseWatchStore } from '../../../lib/watch';
 import type { SourceRunResult } from '../../../lib/watch';
+import { ingestBulletins, type IngestResult } from '../../../lib/bulletins/ingest';
 
 const logger = createLogger('api-cron-watch');
 
@@ -72,8 +73,13 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const startedAt = new Date();
     const results: SourceRunResult[] = [];
 
+    const bulletins: IngestResult[] = [];
     for (const source of WATCH_SOURCES) {
-        results.push(await runSource(source, supabaseWatchStore, { persist: !dry, now: startedAt }));
+        const r = await runSource(source, supabaseWatchStore, { persist: !dry, now: startedAt });
+        results.push(r);
+        // K-1: 원안위 속보·NSIC 사례집은 사건 레코드(bulletins)로도 수집(최초 실행 = 백필). 감시 결과와 독립.
+        const ingested = await ingestBulletins(source.id, r.items, { persist: !dry });
+        if (ingested) bulletins.push(ingested);
     }
 
     // telegramConfigured: 값이 아니라 "읽혔는가" 만 — 2026-09-20 cron 첫 실행에서 env 미인식이 실측돼 진단값으로 노출.
@@ -92,6 +98,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             ts: startedAt.toISOString(),
             ms: Date.now() - startedAt.getTime(),
             results: results.map(summarize),
+            bulletins,
             delivery,
         },
         allFailed ? 502 : 200,

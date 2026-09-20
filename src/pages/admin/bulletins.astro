@@ -1,0 +1,381 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Icon from '../../components/Icon.astro';
+
+// 사건·사고 검토(관리자). 명세: .spec/src/pages/admin/bulletins.md
+// K-1(2026-09-20): cron 이 모은 원안위 속보·NSIC 사례집을 사건 스레드로 확정하고 게시한다.
+// 자동은 suggested_parent_id 까지 — 확정(parent_id)·게시는 여기서 사람이 한다(오판 = 회원 오알림).
+export const prerender = false;
+---
+
+<DashboardLayout title="사건·사고 검토">
+    <div class="bulletins-admin">
+        <div class="header">
+            <div class="page-title"><Icon name="alert-circle" size="24" /> 사건·사고 검토</div>
+            <p class="subtitle">
+                매일 아침 수집된 <strong>원안위 보도자료(속보)</strong>와 <strong>NSIC 방사선사고 사례집(확정본)</strong
+                >입니다. 같은 사고가 두 기관에서 두 번 나오므로, 확정본은 앞선 속보의 <strong>후속</strong>으로 묶어
+                게시하세요 (자동 제안이 있으면 미리 골라져 있습니다). <strong>게시</strong>하면 회원 전체에 알림이
+                갑니다. "정기검사 준비 포인트"는 회원 화면에서 강조됩니다.
+            </p>
+        </div>
+
+        <div class="toolbar">
+            <div class="tabs">
+                <button class="tab active" data-status="pending">검토 대기 (<span id="cntPending">0</span>)</button>
+                <button class="tab" data-status="published">게시됨 (<span id="cntPublished">0</span>)</button>
+                <button class="tab" data-status="ignored">무시 (<span id="cntIgnored">0</span>)</button>
+            </div>
+            <button id="refreshBtn" class="btn-secondary">🔄 새로고침</button>
+        </div>
+
+        <div id="list" class="list"><p class="muted">불러오는 중...</p></div>
+    </div>
+
+    <style>
+        .bulletins-admin {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .page-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0.5rem 0 1rem;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .tabs {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .tab {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 99px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .tab.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: inherit;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .card {
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-card);
+            padding: 0.9rem 1rem;
+        }
+        .card.relevant {
+            border-left-color: var(--accent);
+        }
+        .meta {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+        .badge {
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 0.05rem 0.45rem;
+        }
+        .badge.src-nssc {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+        .badge.src-nsic {
+            color: #22c55e;
+            border-color: #22c55e;
+        }
+        .badge.rel {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .title {
+            font-weight: 700;
+            margin: 0.1rem 0 0.4rem;
+        }
+        .title a {
+            color: inherit;
+        }
+        .summary {
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            max-height: 7.5em;
+            overflow: hidden;
+        }
+        .summary.open {
+            max-height: none;
+        }
+        .more {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0;
+        }
+        .form {
+            display: grid;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+        }
+        .form label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: grid;
+            gap: 0.2rem;
+        }
+        .form textarea,
+        .form select {
+            width: 100%;
+            background: var(--bg-primary, transparent);
+            color: inherit;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.45rem;
+            font: inherit;
+        }
+        .form textarea {
+            min-height: 3.2em;
+            resize: vertical;
+        }
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        .btn {
+            border: none;
+            border-radius: 6px;
+            padding: 0.45rem 0.9rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .btn-publish {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-ignore {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: inherit;
+        }
+        .btn-save {
+            background: #334155;
+            color: #fff;
+        }
+        .muted {
+            color: var(--text-muted);
+        }
+        .hint {
+            font-size: 0.75rem;
+            color: var(--accent);
+        }
+    </style>
+</DashboardLayout>
+
+<script>
+    import { userProfile } from '../../store/user';
+    import { supabase } from '../../lib/supabase-browser';
+    import { actions } from 'astro:actions';
+
+    type Bulletin = {
+        id: string;
+        source: 'nsic' | 'nssc';
+        title: string;
+        occurred_at: string | null;
+        incident_type: string | null;
+        incident_grade: string | null;
+        region: string | null;
+        org_masked: string | null;
+        source_url: string;
+        summary: string | null;
+        cause: string | null;
+        prep_note: string | null;
+        relevant: boolean;
+        status: 'pending' | 'published' | 'ignored';
+        parent_id: string | null;
+        suggested_parent_id: string | null;
+    };
+
+    function esc(s: string | null | undefined): string {
+        return (s ?? '').replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+        );
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const currentUser = userProfile.get() as any;
+        if (!currentUser?.id) return;
+        if (currentUser.is_admin !== 'true') {
+            alert('관리자 권한이 필요합니다.');
+            window.location.href = '/mypage';
+            return;
+        }
+
+        const listEl = document.getElementById('list')!;
+        const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.tab'));
+        let status: Bulletin['status'] = 'pending';
+        let all: Bulletin[] = [];
+
+        tabs.forEach((t) =>
+            t.addEventListener('click', () => {
+                tabs.forEach((x) => x.classList.toggle('active', x === t));
+                status = t.dataset.status as Bulletin['status'];
+                render();
+            }),
+        );
+        document.getElementById('refreshBtn')?.addEventListener('click', load);
+        load();
+
+        async function load() {
+            listEl.innerHTML = '<p class="muted">불러오는 중...</p>';
+            const { data, error } = await supabase
+                .from('bulletins')
+                .select(
+                    'id, source, title, occurred_at, incident_type, incident_grade, region, org_masked, source_url, summary, cause, prep_note, relevant, status, parent_id, suggested_parent_id',
+                )
+                .order('occurred_at', { ascending: false, nullsFirst: false })
+                .limit(500);
+            if (error) {
+                listEl.innerHTML = `<p style="color:red">로드 실패: ${esc(error.message)}</p>`;
+                return;
+            }
+            all = (data ?? []) as Bulletin[];
+            (['pending', 'published', 'ignored'] as const).forEach((s) => {
+                const el = document.getElementById(`cnt${s[0].toUpperCase()}${s.slice(1)}`);
+                if (el) el.textContent = String(all.filter((b) => b.status === s).length);
+            });
+            render();
+        }
+
+        // 상위 후보: 루트(parent 없음)이고 무시되지 않은 사건 — 확정본은 속보(nssc)에 붙는 게 보통이지만 제한하지 않는다.
+        function parentOptions(b: Bulletin): string {
+            const chosen = b.parent_id ?? b.suggested_parent_id ?? '';
+            const opts = all
+                .filter((c) => c.id !== b.id && !c.parent_id && c.status !== 'ignored')
+                .map(
+                    (c) =>
+                        `<option value="${c.id}" ${c.id === chosen ? 'selected' : ''}>${esc(c.occurred_at ?? '')} [${c.source === 'nssc' ? '원안위' : 'NSIC'}] ${esc(c.title)}</option>`,
+                )
+                .join('');
+            return `<option value="" ${chosen ? '' : 'selected'}>— 새 사건(스레드 시작)</option>${opts}`;
+        }
+
+        function render() {
+            const rows = all.filter((b) => b.status === status);
+            if (!rows.length) {
+                listEl.innerHTML = '<p class="muted">해당 항목이 없습니다.</p>';
+                return;
+            }
+            listEl.innerHTML = rows
+                .map((b) => {
+                    const srcLabel = b.source === 'nssc' ? '원안위 보도자료' : 'NSIC 사례집';
+                    const body = [b.summary, b.cause ? `사고원인: ${b.cause}` : ''].filter(Boolean).join('\n');
+                    const suggested =
+                        !b.parent_id && b.suggested_parent_id
+                            ? '<span class="hint">자동 제안된 상위 사건이 골라져 있습니다 — 확인 후 게시</span>'
+                            : '';
+                    return `<div class="card ${b.relevant ? 'relevant' : ''}" data-id="${b.id}">
+                        <div class="meta">
+                            <span class="badge src-${b.source}">${srcLabel}</span>
+                            ${b.relevant ? '<span class="badge rel">의료·RI 관련</span>' : ''}
+                            <span>${esc(b.occurred_at ?? '')}</span>
+                            ${b.incident_type ? `<span>${esc(b.incident_type)}</span>` : ''}
+                            ${b.incident_grade ? `<span>${esc(b.incident_grade)}</span>` : ''}
+                            ${b.region ? `<span>${esc(b.region)}</span>` : ''}
+                            ${b.org_masked ? `<span>${esc(b.org_masked)}</span>` : ''}
+                        </div>
+                        <div class="title"><a href="${esc(b.source_url)}" target="_blank" rel="noopener noreferrer">${esc(b.title)} ↗</a></div>
+                        ${body ? `<div class="summary">${esc(body)}</div><button class="more" data-more>더 보기</button>` : ''}
+                        <div class="form">
+                            <label>요약(회원에게 보임)<textarea data-f="summary">${esc(b.summary)}</textarea></label>
+                            <label>정기검사 준비 포인트<textarea data-f="prep">${esc(b.prep_note)}</textarea></label>
+                            <label>상위 사건(스레드) ${suggested}<select data-f="parent">${parentOptions(b)}</select></label>
+                        </div>
+                        <div class="actions">
+                            ${b.status !== 'published' ? '<button class="btn btn-publish" data-act="publish">게시 + 회원 알림</button>' : '<button class="btn btn-save" data-act="update">저장</button>'}
+                            ${b.status !== 'ignored' ? '<button class="btn btn-ignore" data-act="ignore">무시</button>' : '<button class="btn btn-save" data-act="update">되살리기(저장)</button>'}
+                        </div>
+                    </div>`;
+                })
+                .join('');
+
+            listEl.querySelectorAll<HTMLButtonElement>('[data-more]').forEach((btn) =>
+                btn.addEventListener('click', () => {
+                    const s = btn.previousElementSibling as HTMLElement;
+                    s.classList.toggle('open');
+                    btn.textContent = s.classList.contains('open') ? '접기' : '더 보기';
+                }),
+            );
+            listEl
+                .querySelectorAll<HTMLButtonElement>('[data-act]')
+                .forEach((btn) => btn.addEventListener('click', () => act(btn)));
+        }
+
+        async function act(btn: HTMLButtonElement) {
+            const card = btn.closest<HTMLElement>('.card')!;
+            const id = card.dataset.id!;
+            const decision = btn.dataset.act as 'publish' | 'ignore' | 'update';
+            const summary = (card.querySelector<HTMLTextAreaElement>('[data-f="summary"]')!.value || '').trim();
+            const prepNote = (card.querySelector<HTMLTextAreaElement>('[data-f="prep"]')!.value || '').trim();
+            const parentRaw = card.querySelector<HTMLSelectElement>('[data-f="parent"]')!.value;
+            const parentId = parentRaw ? parentRaw : null;
+            if (decision === 'publish' && !confirm('게시하면 회원 전체에 알림이 갑니다. 진행할까요?')) return;
+            btn.disabled = true;
+            const { data, error } = await actions.reviewBulletin({
+                adminId: currentUser.id,
+                id,
+                decision,
+                summary,
+                prepNote,
+                parentId,
+            });
+            btn.disabled = false;
+            if (error || !data?.success) {
+                alert(`처리 실패: ${error?.message ?? '알 수 없는 오류'}`);
+                return;
+            }
+            await load();
+        }
+    });
+</script>

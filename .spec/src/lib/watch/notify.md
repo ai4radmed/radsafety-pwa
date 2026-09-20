@@ -24,7 +24,8 @@
 4. baseline 은 관리자에게만 "N건 저장" 1통 — 첫 배포가 제대로 붙었는지 확인용.
 5. 수신 대상은 `active` 만(pending·suspended·banned 제외). 관리자도 active 면 받는다.
 6. 링크는 소스의 `link` — RASIS 는 앱 내 `/kins`(직접 주소 없음), 원안위는 목록 페이지 URL. 알림함은 `window.location.href = link` 라 외부 URL 도 열린다. 건별 직접 주소는 본문 줄에.
-7. **회원 필터** — 원안위 보도자료는 `detail.relevant==='Y'`(부서·제목 판정) 만 회원에게, 전체 건수는 관리자 하트비트에.
+7. **회원 필터** — `memberFilter`(관련 판정)를 통과한 건만 회원에게; 관리자 요약엔 전체 신규 + "관련 N".
+8. **`notifyMembers:false` 소스(원안위·NSIC)** 는 감시 단계에서 회원 알림을 보내지 않는다 — K-1 게시(`reviewBulletin`) 시점에 사건 단위로 알린다(속보·확정본 중복 알림 방지). 관리자 텔레그램은 그대로.
 
 ## 관련
 

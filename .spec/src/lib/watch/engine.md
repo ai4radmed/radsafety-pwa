@@ -10,7 +10,7 @@
 
 | 이름                                       | 설명                                                                                                                                                                                           |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `WATCH_SOURCES`                            | 감시 대상 레지스트리 `[kinsSosSource, kinsPubSource, nsscPressSource]`. 새 소스 = 어댑터 파일 + 여기 한 줄.                                                                                    |
+| `WATCH_SOURCES`                            | 감시 대상 레지스트리 `[kinsSosSource, kinsPubSource, nsscPressSource, nsicAccidentSource]`. 새 소스 = 어댑터 파일 + 여기 한 줄.                                                                |
 | `computeDiff(existing, next)`              | 순수. `{ added, changed, missing }`. 삭제 확정 행(`removedAt`)이 다시 보이면 **added** 로 취급.                                                                                                |
 | `isSuspiciousDrop(prevCount, nextCount)`   | 순수. `nextCount === 0` 또는 직전 정상 건수의 **절반 미만**이면 true. 직전 건수 없으면(최초) false.                                                                                            |
 | `runSource(source, store, {persist, now})` | 한 소스 1회 실행. **절대 throw 하지 않고** `SourceRunResult` 로 보고(다른 소스를 막지 않기 위해). `persist:false` 는 dry-run(스토어 무기록).                                                   |
