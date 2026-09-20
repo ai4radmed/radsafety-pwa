@@ -174,6 +174,29 @@ RLS: SELECT는 전원(`anon` 포함 — 로그인 전 가입 폼 자동완성이
 
 RLS: SELECT `authenticated` — `status='published' OR is_current_user_admin()`. anon 없음(회원 계층). 쓰기는 서비스 롤(cron `ingestBulletins`, 액션 `reviewBulletin`).
 
+### 9. `proposals` · `proposal_quota` (2026-09-20, 3단계)
+
+제도 개선 제안(익명 기본/아이디). `sql_query/migrate_add_proposals.sql`. **없는 컬럼이 설계** — ip·user_agent·hospital_id 없음. 쓰기는 서비스 롤(액션 `submitProposal` 등) 한 경로뿐.
+
+| 필드명                     | 타입          | 설명                                                                                                                   | 기본값         |
+| :------------------------- | :------------ | :--------------------------------------------------------------------------------------------------------------------- | :------------- |
+| `id`                       | `uuid` (PK)   |                                                                                                                        |                |
+| `category`                 | `text`        | 안전관리 \| 피폭 \| 규제 \| 기타 (CHECK)                                                                               |                |
+| `body`                     | `text`        |                                                                                                                        |                |
+| `attachments`              | `jsonb`       | `[{storage_path, size, kind}]` — 비공개 버킷 `proposal-attachments/<uuid>/<uuid>.<ext>`, 원본 파일명 없음, 메타 제거본 | `[]`           |
+| `status`                   | `text`        | new \| reviewing \| answered \| closed (CHECK)                                                                         | `'new'`        |
+| `admin_note`·`admin_reply` | `text`        | 관리자 내부 메모 / 제안자에게 보이는 답변                                                                              |                |
+| `mode`                     | `text`        | `anonymous` \| `signed` (CHECK)                                                                                        |                |
+| `author_id`                | `uuid` (FK)   | signed 만. **anonymous 는 NULL 강제**(CHECK `proposals_anonymous_has_no_identity`)                                     |                |
+| `created_at`               | `timestamptz` | signed 만(초 단위). anonymous NULL                                                                                     |                |
+| `created_day`              | `date`        | 두 모드 공통 — anonymous 의 유일한 시간 정보                                                                           | `CURRENT_DATE` |
+| `answered_at`              | `timestamptz` |                                                                                                                        |                |
+| `receipt_hash`             | `text` (UQ)   | anonymous 만 — 접수증 코드(`RS-XXXX-XXXX`) sha256. 조회는 코드로만                                                     |                |
+
+RLS: SELECT `authenticated` — `author_id = auth.uid() OR is_current_user_admin()`(익명 행은 관리자만). INSERT/UPDATE/DELETE 정책 없음.
+
+`proposal_quota(key PK, day, count)` — 1인 1일 3건. anonymous 키 = HMAC(user_id|day, `PROPOSAL_QUOTA_SECRET` 또는 서비스 롤 키 해시 파생), signed 키 = `user_id|day`. `proposals` 에 키를 저장하지 않으므로 제안↔사용자 연결 불가. 지난 날 행은 제출 시 정리. 정책 없음(서비스 롤).
+
 ### 8. `push_subscriptions`
 
 웹 푸시 알림 구독 정보를 저장합니다.

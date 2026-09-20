@@ -1,0 +1,378 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Icon from '../components/Icon.astro';
+import { PROPOSAL_CATEGORIES, PROPOSAL_NOTICES, BODY_MIN, ATTACHMENT_MAX_COUNT } from '../lib/proposals';
+
+// 제도 개선 제안 제출(회원 전용). 명세: .spec/src/pages/proposals.md
+// 3단계(2026-09-20): 익명(기본)/아이디 선택. 문은 로그인으로 지키고 글에는 흔적을 남기지 않는다(서버 액션이 문지기).
+export const prerender = false;
+---
+
+<DashboardLayout title="제도 개선 제안">
+    <div class="proposals">
+        <div class="header">
+            <div class="page-title"><Icon name="pencil" size="24" /> 제도 개선 제안</div>
+            <p class="subtitle">
+                방사선안전관리 <strong>제도·규제·현장 관행</strong>에 대한 개선 제안을 받습니다(앱 오류·사용성은
+                <a href="/feedback">의견보내기</a>). 기본은 <strong>익명</strong>이며, 익명 제안은 관리자도 작성자를 알
+                수 없습니다. 접수된 제안은 관리자가 검토해 답변하고, 가치 있는 제안은 특정 정보를 지운 뒤 지적권고사례로
+                축적됩니다.
+            </p>
+        </div>
+
+        <form id="proposalForm" class="form" novalidate>
+            <fieldset class="mode">
+                <legend>제출 방식</legend>
+                <label class="mode-opt">
+                    <input type="radio" name="mode" value="anonymous" checked />
+                    <span><strong>익명</strong> — {PROPOSAL_NOTICES.anonymous}</span>
+                </label>
+                <label class="mode-opt">
+                    <input type="radio" name="mode" value="signed" />
+                    <span><strong>아이디</strong> — {PROPOSAL_NOTICES.signed}</span>
+                </label>
+            </fieldset>
+
+            <label>
+                분류
+                <select name="category" required>
+                    {PROPOSAL_CATEGORIES.map((c) => <option value={c}>{c}</option>)}
+                </select>
+            </label>
+
+            <label>
+                내용 (<span id="bodyCount">0</span>자, 최소 {BODY_MIN}자)
+                <textarea
+                    name="body"
+                    rows="8"
+                    minlength={BODY_MIN}
+                    maxlength="4000"
+                    required
+                    placeholder="무엇이 문제이고, 어떻게 바뀌면 좋을지 적어 주세요."></textarea>
+            </label>
+
+            <div class="attach">
+                <label class="attach-btn">
+                    <Icon name="clipboard" size="16" /> 첨부 (이미지·PDF, 파일당 3MB, 최대 {ATTACHMENT_MAX_COUNT}개)
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                        multiple
+                        hidden
+                    />
+                </label>
+                <ul id="attachList" class="attach-list"></ul>
+                <p class="hint">
+                    첨부는 서버에서 촬영 정보(EXIF·위치)·문서 작성자 정보를 지운 뒤 저장되며, 원본 파일명은 보관하지
+                    않습니다.
+                </p>
+            </div>
+
+            <div class="notice">
+                <p>※ {PROPOSAL_NOTICES.common1}</p>
+                <p>※ {PROPOSAL_NOTICES.common2}</p>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-primary">제안 제출</button>
+        </form>
+
+        <div id="result" class="result" hidden>
+            <div id="resultAnon" hidden>
+                <h2>접수되었습니다</h2>
+                <p>
+                    아래 <strong>접수증 코드</strong>는 지금 한 번만 표시됩니다. 답변 확인에 필요하니 안전한 곳에 적어
+                    두세요.
+                </p>
+                <div class="code-box">
+                    <code id="receiptCode"></code><button type="button" id="copyBtn" class="btn-secondary">복사</button>
+                </div>
+                <p class="hint">
+                    답변 확인: <a href="/proposal-lookup">제안 조회</a>에서 코드를 입력하세요. 코드를 잃으면 확인할 수
+                    없습니다.
+                </p>
+            </div>
+            <div id="resultSigned" hidden>
+                <h2>접수되었습니다</h2>
+                <p>
+                    관리자가 답변하면 알림으로 알려드립니다. 진행 상태는 <a href="/my-proposals">내 제안</a>에서 볼 수
+                    있습니다.
+                </p>
+            </div>
+            <button type="button" id="againBtn" class="btn-secondary">다른 제안 작성</button>
+        </div>
+    </div>
+
+    <style>
+        .proposals {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+        .page-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0.5rem 0 1rem;
+        }
+        .form {
+            display: grid;
+            gap: 0.9rem;
+        }
+        .form > label {
+            display: grid;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .form select,
+        .form textarea {
+            width: 100%;
+            background: var(--bg-primary, transparent);
+            color: inherit;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.55rem;
+            font: inherit;
+        }
+        .mode {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            display: grid;
+            gap: 0.5rem;
+        }
+        .mode legend {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding: 0 0.3rem;
+        }
+        .mode-opt {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        .attach-btn {
+            display: inline-flex;
+            gap: 0.4rem;
+            align-items: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--accent);
+        }
+        .attach-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.4rem 0 0;
+            display: grid;
+            gap: 0.25rem;
+            font-size: 0.82rem;
+        }
+        .attach-list li {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.3rem 0.5rem;
+        }
+        .attach-list button {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+        }
+        .hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin: 0.3rem 0 0;
+        }
+        .notice {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-left: 3px solid #f59e0b;
+            padding-left: 0.6rem;
+            line-height: 1.6;
+        }
+        .notice p {
+            margin: 0;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.65rem 1.2rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+            justify-self: start;
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: inherit;
+            border-radius: 8px;
+            padding: 0.45rem 0.9rem;
+            cursor: pointer;
+        }
+        .result {
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            background: var(--bg-card);
+            padding: 1rem;
+            display: grid;
+            gap: 0.6rem;
+        }
+        .result h2 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+        .code-box {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .code-box code {
+            font-size: 1.4rem;
+            letter-spacing: 0.08em;
+            padding: 0.4rem 0.7rem;
+            border: 1px dashed var(--accent);
+            border-radius: 8px;
+        }
+    </style>
+</DashboardLayout>
+
+<script>
+    import { actions, isInputError } from 'astro:actions';
+
+    type Stored = { storage_path: string; size: number; kind: 'image' | 'pdf' };
+    const MAX_FILES = 3;
+    const MAX_BYTES = 3 * 1024 * 1024;
+
+    document.addEventListener('astro:page-load', () => {
+        const form = document.getElementById('proposalForm') as HTMLFormElement | null;
+        if (!form) return;
+        const bodyEl = form.querySelector<HTMLTextAreaElement>('[name="body"]')!;
+        const countEl = document.getElementById('bodyCount')!;
+        const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+        const attachList = document.getElementById('attachList')!;
+        const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+        const result = document.getElementById('result')!;
+        const attachments: Stored[] = [];
+
+        bodyEl.addEventListener('input', () => (countEl.textContent = String(bodyEl.value.trim().length)));
+
+        function renderAttachments() {
+            attachList.innerHTML = attachments
+                .map(
+                    (a, i) =>
+                        `<li><span>${a.kind === 'pdf' ? 'PDF' : '이미지'} · ${(a.size / 1024).toFixed(0)}KB (메타데이터 제거됨)</span><button type="button" data-rm="${i}">제거</button></li>`,
+                )
+                .join('');
+            attachList.querySelectorAll<HTMLButtonElement>('[data-rm]').forEach((b) =>
+                b.addEventListener('click', () => {
+                    attachments.splice(Number(b.dataset.rm), 1);
+                    renderAttachments();
+                }),
+            );
+        }
+
+        fileInput.addEventListener('change', async () => {
+            const files = Array.from(fileInput.files ?? []);
+            fileInput.value = '';
+            for (const file of files) {
+                if (attachments.length >= MAX_FILES) {
+                    alert(`최대 ${MAX_FILES}개까지 첨부할 수 있습니다.`);
+                    break;
+                }
+                if (file.size > MAX_BYTES) {
+                    alert(`${file.name}: 3MB 를 넘습니다.`);
+                    continue;
+                }
+                const fd = new FormData();
+                fd.append('file', file);
+                submitBtn.disabled = true;
+                const { data, error } = await actions.uploadProposalAttachment(fd);
+                submitBtn.disabled = false;
+                if (error || !data) {
+                    alert(`첨부 실패: ${error?.message ?? '알 수 없는 오류'}`);
+                    continue;
+                }
+                attachments.push(data);
+                renderAttachments();
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const mode = (form.querySelector<HTMLInputElement>('[name="mode"]:checked')?.value ?? 'anonymous') as
+                | 'anonymous'
+                | 'signed';
+            const category = (form.querySelector<HTMLSelectElement>('[name="category"]')!.value || '기타') as any;
+            const body = bodyEl.value.trim();
+            if (body.length < 20) {
+                alert('내용은 20자 이상 적어 주세요.');
+                return;
+            }
+            if (
+                mode === 'anonymous' &&
+                !confirm(
+                    '익명으로 제출합니다. 접수증 코드는 한 번만 표시되며 잃으면 답변을 확인할 수 없습니다. 계속할까요?',
+                )
+            )
+                return;
+            submitBtn.disabled = true;
+            const { data, error } = await actions.submitProposal({ mode, category, body, attachments });
+            submitBtn.disabled = false;
+            if (error) {
+                alert(isInputError(error) ? '입력을 확인해 주세요.' : `제출 실패: ${error.message}`);
+                return;
+            }
+            form.hidden = true;
+            result.hidden = false;
+            const anon = document.getElementById('resultAnon')!;
+            const signed = document.getElementById('resultSigned')!;
+            if (data?.receipt) {
+                anon.hidden = false;
+                signed.hidden = true;
+                document.getElementById('receiptCode')!.textContent = data.receipt;
+            } else {
+                anon.hidden = true;
+                signed.hidden = false;
+            }
+        });
+
+        document.getElementById('copyBtn')?.addEventListener('click', async () => {
+            const code = document.getElementById('receiptCode')!.textContent ?? '';
+            try {
+                await navigator.clipboard.writeText(code);
+                alert('복사되었습니다.');
+            } catch {
+                alert('복사에 실패했습니다. 직접 적어 두세요.');
+            }
+        });
+        document.getElementById('againBtn')?.addEventListener('click', () => {
+            attachments.length = 0;
+            renderAttachments();
+            form.reset();
+            countEl.textContent = '0';
+            result.hidden = true;
+            form.hidden = false;
+        });
+    });
+</script>
