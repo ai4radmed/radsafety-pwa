@@ -18,6 +18,12 @@ export const prerender = false;
                 수 없습니다. 접수된 제안은 관리자가 검토해 답변하고, 가치 있는 제안은 특정 정보를 지운 뒤 지적권고사례로
                 축적됩니다.
             </p>
+            <p class="subtitle note">
+                <strong>익명이란</strong> "로그인하지 않는 것"이 아니라 <strong
+                    >로그인 뒤 작성자를 기록하지 않는 것</strong
+                >입니다. 회원만 제안할 수 있게 한 이유는 봇·도배를 막기 위해서이며, 익명 제안은 서버가 로그인 사실만
+                확인하고 버려 관리자에게 "회원 중 누군가"로만 남습니다.
+            </p>
         </div>
 
         <form id="proposalForm" class="form" novalidate>
@@ -120,6 +126,11 @@ export const prerender = false;
             font-size: 0.9rem;
             line-height: 1.6;
             margin: 0.5rem 0 1rem;
+        }
+        .subtitle.note {
+            border-left: 3px solid var(--accent);
+            padding-left: 0.6rem;
+            margin-top: -0.4rem;
         }
         .form {
             display: grid;
