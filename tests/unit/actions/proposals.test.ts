@@ -11,6 +11,7 @@ const ACT = read('src/actions/proposals.ts');
 const AUTH_MOD = read('src/actions/auth.ts');
 const IDX = read('src/actions/index.ts');
 const SQL = read('sql_query/migrate_add_proposals.sql');
+const RELAX = read('sql_query/migrate_relax_proposal_author_check.sql');
 const SUBMIT = read('src/pages/proposals.astro');
 const LOOKUP = read('src/pages/proposal-lookup.astro');
 const MINE = read('src/pages/my-proposals.astro');
@@ -61,6 +62,18 @@ describe('actions/proposals — 문지기는 세션', () => {
 });
 
 describe('migrate_add_proposals.sql — 없는 컬럼이 설계', () => {
+    it('탈퇴 가능: signed 의 author_id 는 nullable — 익명 분기는 그대로', () => {
+        // 2026-09-20 버그: ON DELETE SET NULL 과 CHECK 가 충돌해 아이디 제안 작성자가 탈퇴 불가였다.
+        expect(RELAX).toMatch(/mode = 'signed'\s+AND created_at IS NOT NULL AND receipt_hash IS NULL/);
+        expect(RELAX).not.toMatch(/mode = 'signed'\s+AND author_id IS NOT NULL/);
+        expect(RELAX).toMatch(
+            /mode = 'anonymous' AND author_id IS NULL AND created_at IS NULL AND receipt_hash IS NOT NULL/,
+        );
+        // 관리자 화면은 탈퇴 작성자와 익명을 구별해 표기한다
+        expect(ADMIN).toMatch(/\(탈퇴한 회원\)/);
+        expect(ADMIN).toMatch(/작성자 기록 없음/);
+    });
+
     it('ip·user_agent·hospital_id 컬럼 없음, 익명 행 신원 NULL 을 CHECK 로 강제', () => {
         const table = SQL.slice(
             SQL.indexOf('CREATE TABLE IF NOT EXISTS public.proposals'),

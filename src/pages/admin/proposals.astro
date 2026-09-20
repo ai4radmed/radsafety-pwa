@@ -297,8 +297,14 @@ export const prerender = false;
             }
             listEl.innerHTML = rows
                 .map((p) => {
+                    // signed 인데 author_id 가 비어 있으면 탈퇴한 회원(ON DELETE SET NULL) — 익명과 구별해 표기한다.
+                    const signedName = p.author_id ? usernames.get(p.author_id) : undefined;
                     const who =
-                        p.mode === 'signed' ? `@${esc(usernames.get(p.author_id ?? '') ?? '?')}` : '작성자 기록 없음';
+                        p.mode === 'signed'
+                            ? signedName
+                                ? `@${esc(signedName)}`
+                                : '(탈퇴한 회원)'
+                            : '작성자 기록 없음';
                     const when =
                         p.mode === 'signed' && p.created_at
                             ? esc(String(p.created_at).replace('T', ' ').slice(0, 16))

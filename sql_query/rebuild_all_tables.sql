@@ -1289,7 +1289,8 @@ CREATE TABLE IF NOT EXISTS public.proposals (
     receipt_hash  text        UNIQUE,                          -- anonymous 만. sha256(접수증 코드)
     CONSTRAINT proposals_anonymous_has_no_identity CHECK (
         (mode = 'anonymous' AND author_id IS NULL AND created_at IS NULL AND receipt_hash IS NOT NULL) OR
-        (mode = 'signed'    AND author_id IS NOT NULL AND created_at IS NOT NULL AND receipt_hash IS NULL)
+        -- signed 의 author_id 는 nullable — 탈퇴하면 SET NULL 된다(2026-09-20 migrate_relax_proposal_author_check.sql)
+        (mode = 'signed'    AND created_at IS NOT NULL AND receipt_hash IS NULL)
     )
 );
 

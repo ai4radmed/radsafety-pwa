@@ -3,6 +3,17 @@
 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/). 버전은 `src/consts.ts`(`APP_VERSION`·`APP_RELEASE_DATE`)·`package.json` 과 함께 올린다.
 회원 공지는 관리자 **알림 발송** 화면에서 제목 `RadSafety vX.Y.Z 주요 업데이트 안내`, 본문 `RadSafety가 vX.Y.Z로 업데이트되었습니다. 이번 변경은 아래 N가지입니다.` + 번호 목록, **만료 없음** 옵션으로 보낸다(알림함이 업데이트 이력이 된다).
 
+## [1.1.1] - 2026-09-20 — 회원 탈퇴 차단 버그 수리
+
+### 수정
+
+- **아이디(signed)로 제도 개선 제안을 낸 회원이 탈퇴할 수 없던 버그** — `proposals.author_id` 의 `ON DELETE SET NULL` 과 같은 날 도입한 CHECK(`signed ⇒ author_id NOT NULL`)가 충돌해 탈퇴가 실패했다(처리방침 §5 "탈퇴 시 즉시 삭제" 와 충돌). `sql_query/migrate_relax_proposal_author_check.sql` 로 signed 분기의 작성자 요구를 제거. **익명성 보장(anonymous 행 신원 NULL 강제)은 불변**
+- 관리자 제안 검토 화면: 탈퇴한 작성자를 `(탈퇴한 회원)` 으로 표기해 익명 제안(`작성자 기록 없음`)과 구별
+
+### 운영
+
+- 테스트 계정 5개(`benkorea2`·`test0916`·`test0918`·`test0919`·`test09191`)와 시험 콘텐츠(제안 3·검토 대기 자료 1·첨부 1) 정리. CI e2e 계정(`test-admin`·`test-user`)과 `monthly-check` 는 유지, `monthly-check` 의 잘못 입력된 소속기관·소속학회는 비움
+
 ## [1.1.0] - 2026-09-20 — 관리자 권한 위임 · 비밀번호 변경
 
 ### 추가
