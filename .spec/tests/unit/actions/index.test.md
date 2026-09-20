@@ -9,23 +9,27 @@
 
 Vitest (단위)
 
+## Mock/Setup 추가 (2026-09-20 세션 인증 전환)
+
+`src/actions/auth` 를 모의 — `session.userId` 가 로그인한 사람이며, 판정은 같은 supabase-server 모의의 `profiles` 조회를 타게 해 기존 mock 호출 순서를 보존한다. 관리자 여부 = 그 조회의 `is_admin`.
+
 ## 검증 항목
 
-| describe                   | it                                                              | 검증 내용                                        |
-| -------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
-| server.deleteFinding       | local- 접두사 id는 DB 삭제 없이 성공 반환                       | handler({ id: 'local-xxx' }) → { success: true } |
-| server.deleteFinding       | local- 아닌 id는 supabaseAnon.delete 호출                       | mock으로 delete 호출 여부 검증                   |
-| server.saveFinding         | id 없으면 insert 호출                                           | mock으로 insert 호출 검증                        |
-| server.saveFinding         | id가 local-로 시작하면 insert 호출                              | mock으로 insert 호출 검증                        |
-| server.saveFinding         | id가 local- 아닌 기존 id면 update 호출                          | mock으로 update 호출 검증                        |
-| server                     | saveFinding, deleteFinding, sendVerificationCode 등 액션 export | server 객체에 필수 액션 키 존재                  |
-| server.approveVerification | 관리자 권한 확인 후 profiles/verification_requests 업데이트     | mockAdmin.update 호출 및 success 반환            |
-| server.rejectVerification  | 관리자 권한 확인 후 profiles/verification_requests 업데이트     | mockAdmin.update 호출 및 success 반환            |
-| server.revokeVerification  | 관리자 권한 확인 후 profiles/verification_requests 업데이트     | mockAdmin.update 호출 및 success 반환            |
-| server.sendVerificationCode| 코드 생성, DB 저장 및 이메일 발송([RadSafety] 제목 및 발신자 확인) 성공 확인 | DB insert 및 email.send 호출 검증                |
-| server.sendVerificationCode| 이메일 발송 실패 시 에러 발생 확인                               | email.send 에러 시 Error throw 검증              |
-| server.sendVerificationCode| 사용자 이름 조회 실패 시 '사용자' 기본값 사용                    | profiles lookup 실패 시 에러 없이 발송           |
-| server.\*Verification      | 관리자가 아니면 에러 반환                                       | is_admin false인 경우 Error throw                |
+| describe                    | it                                                                           | 검증 내용                                        |
+| --------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------ |
+| server.deleteFinding        | local- 접두사 id는 DB 삭제 없이 성공 반환                                    | handler({ id: 'local-xxx' }) → { success: true } |
+| server.deleteFinding        | local- 아닌 id는 supabaseAnon.delete 호출                                    | mock으로 delete 호출 여부 검증                   |
+| server.saveFinding          | id 없으면 insert 호출                                                        | mock으로 insert 호출 검증                        |
+| server.saveFinding          | id가 local-로 시작하면 insert 호출                                           | mock으로 insert 호출 검증                        |
+| server.saveFinding          | id가 local- 아닌 기존 id면 update 호출                                       | mock으로 update 호출 검증                        |
+| server                      | saveFinding, deleteFinding, sendVerificationCode 등 액션 export              | server 객체에 필수 액션 키 존재                  |
+| server.approveVerification  | 관리자 권한 확인 후 profiles/verification_requests 업데이트                  | mockAdmin.update 호출 및 success 반환            |
+| server.rejectVerification   | 관리자 권한 확인 후 profiles/verification_requests 업데이트                  | mockAdmin.update 호출 및 success 반환            |
+| server.revokeVerification   | 관리자 권한 확인 후 profiles/verification_requests 업데이트                  | mockAdmin.update 호출 및 success 반환            |
+| server.sendVerificationCode | 코드 생성, DB 저장 및 이메일 발송([RadSafety] 제목 및 발신자 확인) 성공 확인 | DB insert 및 email.send 호출 검증                |
+| server.sendVerificationCode | 이메일 발송 실패 시 에러 발생 확인                                           | email.send 에러 시 Error throw 검증              |
+| server.sendVerificationCode | 사용자 이름 조회 실패 시 '사용자' 기본값 사용                                | profiles lookup 실패 시 에러 없이 발송           |
+| server.\*Verification       | 관리자가 아니면 에러 반환                                                    | is_admin false인 경우 Error throw                |
 
 ## Mock/Setup
 

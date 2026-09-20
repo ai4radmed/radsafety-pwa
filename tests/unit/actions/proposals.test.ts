@@ -8,6 +8,7 @@ import path from 'path';
  */
 const read = (p: string) => fs.readFileSync(path.resolve(p), 'utf-8');
 const ACT = read('src/actions/proposals.ts');
+const AUTH_MOD = read('src/actions/auth.ts');
 const IDX = read('src/actions/index.ts');
 const SQL = read('sql_query/migrate_add_proposals.sql');
 const SUBMIT = read('src/pages/proposals.astro');
@@ -21,7 +22,8 @@ const PRIVACY = read('src/pages/privacy.astro');
 describe('actions/proposals — 문지기는 세션', () => {
     it('index.ts 에 spread 되어 있고, 사용자는 세션 쿠키로만 판정한다(클라이언트 userId/adminId 입력 없음)', () => {
         expect(IDX).toMatch(/\.\.\.proposalActions/);
-        expect(ACT).toMatch(/createSupabaseServerClient\(context\.request, context\.cookies\)/);
+        expect(AUTH_MOD).toMatch(/createSupabaseServerClient\(context\.request, context\.cookies\)/);
+        expect(ACT).toMatch(/from '\.\/auth'/);
         expect(ACT).not.toMatch(/adminId: z\./);
         expect(ACT).not.toMatch(/userId: z\./);
     });

@@ -9,6 +9,10 @@
 
 Vitest. `supabase-server`를 테이블별 상태 객체로 모의(profiles → 관리자 확인·reject_count, archives/findings → 대상 행, storage → download/upload/remove 호출 기록). `notification-helper` 모의.
 
+## Mock/Setup 추가 (2026-09-20 세션 인증 전환)
+
+`src/actions/auth` 를 모의 — `session.userId` 가 로그인한 사람이며, 판정은 같은 supabase-server 모의의 `profiles` 조회를 타게 해 기존 mock 호출 순서를 보존한다. 관리자 여부 = 그 조회의 `is_admin`.
+
 ## 검증 항목
 
 | describe                    | it                                      | 검증 내용                                                                                                                                            |

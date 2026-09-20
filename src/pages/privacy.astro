@@ -4,8 +4,9 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 // 개인정보처리방침. 명세: .spec/src/pages/privacy.md
 // 2026-09-20 초안 — documents/privacy_redesign_plan.md 1단계 완료 기준("로그인 이메일 미보관",
 // "카카오는 이용 사실을 알게 됨") + 2단계(실명·이메일·명부 미보관, 소속은 본인·관리자만) 반영.
-// ⚠️ 법적 검토 전 초안. 시행일·연락처는 Dr. Ben 확정 후 수정.
-const EFFECTIVE_DATE = '2026-09-20'; // 3단계(익명 제안) 반영으로 같은 날 갱신
+// 시행일·문의처 확정(Dr. Ben 2026-09-20): 시행일 = 2026-09-20, 문의처 = 의견보내기·위원회(이메일 미공개).
+// 법적 검토로 문안이 바뀌면 새 시행일과 함께 갱신(§10 변경).
+const EFFECTIVE_DATE = '2026-09-20';
 ---
 
 <PublicLayout
