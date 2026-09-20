@@ -14,6 +14,7 @@ import { supabaseAdmin } from '../lib/supabase-server';
 import { requireUser, requireAdmin } from './auth';
 import { createNotification } from '../lib/notification-helper';
 import { sendTelegramMessage } from '../lib/telegram';
+import { sendAdminNotice } from '../lib/admin-notify';
 import { createLogger } from '../lib/logger';
 import {
     ATTACHMENT_BUCKET,
@@ -168,6 +169,17 @@ export const proposalActions = {
                 .from('proposal_quota')
                 .upsert({ key, day, count: (q?.count ?? 0) + 1 }, { onConflict: 'key' });
             if (qError) logger.warn('제안 쿼터 갱신 실패', { code: qError.code });
+
+            // 관리자 메일 — 본문·작성자 미포함(익명 채널). 건수·모드·분류만.
+            await sendAdminNotice({
+                subject: '새 제도 개선 제안 1건',
+                lines: [
+                    `${mode === 'anonymous' ? '익명' : '아이디'} · ${category}`,
+                    '내용은 관리자 화면에서 확인하세요.',
+                ],
+                linkPath: '/admin/proposals',
+                linkLabel: '제안 검토',
+            });
 
             // 관리자 텔레그램 — 본문 미포함
             try {

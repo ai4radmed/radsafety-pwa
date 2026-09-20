@@ -23,7 +23,7 @@ describe('SITE_DESCRIPTION', () => {
 
 describe('APP_VERSION', () => {
     it('예상값과 일치해야 한다', () => {
-        expect(APP_VERSION).toBe('1.1.1');
+        expect(APP_VERSION).toBe('1.2.0');
     });
 });
 
