@@ -204,6 +204,9 @@ https://*-ai4radmed.vercel.app/auth/callback
 | `PUBLIC_VAPID_KEY`                        | All                            | 웹 푸시 알림용 공개 키                                                                                                                                                                  |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | All                            | 관리자 텔레그램(제출 알림·KINS 감시 요약). `PUBLIC_` 접두 금지                                                                                                                          |
 | `CRON_SECRET`                             | Production                     | Vercel Cron 인증(`/api/cron/watch`). Vercel 이 `Authorization: Bearer` 로 자동 첨부. `openssl rand -hex 32` 로 생성, Bitwarden 보관. 미설정 시 cron 호출은 401(관리자 수동 실행만 가능) |
+| `ADMIN_NOTIFY_EMAILS`                     | Production (선택)              | 관리자 업무 메일(새 가입 신청·기관 등록 요청·검토 대기 제출물·새 제안) 수신자. 비우면 `PUBLIC_ADMIN_EMAILS` 사용. **서버 전용** — `PUBLIC_` 과 달리 클라이언트 번들에 노출되지 않는다   |
+| `WATCH_REPORT`                            | Production (선택)              | KINS 감시 텔레그램 보고 모드. 미설정=`all`(변화 없어도 매일 하트비트) · `changes`=변화·실패만. 변경 후 재배포                                                                           |
+| `PROPOSAL_QUOTA_SECRET`                   | Production (선택)              | 익명 제안 쿼터 HMAC 비밀. 미설정이면 서비스 롤 키의 sha256 파생값 사용(설정 시 그날 쿼터만 초기화)                                                                                      |
 
 > 상세 목록은 [## 1-4. 환경 변수](#1-4-환경-변수) 섹션을 참조하세요.
 
