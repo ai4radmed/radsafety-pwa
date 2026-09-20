@@ -126,6 +126,8 @@ async function fetchFollow(url) {
     try {
         const res = await fetch(url, {
             redirect: 'follow',
+            // 사용성 집계에서 빠지기 위해 스스로 무인 점검임을 밝힌다(src/lib/usage/monitor.ts).
+            headers: { 'x-radsafety-monitor': 'check-production' },
             signal: AbortSignal.timeout(15000),
         });
         const elapsed = Date.now() - start;
