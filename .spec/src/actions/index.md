@@ -59,5 +59,6 @@ Astro server actions 진입점. `defineAction`으로 `saveFinding`, `deleteFindi
 
 - `publish`: `status='published'`, `published_at`, (summary/prepNote/parentId 있으면 함께) → **active 회원 전체** `createBulkNotifications(type system_notice, link /bulletins, 90일)`. `parentId`(또는 기존 parent) 가 있으면 제목 `후속: <제목>` + 본문에 상위 사건 제목, 없으면 `사건·사고: <제목>`. 이미 published 면 오류.
 - `ignore`: `status='ignored'`. `update`: 필드만 저장(상태 유지).
+- `checklistRefs?: string[]`(slug `^[a-z0-9-]+$`, ≤20) → `checklist_refs`(후속 2026-09-20).
 - 거부: `parentId === id`(자기참조). 알림 실패는 로그만(게시는 완료).
 - 화면: `src/pages/admin/bulletins.astro`. 테스트: `tests/unit/pages/bulletins.test.ts`.

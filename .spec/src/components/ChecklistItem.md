@@ -17,3 +17,7 @@
 2. localStorage: inspection-{id}, inspection-{id}-sub-{index}.
 3. view-resource-btn: /api/archives/{resourceId} fetch, increment_archive_view_count RPC, openSmartViewer.
 4. 외부 링크(law.go.kr 포함): target="\_blank", rel="noopener noreferrer".
+
+## 딥링크 앵커 (2026-09-20, K-1 후속)
+
+루트 요소에 `id="checklist-<slug>"`(`item.slug ?? item.id`). 페이지 로드 시 `location.hash` 가 자기 id 와 같으면 패널을 열고 `scrollIntoView` — 사건·사고(`/bulletins`)의 "관련 체크리스트" 링크가 여기로 온다.

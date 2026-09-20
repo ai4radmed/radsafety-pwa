@@ -13,6 +13,9 @@ const ACTIONS = read('src/actions/index.ts');
 const CRON = read('src/pages/api/cron/watch.ts');
 const SIDEBAR = read('src/components/Sidebar.astro');
 const AUTH = read('src/lib/auth-handler.ts');
+const HOME = read('src/pages/index.astro');
+const CHECK = read('src/components/ChecklistItem.astro');
+const PWA = read('astro.config.mjs');
 
 describe('회원 /bulletins', () => {
     it('published 만 조회하고 스레드(parent_id)로 묶으며 기본 필터는 의료·RI 관련', () => {
@@ -68,5 +71,38 @@ describe('cron 배선', () => {
     it('소스별 실행 뒤 ingestBulletins 를 호출하고 dry 면 저장하지 않는다', () => {
         expect(CRON).toMatch(/ingestBulletins\(source\.id, r\.items, \{ persist: !dry \}\)/);
         expect(CRON).toMatch(/bulletins,/);
+    });
+});
+
+describe('K-1 후속(2026-09-20): 체크리스트 연결 · 홈 배너 · 오프라인 캐시', () => {
+    it('체크리스트 항목에 checklist-<slug> 앵커가 있고 해시로 열리며 스크롤한다', () => {
+        expect(CHECK).toMatch(/id=\{`checklist-\$\{item\.slug \?\? item\.id\}`\}/);
+        expect(CHECK).toMatch(/location\.hash/);
+        expect(CHECK).toMatch(/scrollIntoView/);
+    });
+    it('관리자는 카탈로그(콘텐츠 slug·제목)로 항목을 고르고 액션에 checklistRefs 로 보낸다', () => {
+        expect(ADMIN).toMatch(/getCollection\('inspection_prep'\)/);
+        expect(ADMIN).toMatch(/id="checklistCatalog"/);
+        expect(ADMIN).toMatch(/data-cl=/);
+        expect(ADMIN).toMatch(/checklistRefs,/);
+        const start = ACTIONS.indexOf('reviewBulletin: defineAction');
+        const body = ACTIONS.slice(start, ACTIONS.indexOf('reviewSubmission: defineAction'));
+        expect(body).toMatch(/checklistRefs: z\.array\(z\.string\(\)\.regex/);
+        expect(body).toMatch(/patch\.checklist_refs = checklistRefs/);
+    });
+    it('회원 화면은 refs 를 /inspection-prep#checklist-<slug> 링크로, 카탈로그에 없는 slug 는 건너뛴다', () => {
+        expect(MEMBER).toMatch(/\/inspection-prep#checklist-\$\{encodeURIComponent\(slug\)\}/);
+        expect(MEMBER).toMatch(/CATALOG\.has\(slug\)/);
+    });
+    it('홈 배너는 회원 전용(data-member-only)·관련 루트 사건 1건·실패 시 숨김', () => {
+        expect(HOME).toMatch(/id="latestBulletin"[^>]*data-member-only[^>]*hidden/);
+        expect(HOME).toMatch(/\.eq\('relevant', true\)/);
+        expect(HOME).toMatch(/\.is\('parent_id', null\)/);
+        expect(HOME).toMatch(/\.limit\(1\)/);
+    });
+    it('PWA: Supabase REST bulletins 응답을 NetworkFirst 로 캐시(bulletins-data, 7일)', () => {
+        expect(PWA).toMatch(/rest\\\/v1\\\/bulletins/);
+        expect(PWA).toMatch(/cacheName: 'bulletins-data'/);
+        expect(PWA).toMatch(/maxAgeSeconds: 7 \* 24 \* 60 \* 60/);
     });
 });

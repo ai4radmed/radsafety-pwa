@@ -18,6 +18,9 @@
 
 5. "더 보기" 버튼은 요약이 실제로 잘렸을 때(`scrollHeight > clientHeight`)만 보인다 — 짧은 요약에 누를 게 없는 버튼이 붙던 결함 수정(Dr. Ben 2026-09-20).
 
+6. **관련 체크리스트(후속 2026-09-20)** — `checklist_refs` 를 카탈로그(slug→제목)로 바꿔 `/inspection-prep#checklist-<slug>` 링크로 보여 준다(항목이 펼쳐진 채 스크롤). 카탈로그에 없는 slug 는 조용히 건너뛴다.
+7. **오프라인** — Supabase REST `bulletins` 응답을 SW 가 NetworkFirst(`bulletins-data`, 7일)로 캐시해 마지막으로 본 사례집이 오프라인에서도 열린다(`astro.config.mjs` runtimeCaching).
+
 ## 관련
 
 - 이용안내 §12 · 사이드바 "사건·사고" · 관리자 `.spec/src/pages/admin/bulletins.md` · 테스트 `tests/unit/pages/bulletins.test.ts`

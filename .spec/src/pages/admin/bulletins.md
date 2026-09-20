@@ -19,6 +19,8 @@
 
 5. "더 보기" 버튼은 요약이 실제로 잘렸을 때(`scrollHeight > clientHeight`)만 보인다 — 짧은 요약에 누를 게 없는 버튼이 붙던 결함 수정(Dr. Ben 2026-09-20).
 
+6. **체크리스트 연결(후속 2026-09-20)** — 폼의 `<details>` "관련 체크리스트 항목"에서 콘텐츠 카탈로그(`getCollection('inspection_prep')` 를 `#checklistCatalog` JSON 으로 내려보냄, 분류별 체크박스)를 고르면 `checklistRefs`(slug 배열, ≤20) 로 액션에 간다. 저장·게시 어느 쪽이든 함께 반영.
+
 ## 관련
 
 - 액션 `reviewBulletin`(`.spec/src/actions/index.md`) · 회원 화면 `.spec/src/pages/bulletins.md` · 테스트 `tests/unit/pages/bulletins.test.ts`

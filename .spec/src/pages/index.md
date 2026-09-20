@@ -22,3 +22,7 @@
 ## KINS 공식 자원 카드 (2026-09-20, K-2)
 
 - 카드 그리드에 `/kins` 카드 추가(shield 아이콘). 의견보내기 카드는 `data-member-only` — 비가입자에게 숨김(Sidebar `setMemberOnly`가 처리).
+
+## 최신 사건·사고 배너 (2026-09-20, K-1 후속)
+
+카드 그리드 위 `#latestBulletin`(`data-member-only`, 기본 `hidden`). 로그인 사용자일 때만 `bulletins` 에서 `status=published AND relevant AND parent_id IS NULL` 을 `published_at` 내림차순 1건 조회해 제목·사고일·출처를 채우고 표시(`/bulletins` 링크). 비로그인·0건·오류는 숨김 유지 — 홈은 항상 열려야 하므로 실패를 삼킨다.

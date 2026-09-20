@@ -1,6 +1,10 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Icon from '../components/Icon.astro';
+import { getCollection } from 'astro:content';
+
+// 체크리스트 카탈로그(slug→제목) — checklist_refs 를 사람이 읽을 링크로 바꾸기 위해 JSON 으로 내려보낸다.
+const checklistCatalog = (await getCollection('inspection_prep')).map((e) => ({ slug: e.slug, title: e.data.title }));
 
 // 사건·사고(회원). 명세: .spec/src/pages/bulletins.md
 // K-1(2026-09-20): 원안위 보도자료(속보) + NSIC 방사선사고 사례집(원인·등급)을 사건 스레드로 보여 준다.
@@ -31,6 +35,7 @@ export const prerender = false;
 
         <div id="list" class="list"><p class="muted">불러오는 중...</p></div>
     </div>
+    <script type="application/json" id="checklistCatalog" set:html={JSON.stringify(checklistCatalog)} />
 
     <style>
         .bulletins {
@@ -144,6 +149,16 @@ export const prerender = false;
         .prep strong {
             color: var(--accent);
         }
+        .checklist-links {
+            margin-top: 0.45rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+        .checklist-links a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--accent);
+        }
         .followups {
             margin-top: 0.6rem;
             padding-left: 0.8rem;
@@ -181,7 +196,16 @@ export const prerender = false;
         relevant: boolean;
         parent_id: string | null;
         published_at: string | null;
+        checklist_refs: string[] | null;
     };
+    const CATALOG = new Map<string, string>(
+        (
+            JSON.parse(document.getElementById('checklistCatalog')?.textContent || '[]') as {
+                slug: string;
+                title: string;
+            }[]
+        ).map((c) => [c.slug, c.title]),
+    );
 
     function esc(s: string | null | undefined): string {
         return (s ?? '').replace(
@@ -212,7 +236,7 @@ export const prerender = false;
             const { data, error } = await supabase
                 .from('bulletins')
                 .select(
-                    'id, source, title, occurred_at, incident_type, incident_grade, region, org_masked, source_url, summary, cause, prep_note, relevant, parent_id, published_at',
+                    'id, source, title, occurred_at, incident_type, incident_grade, region, org_masked, source_url, summary, cause, prep_note, relevant, parent_id, published_at, checklist_refs',
                 )
                 .eq('status', 'published')
                 .order('occurred_at', { ascending: false, nullsFirst: false })
@@ -242,7 +266,17 @@ export const prerender = false;
             const prep = b.prep_note
                 ? `<div class="prep"><strong>정기검사 준비 포인트</strong> ${esc(b.prep_note)}</div>`
                 : '';
-            return `${text ? `<div class="summary">${esc(text)}</div><button class="more" data-more>더 보기</button>` : ''}${prep}`;
+            // 관련 체크리스트: 카탈로그에 없는 slug(콘텐츠 이름 변경)는 조용히 건너뛴다.
+            const refs = (b.checklist_refs ?? []).filter((slug) => CATALOG.has(slug));
+            const checklist = refs.length
+                ? `<div class="checklist-links">관련 체크리스트: ${refs
+                      .map(
+                          (slug) =>
+                              `<a href="/inspection-prep#checklist-${encodeURIComponent(slug)}">${esc(CATALOG.get(slug)!)}</a>`,
+                      )
+                      .join(' · ')}</div>`
+                : '';
+            return `${text ? `<div class="summary">${esc(text)}</div><button class="more" data-more>더 보기</button>` : ''}${prep}${checklist}`;
         }
 
         function render() {
