@@ -166,9 +166,9 @@ describe('checkMeta', () => {
 });
 
 describe('runChecks', () => {
-    it('shallow — app-host·config·db-ping·meta 4개', async () => {
+    it('shallow — app-host·config·usage-hmac·db-ping·meta 5개', async () => {
         const results = await runChecks('shallow');
-        expect(results.map((r) => r.name)).toEqual(['app-host', 'config', 'db-ping', 'meta']);
+        expect(results.map((r) => r.name)).toEqual(['app-host', 'config', 'usage-hmac', 'db-ping', 'meta']);
     });
 
     it('deep — shallow + auth·storage·schema·functional', async () => {
@@ -176,6 +176,7 @@ describe('runChecks', () => {
         expect(names).toEqual([
             'app-host',
             'config',
+            'usage-hmac',
             'db-ping',
             'auth-reach',
             'storage-reach',
