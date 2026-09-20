@@ -519,8 +519,13 @@ export const server = {
             prepNote: z.string().trim().max(1000).optional(),
             // null = 루트(스레드 시작), uuid = 그 사건의 후속
             parentId: z.string().uuid().nullable().optional(),
+            // 관련 정기검사 체크리스트 항목 slug(src/content/inspection_prep). 후속(2026-09-20)
+            checklistRefs: z
+                .array(z.string().regex(/^[a-z0-9-]+$/))
+                .max(20)
+                .optional(),
         }),
-        handler: async ({ adminId, id, decision, summary, prepNote, parentId }) => {
+        handler: async ({ adminId, id, decision, summary, prepNote, parentId, checklistRefs }) => {
             if (!supabaseAdmin) throw new Error('서버 설정 오류: 관리자 권한 클라이언트가 없습니다.');
             await assertAdmin(adminId);
 
@@ -536,6 +541,7 @@ export const server = {
             if (summary !== undefined) patch.summary = summary || null;
             if (prepNote !== undefined) patch.prep_note = prepNote || null;
             if (parentId !== undefined) patch.parent_id = parentId;
+            if (checklistRefs !== undefined) patch.checklist_refs = checklistRefs;
 
             if (decision === 'ignore') {
                 patch.status = 'ignored';
