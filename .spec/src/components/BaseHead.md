@@ -15,7 +15,7 @@
 
 ## 핵심 규칙
 
-1. canonicalURL: `new URL(Astro.url.pathname, Astro.site)`.
+1. canonicalURL: `canonicalUrl(Astro.url.pathname, Astro.site)`(`src/lib/canonical.ts`) — 슬래시로 끝나는 형태로 통일해 `/guide` 와 `/guide/` 가 같은 표준을 가리킨다. `og:url` · `twitter:url` 도 같은 값(2026-11-12).
 2. og:image, twitter:image: `new URL(image.src, Astro.url)`.
 3. PWA: `import.meta.env.PROD`일 때만 `<script src="/registerSW.js"></script>` 수동 추가. (dev 모드 404 방지)
 4. favicon: public에 존재하는 favicon.svg 사용. `<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`
