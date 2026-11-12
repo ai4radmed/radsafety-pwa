@@ -48,9 +48,9 @@ concurrency:
 
 jobs:
     health:
-        # ubuntu-latest 가 26.04 로 넘어가며 Playwright 1.58 이 브라우저 설치에 실패했다(2026-11-12).
-        # Playwright 가 26.04 를 지원하는 버전으로 올라가면 ubuntu-latest 로 되돌린다.
-        runs-on: ubuntu-24.04
+        # 러너 OS 가 바뀌면 Playwright 브라우저 설치가 깨질 수 있다 — 2026-11-12 ubuntu 26.04 전환 때
+        # Playwright 1.58 이 실패했고 1.64 로 올려 해결했다(26.04 지원은 1.61 부터).
+        runs-on: ubuntu-latest
         timeout-minutes: 15 # 스모크(브라우저) 포함해도 넉넉 — 행 걸림이 알림을 삼키지 않게
         steps:
             - uses: actions/checkout@v4
