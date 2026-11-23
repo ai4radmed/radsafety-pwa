@@ -23,6 +23,11 @@
 
 - 카드 그리드에 `/kins` 카드 추가(shield 아이콘). 의견보내기 카드는 `data-member-only` — 비가입자에게 숨김(Sidebar `setMemberOnly`가 처리).
 
+## 법령 챗봇 카드 (2026-11-23)
+
+- KINS 카드 다음에 `#lawbotCard` — `LAWBOT_URL`(`src/consts.ts`)로 가는 **외부 링크**(새 탭, `rel="noopener noreferrer"`). 법령 챗봇은 별개 프로젝트·자체 주소이고 앱에서는 링크만 건다(2026-09-20 결정).
+- `data-member-only` — 비가입자에게 숨김. 챗봇이 접근 코드로 막힌 시범 운영이라 문구에 "접근 코드 필요"를 밝힌다. 공개 범위가 바뀌면 문구와 `data-member-only` 를 함께 고친다.
+
 ## 최신 사건·사고 배너 (2026-09-20, K-1 후속)
 
 카드 그리드 위 `#latestBulletin`(`data-member-only`, 기본 `hidden`). 로그인 사용자일 때만 `bulletins` 에서 `status=published AND relevant AND parent_id IS NULL` 을 `published_at` 내림차순 1건 조회해 제목·사고일·출처를 채우고 표시(`/bulletins` 링크). 비로그인·0건·오류는 숨김 유지 — 홈은 항상 열려야 하므로 실패를 삼킨다.

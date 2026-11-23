@@ -11,14 +11,15 @@ Vitest (단위)
 
 ## 검증 항목
 
-| describe         | it            | 검증 내용                            |
-| ---------------- | ------------- | ------------------------------------ |
-| SITE_TITLE       | 예상값과 일치 | 'RadSafety'                          |
-| SITE_DESCRIPTION | 예상값과 일치 | 'RadSafety Official Website'         |
-| SITE_TITLE       | 타입이 string | typeof SITE_TITLE === 'string'       |
-| SITE_DESCRIPTION | 타입이 string | typeof SITE_DESCRIPTION === 'string' |
-| APP_VERSION      | 예상값과 일치 | '0.2.1'                              |
-| APP_RELEASE_DATE | 예상값과 일치 | '2036-03-20'                         |
+| describe         | it              | 검증 내용                              |
+| ---------------- | --------------- | -------------------------------------- |
+| SITE_TITLE       | 예상값과 일치   | 'RadSafety'                            |
+| SITE_DESCRIPTION | 예상값과 일치   | 'RadSafety Official Website'           |
+| SITE_TITLE       | 타입이 string   | typeof SITE_TITLE === 'string'         |
+| SITE_DESCRIPTION | 타입이 string   | typeof SITE_DESCRIPTION === 'string'   |
+| APP_VERSION      | 예상값과 일치   | '0.2.1'                                |
+| APP_RELEASE_DATE | 예상값과 일치   | '2036-03-20'                           |
+| LAWBOT_URL       | https 절대 주소 | `^https://…` 형식(법령 챗봇 외부 링크) |
 
 ## 유지보수 목적
 
