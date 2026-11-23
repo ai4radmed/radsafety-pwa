@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Icon from '../components/Icon.astro';
+import { LAWBOT_URL } from '../consts';
 ---
 
 <DashboardLayout>
@@ -65,6 +66,21 @@ import Icon from '../components/Icon.astro';
                     <h3>KINS 공식 자원</h3>
                 </div>
                 <p class="card-desc">방사선규제해석 SOS · 이용자지원간행물 · 원안위 보도자료</p>
+            </a>
+
+            <a
+                href={LAWBOT_URL}
+                class="card secondary"
+                id="lawbotCard"
+                data-member-only
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <div class="card-header">
+                    <Icon name="book" size="20" class="card-icon" />
+                    <h3>법령 챗봇</h3>
+                </div>
+                <p class="card-desc">원자력안전법령·고시 질의응답 · 시범 운영(접근 코드 필요) · 새 탭</p>
             </a>
 
             <a href="/feedback" class="card secondary" data-member-only>

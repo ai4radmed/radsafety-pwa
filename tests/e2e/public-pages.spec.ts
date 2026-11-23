@@ -23,6 +23,14 @@ test.describe('공개 페이지 렌더링 (비로그인)', () => {
         await expect(links.first()).toBeVisible();
     });
 
+    test('홈페이지(/) — 법령 챗봇 카드는 비로그인에게 숨김', async ({ page }) => {
+        await page.goto('/');
+        const card = page.locator('#lawbotCard');
+        await expect(card).toHaveAttribute('target', '_blank');
+        await expect(card).toHaveAttribute('href', /^https:\/\//);
+        await expect(card).toBeHidden();
+    });
+
     test('로그인 페이지(/login) — 카카오 버튼 및 아이디/비밀번호 폼 존재', async ({ page }) => {
         await page.goto('/login');
         // 카카오 로그인 버튼

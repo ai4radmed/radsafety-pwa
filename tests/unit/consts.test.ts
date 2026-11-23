@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SITE_TITLE, SITE_DESCRIPTION, APP_VERSION, APP_RELEASE_DATE } from '../../src/consts';
+import { SITE_TITLE, SITE_DESCRIPTION, APP_VERSION, APP_RELEASE_DATE, LAWBOT_URL } from '../../src/consts';
 
 describe('SITE_TITLE', () => {
     it('예상값과 일치', () => {
@@ -30,5 +30,11 @@ describe('APP_VERSION', () => {
 describe('APP_RELEASE_DATE', () => {
     it('예상값과 일치해야 한다', () => {
         expect(APP_RELEASE_DATE).toBe('2026-09-20');
+    });
+});
+
+describe('LAWBOT_URL', () => {
+    it('https 절대 주소', () => {
+        expect(LAWBOT_URL).toMatch(/^https:\/\/[a-z0-9.-]+$/);
     });
 });
