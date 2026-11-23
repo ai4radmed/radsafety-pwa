@@ -113,6 +113,7 @@ npm run check:monthly              # 월간 수동 점검 위저드(사람 동�
 ## 7. 핵심 정책
 
 - **DB 관리**: 스키마 변경은 `sql_query/rebuild_all_tables.sql`에 통합 (멱등성 보장).
+- **새 테이블 권한**: Supabase 는 2026-10-30 부터 새 `public` 테이블에 권한을 자동으로 주지 않는다. 새 테이블은 `sql_query/_template_new_table.sql` 양식대로 `GRANT` 를 함께 넣는다 — 빠뜨리면 그 테이블을 쓰는 화면만 500 이 난다. `tests/unit/sql_query/grants.test.ts` 가 CI 에서 누락을 막는다.
 - **로깅**: JSON 구조화 로그, 민감 정보 노출 금지, `PUBLIC_LOG_LEVEL`로 제어.
 - **Slug**: `documents/resource_slugs.md`에 등록 후 사용, 한 번 설정된 Slug는 변경 금지.
 - **PWA 및 인증**: 주요 페이지는 캐시를 통한 읽기 전용 오프라인 지원. iOS PWA(Safari 샌드박스)의 세션 단절 한계를 피하기 위해 **인증 시 화면 전환(Redirect)이 발생하는 매직링크 URL 클릭이나 OAuth Redirect를 지양하고, 아이디/비밀번호 폼 제출 등 PWA 내부에서 세션을 유지하는 방식을 우선 구현**합니다(이메일 6자리 OTP가 이 역할을 하던 시절도 있었으나 Stage C, 2026-09-18로 제거 — `documents/privacy_redesign_plan.md` 1단계).

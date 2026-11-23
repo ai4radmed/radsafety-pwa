@@ -1,0 +1,36 @@
+-- 새 테이블 migration 양식 — 복사해서 migrate_add_<이름>.sql 로 쓴다. (이 파일 자체는 실행하지 않는다)
+--
+-- 왜 GRANT 블록이 필수인가:
+--   Supabase 는 2026-10-30 부터 public 스키마에 새로 만드는 테이블에 Data API 권한을 자동으로
+--   주지 않는다. GRANT 를 빼먹으면 테이블은 생기는데 앱(supabase-js)이 "permission denied" 를 받아
+--   그 테이블을 쓰는 화면만 500 이 난다. 배포는 성공으로 보이므로 미리 알 방법이 없다.
+--   (그 전에 만든 테이블은 옛 자동 권한이 남아 있어 영향 없음)
+--   tests/unit/sql_query/grants.test.ts 가 누락을 CI 에서 막는다.
+--
+-- 권한은 필요한 만큼만 준다. RLS 정책이 행을 거르고, GRANT 는 그 앞의 문이다 —
+-- 정책이 없는 역할에 GRANT 를 줘도 행은 안 보이지만, 문부터 닫아 두는 쪽이 안전하다.
+--
+-- 같은 내용을 sql_query/rebuild_all_tables.sql 에도 넣는다(AGENTS.md §7 DB 관리).
+
+-- CREATE TABLE IF NOT EXISTS public.<이름> (
+--     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+--     created_at timestamptz NOT NULL DEFAULT now()
+-- );
+--
+-- ALTER TABLE public.<이름> ENABLE ROW LEVEL SECURITY;
+--
+-- -- (필요한 정책만) 예: 회원 읽기
+-- -- DROP POLICY IF EXISTS "<정책 이름>" ON public.<이름>;
+-- -- CREATE POLICY "<정책 이름>" ON public.<이름> FOR SELECT TO authenticated USING (true);
+--
+-- -- ── 권한(필수) ───────────────────────────────────────────────────────────
+-- -- ① 서버(서비스 롤) — 서버 액션·크론이 읽고 쓴다. 항상 넣는다.
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON public.<이름> TO service_role;
+-- -- ② 로그인 회원 — 위 정책이 authenticated 를 대상으로 할 때만. 필요한 동작만.
+-- -- GRANT SELECT ON public.<이름> TO authenticated;
+-- -- ③ 비로그인 — 공개 화면이 직접 읽어야 할 때만. 개인정보가 있는 테이블엔 주지 않는다.
+-- -- GRANT SELECT ON public.<이름> TO anon;
+--
+-- -- 확인:
+-- -- select grantee, privilege_type from information_schema.role_table_grants
+-- --  where table_schema = 'public' and table_name = '<이름>' order by 1, 2;
